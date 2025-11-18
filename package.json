@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:push": "drizzle-kit push",
+    "db:seed": "bun src/db/seed.ts"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.11",
