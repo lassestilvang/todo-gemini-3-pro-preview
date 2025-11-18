@@ -1,6 +1,6 @@
 import { getTasks } from "@/lib/actions";
 import { TaskList } from "@/components/tasks/TaskList";
-import { CreateTaskInput } from "@/components/tasks/CreateTaskInput";
+
 
 export default async function InboxPage() {
     const tasks = await getTasks(undefined, "all"); // TODO: Filter by inbox properly if needed
@@ -14,8 +14,6 @@ export default async function InboxPage() {
                         Tasks that need to be sorted.
                     </p>
                 </div>
-
-                <CreateTaskInput />
 
                 <TaskList tasks={tasks} />
             </div>

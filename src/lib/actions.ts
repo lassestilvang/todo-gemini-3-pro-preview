@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { lists, tasks, labels, taskLogs, taskLabels } from "@/db/schema";
-import { eq, and, desc, gte, lte, inArray } from "drizzle-orm";
+import { eq, and, desc, gte, lte, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { startOfDay, endOfDay, addDays } from "date-fns";
 
@@ -10,6 +10,11 @@ import { startOfDay, endOfDay, addDays } from "date-fns";
 
 export async function getLists() {
     return await db.select().from(lists).orderBy(lists.createdAt);
+}
+
+export async function getList(id: number) {
+    const result = await db.select().from(lists).where(eq(lists.id, id));
+    return result[0];
 }
 
 export async function createList(data: typeof lists.$inferInsert) {
@@ -33,6 +38,11 @@ export async function getLabels() {
     return await db.select().from(labels);
 }
 
+export async function getLabel(id: number) {
+    const result = await db.select().from(labels).where(eq(labels.id, id));
+    return result[0];
+}
+
 export async function createLabel(data: typeof labels.$inferInsert) {
     await db.insert(labels).values(data);
     revalidatePath("/");
@@ -50,11 +60,25 @@ export async function deleteLabel(id: number) {
 
 // --- Tasks ---
 
-export async function getTasks(listId?: number, filter?: "today" | "upcoming" | "all" | "completed" | "next-7-days") {
+export async function getTasks(listId?: number, filter?: "today" | "upcoming" | "all" | "completed" | "next-7-days", labelId?: number) {
     const conditions = [];
 
     if (listId) {
         conditions.push(eq(tasks.listId, listId));
+    }
+
+    if (labelId) {
+        const taskIdsWithLabel = await db
+            .select({ taskId: taskLabels.taskId })
+            .from(taskLabels)
+            .where(eq(taskLabels.labelId, labelId));
+
+        const ids = taskIdsWithLabel.map(t => t.taskId);
+        if (ids.length > 0) {
+            conditions.push(inArray(tasks.id, ids));
+        } else {
+            return []; // No tasks with this label
+        }
     }
 
     const now = new Date();
@@ -220,8 +244,85 @@ export async function deleteTask(id: number) {
 }
 
 export async function toggleTaskCompletion(id: number, isCompleted: boolean) {
+    const task = await getTask(id);
+    if (!task) return;
+
+    if (isCompleted && task.isRecurring && task.recurringRule) {
+        const { RRule } = await import("rrule");
+        const rule = RRule.fromString(task.recurringRule);
+        const nextDate = rule.after(new Date(), true); // Get next occurrence
+
+        if (nextDate) {
+            // Create next task
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { id: _id, createdAt: _createdAt, updatedAt: _updatedAt, completedAt: _completedAt, isCompleted: _isCompleted, ...taskData } = task;
+
+            // Remove labels from taskData as they are handled separately
+            const { labels, ...dataToCopy } = taskData;
+
+            await createTask({
+                ...dataToCopy,
+                dueDate: nextDate,
+                isCompleted: false,
+                completedAt: null,
+                labelIds: labels.map((l) => l.id).filter((id): id is number => id !== null)
+            });
+        }
+    }
+
     await updateTask(id, {
         isCompleted,
         completedAt: isCompleted ? new Date() : null
     });
+}
+
+export async function getSubtasks(taskId: number) {
+    const result = await db.select().from(tasks).where(eq(tasks.parentId, taskId)).orderBy(tasks.createdAt);
+    return result;
+}
+
+export async function createSubtask(parentId: number, title: string) {
+    await db.insert(tasks).values({
+        title,
+        parentId,
+        listId: null, // Subtasks don't necessarily belong to a list directly, or inherit? Schema says listId is optional? Let's check schema.
+        // Schema: listId references lists.id. It's not notNull.
+        // But wait, if I look at schema: listId: integer("list_id").references(...)
+        // It doesn't say notNull(). So it's nullable.
+    });
+    revalidatePath("/");
+}
+
+export async function updateSubtask(id: number, isCompleted: boolean) {
+    await db.update(tasks).set({
+        isCompleted,
+        completedAt: isCompleted ? new Date() : null
+    }).where(eq(tasks.id, id));
+    revalidatePath("/");
+}
+
+export async function deleteSubtask(id: number) {
+    await db.delete(tasks).where(eq(tasks.id, id));
+    revalidatePath("/");
+}
+
+export async function searchTasks(query: string) {
+    if (!query || query.trim().length === 0) return [];
+
+    const lowerQuery = `%${query.toLowerCase()}%`;
+
+    const result = await db.select({
+        id: tasks.id,
+        title: tasks.title,
+        description: tasks.description,
+        listId: tasks.listId,
+        isCompleted: tasks.isCompleted
+    })
+        .from(tasks)
+        .where(
+            sql`lower(${tasks.title}) LIKE ${lowerQuery} OR lower(${tasks.description}) LIKE ${lowerQuery}`
+        )
+        .limit(10);
+
+    return result;
 }

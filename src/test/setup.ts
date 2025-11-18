@@ -6,21 +6,21 @@ mock.module("better-sqlite3", () => {
         default: class Database {
             private db: BunDatabase;
 
-            constructor(filename: string) {
+            constructor() {
                 this.db = new BunDatabase(":memory:");
             }
 
             prepare(sql: string) {
                 const stmt = this.db.prepare(sql);
                 return {
-                    get: (...args: any[]) => stmt.get(...args),
-                    all: (...args: any[]) => stmt.all(...args),
-                    run: (...args: any[]) => stmt.run(...args),
-                    values: (...args: any[]) => stmt.values(...args),
+                    get: (...args: unknown[]) => stmt.get(...(args as Parameters<typeof stmt.get>)),
+                    all: (...args: unknown[]) => stmt.all(...(args as Parameters<typeof stmt.all>)),
+                    run: (...args: unknown[]) => stmt.run(...(args as Parameters<typeof stmt.run>)),
+                    values: (...args: unknown[]) => stmt.values(...(args as Parameters<typeof stmt.values>)),
                     raw: () => ({
-                        all: (...args: any[]) => stmt.values(...args),
-                        get: (...args: any[]) => stmt.values(...args)[0],
-                        run: (...args: any[]) => stmt.run(...args),
+                        all: (...args: unknown[]) => stmt.values(...(args as Parameters<typeof stmt.values>)),
+                        get: (...args: unknown[]) => stmt.values(...(args as Parameters<typeof stmt.values>))[0],
+                        run: (...args: unknown[]) => stmt.run(...(args as Parameters<typeof stmt.run>)),
                     }),
                 };
             }

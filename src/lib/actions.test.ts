@@ -1,9 +1,8 @@
 
-import { describe, expect, it, beforeAll, afterAll, mock } from "bun:test";
+import { describe, expect, it, beforeAll, mock } from "bun:test";
 import { createTask, getTasks, updateTask, deleteTask, getTask } from "./actions";
 import { db } from "@/db";
-import { tasks } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 
 mock.module("next/cache", () => ({
     revalidatePath: () => { },

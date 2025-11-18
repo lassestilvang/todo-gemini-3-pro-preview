@@ -46,6 +46,7 @@ export const labels = sqliteTable("labels", {
     id: integer("id").primaryKey({ autoIncrement: true }),
     name: text("name").notNull(),
     color: text("color").default("#000000"),
+    icon: text("icon"),
 });
 
 export const taskLabels = sqliteTable("task_labels", {

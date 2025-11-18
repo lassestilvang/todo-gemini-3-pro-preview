@@ -13,8 +13,36 @@ import {
     Star,
     Plus,
     Hash,
+    MoreHorizontal
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+
+import { ManageListDialog } from "@/components/tasks/ManageListDialog";
+import { ManageLabelDialog } from "@/components/tasks/ManageLabelDialog";
+import { useState } from "react";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+import { SearchDialog } from "@/components/tasks/SearchDialog";
+
+type List = {
+    id: number;
+    name: string;
+    color: string | null;
+    icon: string | null;
+    slug: string;
+};
+
+type Label = {
+    id: number;
+    name: string;
+    color: string | null;
+    icon: string | null;
+};
 
 const mainNav = [
     { name: "Inbox", href: "/inbox", icon: Inbox, color: "text-blue-500" },
@@ -24,8 +52,10 @@ const mainNav = [
     { name: "All Tasks", href: "/all", icon: ListTodo, color: "text-gray-500" },
 ];
 
-export function AppSidebar({ className }: { className?: string }) {
+export function AppSidebar({ className, lists, labels }: { className?: string; lists: List[]; labels: Label[] }) {
     const pathname = usePathname();
+    const [editingList, setEditingList] = useState<List | null>(null);
+    const [editingLabel, setEditingLabel] = useState<Label | null>(null);
 
     return (
         <div className={cn("pb-12 w-64 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60", className)}>
@@ -34,6 +64,9 @@ export function AppSidebar({ className }: { className?: string }) {
                     <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
                         Planner
                     </h2>
+                    <div className="px-4 mb-4">
+                        <SearchDialog />
+                    </div>
                     <div className="space-y-1">
                         {mainNav.map((item) => (
                             <Button
@@ -56,39 +89,119 @@ export function AppSidebar({ className }: { className?: string }) {
                         <h2 className="text-lg font-semibold tracking-tight">
                             Lists
                         </h2>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Plus className="h-4 w-4" />
-                            <span className="sr-only">Add List</span>
-                        </Button>
+                        <ManageListDialog
+                            trigger={
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <Plus className="h-4 w-4" />
+                                    <span className="sr-only">Add List</span>
+                                </Button>
+                            }
+                        />
                     </div>
                     <ScrollArea className="h-[300px] px-1">
                         <div className="space-y-1 p-2">
-                            {/* TODO: Map through user lists */}
-                            <Button variant="ghost" className="w-full justify-start font-normal">
-                                <div className="mr-2 h-3 w-3 rounded-full bg-red-500" />
-                                Personal
-                            </Button>
-                            <Button variant="ghost" className="w-full justify-start font-normal">
-                                <div className="mr-2 h-3 w-3 rounded-full bg-green-500" />
-                                Work
-                            </Button>
+                            {lists.map((list) => (
+                                <div key={list.id} className="group flex items-center justify-between hover:bg-accent hover:text-accent-foreground rounded-md">
+                                    <Button
+                                        variant="ghost"
+                                        className={cn(
+                                            "w-full justify-start font-normal hover:bg-transparent",
+                                            pathname === `/lists/${list.id}` ? "bg-secondary" : ""
+                                        )}
+                                        asChild
+                                    >
+                                        <Link href={`/lists/${list.id}`}>
+                                            {/* We need to map icon string to component or just use a generic one if not found */}
+                                            {/* For simplicity, using a colored dot or the icon if we can map it dynamically */}
+                                            {/* Since we can't easily map string to component dynamically without a map, I'll use the dot for now or try to map it */}
+                                            <div
+                                                className="mr-2 h-3 w-3 rounded-full"
+                                                style={{ backgroundColor: list.color || "#000000" }}
+                                            />
+                                            {list.name}
+                                        </Link>
+                                    </Button>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 mr-1">
+                                                <MoreHorizontal className="h-3 w-3" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={() => setEditingList(list)}>
+                                                Edit
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                            ))}
                         </div>
                     </ScrollArea>
                 </div>
                 <Separator />
                 <div className="px-3 py-2">
-                    <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
-                        Labels
-                    </h2>
-                    <div className="space-y-1">
-                        {/* TODO: Map through labels */}
-                        <Button variant="ghost" className="w-full justify-start font-normal">
-                            <Hash className="mr-2 h-4 w-4 text-muted-foreground" />
-                            Urgent
-                        </Button>
+                    <div className="flex items-center justify-between px-4">
+                        <h2 className="text-lg font-semibold tracking-tight">
+                            Labels
+                        </h2>
+                        <ManageLabelDialog
+                            trigger={
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <Plus className="h-4 w-4" />
+                                    <span className="sr-only">Add Label</span>
+                                </Button>
+                            }
+                        />
+                    </div>
+                    <div className="space-y-1 p-2">
+                        {labels.map((label) => (
+                            <div key={label.id} className="group flex items-center justify-between hover:bg-accent hover:text-accent-foreground rounded-md">
+                                <Button
+                                    variant="ghost"
+                                    className={cn(
+                                        "w-full justify-start font-normal hover:bg-transparent",
+                                        pathname === `/labels/${label.id}` ? "bg-secondary" : ""
+                                    )}
+                                    asChild
+                                >
+                                    <Link href={`/labels/${label.id}`}>
+                                        <Hash className="mr-2 h-4 w-4" style={{ color: label.color || "#000000" }} />
+                                        {label.name}
+                                    </Link>
+                                </Button>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 mr-1">
+                                            <MoreHorizontal className="h-3 w-3" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => setEditingLabel(label)}>
+                                            Edit
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>
+
+            {/* Edit Dialogs */}
+            {editingList && (
+                <ManageListDialog
+                    list={editingList}
+                    open={!!editingList}
+                    onOpenChange={(open) => !open && setEditingList(null)}
+                />
+            )}
+            {editingLabel && (
+                <ManageLabelDialog
+                    label={editingLabel}
+                    open={!!editingLabel}
+                    onOpenChange={(open) => !open && setEditingLabel(null)}
+                />
+            )}
         </div>
     );
 }
