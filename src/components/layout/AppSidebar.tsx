@@ -60,11 +60,11 @@ export function AppSidebar({ className, lists, labels }: { className?: string; l
     return (
         <div className={cn("pb-12 w-64 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60", className)}>
             <div className="space-y-4 py-4">
-                <div className="px-3 py-2">
+                <div className="pl-3 pr-6 py-2">
                     <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
                         Planner
                     </h2>
-                    <div className="px-4 mb-4">
+                    <div className="mb-4">
                         <SearchDialog />
                     </div>
                     <div className="space-y-1">
@@ -84,7 +84,7 @@ export function AppSidebar({ className, lists, labels }: { className?: string; l
                     </div>
                 </div>
                 <Separator />
-                <div className="px-3 py-2">
+                <div className="pl-3 pr-6 py-2">
                     <div className="flex items-center justify-between px-4">
                         <h2 className="text-lg font-semibold tracking-tight">
                             Lists
@@ -139,7 +139,7 @@ export function AppSidebar({ className, lists, labels }: { className?: string; l
                     </ScrollArea>
                 </div>
                 <Separator />
-                <div className="px-3 py-2">
+                <div className="pl-3 pr-6 py-2">
                     <div className="flex items-center justify-between px-4">
                         <h2 className="text-lg font-semibold tracking-tight">
                             Labels

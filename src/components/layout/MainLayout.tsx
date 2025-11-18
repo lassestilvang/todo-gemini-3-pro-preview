@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { AppSidebar } from "./AppSidebar";
-import { TaskDetailSheet } from "@/components/tasks/TaskDetailSheet";
+import { TaskEditModalWrapper } from "@/components/tasks/TaskEditModalWrapper";
 
 import { getLists, getLabels } from "@/lib/actions";
 
@@ -13,11 +13,11 @@ export async function MainLayout({ children }: { children: React.ReactNode }) {
     return (
         <div className="flex h-screen overflow-hidden bg-background">
             <AppSidebar lists={lists} labels={labels} />
-            <main className="flex-1 overflow-y-auto">
+            <main className="flex-1 overflow-y-auto pl-20">
                 {children}
             </main>
             <Suspense fallback={null}>
-                <TaskDetailSheet />
+                <TaskEditModalWrapper />
             </Suspense>
         </div>
     );

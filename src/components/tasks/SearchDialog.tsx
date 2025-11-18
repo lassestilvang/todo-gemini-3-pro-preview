@@ -60,7 +60,7 @@ export function SearchDialog() {
         <>
             <Button
                 variant="outline"
-                className="w-full justify-start text-muted-foreground relative h-9 sm:pr-12 md:w-40 lg:w-64"
+                className="w-full justify-start text-muted-foreground relative h-9 sm:pr-12"
                 onClick={() => setOpen(true)}
             >
                 <Search className="mr-2 h-4 w-4" />

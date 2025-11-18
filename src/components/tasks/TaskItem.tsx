@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { Calendar, Flag, Clock, Repeat } from "lucide-react";
 import { toggleTaskCompletion } from "@/lib/actions";
-import { useRouter } from "next/navigation";
+
 
 // Define a type for the task prop based on the schema or a shared type
 // For now, I'll define a simplified interface matching the schema
@@ -30,7 +30,6 @@ interface TaskItemProps {
 
 export function TaskItem({ task }: TaskItemProps) {
     const [isCompleted, setIsCompleted] = useState(task.isCompleted || false);
-    const router = useRouter();
 
     const handleToggle = async (checked: boolean) => {
         setIsCompleted(checked);
@@ -52,7 +51,6 @@ export function TaskItem({ task }: TaskItemProps) {
                 "group flex items-center gap-3 rounded-xl border p-4 hover:bg-accent/40 transition-all duration-200 cursor-pointer hover:shadow-sm bg-card",
                 isCompleted && "opacity-60 bg-muted/30"
             )}
-            onClick={() => router.push(`?taskId=${task.id}`)}
         >
             <Checkbox
                 checked={isCompleted}
