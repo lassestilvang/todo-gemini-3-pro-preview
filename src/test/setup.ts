@@ -1,4 +1,4 @@
-import { expect } from "bun:test";
+import { expect, mock } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import * as matchers from "@testing-library/jest-dom/matchers";
 import { db } from "@/db";
@@ -9,6 +9,11 @@ GlobalRegistrator.register();
 
 // Extend expect with jest-dom matchers
 expect.extend(matchers);
+
+// Mock next/cache globally
+mock.module("next/cache", () => ({
+    revalidatePath: () => { },
+}));
 
 // Shared DB setup helper
 export async function setupTestDb() {
