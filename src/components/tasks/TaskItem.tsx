@@ -4,8 +4,9 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { Calendar, Flag, Clock, Repeat } from "lucide-react";
+import { Calendar, Flag, Clock, Repeat, AlertCircle } from "lucide-react";
 import { toggleTaskCompletion } from "@/lib/actions";
+import { Badge } from "@/components/ui/badge";
 
 
 // Define a type for the task prop based on the schema or a shared type
@@ -16,6 +17,7 @@ export interface Task {
     description: string | null;
     priority: "none" | "low" | "medium" | "high" | null;
     dueDate: Date | null;
+    deadline: Date | null;
     isCompleted: boolean | null;
     estimateMinutes: number | null;
     isRecurring: boolean | null;
@@ -44,6 +46,7 @@ export function TaskItem({ task }: TaskItemProps) {
     };
 
     const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && !isCompleted;
+    const isDeadlineExceeded = task.deadline && new Date(task.deadline) < new Date() && !isCompleted;
 
     return (
         <div
@@ -70,6 +73,12 @@ export function TaskItem({ task }: TaskItemProps) {
                             {format(task.dueDate, "MMM d")}
                         </div>
                     )}
+                    {task.deadline && (
+                        <div className={cn("flex items-center gap-1", isDeadlineExceeded ? "text-red-600 font-bold" : "text-orange-500")}>
+                            <AlertCircle className="h-3 w-3" />
+                            {format(task.deadline, "MMM d")}
+                        </div>
+                    )}
                     {task.priority && task.priority !== "none" && (
                         <div className={cn("flex items-center gap-1", priorityColors[task.priority])}>
                             <Flag className="h-3 w-3" />
@@ -89,6 +98,24 @@ export function TaskItem({ task }: TaskItemProps) {
                         </div>
                     )}
                 </div>
+                {task.labels && task.labels.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                        {task.labels.map(label => (
+                            <Badge
+                                key={label.id}
+                                variant="outline"
+                                style={{
+                                    borderColor: (label.color || '#000000') + '40',
+                                    backgroundColor: (label.color || '#000000') + '10',
+                                    color: label.color || '#000000'
+                                }}
+                                className="text-[10px] px-1.5 py-0 h-5 font-normal border"
+                            >
+                                {label.name}
+                            </Badge>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );

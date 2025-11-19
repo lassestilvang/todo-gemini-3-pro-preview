@@ -1,6 +1,6 @@
 
 import { describe, expect, it, beforeAll, mock } from "bun:test";
-import { createTask, getTasks, updateTask, deleteTask, getTask } from "./actions";
+import { createTask, getTasks, updateTask, deleteTask, getTask, createReminder, getReminders, getTaskLogs } from "./actions";
 import { db } from "@/db";
 import { sql } from "drizzle-orm";
 
@@ -43,14 +43,16 @@ describe("Server Actions", () => {
     estimate_minutes INTEGER,
     actual_minutes INTEGER,
     created_at INTEGER DEFAULT(strftime('%s', 'now')),
-    updated_at INTEGER DEFAULT(strftime('%s', 'now'))
+    updated_at INTEGER DEFAULT(strftime('%s', 'now')),
+    deadline INTEGER
 );
 `);
         db.run(sql`
             CREATE TABLE IF NOT EXISTS labels(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
-    color TEXT DEFAULT '#000000'
+    color TEXT DEFAULT '#000000',
+    icon TEXT
 );
 `);
         db.run(sql`
@@ -66,6 +68,15 @@ describe("Server Actions", () => {
     task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
     action TEXT NOT NULL,
     details TEXT,
+    created_at INTEGER DEFAULT(strftime('%s', 'now'))
+);
+`);
+        db.run(sql`
+            CREATE TABLE IF NOT EXISTS reminders(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    remind_at INTEGER NOT NULL,
+    is_sent INTEGER DEFAULT 0,
     created_at INTEGER DEFAULT(strftime('%s', 'now'))
 );
 `);
@@ -107,5 +118,33 @@ describe("Server Actions", () => {
         await deleteTask(createdTaskId);
         const task = await getTask(createdTaskId);
         expect(task).toBeNull();
+    });
+
+    it("should create a task with deadline", async () => {
+        const deadline = new Date();
+        deadline.setMilliseconds(0);
+        const task = await createTask({
+            title: "Deadline Task",
+            deadline
+        });
+        expect(task.deadline).toBeDefined();
+        expect(task.deadline?.getTime()).toBe(deadline.getTime());
+    });
+
+    it("should create and get reminders", async () => {
+        const task = await createTask({ title: "Reminder Task" });
+        const remindAt = new Date();
+        remindAt.setMilliseconds(0);
+        await createReminder(task.id, remindAt);
+        const reminders = await getReminders(task.id);
+        expect(reminders.length).toBe(1);
+        expect(reminders[0].remindAt.getTime()).toBe(remindAt.getTime());
+    });
+
+    it("should log task creation", async () => {
+        const task = await createTask({ title: "Logged Task" });
+        const logs = await getTaskLogs(task.id);
+        expect(logs.length).toBeGreaterThan(0);
+        expect(logs[0].action).toBe("created");
     });
 });

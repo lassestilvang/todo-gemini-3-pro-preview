@@ -35,6 +35,7 @@ export const tasks = sqliteTable("tasks", {
     updatedAt: integer("updated_at", { mode: "timestamp" })
         .notNull()
         .default(sql`(unixepoch())`),
+    deadline: integer("deadline", { mode: "timestamp" }),
 }, (table) => ({
     parentReference: foreignKey({
         columns: [table.parentId],
@@ -59,6 +60,18 @@ export const taskLabels = sqliteTable("task_labels", {
 }, (t) => ({
     pk: primaryKey({ columns: [t.taskId, t.labelId] }),
 }));
+
+export const reminders = sqliteTable("reminders", {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    taskId: integer("task_id")
+        .notNull()
+        .references(() => tasks.id, { onDelete: "cascade" }),
+    remindAt: integer("remind_at", { mode: "timestamp" }).notNull(),
+    isSent: integer("is_sent", { mode: "boolean" }).default(false),
+    createdAt: integer("created_at", { mode: "timestamp" })
+        .notNull()
+        .default(sql`(unixepoch())`),
+});
 
 export const taskLogs = sqliteTable("task_logs", {
     id: integer("id").primaryKey({ autoIncrement: true }),

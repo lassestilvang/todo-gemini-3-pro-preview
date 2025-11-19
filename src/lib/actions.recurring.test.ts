@@ -37,14 +37,16 @@ describe("Recurring Tasks Logic", () => {
     estimate_minutes INTEGER,
     actual_minutes INTEGER,
     created_at INTEGER DEFAULT(strftime('%s', 'now')),
-    updated_at INTEGER DEFAULT(strftime('%s', 'now'))
+    updated_at INTEGER DEFAULT(strftime('%s', 'now')),
+    deadline INTEGER
 );
 `);
         await db.run(sql`
             CREATE TABLE IF NOT EXISTS labels(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
-    color TEXT DEFAULT '#000000'
+    color TEXT DEFAULT '#000000',
+    icon TEXT
 );
 `);
         await db.run(sql`
@@ -63,6 +65,16 @@ describe("Recurring Tasks Logic", () => {
     created_at INTEGER DEFAULT(strftime('%s', 'now'))
 );
 `);
+        await db.run(sql`
+            CREATE TABLE IF NOT EXISTS reminders(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    remind_at INTEGER NOT NULL,
+    is_sent INTEGER DEFAULT 0,
+    created_at INTEGER DEFAULT(strftime('%s', 'now'))
+);
+`);
+
 
         // Clean up any existing test tasks
         await db.delete(tasks).where(eq(tasks.title, "Test Recurring Task"));

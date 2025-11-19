@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import {
     Calendar,
     CalendarDays,
@@ -59,9 +59,9 @@ export function AppSidebar({ className, lists, labels }: { className?: string; l
     const [editingLabel, setEditingLabel] = useState<Label | null>(null);
 
     return (
-        <div className={cn("pb-12 w-64 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60", className)}>
+        <div className={cn("pb-12 w-64 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 h-screen overflow-y-auto", className)}>
             <div className="space-y-4 py-4">
-                <div className="pl-3 pr-6 py-2">
+                <div className="pl-3 pr-3 py-2">
                     <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
                         Planner
                     </h2>
@@ -99,43 +99,41 @@ export function AppSidebar({ className, lists, labels }: { className?: string; l
                             }
                         />
                     </div>
-                    <ScrollArea className="h-[300px] px-1">
-                        <div className="space-y-1 p-2">
-                            {lists.map((list) => (
-                                <div key={list.id} className="group flex items-center justify-between hover:bg-accent hover:text-accent-foreground rounded-md">
-                                    <Button
-                                        variant="ghost"
-                                        className={cn(
-                                            "w-full justify-start font-normal hover:bg-transparent",
-                                            pathname === `/lists/${list.id}` ? "bg-secondary" : ""
-                                        )}
-                                        asChild
-                                    >
-                                        <Link href={`/lists/${list.id}`}>
-                                            {/* We need to map icon string to component or just use a generic one if not found */}
-                                            {(() => {
-                                                const Icon = getListIcon(list.icon);
-                                                return <Icon className="mr-2 h-4 w-4" style={{ color: list.color || "#000000" }} />;
-                                            })()}
-                                            {list.name}
-                                        </Link>
-                                    </Button>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 mr-1">
-                                                <MoreHorizontal className="h-3 w-3" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuItem onClick={() => setEditingList(list)}>
-                                                Edit
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </div>
-                            ))}
-                        </div>
-                    </ScrollArea>
+                    <div className="space-y-1 p-2">
+                        {lists.map((list) => (
+                            <div key={list.id} className="group flex items-center justify-between hover:bg-accent hover:text-accent-foreground rounded-md">
+                                <Button
+                                    variant="ghost"
+                                    className={cn(
+                                        "w-full justify-start font-normal hover:bg-transparent",
+                                        pathname === `/lists/${list.id}` ? "bg-secondary" : ""
+                                    )}
+                                    asChild
+                                >
+                                    <Link href={`/lists/${list.id}`}>
+                                        {/* We need to map icon string to component or just use a generic one if not found */}
+                                        {(() => {
+                                            const Icon = getListIcon(list.icon);
+                                            return <Icon className="mr-2 h-4 w-4" style={{ color: list.color || "#000000" }} />;
+                                        })()}
+                                        {list.name}
+                                    </Link>
+                                </Button>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 mr-1">
+                                            <MoreHorizontal className="h-3 w-3" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => setEditingList(list)}>
+                                            Edit
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        ))}
+                    </div>
                 </div>
                 <Separator />
                 <div className="pl-3 pr-6 py-2">
