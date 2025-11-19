@@ -18,8 +18,9 @@ export async function getList(id: number) {
 }
 
 export async function createList(data: typeof lists.$inferInsert) {
-    await db.insert(lists).values(data);
+    const result = await db.insert(lists).values(data).returning();
     revalidatePath("/");
+    return result[0];
 }
 
 export async function updateList(id: number, data: Partial<typeof lists.$inferInsert>) {

@@ -12,7 +12,6 @@ import {
     ListTodo,
     Star,
     Plus,
-    Hash,
     MoreHorizontal
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";

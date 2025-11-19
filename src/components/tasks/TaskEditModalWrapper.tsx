@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { getTask } from "@/lib/actions";
 import { TaskDialog } from "./TaskDialog";
 
@@ -14,6 +14,7 @@ type TaskType = {
     dueDate: Date | null;
     isRecurring: boolean | null;
     recurringRule: string | null;
+    deadline: Date | null;
     labels?: Array<{ id: number; name: string; color: string | null }>;
 };
 
@@ -23,6 +24,13 @@ export function TaskEditModalWrapper() {
     const router = useRouter();
     const [task, setTask] = useState<TaskType | null>(null);
     const [isOpen, setIsOpen] = useState(false);
+
+    const handleClose = useCallback(() => {
+        setIsOpen(false);
+        const params = new URLSearchParams(searchParams.toString());
+        params.delete("taskId");
+        router.push(`?${params.toString()}`);
+    }, [searchParams, router]);
 
     useEffect(() => {
         if (taskIdParam) {
@@ -40,17 +48,12 @@ export function TaskEditModalWrapper() {
                 });
             }
         } else {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setIsOpen(false);
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setTask(null);
         }
-    }, [taskIdParam]);
-
-    const handleClose = () => {
-        setIsOpen(false);
-        const params = new URLSearchParams(searchParams.toString());
-        params.delete("taskId");
-        router.push(`?${params.toString()}`);
-    };
+    }, [taskIdParam, handleClose]);
 
     if (!task || !isOpen) return null;
 

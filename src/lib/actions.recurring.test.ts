@@ -3,7 +3,7 @@ import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import { db } from "@/db";
 import { tasks } from "@/db/schema";
 import { toggleTaskCompletion, createTask, getTask } from "@/lib/actions";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { setupTestDb } from "@/test/setup";
 
 describe("Recurring Tasks Logic", () => {

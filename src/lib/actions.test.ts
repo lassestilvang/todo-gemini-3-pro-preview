@@ -1,8 +1,5 @@
-
 import { describe, expect, it, beforeAll, mock } from "bun:test";
 import { createTask, getTasks, updateTask, deleteTask, getTask, createReminder, getReminders, getTaskLogs } from "./actions";
-import { db } from "@/db";
-import { sql } from "drizzle-orm";
 import { setupTestDb } from "@/test/setup";
 
 mock.module("next/cache", () => ({
