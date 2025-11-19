@@ -29,7 +29,8 @@ import {
 import { SearchDialog } from "@/components/tasks/SearchDialog";
 import { getListIcon, getLabelIcon } from "@/lib/icons";
 import { PlanningRitual } from "@/components/tasks/PlanningRitual";
-import { Sunrise, Sunset } from "lucide-react";
+import { SmartScheduleDialog } from "@/components/tasks/SmartScheduleDialog";
+import { Sunrise, Sunset, Sparkles } from "lucide-react";
 
 type List = {
     id: number;
@@ -59,6 +60,7 @@ export function AppSidebar({ className, lists, labels }: { className?: string; l
     const [editingList, setEditingList] = useState<List | null>(null);
     const [editingLabel, setEditingLabel] = useState<Label | null>(null);
     const [planningRitualOpen, setPlanningRitualOpen] = useState(false);
+    const [smartScheduleOpen, setSmartScheduleOpen] = useState(false);
     const [ritualType, setRitualType] = useState<"morning" | "evening">("morning");
 
     return (
@@ -112,6 +114,15 @@ export function AppSidebar({ className, lists, labels }: { className?: string; l
                         >
                             <Sunset className="mr-2 h-3 w-3 text-purple-500" />
                             Evening Review
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start text-xs"
+                            onClick={() => setSmartScheduleOpen(true)}
+                        >
+                            <Sparkles className="mr-2 h-3 w-3 text-indigo-500" />
+                            Smart Schedule
                         </Button>
                     </div>
                 </div>
@@ -239,6 +250,12 @@ export function AppSidebar({ className, lists, labels }: { className?: string; l
                 open={planningRitualOpen}
                 onOpenChange={setPlanningRitualOpen}
                 type={ritualType}
+            />
+
+            {/* Smart Schedule Dialog */}
+            <SmartScheduleDialog
+                open={smartScheduleOpen}
+                onOpenChange={setSmartScheduleOpen}
             />
         </div>
     );

@@ -11,6 +11,9 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { parseNaturalLanguage } from "@/lib/nlp-parser";
 import { Badge } from "@/components/ui/badge";
+import { extractDeadline } from "@/lib/smart-scheduler";
+import { Sparkles, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export function CreateTaskInput({ listId }: { listId?: number }) {
     const [title, setTitle] = useState("");
@@ -19,6 +22,7 @@ export function CreateTaskInput({ listId }: { listId?: number }) {
     const [energyLevel, setEnergyLevel] = useState<"high" | "medium" | "low" | undefined>(undefined);
     const [context, setContext] = useState<"computer" | "phone" | "errands" | "meeting" | "home" | "anywhere" | undefined>(undefined);
     const [isExpanded, setIsExpanded] = useState(false);
+    const [isAiLoading, setIsAiLoading] = useState(false);
 
     // Parse natural language input
     useEffect(() => {
@@ -30,6 +34,24 @@ export function CreateTaskInput({ listId }: { listId?: number }) {
             if (parsed.context && !context) setContext(parsed.context);
         }
     }, [title]);
+
+    const handleAiEnhance = async () => {
+        if (!title.trim()) return;
+        setIsAiLoading(true);
+        try {
+            const result = await extractDeadline(title);
+            if (result?.date) {
+                setDueDate(result.date);
+                toast.success(`Deadline detected: ${format(result.date, "MMM d")}`);
+            } else {
+                toast.info("No deadline found in text.");
+            }
+        } catch (error) {
+            toast.error("Failed to extract deadline. Check API key.");
+        } finally {
+            setIsAiLoading(false);
+        }
+    };
 
     const handleSubmit = async (e?: React.FormEvent) => {
         e?.preventDefault();
@@ -145,6 +167,24 @@ export function CreateTaskInput({ listId }: { listId?: number }) {
                                         </div>
                                     </PopoverContent>
                                 </Popover>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleAiEnhance}
+                                    disabled={isAiLoading || !title.trim()}
+                                    className="text-purple-500 hover:text-purple-600 hover:bg-purple-50"
+                                >
+                                    {isAiLoading ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Sparkles className="h-4 w-4" />
+                                    )}
+                                    <span className="ml-2 sr-only">AI Detect</span>
+                                </Button>
                             </div>
 
                             <div className="flex items-center gap-2">
