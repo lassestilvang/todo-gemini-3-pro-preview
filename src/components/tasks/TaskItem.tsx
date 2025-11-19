@@ -42,6 +42,18 @@ export function TaskItem({ task }: TaskItemProps) {
             return;
         }
         setIsCompleted(checked);
+
+        if (checked) {
+            import("canvas-confetti").then((confetti) => {
+                confetti.default({
+                    particleCount: 30,
+                    spread: 50,
+                    origin: { y: 0.7 },
+                    colors: ['#5b21b6', '#7c3aed', '#a78bfa'] // Purple theme
+                });
+            });
+        }
+
         await toggleTaskCompletion(task.id, checked);
     };
 

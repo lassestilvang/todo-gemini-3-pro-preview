@@ -11,6 +11,12 @@ if (process.env.NODE_ENV === "test") {
     const sqlite = new Database(":memory:");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     db = drizzle(sqlite, { schema }) as any;
+} else if (typeof Bun !== "undefined") {
+    const { Database } = await import("bun:sqlite");
+    const { drizzle } = await import("drizzle-orm/bun-sqlite");
+    const sqlite = new Database("sqlite.db");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    db = drizzle(sqlite, { schema }) as any;
 } else {
     const { default: Database } = await import("better-sqlite3");
     const { drizzle } = await import("drizzle-orm/better-sqlite3");

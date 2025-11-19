@@ -79,7 +79,6 @@ export const reminders = sqliteTable("reminders", {
 export const taskLogs = sqliteTable("task_logs", {
     id: integer("id").primaryKey({ autoIncrement: true }),
     taskId: integer("task_id")
-        .notNull()
         .references(() => tasks.id, { onDelete: "cascade" }),
     action: text("action").notNull(), // e.g., "created", "updated", "completed"
     details: text("details"), // JSON string or text description of change
@@ -121,3 +120,33 @@ export const templates = sqliteTable("templates", {
         .notNull()
         .default(sql`(unixepoch())`),
 });
+
+export const userStats = sqliteTable("user_stats", {
+    id: integer("id").primaryKey().default(1), // Singleton row
+    xp: integer("xp").notNull().default(0),
+    level: integer("level").notNull().default(1),
+    lastLogin: integer("last_login", { mode: "timestamp" }),
+    currentStreak: integer("current_streak").notNull().default(0),
+    longestStreak: integer("longest_streak").notNull().default(0),
+});
+
+export const achievements = sqliteTable("achievements", {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    description: text("description").notNull(),
+    icon: text("icon").notNull(),
+    conditionType: text("condition_type").notNull(), // 'count_total', 'streak', 'time'
+    conditionValue: integer("condition_value").notNull(),
+    xpReward: integer("xp_reward").notNull(),
+});
+
+export const userAchievements = sqliteTable("user_achievements", {
+    achievementId: text("achievement_id")
+        .notNull()
+        .references(() => achievements.id, { onDelete: "cascade" }),
+    unlockedAt: integer("unlocked_at", { mode: "timestamp" })
+        .notNull()
+        .default(sql`(unixepoch())`),
+}, (t) => ({
+    pk: primaryKey({ columns: [t.achievementId] }),
+}));

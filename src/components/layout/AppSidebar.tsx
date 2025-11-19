@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { XPBar } from "@/components/gamification/XPBar";
 
 import {
     Calendar,
@@ -31,7 +32,7 @@ import { getListIcon, getLabelIcon } from "@/lib/icons";
 import { PlanningRitual } from "@/components/tasks/PlanningRitual";
 import { SmartScheduleDialog } from "@/components/tasks/SmartScheduleDialog";
 import { TemplateManager } from "@/components/tasks/TemplateManager";
-import { Sunrise, Sunset, Sparkles, Calendar as CalendarIcon } from "lucide-react";
+import { Sunrise, Sunset, Sparkles, Calendar as CalendarIcon, Trophy } from "lucide-react";
 
 type List = {
     id: number;
@@ -53,6 +54,7 @@ const mainNav = [
     { name: "Today", href: "/today", icon: Star, color: "text-yellow-500" },
     { name: "Next 7 Days", href: "/next-7-days", icon: Calendar, color: "text-purple-500" },
     { name: "Calendar", href: "/calendar", icon: CalendarIcon, color: "text-indigo-500" },
+    { name: "Achievements", href: "/achievements", icon: Trophy, color: "text-yellow-500" },
     { name: "Upcoming", href: "/upcoming", icon: CalendarDays, color: "text-pink-500" },
     { name: "All Tasks", href: "/all", icon: ListTodo, color: "text-gray-500" },
 ];
@@ -72,6 +74,7 @@ export function AppSidebar({ className, lists, labels }: { className?: string; l
                     <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
                         Planner
                     </h2>
+                    <XPBar />
                     <div className="mb-4">
                         <SearchDialog />
                     </div>

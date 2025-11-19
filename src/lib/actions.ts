@@ -1,10 +1,11 @@
 "use server";
 
 import { db } from "@/db";
-import { lists, tasks, labels, taskLogs, taskLabels, reminders, taskDependencies, templates } from "@/db/schema";
+import { lists, tasks, labels, taskLogs, taskLabels, reminders, taskDependencies, templates, userStats, achievements, userAchievements } from "@/db/schema";
 import { eq, and, desc, gte, lte, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { startOfDay, endOfDay, addDays } from "date-fns";
+import { calculateLevel, calculateXPForNextLevel } from "./gamification";
 
 // --- Lists ---
 
@@ -399,6 +400,14 @@ export async function toggleTaskCompletion(id: number, isCompleted: boolean) {
             });
         }
     }
+
+    // Award XP
+    const baseXP = 10;
+    let bonusXP = 0;
+    if (task.priority === "medium") bonusXP += 5;
+    if (task.priority === "high") bonusXP += 10;
+
+    await addXP(baseXP + bonusXP);
 }
 
 export async function getSubtasks(taskId: number) {
@@ -665,4 +674,116 @@ export async function instantiateTemplate(templateId: number, listId: number | n
 
     await createRecursive(data);
     revalidatePath("/");
+}
+
+// --- Gamification ---
+
+export async function getUserStats() {
+    const stats = await db.select().from(userStats).where(eq(userStats.id, 1));
+    if (stats.length === 0) {
+        // Initialize if not exists
+        const newStats = await db.insert(userStats).values({ id: 1 }).returning();
+        return newStats[0];
+    }
+    return stats[0];
+}
+
+export async function addXP(amount: number) {
+    const stats = await getUserStats();
+    const newXP = stats.xp + amount;
+    const newLevel = calculateLevel(newXP);
+
+    await db.update(userStats)
+        .set({
+            xp: newXP,
+            level: newLevel,
+        })
+        .where(eq(userStats.id, 1));
+
+    // Check for achievements
+    await checkAchievements(stats.xp + amount, stats.currentStreak);
+
+    revalidatePath("/");
+    return { newXP, newLevel, leveledUp: newLevel > stats.level };
+}
+
+export async function checkAchievements(currentXP: number, currentStreak: number) {
+    // Get all achievements
+    const allAchievements = await db.select().from(achievements);
+
+    // Get unlocked achievements
+    const unlocked = await db.select().from(userAchievements);
+    const unlockedIds = new Set(unlocked.map(u => u.achievementId));
+
+    // Get total tasks completed
+    const completedTasks = await db.select({ count: sql<number>`count(*)` })
+        .from(tasks)
+        .where(eq(tasks.isCompleted, true));
+    const totalCompleted = completedTasks[0].count;
+
+    // Get tasks completed today for "Hat Trick"
+    const todayStart = startOfDay(new Date());
+    const todayEnd = endOfDay(new Date());
+    const completedToday = await db.select({ count: sql<number>`count(*)` })
+        .from(tasks)
+        .where(and(
+            eq(tasks.isCompleted, true),
+            gte(tasks.completedAt, todayStart),
+            lte(tasks.completedAt, todayEnd)
+        ));
+    const dailyCompleted = completedToday[0].count;
+
+    for (const achievement of allAchievements) {
+        if (unlockedIds.has(achievement.id)) continue;
+
+        let unlocked = false;
+
+        switch (achievement.conditionType) {
+            case "count_total":
+                if (totalCompleted >= achievement.conditionValue) unlocked = true;
+                break;
+            case "count_daily":
+                if (dailyCompleted >= achievement.conditionValue) unlocked = true;
+                break;
+            case "streak":
+                if (currentStreak >= achievement.conditionValue) unlocked = true;
+                break;
+        }
+
+        if (unlocked) {
+            await db.insert(userAchievements).values({
+                achievementId: achievement.id
+            });
+
+            // Award XP for achievement
+            await addXP(achievement.xpReward);
+
+            // Log it
+            await db.insert(taskLogs).values({
+                taskId: null, // System log
+                action: "achievement_unlocked",
+                details: `Unlocked achievement: ${achievement.name} (+${achievement.xpReward} XP)`,
+            });
+        }
+    }
+}
+
+export async function getAchievements() {
+    return await db.select().from(achievements);
+}
+
+export async function getUserAchievements() {
+    const result = await db.select({
+        achievementId: userAchievements.achievementId,
+        unlockedAt: userAchievements.unlockedAt,
+        name: achievements.name,
+        description: achievements.description,
+        icon: achievements.icon,
+        xpReward: achievements.xpReward
+    })
+        .from(userAchievements)
+        .leftJoin(achievements, eq(userAchievements.achievementId, achievements.id))
+        .orderBy(desc(userAchievements.unlockedAt));
+
+    return result;
 }
