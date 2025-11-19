@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { lists, tasks, labels, taskLogs, taskLabels, reminders } from "@/db/schema";
+import { lists, tasks, labels, taskLogs, taskLabels, reminders, taskDependencies, templates } from "@/db/schema";
 import { eq, and, desc, gte, lte, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { startOfDay, endOfDay, addDays } from "date-fns";
@@ -121,7 +121,10 @@ export async function getTasks(listId?: number, filter?: "today" | "upcoming" | 
         estimateMinutes: tasks.estimateMinutes,
         actualMinutes: tasks.actualMinutes,
         createdAt: tasks.createdAt,
-        updatedAt: tasks.updatedAt
+        updatedAt: tasks.updatedAt,
+        energyLevel: tasks.energyLevel,
+        context: tasks.context,
+        blockedByCount: sql<number>`(SELECT COUNT(*) FROM ${taskDependencies} WHERE ${taskDependencies.taskId} = ${tasks.id})`
     }).from(tasks).where(and(...conditions)).orderBy(desc(tasks.createdAt));
 
     // Fetch labels for each task
@@ -189,7 +192,16 @@ export async function getTask(id: number) {
 
     const remindersResult = await db.select().from(reminders).where(eq(reminders.taskId, id));
 
-    return { ...task, labels: labelsResult, reminders: remindersResult };
+    const blockersResult = await db.select({
+        id: tasks.id,
+        title: tasks.title,
+        isCompleted: tasks.isCompleted,
+    })
+        .from(taskDependencies)
+        .innerJoin(tasks, eq(taskDependencies.blockerId, tasks.id))
+        .where(eq(taskDependencies.taskId, id));
+
+    return { ...task, labels: labelsResult, reminders: remindersResult, blockers: blockersResult };
 }
 
 export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: number[] }) {
@@ -357,6 +369,36 @@ export async function toggleTaskCompletion(id: number, isCompleted: boolean) {
         action: isCompleted ? "completed" : "uncompleted",
         details: isCompleted ? "Task marked as completed" : "Task marked as uncompleted",
     });
+
+    if (isCompleted) {
+        // Check if this task blocks others
+        const blockedTasks = await db.select({
+            id: tasks.id,
+            title: tasks.title
+        })
+            .from(taskDependencies)
+            .innerJoin(tasks, eq(taskDependencies.taskId, tasks.id))
+            .where(eq(taskDependencies.blockerId, id));
+
+        for (const blockedTask of blockedTasks) {
+            // Check if this was the last blocker
+            const remainingBlockers = await db.select({ count: sql<number>`count(*)` })
+                .from(taskDependencies)
+                .leftJoin(tasks, eq(taskDependencies.blockerId, tasks.id))
+                .where(and(
+                    eq(taskDependencies.taskId, blockedTask.id),
+                    eq(tasks.isCompleted, false) // Only count uncompleted blockers
+                ));
+
+            const isNowUnblocked = remainingBlockers[0].count === 0;
+
+            await db.insert(taskLogs).values({
+                taskId: blockedTask.id,
+                action: "blocker_completed",
+                details: `Blocker "${task.title}" completed.${isNowUnblocked ? " Task is now unblocked!" : ""}`,
+            });
+        }
+    }
 }
 
 export async function getSubtasks(taskId: number) {
@@ -472,4 +514,155 @@ export async function getActivityLog() {
         .leftJoin(tasks, eq(taskLogs.taskId, tasks.id))
         .orderBy(desc(taskLogs.createdAt))
         .limit(50);
+}
+
+// --- Dependencies ---
+
+export async function addDependency(taskId: number, blockerId: number) {
+    if (taskId === blockerId) throw new Error("Task cannot block itself");
+
+    // Check for circular dependency (simple check: is blocker blocked by task?)
+    const reverse = await db.select().from(taskDependencies)
+        .where(and(eq(taskDependencies.taskId, blockerId), eq(taskDependencies.blockerId, taskId)));
+
+    if (reverse.length > 0) throw new Error("Circular dependency detected");
+
+    await db.insert(taskDependencies).values({
+        taskId,
+        blockerId,
+    });
+
+    await db.insert(taskLogs).values({
+        taskId,
+        action: "dependency_added",
+        details: `Blocked by task #${blockerId}`,
+    });
+
+    revalidatePath("/");
+}
+
+export async function removeDependency(taskId: number, blockerId: number) {
+    await db.delete(taskDependencies)
+        .where(and(eq(taskDependencies.taskId, taskId), eq(taskDependencies.blockerId, blockerId)));
+
+    await db.insert(taskLogs).values({
+        taskId,
+        action: "dependency_removed",
+        details: `No longer blocked by task #${blockerId}`,
+    });
+
+    revalidatePath("/");
+}
+
+export async function getBlockers(taskId: number) {
+    const result = await db.select({
+        id: tasks.id,
+        title: tasks.title,
+        isCompleted: tasks.isCompleted,
+    })
+        .from(taskDependencies)
+        .innerJoin(tasks, eq(taskDependencies.blockerId, tasks.id))
+        .where(eq(taskDependencies.taskId, taskId));
+
+    return result;
+}
+
+export async function getBlockedTasks(blockerId: number) {
+    const result = await db.select({
+        id: tasks.id,
+        title: tasks.title,
+        isCompleted: tasks.isCompleted,
+    })
+        .from(taskDependencies)
+        .innerJoin(tasks, eq(taskDependencies.taskId, tasks.id))
+        .where(eq(taskDependencies.blockerId, blockerId));
+
+    return result;
+}
+
+// --- Templates ---
+
+export async function getTemplates() {
+    return await db.select().from(templates).orderBy(desc(templates.createdAt));
+}
+
+export async function createTemplate(name: string, content: string) {
+    await db.insert(templates).values({
+        name,
+        content,
+    });
+    revalidatePath("/");
+}
+
+export async function deleteTemplate(id: number) {
+    await db.delete(templates).where(eq(templates.id, id));
+    revalidatePath("/");
+}
+
+export async function instantiateTemplate(templateId: number, listId: number | null = null) {
+    const template = await db.select().from(templates).where(eq(templates.id, templateId)).limit(1);
+    if (template.length === 0) throw new Error("Template not found");
+
+    const data = JSON.parse(template[0].content);
+
+    // Helper to replace variables in strings
+    function replaceVariables(str: string): string {
+        if (typeof str !== 'string') return str;
+        const now = new Date();
+        const today = now.toISOString().split('T')[0];
+        const tomorrow = addDays(now, 1).toISOString().split('T')[0];
+        const nextWeek = addDays(now, 7).toISOString().split('T')[0];
+
+        return str
+            .replace(/{date}/g, today)
+            .replace(/{tomorrow}/g, tomorrow)
+            .replace(/{next_week}/g, nextWeek);
+    }
+
+    // Helper to recursively create tasks
+    async function createRecursive(taskData: any, parentId: number | null = null) {
+        const { subtasks, ...rest } = taskData;
+
+        // Process string fields for variables
+        const processedData = { ...rest };
+        if (processedData.title) processedData.title = replaceVariables(processedData.title);
+        if (processedData.description) processedData.description = replaceVariables(processedData.description);
+
+        // Clean up data for insertion
+        const insertData = {
+            ...processedData,
+            listId: parentId ? null : (listId || processedData.listId), // Only top-level tasks get the listId override
+            parentId,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        };
+
+        // Remove fields that shouldn't be directly inserted if they exist in JSON but not schema or handled differently
+        delete insertData.id;
+        delete insertData.subtasks;
+        delete insertData.isCompleted;
+        delete insertData.completedAt;
+
+        // Handle dates if they are strings after substitution (though createTask expects Date objects usually, but Drizzle handles strings for SQLite sometimes or we need to parse)
+        // Actually, if the user puts "{date}" in dueDate, it becomes a string "YYYY-MM-DD".
+        // We should check if dueDate is a string and try to parse it.
+        if (typeof insertData.dueDate === 'string') {
+            insertData.dueDate = new Date(insertData.dueDate);
+        }
+        if (typeof insertData.deadline === 'string') {
+            insertData.deadline = new Date(insertData.deadline);
+        }
+
+        const newTask = await createTask(insertData);
+
+        if (subtasks && Array.isArray(subtasks)) {
+            for (const sub of subtasks) {
+                await createRecursive(sub, newTask.id);
+            }
+        }
+        return newTask;
+    }
+
+    await createRecursive(data);
+    revalidatePath("/");
 }

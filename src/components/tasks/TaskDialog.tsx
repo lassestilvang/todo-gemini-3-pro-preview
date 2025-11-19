@@ -25,11 +25,14 @@ import { createTask, updateTask, deleteTask, getLists, getLabels } from "@/lib/a
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { X, Plus, Trash2, Focus } from "lucide-react";
-import { createSubtask, updateSubtask, deleteSubtask, getSubtasks, createReminder, deleteReminder, getReminders, getTaskLogs } from "@/lib/actions";
+import { createSubtask, updateSubtask, deleteSubtask, getSubtasks, createReminder, deleteReminder, getReminders, getTaskLogs, addDependency, removeDependency, getBlockers, searchTasks } from "@/lib/actions";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { FocusMode } from "./FocusMode";
+import { Link, Search, Lock } from "lucide-react";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 type TaskType = {
     id: number;
@@ -72,6 +75,12 @@ type LabelType = {
 };
 
 type SubtaskType = {
+    id: number;
+    title: string;
+    isCompleted: boolean | null;
+};
+
+type BlockerType = {
     id: number;
     title: string;
     isCompleted: boolean | null;
@@ -144,7 +153,32 @@ function TaskForm({ task, defaultListId, onClose }: { task?: TaskType, defaultLi
     // Focus mode state
     const [focusModeOpen, setFocusModeOpen] = useState(false);
 
+    // Dependencies state
+    const [blockers, setBlockers] = useState<BlockerType[]>([]);
+    const [blockerSearchOpen, setBlockerSearchOpen] = useState(false);
+    const [searchResults, setSearchResults] = useState<BlockerType[]>([]);
+    const [searchQuery, setSearchQuery] = useState("");
+
     const isEdit = !!task;
+
+    const fetchBlockers = useCallback(async () => {
+        if (task?.id) {
+            const fetchedBlockers = await getBlockers(task.id);
+            setBlockers(fetchedBlockers);
+        }
+    }, [task]);
+
+    useEffect(() => {
+        if (searchQuery.length > 1) {
+            const delayDebounceFn = setTimeout(async () => {
+                const results = await searchTasks(searchQuery);
+                setSearchResults(results.filter(t => t.id !== task?.id)); // Exclude self
+            }, 300);
+            return () => clearTimeout(delayDebounceFn);
+        } else {
+            setSearchResults([]);
+        }
+    }, [searchQuery, task?.id]);
 
     const fetchSubtasks = useCallback(async () => {
         if (task?.id) {
@@ -176,6 +210,7 @@ function TaskForm({ task, defaultListId, onClose }: { task?: TaskType, defaultLi
             if (isEdit) {
                 fetchSubtasks();
                 fetchRemindersAndLogs();
+                fetchBlockers();
             }
         };
         fetchData();
@@ -208,6 +243,25 @@ function TaskForm({ task, defaultListId, onClose }: { task?: TaskType, defaultLi
     const handleDeleteReminder = async (id: number) => {
         await deleteReminder(id);
         fetchRemindersAndLogs();
+    };
+
+    const handleAddBlocker = async (blockerId: number) => {
+        if (!task?.id) return;
+        try {
+            await addDependency(task.id, blockerId);
+            fetchBlockers();
+            setBlockerSearchOpen(false);
+            setSearchQuery("");
+        } catch (error) {
+            console.error("Failed to add dependency:", error);
+            alert("Failed to add dependency. Check for circular dependencies.");
+        }
+    };
+
+    const handleRemoveBlocker = async (blockerId: number) => {
+        if (!task?.id) return;
+        await removeDependency(task.id, blockerId);
+        fetchBlockers();
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -263,8 +317,9 @@ function TaskForm({ task, defaultListId, onClose }: { task?: TaskType, defaultLi
 
             <div className="flex-1 overflow-y-auto px-6 py-4">
                 <Tabs defaultValue="details" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsList className="grid w-full grid-cols-3 mb-4">
                         <TabsTrigger value="details">Details</TabsTrigger>
+                        <TabsTrigger value="dependencies" disabled={!isEdit}>Dependencies</TabsTrigger>
                         <TabsTrigger value="activity" disabled={!isEdit}>Activity</TabsTrigger>
                     </TabsList>
 
@@ -542,6 +597,73 @@ function TaskForm({ task, defaultListId, onClose }: { task?: TaskType, defaultLi
                                 </div>
                             )}
                         </form>
+                    </TabsContent>
+
+                    <TabsContent value="dependencies" className="space-y-6">
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-sm font-medium">Blocked By</h3>
+                                <Popover open={blockerSearchOpen} onOpenChange={setBlockerSearchOpen}>
+                                    <PopoverTrigger asChild>
+                                        <Button variant="outline" size="sm" className="gap-2">
+                                            <Link className="h-4 w-4" />
+                                            Add Blocker
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="p-0" align="end">
+                                        <Command>
+                                            <CommandInput
+                                                placeholder="Search tasks..."
+                                                value={searchQuery}
+                                                onValueChange={setSearchQuery}
+                                            />
+                                            <CommandList>
+                                                <CommandEmpty>No tasks found.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {searchResults.map((result) => (
+                                                        <CommandItem
+                                                            key={result.id}
+                                                            onSelect={() => handleAddBlocker(result.id)}
+                                                        >
+                                                            <span className={cn("mr-2", result.isCompleted && "line-through text-muted-foreground")}>
+                                                                {result.title}
+                                                            </span>
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+
+                            <div className="space-y-2">
+                                {blockers.map(blocker => (
+                                    <div key={blocker.id} className="flex items-center justify-between border p-3 rounded-md">
+                                        <div className="flex items-center gap-2">
+                                            <Lock className="h-4 w-4 text-orange-500" />
+                                            <span className={cn("text-sm", blocker.isCompleted && "line-through text-muted-foreground")}>
+                                                {blocker.title}
+                                            </span>
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => handleRemoveBlocker(blocker.id)}
+                                            className="h-8 w-8"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                                {blockers.length === 0 && (
+                                    <div className="text-center py-8 text-muted-foreground text-sm border-2 border-dashed rounded-lg">
+                                        No dependencies. This task is not blocked.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </TabsContent>
 
                     <TabsContent value="activity" className="space-y-6">

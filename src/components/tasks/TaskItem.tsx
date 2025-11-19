@@ -4,7 +4,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { Calendar, Flag, Clock, Repeat, AlertCircle } from "lucide-react";
+import { Calendar, Flag, Clock, Repeat, AlertCircle, Lock } from "lucide-react";
 import { toggleTaskCompletion } from "@/lib/actions";
 import { Badge } from "@/components/ui/badge";
 
@@ -26,6 +26,7 @@ export interface Task {
     energyLevel: "high" | "medium" | "low" | null;
     context: "computer" | "phone" | "errands" | "meeting" | "home" | "anywhere" | null;
     labels?: Array<{ id: number; name: string; color: string | null }>;
+    blockedByCount?: number;
 }
 
 interface TaskItemProps {
@@ -36,6 +37,10 @@ export function TaskItem({ task }: TaskItemProps) {
     const [isCompleted, setIsCompleted] = useState(task.isCompleted || false);
 
     const handleToggle = async (checked: boolean) => {
+        if (task.blockedByCount && task.blockedByCount > 0 && checked) {
+            alert("This task is blocked by other tasks. Complete them first!");
+            return;
+        }
         setIsCompleted(checked);
         await toggleTaskCompletion(task.id, checked);
     };
@@ -49,26 +54,42 @@ export function TaskItem({ task }: TaskItemProps) {
 
     const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && !isCompleted;
     const isDeadlineExceeded = task.deadline && new Date(task.deadline) < new Date() && !isCompleted;
+    const isBlocked = (task.blockedByCount || 0) > 0;
 
     return (
         <div
             className={cn(
                 "group flex items-center gap-3 rounded-xl border p-4 hover:bg-accent/40 transition-all duration-200 cursor-pointer hover:shadow-sm bg-card",
-                isCompleted && "opacity-60 bg-muted/30"
+                isCompleted && "opacity-60 bg-muted/30",
+                isBlocked && !isCompleted && "bg-orange-50/50 border-orange-100"
             )}
         >
             <Checkbox
                 checked={isCompleted}
                 onCheckedChange={handleToggle}
-                className={cn("rounded-full h-5 w-5 transition-all", isCompleted ? "data-[state=checked]:bg-muted-foreground data-[state=checked]:border-muted-foreground" : "")}
+                disabled={isBlocked && !isCompleted}
+                className={cn(
+                    "rounded-full h-5 w-5 transition-all",
+                    isCompleted ? "data-[state=checked]:bg-muted-foreground data-[state=checked]:border-muted-foreground" : "",
+                    isBlocked && !isCompleted ? "opacity-50 cursor-not-allowed" : ""
+                )}
                 onClick={(e) => e.stopPropagation()}
             />
 
             <div className="flex-1 min-w-0">
-                <div className={cn("font-medium truncate text-sm transition-all", isCompleted && "line-through text-muted-foreground")}>
+                <div className={cn("font-medium truncate text-sm transition-all flex items-center gap-2", isCompleted && "line-through text-muted-foreground")}>
                     {task.title}
+                    {isBlocked && !isCompleted && (
+                        <Lock className="h-3 w-3 text-orange-500" />
+                    )}
                 </div>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1.5">
+                    {isBlocked && !isCompleted && (
+                        <div className="flex items-center gap-1 text-orange-500 font-medium">
+                            <Lock className="h-3 w-3" />
+                            Blocked
+                        </div>
+                    )}
                     {task.dueDate && (
                         <div className={cn("flex items-center gap-1", isOverdue ? "text-red-500 font-medium" : "")}>
                             <Calendar className="h-3 w-3" />

@@ -98,3 +98,26 @@ export const habitCompletions = sqliteTable("habit_completions", {
         .notNull()
         .default(sql`(unixepoch())`),
 });
+
+export const taskDependencies = sqliteTable("task_dependencies", {
+    taskId: integer("task_id")
+        .notNull()
+        .references(() => tasks.id, { onDelete: "cascade" }),
+    blockerId: integer("blocker_id")
+        .notNull()
+        .references(() => tasks.id, { onDelete: "cascade" }),
+}, (t) => ({
+    pk: primaryKey({ columns: [t.taskId, t.blockerId] }),
+}));
+
+export const templates = sqliteTable("templates", {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    name: text("name").notNull(),
+    content: text("content").notNull(), // JSON string of task data
+    createdAt: integer("created_at", { mode: "timestamp" })
+        .notNull()
+        .default(sql`(unixepoch())`),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+        .notNull()
+        .default(sql`(unixepoch())`),
+});

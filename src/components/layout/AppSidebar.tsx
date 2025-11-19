@@ -30,7 +30,8 @@ import { SearchDialog } from "@/components/tasks/SearchDialog";
 import { getListIcon, getLabelIcon } from "@/lib/icons";
 import { PlanningRitual } from "@/components/tasks/PlanningRitual";
 import { SmartScheduleDialog } from "@/components/tasks/SmartScheduleDialog";
-import { Sunrise, Sunset, Sparkles } from "lucide-react";
+import { TemplateManager } from "@/components/tasks/TemplateManager";
+import { Sunrise, Sunset, Sparkles, Calendar as CalendarIcon } from "lucide-react";
 
 type List = {
     id: number;
@@ -51,6 +52,7 @@ const mainNav = [
     { name: "Inbox", href: "/inbox", icon: Inbox, color: "text-blue-500" },
     { name: "Today", href: "/today", icon: Star, color: "text-yellow-500" },
     { name: "Next 7 Days", href: "/next-7-days", icon: Calendar, color: "text-purple-500" },
+    { name: "Calendar", href: "/calendar", icon: CalendarIcon, color: "text-indigo-500" },
     { name: "Upcoming", href: "/upcoming", icon: CalendarDays, color: "text-pink-500" },
     { name: "All Tasks", href: "/all", icon: ListTodo, color: "text-gray-500" },
 ];
@@ -73,13 +75,26 @@ export function AppSidebar({ className, lists, labels }: { className?: string; l
                     <div className="mb-4">
                         <SearchDialog />
                     </div>
+                    <div className="px-3 py-2">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start text-xs"
+                            onClick={() => setSmartScheduleOpen(true)}
+                        >
+                            <Sparkles className="mr-2 h-3 w-3 text-indigo-500" />
+                            Smart Schedule
+                        </Button>
+                        <div className="mt-2">
+                            <TemplateManager />
+                        </div>
+                    </div>
                     <div className="space-y-1">
                         {mainNav.map((item) => (
                             <Button
                                 key={item.href}
                                 variant={pathname === item.href ? "secondary" : "ghost"}
                                 className="w-full justify-start"
-                                asChild
                             >
                                 <Link href={item.href}>
                                     <item.icon className={cn("mr-2 h-4 w-4", item.color)} />
