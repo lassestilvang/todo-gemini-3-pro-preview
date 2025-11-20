@@ -27,6 +27,11 @@ export function PlanningRitual({ open, onOpenChange, type }: PlanningRitualProps
     const [reflection, setReflection] = useState("");
     const [step, setStep] = useState(1);
 
+    const loadTodayTasks = async () => {
+        const tasks = await getTasks(undefined, "today");
+        setTodayTasks(tasks as TaskType[]);
+    };
+
     useEffect(() => {
         if (open) {
             loadTodayTasks();
@@ -35,11 +40,6 @@ export function PlanningRitual({ open, onOpenChange, type }: PlanningRitualProps
             setReflection("");
         }
     }, [open]);
-
-    const loadTodayTasks = async () => {
-        const tasks = await getTasks(undefined, "today");
-        setTodayTasks(tasks as TaskType[]);
-    };
 
     const completedCount = todayTasks.filter(t => t.isCompleted).length;
     const totalCount = todayTasks.length;
@@ -59,7 +59,7 @@ export function PlanningRitual({ open, onOpenChange, type }: PlanningRitualProps
                         {step === 1 && (
                             <div className="space-y-4">
                                 <div>
-                                    <h3 className="font-medium mb-2">Today's Tasks ({totalCount})</h3>
+                                    <h3 className="font-medium mb-2">Today&apos;s Tasks ({totalCount})</h3>
                                     <div className="space-y-2">
                                         {todayTasks.length === 0 ? (
                                             <p className="text-sm text-muted-foreground">No tasks scheduled for today</p>
@@ -132,7 +132,7 @@ export function PlanningRitual({ open, onOpenChange, type }: PlanningRitualProps
                     {step === 1 && (
                         <div className="space-y-4">
                             <div className="bg-gradient-to-r from-green-500/10 to-blue-500/10 p-4 rounded-lg border">
-                                <h3 className="font-medium mb-2">Today's Progress</h3>
+                                <h3 className="font-medium mb-2">Today&apos;s Progress</h3>
                                 <p className="text-3xl font-bold">{completedCount} / {totalCount}</p>
                                 <p className="text-sm text-muted-foreground">tasks completed</p>
                             </div>

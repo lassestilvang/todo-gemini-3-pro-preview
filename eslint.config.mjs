@@ -13,6 +13,15 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  // Custom rules
+  {
+    rules: {
+      // Disable overly strict rule - legitimate use cases exist for resetting state when props change
+      "react-hooks/set-state-in-effect": "off",
+      // Allow explicit any in specific cases (e.g., type assertions)
+      "@typescript-eslint/no-explicit-any": "warn",
+    },
+  },
 ]);
 
 export default eslintConfig;

@@ -3,8 +3,8 @@
 import { getGeminiClient, GEMINI_MODEL } from "@/lib/gemini";
 import { db } from "@/db";
 import { tasks } from "@/db/schema";
-import { eq, and, isNull, not } from "drizzle-orm";
-import { addDays, format, startOfDay, endOfDay, isWeekend } from "date-fns";
+import { eq, and, isNull } from "drizzle-orm";
+import { format, startOfDay } from "date-fns";
 
 // Types for AI suggestions
 export interface ScheduleSuggestion {
@@ -76,7 +76,6 @@ export async function generateSmartSchedule(): Promise<ScheduleSuggestion[]> {
 
         // 2. Fetch existing schedule for context (tasks due in next 7 days)
         const today = startOfDay(new Date());
-        const nextWeek = addDays(today, 7);
 
         // Simplified context: just counts of tasks per day
         // In a real app, we'd fetch actual tasks to check for load balancing
@@ -121,6 +120,7 @@ export async function generateSmartSchedule(): Promise<ScheduleSuggestion[]> {
         const suggestions = JSON.parse(textResponse);
 
         // Map back to our interface and ensure dates are Date objects
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return suggestions.map((s: any) => {
             const task = unscheduledTasks.find(t => t.id === s.taskId);
             return {
@@ -143,4 +143,118 @@ export async function applyScheduleSuggestion(taskId: number, date: Date) {
     await db.update(tasks)
         .set({ dueDate: date })
         .where(eq(tasks.id, taskId));
+}
+
+// Generate subtasks for a complex task
+export async function generateSubtasks(taskTitle: string): Promise<string[]> {
+    const client = getGeminiClient();
+    if (!client) return [];
+
+    try {
+        const model = client.getGenerativeModel({ model: GEMINI_MODEL });
+
+        const prompt = `
+            Break down the following task into 3-5 actionable subtasks: "${taskTitle}".
+            Return a JSON array of strings.
+            Example: ["Research flights", "Book hotel", "Pack bags"]
+            Keep subtasks concise (under 10 words).
+            Return ONLY raw JSON.
+        `;
+
+        const result = await model.generateContent(prompt);
+        const response = result.response;
+        const textResponse = response.text().replace(/```json|```/g, "").trim();
+
+        const subtasks = JSON.parse(textResponse);
+
+        if (Array.isArray(subtasks)) {
+            return subtasks.map(s => String(s));
+        }
+        return [];
+
+    } catch (error) {
+        console.error("Error generating subtasks:", error);
+        return [];
+    }
+}
+
+// Analyze task priorities and suggest changes
+export async function analyzePriorities(): Promise<Array<{
+    taskId: number;
+    taskTitle: string;
+    currentPriority: string;
+    suggestedPriority: "low" | "medium" | "high";
+    reason: string;
+}>> {
+    const client = getGeminiClient();
+    if (!client) return [];
+
+    try {
+        // Get all incomplete tasks
+        const incompleteTasks = await db
+            .select()
+            .from(tasks)
+            .where(and(
+                eq(tasks.isCompleted, false),
+                isNull(tasks.parentId)
+            ));
+
+        if (incompleteTasks.length === 0) return [];
+
+        // Prepare task data for AI
+        const taskData = incompleteTasks.map(t => ({
+            id: t.id,
+            title: t.title,
+            priority: t.priority || "none",
+            dueDate: t.dueDate ? format(t.dueDate, "yyyy-MM-dd") : null,
+            deadline: t.deadline ? format(t.deadline, "yyyy-MM-dd") : null,
+        }));
+
+        const prompt = `You are a productivity assistant. Analyze these tasks and suggest priority changes (low/medium/high) for tasks that need adjustment.
+
+Consider:
+- Urgency: tasks with deadlines soon should be high priority
+- Keywords: "urgent", "important", "ASAP", "critical" suggest higher priority
+- Dates: overdue or due soon = higher priority
+
+Tasks:
+${JSON.stringify(taskData, null, 2)}
+
+Respond with ONLY a JSON array of objects with this format:
+[
+  {
+    "taskId": number,
+    "suggestedPriority": "low" | "medium" | "high",
+    "reason": "brief explanation"
+  }
+]
+
+Only include tasks that NEED a priority change. If all priorities look good, return an empty array.`;
+
+        const model = client.getGenerativeModel({ model: GEMINI_MODEL });
+        const result = await model.generateContent(prompt);
+        const text = result.response.text();
+
+        // Parse JSON from response
+        const jsonMatch = text.match(/\[[\s\S]*\]/);
+        if (!jsonMatch) return [];
+
+        const suggestions = JSON.parse(jsonMatch[0]);
+
+        // Enrich with task titles and current priorities
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return suggestions.map((s: any) => {
+            const task = incompleteTasks.find(t => t.id === s.taskId);
+            return {
+                taskId: s.taskId,
+                taskTitle: task?.title || "",
+                currentPriority: task?.priority || "none",
+                suggestedPriority: s.suggestedPriority,
+                reason: s.reason,
+            };
+        });
+    } catch (error) {
+        console.error("Error analyzing priorities:", error);
+        return [];
+    }
 }

@@ -16,7 +16,7 @@ interface AnalyticsData {
     energyCompleted: { high: number; medium: number; low: number };
 }
 
-const COLORS = ["#ef4444", "#f59e0b", "#3b82f6", "#6b7280"];
+
 
 export function AnalyticsCharts({ data }: { data: AnalyticsData }) {
     const priorityData = [
@@ -132,7 +132,7 @@ export function AnalyticsCharts({ data }: { data: AnalyticsData }) {
                 <h3 className="text-lg font-semibold mb-4">📊 Insights</h3>
                 <div className="space-y-2 text-sm">
                     {data.summary.completionRate >= 70 && (
-                        <p>✨ Great job! You're completing {data.summary.completionRate}% of your tasks.</p>
+                        <p>✨ Great job! You&apos;re completing {data.summary.completionRate}% of your tasks.</p>
                     )}
                     {data.summary.completionRate < 50 && (
                         <p>💪 Your completion rate is {data.summary.completionRate}%. Consider breaking tasks into smaller chunks.</p>
@@ -144,7 +144,7 @@ export function AnalyticsCharts({ data }: { data: AnalyticsData }) {
                         <p>⏱️ Tasks take {Math.round(((data.summary.avgActual - data.summary.avgEstimate) / data.summary.avgEstimate) * 100)}% longer than estimated on average.</p>
                     )}
                     {data.summary.avgActual < data.summary.avgEstimate && data.summary.avgEstimate > 0 && (
-                        <p>🚀 You're completing tasks faster than estimated! Great efficiency.</p>
+                        <p>🚀 You&apos;re completing tasks faster than estimated! Great efficiency.</p>
                     )}
                 </div>
             </div>

@@ -25,6 +25,7 @@ export interface Task {
     recurringRule: string | null;
     energyLevel: "high" | "medium" | "low" | null;
     context: "computer" | "phone" | "errands" | "meeting" | "home" | "anywhere" | null;
+    isHabit: boolean | null;
     labels?: Array<{ id: number; name: string; color: string | null }>;
     blockedByCount?: number;
 }

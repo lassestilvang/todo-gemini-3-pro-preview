@@ -1,8 +1,8 @@
 import { getAchievements, getUserAchievements, getUserStats } from "@/lib/actions";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Trophy, Lock } from "lucide-react";
-import { cn } from "@/lib/utils";
+
 import { calculateProgress, calculateXPForNextLevel } from "@/lib/gamification";
 
 export default async function AchievementsPage() {

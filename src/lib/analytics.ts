@@ -2,12 +2,10 @@
 
 import { db } from "@/db";
 import { tasks } from "@/db/schema";
-import { sql, gte, lte, and } from "drizzle-orm";
 import { subDays, format, startOfDay } from "date-fns";
 
 export async function getAnalytics() {
     const now = new Date();
-    const thirtyDaysAgo = subDays(now, 30);
 
     // Total tasks
     const allTasks = await db.select().from(tasks);

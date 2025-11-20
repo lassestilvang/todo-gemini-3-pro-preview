@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { getTemplates, createTemplate, deleteTemplate, instantiateTemplate } from "@/lib/actions";
-import { Plus, Trash2, Copy, FileText, Play } from "lucide-react";
+import { Plus, Trash2, FileText, Play } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 
@@ -32,16 +32,19 @@ export function TemplateManager() {
     const [newTemplateName, setNewTemplateName] = useState("");
     const [newTemplateContent, setNewTemplateContent] = useState("");
 
-    useEffect(() => {
-        if (isOpen) {
-            loadTemplates();
-        }
-    }, [isOpen]);
-
-    const loadTemplates = async () => {
+    const loadTemplates = useCallback(async () => {
         const data = await getTemplates();
         setTemplates(data);
-    };
+    }, []);
+
+    useEffect(() => {
+        if (isOpen) {
+            // Call the async function directly in the effect
+            getTemplates().then(data => {
+                setTemplates(data);
+            });
+        }
+    }, [isOpen]);
 
     const handleCreate = async () => {
         if (!newTemplateName || !newTemplateContent) return;
@@ -54,7 +57,7 @@ export function TemplateManager() {
             setIsCreateOpen(false);
             loadTemplates();
             toast.success("Template created");
-        } catch (e) {
+        } catch {
             toast.error("Invalid JSON content");
         }
     };

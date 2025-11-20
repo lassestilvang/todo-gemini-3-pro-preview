@@ -13,12 +13,11 @@ import {
     addMonths,
     subMonths,
     isToday,
-    parseISO
 } from "date-fns";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, CheckCircle2, Circle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, CheckCircle2, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Task {
@@ -63,14 +62,7 @@ export function CalendarView({ tasks }: CalendarViewProps) {
         );
     };
 
-    const getPriorityColor = (priority: string) => {
-        switch (priority) {
-            case "high": return "bg-red-500";
-            case "medium": return "bg-yellow-500";
-            case "low": return "bg-blue-500";
-            default: return "bg-gray-400";
-        }
-    };
+
 
     return (
         <div className="flex flex-col h-[calc(100vh-100px)]">

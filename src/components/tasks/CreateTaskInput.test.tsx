@@ -20,12 +20,12 @@ describe("CreateTaskInput", () => {
 
     it("should render input", () => {
         render(<CreateTaskInput />);
-        expect(screen.getByPlaceholderText("Add a task...")).toBeInTheDocument();
+        expect(screen.getByPlaceholderText(/Add a task/i)).toBeInTheDocument();
     });
 
     it("should expand on focus", () => {
         render(<CreateTaskInput />);
-        const input = screen.getByPlaceholderText("Add a task...");
+        const input = screen.getByPlaceholderText(/Add a task/i);
         fireEvent.focus(input);
         expect(screen.getByText("Add Task")).toBeInTheDocument();
         expect(screen.getByText("Cancel")).toBeInTheDocument();
@@ -33,7 +33,7 @@ describe("CreateTaskInput", () => {
 
     it("should create task on submit", async () => {
         render(<CreateTaskInput />);
-        const input = screen.getByPlaceholderText("Add a task...");
+        const input = screen.getByPlaceholderText(/Add a task/i);
 
         // Focus to expand
         fireEvent.focus(input);
@@ -56,7 +56,7 @@ describe("CreateTaskInput", () => {
 
     it("should not create task if title is empty", async () => {
         render(<CreateTaskInput />);
-        const input = screen.getByPlaceholderText("Add a task...");
+        const input = screen.getByPlaceholderText(/Add a task/i);
         fireEvent.focus(input);
 
         const addButton = screen.getByText("Add Task");

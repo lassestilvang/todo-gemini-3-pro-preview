@@ -1,6 +1,5 @@
-
-import { describe, it, expect, beforeAll, afterAll } from "bun:test";
-import { setupTestDb } from "@/test/setup";
+import { describe, it, expect, beforeAll, afterEach } from "bun:test";
+import { setupTestDb, resetTestDb } from "@/test/setup";
 import { db } from "@/db";
 import { tasks } from "@/db/schema";
 import { toggleTaskCompletion, createTask, getTask } from "@/lib/actions";
@@ -11,18 +10,10 @@ describe("Recurring Tasks Logic", () => {
 
     beforeAll(async () => {
         await setupTestDb();
-
-
-        // Clean up any existing test tasks
-        await db.delete(tasks).where(eq(tasks.title, "Test Recurring Task"));
     });
 
-    afterAll(async () => {
-        if (taskId) {
-            await db.delete(tasks).where(eq(tasks.id, taskId));
-            // Also delete the generated next task
-            await db.delete(tasks).where(eq(tasks.title, "Test Recurring Task"));
-        }
+    afterEach(async () => {
+        await resetTestDb();
     });
 
     it("should create a new task when a recurring task is completed", async () => {

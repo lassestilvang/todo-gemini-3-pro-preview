@@ -11,7 +11,7 @@ describeOrSkip("Integration: Task Flow", () => {
     beforeEach(async () => {
         try {
             await setupTestDb();
-        } catch (e) {
+        } catch {
             // Tables might already exist, that's ok
         }
         await resetTestDb();

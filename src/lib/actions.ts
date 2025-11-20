@@ -5,7 +5,7 @@ import { lists, tasks, labels, taskLogs, taskLabels, reminders, taskDependencies
 import { eq, and, desc, gte, lte, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { startOfDay, endOfDay, addDays } from "date-fns";
-import { calculateLevel, calculateXPForNextLevel } from "./gamification";
+import { calculateLevel } from "./gamification";
 
 // --- Lists ---
 
@@ -125,6 +125,7 @@ export async function getTasks(listId?: number, filter?: "today" | "upcoming" | 
         updatedAt: tasks.updatedAt,
         energyLevel: tasks.energyLevel,
         context: tasks.context,
+        isHabit: tasks.isHabit,
         blockedByCount: sql<number>`(SELECT COUNT(*) FROM ${taskDependencies} WHERE ${taskDependencies.taskId} = ${tasks.id})`
     }).from(tasks).where(and(...conditions)).orderBy(desc(tasks.createdAt));
 
@@ -629,6 +630,7 @@ export async function instantiateTemplate(templateId: number, listId: number | n
     }
 
     // Helper to recursively create tasks
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async function createRecursive(taskData: any, parentId: number | null = null) {
         const { subtasks, ...rest } = taskData;
 

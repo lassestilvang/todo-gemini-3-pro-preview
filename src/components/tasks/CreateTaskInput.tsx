@@ -24,7 +24,8 @@ export function CreateTaskInput({ listId }: { listId?: number }) {
     const [isExpanded, setIsExpanded] = useState(false);
     const [isAiLoading, setIsAiLoading] = useState(false);
 
-    // Parse natural language input
+    // Parse natural language input - intentionally only depends on title
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         if (title.trim()) {
             const parsed = parseNaturalLanguage(title);
@@ -46,7 +47,7 @@ export function CreateTaskInput({ listId }: { listId?: number }) {
             } else {
                 toast.info("No deadline found in text.");
             }
-        } catch (error) {
+        } catch {
             toast.error("Failed to extract deadline. Check API key.");
         } finally {
             setIsAiLoading(false);

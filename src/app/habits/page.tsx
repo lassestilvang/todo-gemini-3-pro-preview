@@ -17,13 +17,13 @@ export default async function HabitsPage() {
                 <div className="text-center py-12 border-2 border-dashed rounded-lg">
                     <p className="text-lg text-muted-foreground mb-2">No habits yet</p>
                     <p className="text-sm text-muted-foreground">
-                        Create a recurring task and toggle "Track as Habit" to get started
+                        Create a recurring task and toggle &quot;Track as Habit&quot; to get started
                     </p>
                 </div>
             ) : (
                 <div className="space-y-3">
                     {habits.map((habit) => (
-                        <TaskItem key={habit.id} task={habit as any} />
+                        <TaskItem key={habit.id} task={habit as unknown as Parameters<typeof TaskItem>[0]['task']} />
                     ))}
                 </div>
             )}

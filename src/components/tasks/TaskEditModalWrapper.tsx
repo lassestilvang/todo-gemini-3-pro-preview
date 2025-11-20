@@ -12,9 +12,12 @@ type TaskType = {
     priority: "none" | "low" | "medium" | "high" | null;
     listId: number | null;
     dueDate: Date | null;
+    deadline: Date | null;
     isRecurring: boolean | null;
     recurringRule: string | null;
-    deadline: Date | null;
+    energyLevel: "high" | "medium" | "low" | null;
+    context: "computer" | "phone" | "errands" | "meeting" | "home" | "anywhere" | null;
+    isHabit: boolean | null;
     labels?: Array<{ id: number; name: string; color: string | null }>;
 };
 
@@ -26,7 +29,6 @@ export function TaskEditModalWrapper() {
     const [isOpen, setIsOpen] = useState(false);
 
     const handleClose = useCallback(() => {
-        setIsOpen(false);
         const params = new URLSearchParams(searchParams.toString());
         params.delete("taskId");
         router.push(`?${params.toString()}`);
@@ -47,13 +49,17 @@ export function TaskEditModalWrapper() {
                     }
                 });
             }
-        } else {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setIsOpen(false);
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setTask(null);
         }
     }, [taskIdParam, handleClose]);
+
+    // Clear state when taskIdParam is removed
+    useEffect(() => {
+        if (!taskIdParam && task !== null) {
+            // Only clear if we have a task - avoid unnecessary renders
+            setTask(null);
+            setIsOpen(false);
+        }
+    }, [taskIdParam, task]);
 
     if (!task || !isOpen) return null;
 

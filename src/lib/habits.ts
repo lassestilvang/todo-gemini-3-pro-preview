@@ -46,7 +46,7 @@ export async function isHabitCompletedToday(taskId: number): Promise<boolean> {
         .where(and(
             eq(habitCompletions.taskId, taskId),
             gte(habitCompletions.completedAt, today),
-            gte(endToday, habitCompletions.completedAt)
+            sql`${habitCompletions.completedAt} <= ${endToday}`
         ))
         .limit(1);
 

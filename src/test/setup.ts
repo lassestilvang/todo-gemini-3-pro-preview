@@ -44,6 +44,9 @@ export async function setupTestDb() {
             parent_id INTEGER REFERENCES tasks(id),
             estimate_minutes INTEGER,
             actual_minutes INTEGER,
+            energy_level TEXT,
+            context TEXT,
+            is_habit INTEGER DEFAULT 0,
             created_at INTEGER DEFAULT(strftime('%s', 'now')),
             updated_at INTEGER DEFAULT(strftime('%s', 'now')),
             deadline INTEGER
@@ -82,14 +85,73 @@ export async function setupTestDb() {
             created_at INTEGER DEFAULT(strftime('%s', 'now'))
         );
     `);
+    await db.run(sql`
+        CREATE TABLE IF NOT EXISTS habit_completions(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+            completed_at INTEGER NOT NULL,
+            created_at INTEGER DEFAULT(strftime('%s', 'now'))
+        );
+    `);
+    await db.run(sql`
+        CREATE TABLE IF NOT EXISTS task_dependencies(
+            task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+            blocker_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+            PRIMARY KEY(task_id, blocker_id)
+        );
+    `);
+    await db.run(sql`
+        CREATE TABLE IF NOT EXISTS templates(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            content TEXT NOT NULL,
+            created_at INTEGER DEFAULT(strftime('%s', 'now')),
+            updated_at INTEGER DEFAULT(strftime('%s', 'now'))
+        );
+    `);
+    await db.run(sql`
+        CREATE TABLE IF NOT EXISTS user_stats(
+            id INTEGER PRIMARY KEY DEFAULT 1,
+            xp INTEGER NOT NULL DEFAULT 0,
+            level INTEGER NOT NULL DEFAULT 1,
+            last_login INTEGER,
+            current_streak INTEGER NOT NULL DEFAULT 0,
+            longest_streak INTEGER NOT NULL DEFAULT 0
+        );
+    `);
+    await db.run(sql`
+        CREATE TABLE IF NOT EXISTS achievements(
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            description TEXT NOT NULL,
+            icon TEXT NOT NULL,
+            condition_type TEXT NOT NULL,
+            condition_value INTEGER NOT NULL,
+            xp_reward INTEGER NOT NULL
+        );
+    `);
+    await db.run(sql`
+        CREATE TABLE IF NOT EXISTS user_achievements(
+            achievement_id TEXT NOT NULL REFERENCES achievements(id) ON DELETE CASCADE,
+            unlocked_at INTEGER DEFAULT(strftime('%s', 'now')),
+            PRIMARY KEY(achievement_id)
+        );
+    `);
 }
 
 export async function resetTestDb() {
+    // Delete in order respecting foreign key constraints
+    await db.run(sql`DELETE FROM user_achievements`);
+    await db.run(sql`DELETE FROM achievements`);
     await db.run(sql`DELETE FROM task_logs`);
     await db.run(sql`DELETE FROM reminders`);
+    await db.run(sql`DELETE FROM habit_completions`);
+    await db.run(sql`DELETE FROM task_dependencies`);
     await db.run(sql`DELETE FROM task_labels`);
     await db.run(sql`DELETE FROM tasks`);
     await db.run(sql`DELETE FROM labels`);
     await db.run(sql`DELETE FROM lists`);
+    await db.run(sql`DELETE FROM templates`);
+    await db.run(sql`DELETE FROM user_stats`);
 }
 

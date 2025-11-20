@@ -24,13 +24,14 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { createTask, updateTask, deleteTask, getLists, getLabels } from "@/lib/actions";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, Trash2, Focus } from "lucide-react";
+import { X, Plus, Trash2, Focus, Sparkles, Loader2 } from "lucide-react";
+import { generateSubtasks } from "@/lib/smart-scheduler";
 import { createSubtask, updateSubtask, deleteSubtask, getSubtasks, createReminder, deleteReminder, getReminders, getTaskLogs, addDependency, removeDependency, getBlockers, searchTasks } from "@/lib/actions";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { FocusMode } from "./FocusMode";
-import { Link, Search, Lock } from "lucide-react";
+import { Link, Lock } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
@@ -159,6 +160,8 @@ function TaskForm({ task, defaultListId, onClose }: { task?: TaskType, defaultLi
     const [searchResults, setSearchResults] = useState<BlockerType[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
 
+    const [aiBreakdownOpen, setAiBreakdownOpen] = useState(false);
+
     const isEdit = !!task;
 
     const fetchBlockers = useCallback(async () => {
@@ -168,16 +171,17 @@ function TaskForm({ task, defaultListId, onClose }: { task?: TaskType, defaultLi
         }
     }, [task]);
 
+    // Search tasks for blockers
     useEffect(() => {
         if (searchQuery.length > 1) {
             const delayDebounceFn = setTimeout(async () => {
                 const results = await searchTasks(searchQuery);
-                setSearchResults(results.filter(t => t.id !== task?.id)); // Exclude self
+                const filtered = results.filter(t => t.id !== task?.id); // Exclude self
+                setSearchResults(filtered);
             }, 300);
             return () => clearTimeout(delayDebounceFn);
-        } else {
-            setSearchResults([]);
         }
+        // Don't update state synchronously in the else branch
     }, [searchQuery, task?.id]);
 
     const fetchSubtasks = useCallback(async () => {
@@ -214,7 +218,7 @@ function TaskForm({ task, defaultListId, onClose }: { task?: TaskType, defaultLi
             }
         };
         fetchData();
-    }, [isEdit, task?.id, fetchSubtasks, fetchRemindersAndLogs]);
+    }, [isEdit, task?.id, fetchSubtasks, fetchRemindersAndLogs, fetchBlockers]);
 
     const handleAddSubtask = async () => {
         if (!newSubtask.trim() || !task?.id) return;
@@ -529,7 +533,51 @@ function TaskForm({ task, defaultListId, onClose }: { task?: TaskType, defaultLi
                                                 <Plus className="h-4 w-4" />
                                             </Button>
                                         </div>
+
+                                        {/* AI Breakdown Button */}
+                                        <div className="pt-2">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="w-full text-purple-600 hover:text-purple-700 hover:bg-purple-50 border-purple-200"
+                                                onClick={() => setAiBreakdownOpen(true)}
+                                            >
+                                                <Sparkles className="mr-2 h-3 w-3" />
+                                                Break Down with AI
+                                            </Button>
+                                        </div>
                                     </div>
+                                </div>
+                            )}
+
+                            {/* AI Breakdown Dialog */}
+                            <AiBreakdownDialog
+                                open={aiBreakdownOpen}
+                                onOpenChange={setAiBreakdownOpen}
+                                taskTitle={title}
+                                onConfirm={async (subtasks) => {
+                                    for (const sub of subtasks) {
+                                        await createSubtask(task!.id, sub);
+                                    }
+                                    fetchSubtasks();
+                                    setAiBreakdownOpen(false);
+                                }}
+                            />
+
+
+                            {isEdit && (
+                                <div className="pt-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="w-full text-purple-600 hover:text-purple-700 hover:bg-purple-50 border-purple-200"
+                                        onClick={() => setAiBreakdownOpen(true)}
+                                    >
+                                        <Sparkles className="mr-2 h-3 w-3" />
+                                        Break Down with AI
+                                    </Button>
                                 </div>
                             )}
 
@@ -724,5 +772,116 @@ function TaskForm({ task, defaultListId, onClose }: { task?: TaskType, defaultLi
                 />
             )}
         </div >
+    );
+}
+
+function AiBreakdownDialog({ open, onOpenChange, taskTitle, onConfirm }: { open: boolean, onOpenChange: (open: boolean) => void, taskTitle: string, onConfirm: (subtasks: string[]) => void }) {
+    const [suggestions, setSuggestions] = useState<string[]>([]);
+    const [selected, setSelected] = useState<Set<number>>(new Set());
+    const [loadingState, setLoadingState] = useState<string>("");
+
+    // Track if we should be loading based on open state and taskTitle
+    const shouldLoad = open && taskTitle;
+    const loadingKey = shouldLoad ? taskTitle : "";
+    const isLoading = shouldLoad && loadingState !== loadingKey && suggestions.length === 0;
+
+    // Generate AI suggestions when dialog opens
+    useEffect(() => {
+        let isMounted = true;
+
+        if (shouldLoad && loadingState !== loadingKey) {
+            generateSubtasks(taskTitle)
+                .then(subs => {
+                    if (isMounted) {
+                        setSuggestions(subs);
+                        // Select all by default
+                        setSelected(new Set(subs.map((_, i) => i)));
+                        setLoadingState(loadingKey);
+                    }
+                })
+                .catch(() => {
+                    if (isMounted) {
+                        setSuggestions([]);
+                        setLoadingState(loadingKey);
+                    }
+                });
+        }
+
+        return () => {
+            isMounted = false;
+        };
+    }, [shouldLoad, loadingKey, loadingState, taskTitle]);
+
+    // Reset state when dialog closes
+    useEffect(() => {
+        if (!shouldLoad) {
+            setSuggestions([]);
+            setSelected(new Set());
+            setLoadingState("");
+        }
+    }, [shouldLoad]);
+
+    const handleToggle = (index: number) => {
+        const newSelected = new Set(selected);
+        if (newSelected.has(index)) {
+            newSelected.delete(index);
+        } else {
+            newSelected.add(index);
+        }
+        setSelected(newSelected);
+    };
+
+    const handleConfirm = () => {
+        const toAdd = suggestions.filter((_, i) => selected.has(i));
+        onConfirm(toAdd);
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-purple-500" />
+                        AI Task Breakdown
+                    </DialogTitle>
+                </DialogHeader>
+
+                <div className="py-4">
+                    {isLoading ? (
+                        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                            <Loader2 className="h-8 w-8 animate-spin mb-2" />
+                            <p>Analyzing task structure...</p>
+                        </div>
+                    ) : suggestions.length > 0 ? (
+                        <div className="space-y-3">
+                            <p className="text-sm text-muted-foreground mb-2">Select subtasks to add:</p>
+                            {suggestions.map((sub, i) => (
+                                <div key={i} className="flex items-center space-x-2 border p-3 rounded-md">
+                                    <Checkbox
+                                        id={`suggestion-${i}`}
+                                        checked={selected.has(i)}
+                                        onCheckedChange={() => handleToggle(i)}
+                                    />
+                                    <Label htmlFor={`suggestion-${i}`} className="flex-1 cursor-pointer">
+                                        {sub}
+                                    </Label>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                            No suggestions generated. Try making the task title more specific.
+                        </div>
+                    )}
+                </div>
+
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={handleConfirm} disabled={isLoading || selected.size === 0} className="bg-purple-600 hover:bg-purple-700">
+                        Add Selected
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }

@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { generateSmartSchedule, applyScheduleSuggestion, type ScheduleSuggestion } from "@/lib/smart-scheduler";
 import { Loader2, Sparkles, Calendar, Check, X } from "lucide-react";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 interface SmartScheduleDialogProps {
@@ -30,7 +29,7 @@ export function SmartScheduleDialog({ open, onOpenChange }: SmartScheduleDialogP
                 setSuggestions(results);
                 setStep("review");
             }
-        } catch (error) {
+        } catch {
             toast.error("Failed to generate schedule. Please check your API key.");
         } finally {
             setLoading(false);
@@ -47,7 +46,7 @@ export function SmartScheduleDialog({ open, onOpenChange }: SmartScheduleDialogP
                 onOpenChange(false);
                 setStep("start");
             }
-        } catch (error) {
+        } catch {
             toast.error("Failed to apply schedule.");
         }
     };
@@ -79,7 +78,7 @@ export function SmartScheduleDialog({ open, onOpenChange }: SmartScheduleDialogP
                             <Sparkles className="h-8 w-8 text-purple-500" />
                         </div>
                         <p className="text-muted-foreground max-w-sm mx-auto">
-                            We'll look at your unscheduled tasks, priorities, and energy levels to create a balanced plan for the week.
+                            We&apos;ll look at your unscheduled tasks, priorities, and energy levels to create a balanced plan for the week.
                         </p>
                     </div>
                 ) : (

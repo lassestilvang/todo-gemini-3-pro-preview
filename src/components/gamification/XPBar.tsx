@@ -5,7 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { getUserStats } from "@/lib/actions";
 import { calculateProgress, calculateXPForNextLevel } from "@/lib/gamification";
 import { Trophy, Star } from "lucide-react";
-import { cn } from "@/lib/utils";
+
 
 import confetti from "canvas-confetti";
 

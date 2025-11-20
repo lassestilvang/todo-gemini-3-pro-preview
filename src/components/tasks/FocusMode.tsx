@@ -114,15 +114,20 @@ export function FocusMode({ task, open, onOpenChange }: FocusModeProps) {
         };
     }, [isRunning, timeLeft, finishSession]);
 
-    // Reset when dialog closes
+    // Reset when dialog opens/closes
     useEffect(() => {
-        if (!open) {
+        if (!open && intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+        }
+    }, [open]);
+
+    // Reset state when dialog opens
+    useEffect(() => {
+        if (open) {
             setIsRunning(false);
             setTimeLeft(WORK_DURATION);
             setSessionType("work");
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current);
-            }
         }
     }, [open]);
 

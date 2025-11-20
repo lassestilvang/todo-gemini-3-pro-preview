@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeAll, mock } from "bun:test";
-import { setupTestDb } from "@/test/setup";
+import { setupTestDb, resetTestDb } from "@/test/setup";
 import { createTask, getTasks, updateTask, deleteTask, getTask, createReminder, getReminders, getTaskLogs } from "./actions";
 
 mock.module("next/cache", () => ({
@@ -10,10 +10,9 @@ mock.module("next/cache", () => ({
 // (This is handled by preload, but we keep the import clean)
 
 describe("Server Actions", () => {
-    let createdTaskId: number;
-
     beforeAll(async () => {
         await setupTestDb();
+        await resetTestDb(); // Clean slate for all tests
     });
 
     it("should create a task", async () => {
@@ -26,32 +25,37 @@ describe("Server Actions", () => {
         expect(task).toBeDefined();
         expect(task.title).toBe("Test Task");
         expect(task.id).toBeDefined();
-        createdTaskId = task.id;
     });
 
     it("should get tasks", async () => {
+        // Create a task first
+        const task = await createTask({ title: "Get Test Task" });
+
         const allTasks = await getTasks(undefined, "all");
         expect(allTasks.length).toBeGreaterThan(0);
-        const found = allTasks.find((t) => t.id === createdTaskId);
+        const found = allTasks.find((t) => t.id === task.id);
         expect(found).toBeDefined();
     });
 
     it("should get a single task", async () => {
-        const task = await getTask(createdTaskId);
-        expect(task).toBeDefined();
-        expect(task?.id).toBe(createdTaskId);
+        const task = await createTask({ title: "Single Task" });
+        const fetchedTask = await getTask(task.id);
+        expect(fetchedTask).toBeDefined();
+        expect(fetchedTask?.id).toBe(task.id);
     });
 
     it("should update a task", async () => {
-        await updateTask(createdTaskId, { title: "Updated Task" });
-        const task = await getTask(createdTaskId);
-        expect(task?.title).toBe("Updated Task");
+        const task = await createTask({ title: "Original Task" });
+        await updateTask(task.id, { title: "Updated Task" });
+        const updated = await getTask(task.id);
+        expect(updated?.title).toBe("Updated Task");
     });
 
     it("should delete a task", async () => {
-        await deleteTask(createdTaskId);
-        const task = await getTask(createdTaskId);
-        expect(task).toBeNull();
+        const task = await createTask({ title: "Task to Delete" });
+        await deleteTask(task.id);
+        const deleted = await getTask(task.id);
+        expect(deleted).toBeNull();
     });
 
     it("should create a task with deadline", async () => {
