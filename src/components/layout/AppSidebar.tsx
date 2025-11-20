@@ -78,14 +78,14 @@ export function AppSidebar({ className, lists, labels }: { className?: string; l
                     <div className="mb-4">
                         <SearchDialog />
                     </div>
-                    <div className="px-3 py-2">
+                    <div className="py-2">
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="w-full justify-start text-xs"
+                            className="w-full justify-start"
                             onClick={() => setSmartScheduleOpen(true)}
                         >
-                            <Sparkles className="mr-2 h-3 w-3 text-indigo-500" />
+                            <Sparkles className="mr-2 h-4 w-4 text-indigo-500" />
                             Smart Schedule
                         </Button>
                         <div className="mt-2">
@@ -98,6 +98,7 @@ export function AppSidebar({ className, lists, labels }: { className?: string; l
                                 key={item.href}
                                 variant={pathname === item.href ? "secondary" : "ghost"}
                                 className="w-full justify-start"
+                                asChild
                             >
                                 <Link href={item.href}>
                                     <item.icon className={cn("mr-2 h-4 w-4", item.color)} />
@@ -112,34 +113,34 @@ export function AppSidebar({ className, lists, labels }: { className?: string; l
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="w-full justify-start text-xs"
+                            className="w-full justify-start"
                             onClick={() => {
                                 setRitualType("morning");
                                 setPlanningRitualOpen(true);
                             }}
                         >
-                            <Sunrise className="mr-2 h-3 w-3 text-orange-500" />
+                            <Sunrise className="mr-2 h-4 w-4 text-orange-500" />
                             Morning Ritual
                         </Button>
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="w-full justify-start text-xs"
+                            className="w-full justify-start"
                             onClick={() => {
                                 setRitualType("evening");
                                 setPlanningRitualOpen(true);
                             }}
                         >
-                            <Sunset className="mr-2 h-3 w-3 text-purple-500" />
+                            <Sunset className="mr-2 h-4 w-4 text-purple-500" />
                             Evening Review
                         </Button>
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="w-full justify-start text-xs"
+                            className="w-full justify-start"
                             onClick={() => setSmartScheduleOpen(true)}
                         >
-                            <Sparkles className="mr-2 h-3 w-3 text-indigo-500" />
+                            <Sparkles className="mr-2 h-4 w-4 text-indigo-500" />
                             Smart Schedule
                         </Button>
                     </div>
