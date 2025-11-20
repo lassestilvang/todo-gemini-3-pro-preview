@@ -759,16 +759,16 @@ function TaskForm({ task, defaultListId, onClose }: { task?: TaskType, defaultLi
             </DialogFooter>
 
             {/* Focus Mode Dialog */}
-            {isEdit && task && (
+            {/* Focus Mode Dialog */}
+            {isEdit && task && focusModeOpen && (
                 <FocusMode
                     task={{
                         id: task.id,
                         title: task.title,
-                        estimateMinutes: null,
-                        actualMinutes: null
+                        description: task.description,
+                        priority: task.priority
                     }}
-                    open={focusModeOpen}
-                    onOpenChange={setFocusModeOpen}
+                    onClose={() => setFocusModeOpen(false)}
                 />
             )}
         </div >

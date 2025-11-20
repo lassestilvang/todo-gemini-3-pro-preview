@@ -78,6 +78,28 @@ export function SearchDialog() {
                 />
                 <CommandList>
                     <CommandEmpty>No results found.</CommandEmpty>
+                    <CommandGroup heading="Commands">
+                        <CommandItem onSelect={() => {
+                            setOpen(false);
+                            router.push("/");
+                        }}>
+                            <div className="flex items-center gap-2">
+                                <span className="font-medium">Go to Inbox</span>
+                            </div>
+                        </CommandItem>
+                        <CommandItem onSelect={() => {
+                            setOpen(false);
+                            // Focus the main input if possible, or just go to home
+                            router.push("/");
+                            setTimeout(() => {
+                                (document.querySelector('input[placeholder*="Add a task"]') as HTMLInputElement)?.focus();
+                            }, 100);
+                        }}>
+                            <div className="flex items-center gap-2">
+                                <span className="font-medium">Create New Task</span>
+                            </div>
+                        </CommandItem>
+                    </CommandGroup>
                     {results.length > 0 && (
                         <CommandGroup heading="Tasks">
                             {results.map((task) => (

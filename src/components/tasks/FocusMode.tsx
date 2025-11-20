@@ -1,249 +1,152 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import * as React from "react";
+import { Play, Pause, CheckCircle2, RotateCcw, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Play, Pause, SkipForward, Coffee, Focus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { updateTask } from "@/lib/actions";
+import { toast } from "sonner";
+import confetti from "canvas-confetti";
 
 interface FocusModeProps {
     task: {
         id: number;
         title: string;
-        estimateMinutes: number | null;
-        actualMinutes: number | null;
+        description: string | null;
+        priority: string | null;
     };
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
+    onClose: () => void;
 }
 
-type SessionType = "work" | "break";
+export function FocusMode({ task, onClose }: FocusModeProps) {
+    const [timeLeft, setTimeLeft] = React.useState(25 * 60); // 25 minutes
+    const [isActive, setIsActive] = React.useState(false);
+    const [isBreak, setIsBreak] = React.useState(false);
 
-const WORK_DURATION = 25 * 60; // 25 minutes in seconds
-const BREAK_DURATION = 5 * 60; // 5 minutes in seconds
+    React.useEffect(() => {
+        let interval: NodeJS.Timeout;
 
-export function FocusMode({ task, open, onOpenChange }: FocusModeProps) {
-    const [timeLeft, setTimeLeft] = useState(WORK_DURATION);
-    const [isRunning, setIsRunning] = useState(false);
-    const [sessionType, setSessionType] = useState<SessionType>("work");
-    const [completedPomodoros, setCompletedPomodoros] = useState(0);
-    const [totalTimeSpent, setTotalTimeSpent] = useState(0); // in seconds
-    const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-    // Request notification permission
-    useEffect(() => {
-        if ("Notification" in window && Notification.permission === "default") {
-            Notification.requestPermission();
-        }
-    }, []);
-
-    const resetTimer = useCallback(() => {
-        setTimeLeft(sessionType === "work" ? WORK_DURATION : BREAK_DURATION);
-        setIsRunning(false);
-    }, [sessionType]);
-
-    const startTimer = () => setIsRunning(true);
-    const pauseTimer = () => setIsRunning(false);
-
-    const skipSession = useCallback(() => {
-        if (sessionType === "work") {
-            setCompletedPomodoros(prev => prev + 1);
-            setSessionType("break");
-            setTimeLeft(BREAK_DURATION);
-        } else {
-            setSessionType("work");
-            setTimeLeft(WORK_DURATION);
-        }
-        setIsRunning(false);
-    }, [sessionType]);
-
-    const sendNotification = useCallback((title: string, body: string) => {
-        if ("Notification" in window && Notification.permission === "granted") {
-            new Notification(title, { body, icon: "/favicon.ico" });
-        }
-    }, []);
-
-    const finishSession = useCallback(async () => {
-        setIsRunning(false);
-
-        if (sessionType === "work") {
-            const newCompletedPomodoros = completedPomodoros + 1;
-            setCompletedPomodoros(newCompletedPomodoros);
-            const newTotalTime = totalTimeSpent + WORK_DURATION;
-            setTotalTimeSpent(newTotalTime);
-
-            // Update task's actual minutes
-            await updateTask(task.id, {
-                actualMinutes: Math.round(newTotalTime / 60)
-            });
-
-            sendNotification("Pomodoro Complete! 🎉", "Time for a 5-minute break.");
-            setSessionType("break");
-            setTimeLeft(BREAK_DURATION);
-        } else {
-            sendNotification("Break Over! 💪", "Ready for another focused session?");
-            setSessionType("work");
-            setTimeLeft(WORK_DURATION);
-        }
-    }, [sessionType, completedPomodoros, totalTimeSpent, task.id, sendNotification]);
-
-    // Timer logic
-    useEffect(() => {
-        if (isRunning && timeLeft > 0) {
-            intervalRef.current = setInterval(() => {
-                setTimeLeft(prev => {
-                    if (prev <= 1) {
-                        finishSession();
-                        return prev;
-                    }
-                    return prev - 1;
-                });
+        if (isActive && timeLeft > 0) {
+            interval = setInterval(() => {
+                setTimeLeft((prev) => prev - 1);
             }, 1000);
-        } else {
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current);
-                intervalRef.current = null;
+        } else if (timeLeft === 0) {
+            setIsActive(false);
+            // Play sound or notification here
+            if (!isBreak) {
+                toast.success("Focus session complete! Take a break.");
+                setIsBreak(true);
+                setTimeLeft(5 * 60); // 5 minute break
+            } else {
+                toast.info("Break over! Ready for the next session?");
+                setIsBreak(false);
+                setTimeLeft(25 * 60);
             }
         }
 
-        return () => {
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current);
-            }
-        };
-    }, [isRunning, timeLeft, finishSession]);
+        return () => clearInterval(interval);
+    }, [isActive, timeLeft, isBreak]);
 
-    // Reset when dialog opens/closes
-    useEffect(() => {
-        if (!open && intervalRef.current) {
-            clearInterval(intervalRef.current);
-            intervalRef.current = null;
-        }
-    }, [open]);
+    const toggleTimer = () => setIsActive(!isActive);
 
-    // Reset state when dialog opens
-    useEffect(() => {
-        if (open) {
-            setIsRunning(false);
-            setTimeLeft(WORK_DURATION);
-            setSessionType("work");
-        }
-    }, [open]);
+    const resetTimer = () => {
+        setIsActive(false);
+        setTimeLeft(isBreak ? 5 * 60 : 25 * 60);
+    };
 
-    const formatTime = (seconds: number): string => {
+    const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
     };
 
-    const progress = sessionType === "work"
-        ? ((WORK_DURATION - timeLeft) / WORK_DURATION) * 100
-        : ((BREAK_DURATION - timeLeft) / BREAK_DURATION) * 100;
+    const handleComplete = async () => {
+        try {
+            await updateTask(task.id, { isCompleted: true });
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 },
+            });
+            toast.success("Task completed!");
+            setTimeout(onClose, 2000);
+        } catch (error) {
+            toast.error("Failed to complete task");
+        }
+    };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px] p-0 gap-0 overflow-hidden">
-                <DialogHeader className="px-6 py-4 border-b">
-                    <DialogTitle className="flex items-center gap-2">
-                        <Focus className="h-5 w-5" />
-                        Focus Mode
-                    </DialogTitle>
-                </DialogHeader>
+        <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex flex-col items-center justify-center p-4 animate-in fade-in duration-300">
+            <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-4 right-4"
+                onClick={onClose}
+            >
+                <Minimize2 className="h-6 w-6" />
+            </Button>
 
-                <div className="p-8 space-y-6">
-                    {/* Task Title */}
-                    <div className="text-center">
-                        <h3 className="font-medium text-lg mb-2">{task.title}</h3>
-                        <p className="text-sm text-muted-foreground">
-                            {sessionType === "work" ? "Focus Session" : "Break Time"}
+            <div className="max-w-2xl w-full text-center space-y-12">
+                <div className="space-y-4">
+                    <div className={cn(
+                        "inline-flex items-center justify-center px-4 py-1.5 rounded-full text-sm font-medium",
+                        isBreak ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" : "bg-primary/10 text-primary"
+                    )}>
+                        {isBreak ? "Break Time" : "Focus Mode"}
+                    </div>
+                    <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
+                        {task.title}
+                    </h1>
+                    {task.description && (
+                        <p className="text-xl text-muted-foreground max-w-lg mx-auto">
+                            {task.description}
                         </p>
-                    </div>
-
-                    {/* Timer Circle */}
-                    <div className="flex justify-center">
-                        <div className="relative w-64 h-64">
-                            {/* Background Circle */}
-                            <svg className="w-full h-full transform -rotate-90">
-                                <circle
-                                    cx="128"
-                                    cy="128"
-                                    r="120"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="8"
-                                    className="text-muted"
-                                />
-                                {/* Progress Circle */}
-                                <circle
-                                    cx="128"
-                                    cy="128"
-                                    r="120"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="8"
-                                    strokeDasharray={`${2 * Math.PI * 120}`}
-                                    strokeDashoffset={`${2 * Math.PI * 120 * (1 - progress / 100)}`}
-                                    className={cn(
-                                        "transition-all duration-1000",
-                                        sessionType === "work" ? "text-blue-500" : "text-green-500"
-                                    )}
-                                    strokeLinecap="round"
-                                />
-                            </svg>
-                            {/* Time Display */}
-                            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <span className="text-5xl font-bold tabular-nums">{formatTime(timeLeft)}</span>
-                                {sessionType === "work" ? (
-                                    <Focus className="h-8 w-8 text-blue-500 mt-2" />
-                                ) : (
-                                    <Coffee className="h-8 w-8 text-green-500 mt-2" />
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Controls */}
-                    <div className="flex justify-center gap-3">
-                        {!isRunning ? (
-                            <Button onClick={startTimer} size="lg" className="gap-2">
-                                <Play className="h-5 w-5" />
-                                Start
-                            </Button>
-                        ) : (
-                            <Button onClick={pauseTimer} variant="outline" size="lg" className="gap-2">
-                                <Pause className="h-5 w-5" />
-                                Pause
-                            </Button>
-                        )}
-                        <Button onClick={skipSession} variant="outline" size="lg" className="gap-2">
-                            <SkipForward className="h-5 w-5" />
-                            Skip
-                        </Button>
-                        <Button onClick={resetTimer} variant="ghost" size="lg">
-                            Reset
-                        </Button>
-                    </div>
-
-                    {/* Stats */}
-                    <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                        <div className="text-center">
-                            <p className="text-2xl font-bold">{completedPomodoros}</p>
-                            <p className="text-xs text-muted-foreground">Completed</p>
-                        </div>
-                        <div className="text-center">
-                            <p className="text-2xl font-bold">{Math.round(totalTimeSpent / 60)}m</p>
-                            <p className="text-xs text-muted-foreground">Time Spent</p>
-                        </div>
-                    </div>
-
-                    {task.estimateMinutes && (
-                        <div className="text-center text-sm text-muted-foreground">
-                            Estimate: {task.estimateMinutes}m • Actual: {task.actualMinutes || 0}m
-                        </div>
                     )}
                 </div>
-            </DialogContent>
-        </Dialog>
+
+                <div className="tabular-nums text-8xl md:text-9xl font-bold tracking-tighter font-mono">
+                    {formatTime(timeLeft)}
+                </div>
+
+                <div className="flex items-center justify-center gap-6">
+                    <Button
+                        size="lg"
+                        variant="outline"
+                        className="h-16 w-16 rounded-full border-2"
+                        onClick={resetTimer}
+                    >
+                        <RotateCcw className="h-6 w-6" />
+                    </Button>
+
+                    <Button
+                        size="lg"
+                        className={cn(
+                            "h-24 w-24 rounded-full shadow-lg transition-all hover:scale-105",
+                            isActive ? "bg-red-500 hover:bg-red-600" : "bg-primary hover:bg-primary/90"
+                        )}
+                        onClick={toggleTimer}
+                    >
+                        {isActive ? (
+                            <Pause className="h-10 w-10" />
+                        ) : (
+                            <Play className="h-10 w-10 ml-1" />
+                        )}
+                    </Button>
+
+                    <Button
+                        size="lg"
+                        variant="outline"
+                        className="h-16 w-16 rounded-full border-2 hover:bg-green-100 hover:text-green-700 hover:border-green-200 dark:hover:bg-green-900/30 dark:hover:text-green-400 dark:hover:border-green-800"
+                        onClick={handleComplete}
+                    >
+                        <CheckCircle2 className="h-6 w-6" />
+                    </Button>
+                </div>
+
+                <div className="text-sm text-muted-foreground">
+                    {isActive ? "Stay focused. You got this!" : "Ready to start?"}
+                </div>
+            </div>
+        </div>
     );
 }

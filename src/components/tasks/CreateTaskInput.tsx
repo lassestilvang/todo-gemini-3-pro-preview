@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { extractDeadline } from "@/lib/smart-scheduler";
 import { Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { VoiceInput } from "./VoiceInput";
 
 export function CreateTaskInput({ listId }: { listId?: number }) {
     const [title, setTitle] = useState("");
@@ -25,7 +26,6 @@ export function CreateTaskInput({ listId }: { listId?: number }) {
     const [isAiLoading, setIsAiLoading] = useState(false);
 
     // Parse natural language input - intentionally only depends on title
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         if (title.trim()) {
             const parsed = parseNaturalLanguage(title);
@@ -34,6 +34,7 @@ export function CreateTaskInput({ listId }: { listId?: number }) {
             if (parsed.energyLevel && !energyLevel) setEnergyLevel(parsed.energyLevel);
             if (parsed.context && !context) setContext(parsed.context);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [title]);
 
     const handleAiEnhance = async () => {
@@ -186,6 +187,10 @@ export function CreateTaskInput({ listId }: { listId?: number }) {
                                     )}
                                     <span className="ml-2 sr-only">AI Detect</span>
                                 </Button>
+                                <VoiceInput onTranscript={(text) => {
+                                    setTitle(prev => prev ? `${prev} ${text}` : text);
+                                    setIsExpanded(true);
+                                }} />
                             </div>
 
                             <div className="flex items-center gap-2">

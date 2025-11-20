@@ -6,6 +6,7 @@ import { eq, and, desc, gte, lte, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { startOfDay, endOfDay, addDays } from "date-fns";
 import { calculateLevel } from "./gamification";
+import { suggestMetadata } from "./smart-tags";
 
 // --- Lists ---
 
@@ -208,15 +209,26 @@ export async function getTask(id: number) {
 
 export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: number[] }) {
     const { labelIds, ...taskData } = data;
+    let finalLabelIds = labelIds || [];
+
+    // Smart Tagging: If no list or labels provided, try to guess them
+    if (!taskData.listId && finalLabelIds.length === 0 && taskData.title) {
+        const allLists = await getLists();
+        const allLabels = await getLabels();
+        const suggestions = await suggestMetadata(taskData.title, allLists, allLabels);
+
+        if (suggestions.listId) taskData.listId = suggestions.listId;
+        if (suggestions.labelIds.length > 0) finalLabelIds = suggestions.labelIds;
+    }
 
     const result = await db.insert(tasks).values(taskData).returning();
     const task = Array.isArray(result) ? result[0] : null;
 
     if (!task) throw new Error("Failed to create task");
 
-    if (labelIds && labelIds.length > 0) {
+    if (finalLabelIds.length > 0) {
         await db.insert(taskLabels).values(
-            labelIds.map((labelId: number) => ({
+            finalLabelIds.map((labelId: number) => ({
                 taskId: task.id,
                 labelId
             }))
