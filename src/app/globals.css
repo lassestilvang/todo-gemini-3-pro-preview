@@ -7,7 +7,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -113,12 +113,212 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* Glassmorphism Theme */
+.glassmorphism {
+  --font-sans: var(--font-quicksand);
+  --background: oklch(0.2 0.05 260);
+  /* Deep purple/blue background */
+  --foreground: oklch(0.98 0 0);
+  --card: oklch(1 0 0 / 10%);
+  /* Transparent white */
+  --card-foreground: oklch(0.98 0 0);
+  --popover: oklch(0.15 0.05 260 / 80%);
+  --popover-foreground: oklch(0.98 0 0);
+  --primary: oklch(0.85 0.1 300);
+  /* Soft pink/purple */
+  --primary-foreground: oklch(0.2 0.05 260);
+  --secondary: oklch(1 0 0 / 10%);
+  --secondary-foreground: oklch(0.98 0 0);
+  --muted: oklch(1 0 0 / 5%);
+  --muted-foreground: oklch(0.8 0 0);
+  --accent: oklch(1 0 0 / 15%);
+  --accent-foreground: oklch(1 0 0);
+  --destructive: oklch(0.7 0.2 20);
+  --border: oklch(1 0 0 / 20%);
+  --input: oklch(1 0 0 / 10%);
+  --ring: oklch(0.85 0.1 300 / 50%);
+  --sidebar: oklch(0.15 0.05 260 / 60%);
+  /* Frosted sidebar */
+  --sidebar-foreground: oklch(0.98 0 0);
+  --sidebar-primary: oklch(0.85 0.1 300);
+  --sidebar-primary-foreground: oklch(0.2 0.05 260);
+  --sidebar-accent: oklch(1 0 0 / 15%);
+  --sidebar-accent-foreground: oklch(1 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.85 0.1 300 / 50%);
+
+  /* Glass effect utility */
+  backdrop-filter: blur(20px);
+}
+
+html.glassmorphism body {
+  font-family: var(--font-quicksand), sans-serif !important;
+}
+
+/* Neubrutalism Theme */
+.neubrutalism {
+  --font-sans: var(--font-space);
+  --background: oklch(0.95 0.05 60);
+  /* Soft yellow/beige */
+  --foreground: oklch(0.1 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.1 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.1 0 0);
+  --primary: oklch(0.6 0.2 250);
+  /* Vibrant Blue */
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.85 0.15 150);
+  /* Vibrant Green */
+  --secondary-foreground: oklch(0.1 0 0);
+  --muted: oklch(0.9 0 0);
+  --muted-foreground: oklch(0.4 0 0);
+  --accent: oklch(0.7 0.2 330);
+  /* Vibrant Pink */
+  --accent-foreground: oklch(1 0 0);
+  --destructive: oklch(0.6 0.2 20);
+  --border: oklch(0.1 0 0);
+  /* Black borders */
+  --input: oklch(1 0 0);
+  --ring: oklch(0.1 0 0);
+  --sidebar: oklch(0.92 0.05 60);
+  --sidebar-foreground: oklch(0.1 0 0);
+  --sidebar-primary: oklch(0.6 0.2 250);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.7 0.2 330);
+  --sidebar-accent-foreground: oklch(1 0 0);
+  --sidebar-border: oklch(0.1 0 0);
+  --sidebar-ring: oklch(0.1 0 0);
+
+  --radius: 0;
+  /* No rounded corners */
+}
+
+html.neubrutalism body {
+  font-family: var(--font-space), sans-serif !important;
+}
+
+/* Minimalist Theme */
+.minimalist {
+  --font-sans: var(--font-inter);
+  --background: oklch(0.99 0 0);
+  --foreground: oklch(0.2 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0 0);
+  --primary: oklch(0.2 0 0);
+  /* Black primary */
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.96 0 0);
+  --secondary-foreground: oklch(0.2 0 0);
+  --muted: oklch(0.96 0 0);
+  --muted-foreground: oklch(0.5 0 0);
+  --accent: oklch(0.96 0 0);
+  --accent-foreground: oklch(0.2 0 0);
+  --destructive: oklch(0.6 0.15 20);
+  --border: oklch(0.9 0 0);
+  --input: oklch(0.9 0 0);
+  --ring: oklch(0.8 0 0);
+  --sidebar: oklch(0.98 0 0);
+  --sidebar-foreground: oklch(0.2 0 0);
+  --sidebar-primary: oklch(0.2 0 0);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.94 0 0);
+  --sidebar-accent-foreground: oklch(0.2 0 0);
+  --sidebar-border: oklch(0.9 0 0);
+  --sidebar-ring: oklch(0.8 0 0);
+
+  --radius: 0.5rem;
+}
+
+html.minimalist body {
+  font-family: var(--font-inter), sans-serif !important;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
+}
+
+/* -------------------------------------------------------------------------- */
+/*                   High-Fidelity Theme Overrides                            */
+/* -------------------------------------------------------------------------- */
+
+/* Glassmorphism Overrides */
+html.glassmorphism body {
+  background: radial-gradient(circle at 50% 0%, #4c1d95 0%, #1e1b4b 100%);
+  background-attachment: fixed;
+}
+
+html.glassmorphism .sidebar,
+html.glassmorphism [role="dialog"],
+html.glassmorphism .popover,
+html.glassmorphism .card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+html.glassmorphism button:not([role="switch"]) {
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.1);
+  border-radius: 9999px;
+  /* Pill shaped buttons */
+}
+
+html.glassmorphism svg {
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5));
+  stroke-width: 2px !important;
+}
+
+/* Neubrutalism Overrides */
+html.neubrutalism .btn,
+html.neubrutalism button:not([role="switch"]),
+html.neubrutalism .card,
+html.neubrutalism input,
+html.neubrutalism textarea,
+html.neubrutalism [role="dialog"] {
+  border: 2px solid #000 !important;
+  box-shadow: 4px 4px 0px 0px #000 !important;
+  transition: all 0.1s ease;
+  border-radius: 0 !important;
+}
+
+html.neubrutalism .btn:active,
+html.neubrutalism button:not([role="switch"]):active {
+  box-shadow: 0px 0px 0px 0px #000 !important;
+  transform: translate(4px, 4px);
+}
+
+html.neubrutalism .sidebar {
+  border-right: 3px solid #000;
+}
+
+html.neubrutalism svg {
+  stroke-width: 2.5px !important;
+}
+
+/* Minimalist Overrides */
+html.minimalist .card {
+  box-shadow: none;
+  border: 1px solid var(--border);
+}
+
+html.minimalist .sidebar {
+  border-right: 1px solid var(--border);
+  background-color: transparent;
+}
+
+html.minimalist svg {
+  stroke-width: 1.5px !important;
 }

@@ -84,7 +84,7 @@ export function TaskItem({ task }: TaskItemProps) {
         <>
             <div
                 className={cn(
-                    "group flex items-center gap-3 rounded-xl border p-4 hover:bg-accent/40 transition-all duration-200 cursor-pointer hover:shadow-sm bg-card relative",
+                    "group flex items-center gap-3 rounded-lg border p-4 hover:bg-accent/40 transition-all duration-200 cursor-pointer hover:shadow-sm bg-card card relative",
                     isCompleted && "opacity-60 bg-muted/30",
                     isBlocked && !isCompleted && "bg-orange-50/50 border-orange-100"
                 )}

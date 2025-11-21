@@ -33,6 +33,7 @@ import { PlanningRitual } from "@/components/tasks/PlanningRitual";
 import { SmartScheduleDialog } from "@/components/tasks/SmartScheduleDialog";
 import { TemplateManager } from "@/components/tasks/TemplateManager";
 import { Sunrise, Sunset, Sparkles, Calendar as CalendarIcon, Trophy } from "lucide-react";
+import { SettingsDialog } from "@/components/settings/SettingsDialog";
 
 type List = {
     id: number;
@@ -68,7 +69,7 @@ export function AppSidebar({ className, lists, labels }: { className?: string; l
     const [ritualType, setRitualType] = useState<"morning" | "evening">("morning");
 
     return (
-        <div className={cn("pb-12 w-64 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 h-screen overflow-y-auto", className)}>
+        <div className={cn("pb-12 w-64 border-r bg-sidebar h-screen overflow-y-auto sidebar", className)}>
             <div className="space-y-4 py-4">
                 <div className="pl-3 pr-3 py-2">
                     <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
@@ -276,6 +277,10 @@ export function AppSidebar({ className, lists, labels }: { className?: string; l
                 open={smartScheduleOpen}
                 onOpenChange={setSmartScheduleOpen}
             />
+
+            <div className="p-4 mt-auto border-t">
+                <SettingsDialog />
+            </div>
         </div>
     );
 }

@@ -1,0 +1,34 @@
+import { Metadata } from "next"
+import { ThemeSwitcher } from "@/components/settings/ThemeSwitcher"
+
+export const metadata: Metadata = {
+    title: "Settings - Todo Gemini",
+    description: "Manage your application settings",
+}
+
+export default function SettingsPage() {
+    return (
+        <div className="container max-w-4xl py-6 lg:py-10">
+            <div className="flex flex-col items-start gap-4 md:flex-row md:justify-between md:gap-8">
+                <div className="flex-1 space-y-4">
+                    <h1 className="inline-block font-heading text-4xl tracking-tight lg:text-5xl">
+                        Settings
+                    </h1>
+                    <p className="text-xl text-muted-foreground">
+                        Customize the appearance and behavior of the application.
+                    </p>
+                </div>
+            </div>
+            <hr className="my-8" />
+            <div className="grid gap-10">
+                <section>
+                    <h2 className="mb-4 text-2xl font-bold tracking-tight">Appearance</h2>
+                    <p className="mb-6 text-muted-foreground">
+                        Select a theme that suits your style.
+                    </p>
+                    <ThemeSwitcher />
+                </section>
+            </div>
+        </div>
+    )
+}
