@@ -13,26 +13,26 @@ export function LevelUpWatcher() {
         const checkLevel = async () => {
             const stats = await getUserStats();
             if (!stats) return;
-
-            if (level === null) {
-                // First load, just set the level without showing modal
-                setLevel(stats.level);
-            } else if (stats.level > level) {
-                // Level increased while watching
-                setNewLevel(stats.level);
-                setShowLevelUp(true);
-                setLevel(stats.level);
-            }
+            setLevel(stats.level);
         };
 
         // Initial check
         checkLevel();
 
-        // Poll for level changes
-        const interval = setInterval(checkLevel, 2000); // Check every 2 seconds
+        const handleLevelUpdate = (event: CustomEvent<{ level: number; leveledUp: boolean }>) => {
+            if (event.detail.leveledUp) {
+                setNewLevel(event.detail.level);
+                setShowLevelUp(true);
+                setLevel(event.detail.level);
+            }
+        };
 
-        return () => clearInterval(interval);
-    }, [level]);
+        window.addEventListener("user-level-update", handleLevelUpdate as EventListener);
+
+        return () => {
+            window.removeEventListener("user-level-update", handleLevelUpdate as EventListener);
+        };
+    }, []);
 
     return (
         <LevelUpModal

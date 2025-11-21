@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { integer, sqliteTable, text, primaryKey, foreignKey } from "drizzle-orm/sqlite-core";
+import { integer, sqliteTable, text, primaryKey, foreignKey, index } from "drizzle-orm/sqlite-core";
 
 export const lists = sqliteTable("lists", {
     id: integer("id").primaryKey({ autoIncrement: true }),
@@ -44,6 +44,12 @@ export const tasks = sqliteTable("tasks", {
         columns: [table.parentId],
         foreignColumns: [table.id],
     }).onDelete("cascade"),
+    listIdIdx: index("tasks_list_id_idx").on(table.listId),
+    parentIdIdx: index("tasks_parent_id_idx").on(table.parentId),
+    isCompletedIdx: index("tasks_is_completed_idx").on(table.isCompleted),
+    dueDateIdx: index("tasks_due_date_idx").on(table.dueDate),
+    createdAtIdx: index("tasks_created_at_idx").on(table.createdAt),
+    completedAtIdx: index("tasks_completed_at_idx").on(table.completedAt),
 }));
 
 export const labels = sqliteTable("labels", {
@@ -62,6 +68,7 @@ export const taskLabels = sqliteTable("task_labels", {
         .references(() => labels.id, { onDelete: "cascade" }),
 }, (t) => ({
     pk: primaryKey({ columns: [t.taskId, t.labelId] }),
+    labelIdIdx: index("task_labels_label_id_idx").on(t.labelId),
 }));
 
 export const reminders = sqliteTable("reminders", {
@@ -85,7 +92,9 @@ export const taskLogs = sqliteTable("task_logs", {
     createdAt: integer("created_at", { mode: "timestamp" })
         .notNull()
         .default(sql`(unixepoch())`),
-});
+}, (t) => ({
+    taskIdIdx: index("task_logs_task_id_idx").on(t.taskId),
+}));
 
 export const habitCompletions = sqliteTable("habit_completions", {
     id: integer("id").primaryKey({ autoIncrement: true }),
@@ -107,6 +116,7 @@ export const taskDependencies = sqliteTable("task_dependencies", {
         .references(() => tasks.id, { onDelete: "cascade" }),
 }, (t) => ({
     pk: primaryKey({ columns: [t.taskId, t.blockerId] }),
+    blockerIdIdx: index("task_dependencies_blocker_id_idx").on(t.blockerId),
 }));
 
 export const templates = sqliteTable("templates", {

@@ -58,7 +58,14 @@ export function TaskItem({ task }: TaskItemProps) {
             });
         }
 
-        await toggleTaskCompletion(task.id, checked);
+        const result = await toggleTaskCompletion(task.id, checked);
+
+        if (result && result.leveledUp) {
+            const event = new CustomEvent("user-level-update", {
+                detail: { level: result.newLevel, leveledUp: true }
+            });
+            window.dispatchEvent(event);
+        }
     };
 
     const priorityColors = {

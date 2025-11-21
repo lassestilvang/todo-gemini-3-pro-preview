@@ -421,7 +421,7 @@ export async function toggleTaskCompletion(id: number, isCompleted: boolean) {
     if (task.priority === "medium") bonusXP += 5;
     if (task.priority === "high") bonusXP += 10;
 
-    await addXP(baseXP + bonusXP);
+    return await addXP(baseXP + bonusXP);
 }
 
 export async function getSubtasks(taskId: number) {
