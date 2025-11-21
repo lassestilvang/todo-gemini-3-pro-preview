@@ -1,4 +1,8 @@
-import { describe, it, expect, mock, beforeEach } from "bun:test";
+import { describe, it, expect, mock, beforeEach, beforeAll } from "bun:test";
+import { setupTestDb, resetTestDb } from "../test/setup";
+import { db } from "@/db";
+import { tasks } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { generateSubtasks, extractDeadline, generateSmartSchedule, analyzePriorities, applyScheduleSuggestion } from "./smart-scheduler";
 
 // Mock the Gemini client
@@ -26,7 +30,12 @@ mock.module("./gemini", () => ({
 // The smart-scheduler functions can use the real test database
 
 describe("smart-scheduler", () => {
-    beforeEach(() => {
+    beforeAll(async () => {
+        await setupTestDb();
+    });
+
+    beforeEach(async () => {
+        await resetTestDb();
         mockGenerateContent.mockClear();
         mockGetGeminiClient.mockClear();
     });
@@ -60,7 +69,7 @@ describe("smart-scheduler", () => {
         });
 
         it("returns empty if client is null", async () => {
-            mockGetGeminiClient.mockReturnValueOnce(undefined);
+            mockGetGeminiClient.mockReturnValueOnce(undefined as any);
             const subtasks = await generateSubtasks("Test Task");
             expect(subtasks).toEqual([]);
         });
@@ -107,35 +116,44 @@ describe("smart-scheduler", () => {
             });
         });
 
-        it.skip("returns null on error", async () => {
+        it("returns null on error", async () => {
             mockGenerateContent.mockRejectedValueOnce(new Error("API Error"));
             const result = await extractDeadline("Task");
             expect(result).toBeNull();
         });
 
-        it.skip("returns null if client is null", async () => {
-            mockGetGeminiClient.mockReturnValueOnce(undefined);
+        it("returns null if client is null", async () => {
+            mockGetGeminiClient.mockReturnValueOnce(undefined as any);
             const result = await extractDeadline("Task");
             expect(result).toBeNull();
         });
     });
 
     // Skip tests that require database mocking to avoid interference with other tests
-    describe.skip("generateSmartSchedule", () => {
+    describe("generateSmartSchedule", () => {
         it("generates schedule for unscheduled tasks", async () => {
             const suggestions = await generateSmartSchedule();
             expect(suggestions).toBeDefined();
         });
     });
 
-    describe.skip("applyScheduleSuggestion", () => {
+    describe("applyScheduleSuggestion", () => {
         it("updates task due date", async () => {
+            // Create a task first
+            const [inserted] = await db.insert(tasks).values({
+                title: "Test Task",
+                listId: 1,
+            }).returning();
+
             const date = new Date("2023-12-01");
-            await applyScheduleSuggestion(1, date);
+            await applyScheduleSuggestion(inserted.id, date);
+
+            const [updated] = await db.select().from(tasks).where(eq(tasks.id, inserted.id));
+            expect(updated.dueDate).toEqual(date);
         });
     });
 
-    describe.skip("analyzePriorities", () => {
+    describe("analyzePriorities", () => {
         it("suggests priority changes", async () => {
             const suggestions = await analyzePriorities();
             expect(suggestions).toBeDefined();

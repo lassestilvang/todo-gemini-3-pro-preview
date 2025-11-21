@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, mock, jest } from "bun:test";
-import { render, screen, act, waitFor } from "@testing-library/react";
+import { render, screen, act, waitFor, cleanup } from "@testing-library/react";
 import { LevelUpWatcher } from "./LevelUpWatcher";
 import { getUserStats } from "@/lib/actions";
 
@@ -26,6 +26,7 @@ describe("LevelUpWatcher", () => {
         intervalCallback = null;
 
         // Mock setInterval to capture the callback
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         global.setInterval = ((callback: () => void, _: number) => {
             intervalCallback = callback;
             return 123 as unknown as NodeJS.Timeout;
@@ -35,6 +36,7 @@ describe("LevelUpWatcher", () => {
     });
 
     afterEach(() => {
+        cleanup();
         global.setInterval = originalSetInterval;
         global.clearInterval = originalClearInterval;
     });
