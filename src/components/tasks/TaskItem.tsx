@@ -1,5 +1,7 @@
 "use client";
 
+import { motion } from "framer-motion";
+
 import { useState } from "react";
 import { format } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -10,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FocusMode } from "./FocusMode";
 import { Target } from "lucide-react";
+import { playSuccessSound } from "@/lib/audio";
 
 
 // Define a type for the task prop based on the schema or a shared type
@@ -56,6 +59,7 @@ export function TaskItem({ task }: TaskItemProps) {
                     colors: ['#5b21b6', '#7c3aed', '#a78bfa'] // Purple theme
                 });
             });
+            playSuccessSound();
         }
 
         const result = await toggleTaskCompletion(task.id, checked);
@@ -81,7 +85,13 @@ export function TaskItem({ task }: TaskItemProps) {
     const [showFocusMode, setShowFocusMode] = useState(false);
 
     return (
-        <>
+        <motion.div
+            layout
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mb-2" // Add margin bottom here to separate items when animating
+        >
             <div
                 className={cn(
                     "group flex items-center gap-3 rounded-lg border p-4 hover:bg-accent/40 transition-all duration-200 cursor-pointer hover:shadow-sm bg-card card relative",
@@ -203,6 +213,6 @@ export function TaskItem({ task }: TaskItemProps) {
                     onClose={() => setShowFocusMode(false)}
                 />
             )}
-        </>
+        </motion.div>
     );
 }

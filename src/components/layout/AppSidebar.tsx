@@ -19,6 +19,8 @@ import { Separator } from "@/components/ui/separator";
 
 import { ManageListDialog } from "@/components/tasks/ManageListDialog";
 import { ManageLabelDialog } from "@/components/tasks/ManageLabelDialog";
+import { RescheduleButton } from "@/components/tasks/RescheduleButton";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import { useState } from "react";
 import {
     DropdownMenu,
@@ -278,7 +280,9 @@ export function AppSidebar({ className, lists, labels }: { className?: string; l
                 onOpenChange={setSmartScheduleOpen}
             />
 
-            <div className="p-4 mt-auto border-t">
+            <div className="p-4 mt-auto border-t space-y-2">
+                <InstallPrompt />
+                <RescheduleButton />
                 <SettingsDialog />
             </div>
         </div>

@@ -32,6 +32,14 @@ export function SearchDialog() {
                 e.preventDefault();
                 setOpen((open) => !open);
             }
+            if (e.key === "/" && !open) {
+                const target = e.target as HTMLElement;
+                if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) {
+                    return;
+                }
+                e.preventDefault();
+                setOpen(true);
+            }
         };
 
         document.addEventListener("keydown", down);

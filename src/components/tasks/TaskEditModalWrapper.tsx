@@ -24,6 +24,7 @@ type TaskType = {
 export function TaskEditModalWrapper() {
     const searchParams = useSearchParams();
     const taskIdParam = searchParams.get("taskId");
+    const createParam = searchParams.get("create");
     const router = useRouter();
     const [task, setTask] = useState<TaskType | null>(null);
     const [isOpen, setIsOpen] = useState(false);
@@ -31,6 +32,7 @@ export function TaskEditModalWrapper() {
     const handleClose = useCallback(() => {
         const params = new URLSearchParams(searchParams.toString());
         params.delete("taskId");
+        params.delete("create");
         router.push(`?${params.toString()}`);
     }, [searchParams, router]);
 
@@ -49,8 +51,11 @@ export function TaskEditModalWrapper() {
                     }
                 });
             }
+        } else if (createParam === "true") {
+            setTask(null);
+            setIsOpen(true);
         }
-    }, [taskIdParam, handleClose]);
+    }, [taskIdParam, createParam, handleClose]);
 
     // Clear state when taskIdParam is removed
     useEffect(() => {
@@ -61,11 +66,11 @@ export function TaskEditModalWrapper() {
         }
     }, [taskIdParam, task]);
 
-    if (!task || !isOpen) return null;
+    if (!isOpen) return null;
 
     return (
         <TaskDialog
-            task={task}
+            task={task || undefined}
             open={isOpen}
             onOpenChange={(open) => !open && handleClose()}
         />

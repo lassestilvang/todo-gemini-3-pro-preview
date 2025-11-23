@@ -21,6 +21,11 @@ export interface DeadlineExtraction {
     reason: string;
 }
 
+export interface ParsedSubtask {
+    title: string;
+    estimateMinutes: number;
+}
+
 // Extract deadline from text using Gemini
 export async function extractDeadline(text: string): Promise<DeadlineExtraction | null> {
     const client = getGeminiClient();
@@ -146,7 +151,7 @@ export async function applyScheduleSuggestion(taskId: number, date: Date) {
 }
 
 // Generate subtasks for a complex task
-export async function generateSubtasks(taskTitle: string): Promise<string[]> {
+export async function generateSubtasks(taskTitle: string): Promise<ParsedSubtask[]> {
     const client = getGeminiClient();
     if (!client) return [];
 
@@ -155,9 +160,14 @@ export async function generateSubtasks(taskTitle: string): Promise<string[]> {
 
         const prompt = `
             Break down the following task into 3-5 actionable subtasks: "${taskTitle}".
-            Return a JSON array of strings.
-            Example: ["Research flights", "Book hotel", "Pack bags"]
-            Keep subtasks concise (under 10 words).
+            For each subtask, estimate the time in minutes (e.g. 15, 30, 60).
+            
+            Return a JSON array of objects:
+            - "title": string (concise, under 10 words)
+            - "estimateMinutes": number
+            
+            Example: [{"title": "Research flights", "estimateMinutes": 30}, ...]
+            
             Return ONLY raw JSON.
         `;
 
@@ -168,7 +178,7 @@ export async function generateSubtasks(taskTitle: string): Promise<string[]> {
         const subtasks = JSON.parse(textResponse);
 
         if (Array.isArray(subtasks)) {
-            return subtasks.map(s => String(s));
+            return subtasks;
         }
         return [];
 

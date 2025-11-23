@@ -25,7 +25,7 @@ import { createTask, updateTask, deleteTask, getLists, getLabels } from "@/lib/a
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { X, Plus, Trash2, Focus, Sparkles, Loader2 } from "lucide-react";
-import { generateSubtasks } from "@/lib/smart-scheduler";
+import { generateSubtasks, ParsedSubtask } from "@/lib/smart-scheduler";
 import { createSubtask, updateSubtask, deleteSubtask, getSubtasks, createReminder, deleteReminder, getReminders, getTaskLogs, addDependency, removeDependency, getBlockers, searchTasks } from "@/lib/actions";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -558,7 +558,7 @@ function TaskForm({ task, defaultListId, onClose }: { task?: TaskType, defaultLi
                                 taskTitle={title}
                                 onConfirm={async (subtasks) => {
                                     for (const sub of subtasks) {
-                                        await createSubtask(task!.id, sub);
+                                        await createSubtask(task!.id, sub.title, sub.estimateMinutes);
                                     }
                                     fetchSubtasks();
                                     setAiBreakdownOpen(false);
@@ -775,8 +775,8 @@ function TaskForm({ task, defaultListId, onClose }: { task?: TaskType, defaultLi
     );
 }
 
-function AiBreakdownDialog({ open, onOpenChange, taskTitle, onConfirm }: { open: boolean, onOpenChange: (open: boolean) => void, taskTitle: string, onConfirm: (subtasks: string[]) => void }) {
-    const [suggestions, setSuggestions] = useState<string[]>([]);
+function AiBreakdownDialog({ open, onOpenChange, taskTitle, onConfirm }: { open: boolean, onOpenChange: (open: boolean) => void, taskTitle: string, onConfirm: (subtasks: ParsedSubtask[]) => void }) {
+    const [suggestions, setSuggestions] = useState<ParsedSubtask[]>([]);
     const [selected, setSelected] = useState<Set<number>>(new Set());
     const [loadingState, setLoadingState] = useState<string>("");
 
@@ -862,8 +862,11 @@ function AiBreakdownDialog({ open, onOpenChange, taskTitle, onConfirm }: { open:
                                         checked={selected.has(i)}
                                         onCheckedChange={() => handleToggle(i)}
                                     />
-                                    <Label htmlFor={`suggestion-${i}`} className="flex-1 cursor-pointer">
-                                        {sub}
+                                    <Label htmlFor={`suggestion-${i}`} className="flex-1 cursor-pointer flex justify-between items-center">
+                                        <span>{sub.title}</span>
+                                        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                                            {sub.estimateMinutes}m
+                                        </span>
                                     </Label>
                                 </div>
                             ))}

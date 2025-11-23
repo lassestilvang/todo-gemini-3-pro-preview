@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { AppSidebar } from "./AppSidebar";
 import { TaskEditModalWrapper } from "@/components/tasks/TaskEditModalWrapper";
+import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";
 
 import { getLists, getLabels } from "@/lib/actions";
 
@@ -18,6 +19,7 @@ export async function MainLayout({ children }: { children: React.ReactNode }) {
             </main>
             <Suspense fallback={null}>
                 <TaskEditModalWrapper />
+                <KeyboardShortcuts />
             </Suspense>
         </div>
     );

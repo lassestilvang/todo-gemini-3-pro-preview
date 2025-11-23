@@ -5,7 +5,7 @@ import { lists, tasks, labels, taskLogs, taskLabels, reminders, taskDependencies
 import { eq, and, desc, gte, lte, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { startOfDay, endOfDay, addDays } from "date-fns";
-import { calculateLevel } from "./gamification";
+import { calculateLevel, calculateStreakUpdate } from "./gamification";
 import { suggestMetadata } from "./smart-tags";
 
 // --- Lists ---
@@ -415,6 +415,9 @@ export async function toggleTaskCompletion(id: number, isCompleted: boolean) {
         }
     }
 
+    // Update Streak
+    await updateStreak();
+
     // Award XP
     const baseXP = 10;
     let bonusXP = 0;
@@ -424,16 +427,40 @@ export async function toggleTaskCompletion(id: number, isCompleted: boolean) {
     return await addXP(baseXP + bonusXP);
 }
 
+export async function updateStreak() {
+    const stats = await getUserStats();
+    const { newStreak, shouldUpdate } = calculateStreakUpdate(stats.currentStreak, stats.lastLogin);
+
+    if (shouldUpdate) {
+        await db.update(userStats)
+            .set({
+                currentStreak: newStreak,
+                longestStreak: Math.max(stats.longestStreak, newStreak),
+                lastLogin: new Date() // Using lastLogin as "last activity" for simplicity
+            })
+            .where(eq(userStats.id, 1));
+
+        if (newStreak > stats.currentStreak) {
+            await db.insert(taskLogs).values({
+                taskId: null,
+                action: "streak_updated",
+                details: `Streak increased to ${newStreak} days! 🔥`,
+            });
+        }
+    }
+}
+
 export async function getSubtasks(taskId: number) {
     const result = await db.select().from(tasks).where(eq(tasks.parentId, taskId)).orderBy(tasks.createdAt);
     return result;
 }
 
-export async function createSubtask(parentId: number, title: string) {
+export async function createSubtask(parentId: number, title: string, estimateMinutes?: number) {
     const result = await db.insert(tasks).values({
         title,
         parentId,
         listId: null,
+        estimateMinutes: estimateMinutes || null,
     }).returning();
 
     const subtask = result[0];

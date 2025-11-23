@@ -1,6 +1,6 @@
 {
     "name": "Todo Gemini",
-    "short_name": "Todo",
+    "short_name": "Todo Gemini",
     "description": "AI-powered daily task planner",
     "start_url": "/",
     "display": "standalone",

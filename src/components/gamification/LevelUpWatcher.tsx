@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getUserStats } from "@/lib/actions";
 import { LevelUpModal } from "./LevelUpModal";
+import { playLevelUpSound } from "@/lib/audio";
 
 export function LevelUpWatcher() {
     const [showLevelUp, setShowLevelUp] = useState(false);
@@ -21,6 +22,7 @@ export function LevelUpWatcher() {
             if (event.detail.leveledUp) {
                 setNewLevel(event.detail.level);
                 setShowLevelUp(true);
+                playLevelUpSound();
             }
         };
 
