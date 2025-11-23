@@ -1,14 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "bun:test";
+import { describe, it, expect, beforeEach } from "bun:test";
 import { calculateStreakUpdate } from "@/lib/gamification";
-import { updateStreak, addXP, checkAchievements, toggleTaskCompletion, createTask } from "@/lib/actions";
+import { toggleTaskCompletion, createTask } from "@/lib/actions";
 import { db } from "@/db";
-import { userStats, userAchievements, tasks, taskLogs, achievements } from "@/db/schema";
+import { userStats, userAchievements, achievements } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 import { setupTestDb, resetTestDb } from "@/test/setup";
-
-// Mock date
-const mockDate = new Date("2023-01-01T12:00:00Z");
 
 describe("Gamification Logic", () => {
     beforeEach(async () => {

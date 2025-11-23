@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Loader2, CalendarClock } from "lucide-react";
+import { Loader2, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
 import { rescheduleOverdueTasks, RescheduleSuggestion } from "@/lib/ai-actions";
 import { applyScheduleSuggestion } from "@/lib/smart-scheduler";
@@ -69,7 +69,7 @@ export function RescheduleButton() {
                 ) : (
                     <CalendarClock className="mr-2 h-4 w-4" />
                 )}
-                I'm Behind!
+                I&apos;m Behind!
             </Button>
 
             <Dialog open={isOpen} onOpenChange={setIsOpen}>

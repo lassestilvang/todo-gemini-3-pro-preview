@@ -41,14 +41,19 @@ describe("smart-scheduler", () => {
     });
 
     describe("generateSubtasks", () => {
-        it("returns a list of strings", async () => {
+        it("returns a list of subtasks", async () => {
+            const mockSubtasks = [
+                { title: "Subtask 1", estimateMinutes: 15 },
+                { title: "Subtask 2", estimateMinutes: 30 },
+                { title: "Subtask 3", estimateMinutes: 45 }
+            ];
             mockGenerateContent.mockResolvedValueOnce({
                 response: {
-                    text: () => JSON.stringify(["Subtask 1", "Subtask 2", "Subtask 3"])
+                    text: () => JSON.stringify(mockSubtasks)
                 }
             });
             const subtasks = await generateSubtasks("Test Task");
-            expect(subtasks).toEqual(["Subtask 1", "Subtask 2", "Subtask 3"]);
+            expect(subtasks).toEqual(mockSubtasks);
             expect(mockGenerateContent).toHaveBeenCalled();
         });
 
@@ -69,6 +74,7 @@ describe("smart-scheduler", () => {
         });
 
         it("returns empty if client is null", async () => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             mockGetGeminiClient.mockReturnValueOnce(undefined as unknown as any);
             const subtasks = await generateSubtasks("Test Task");
             expect(subtasks).toEqual([]);
@@ -123,6 +129,7 @@ describe("smart-scheduler", () => {
         });
 
         it("returns null if client is null", async () => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             mockGetGeminiClient.mockReturnValueOnce(undefined as unknown as any);
             const result = await extractDeadline("Task");
             expect(result).toBeNull();

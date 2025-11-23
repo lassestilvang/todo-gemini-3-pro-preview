@@ -1,6 +1,7 @@
 export function playSuccessSound() {
     if (typeof window === 'undefined') return;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioContext) return;
 
@@ -25,6 +26,7 @@ export function playSuccessSound() {
 export function playLevelUpSound() {
     if (typeof window === 'undefined') return;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioContext) return;
 

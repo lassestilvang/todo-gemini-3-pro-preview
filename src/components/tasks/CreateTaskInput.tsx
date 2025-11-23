@@ -15,7 +15,7 @@ import { extractDeadline } from "@/lib/smart-scheduler";
 import { Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { VoiceInput } from "./VoiceInput";
-import { parseVoiceCommand } from "@/lib/ai-actions";
+
 
 export function CreateTaskInput({ listId }: { listId?: number }) {
     const [title, setTitle] = useState("");

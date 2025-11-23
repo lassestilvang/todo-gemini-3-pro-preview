@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 
 export function InstallPrompt() {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
     const [isInstalled, setIsInstalled] = useState(false);
 
     useEffect(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const handler = (e: any) => {
             e.preventDefault();
             setDeferredPrompt(e);

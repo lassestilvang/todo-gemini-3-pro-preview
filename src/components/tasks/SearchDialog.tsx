@@ -44,7 +44,7 @@ export function SearchDialog() {
 
         document.addEventListener("keydown", down);
         return () => document.removeEventListener("keydown", down);
-    }, []);
+    }, [open]);
 
     React.useEffect(() => {
         const search = async () => {
