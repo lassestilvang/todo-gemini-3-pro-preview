@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { lists, tasks, labels, taskLogs, taskLabels, reminders, taskDependencies, templates, userStats, achievements, userAchievements } from "@/db/schema";
-import { eq, and, desc, gte, lte, inArray, sql, isNull } from "drizzle-orm";
+import { eq, and, desc, gte, lte, inArray, sql, isNull, asc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { startOfDay, endOfDay, addDays } from "date-fns";
 import { calculateLevel, calculateStreakUpdate } from "./gamification";
@@ -137,7 +137,7 @@ export async function getTasks(listId?: number | null, filter?: "today" | "upcom
     }).from(tasks)
         .leftJoin(lists, eq(tasks.listId, lists.id))
         .where(and(...conditions))
-        .orderBy(desc(tasks.createdAt));
+        .orderBy(asc(tasks.isCompleted), desc(tasks.createdAt));
 
     // Fetch labels for each task
     const taskIds = tasksResult.map(t => t.id);
