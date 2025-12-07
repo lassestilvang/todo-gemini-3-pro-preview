@@ -42,8 +42,6 @@ export function TaskEditModalWrapper() {
             if (!isNaN(taskId)) {
                 getTask(taskId).then((t) => {
                     if (t) {
-                        // Ensure the type matches by casting or validating
-                        // The getTask return type is mostly compatible, but we need to be careful with nulls
                         setTask(t as unknown as TaskType);
                         setIsOpen(true);
                     } else {
@@ -54,17 +52,11 @@ export function TaskEditModalWrapper() {
         } else if (createParam === "true") {
             setTask(null);
             setIsOpen(true);
-        }
-    }, [taskIdParam, createParam, handleClose]);
-
-    // Clear state when taskIdParam is removed
-    useEffect(() => {
-        if (!taskIdParam && task !== null) {
-            // Only clear if we have a task - avoid unnecessary renders
+        } else {
             setTask(null);
             setIsOpen(false);
         }
-    }, [taskIdParam, task]);
+    }, [taskIdParam, createParam, handleClose]);
 
     if (!isOpen) return null;
 
