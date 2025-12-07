@@ -34,6 +34,8 @@ export const viewport: Viewport = {
 import { PwaRegister } from "@/components/PwaRegister";
 import { LevelUpWatcher } from "@/components/gamification/LevelUpWatcher";
 import { ThemeProvider } from "@/components/theme-provider";
+import { QueryProvider } from "@/components/providers/QueryProvider";
+import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 
 export default function RootLayout({
   children,
@@ -43,18 +45,22 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${quicksand.variable} ${spaceGrotesk.variable}`}>
       <body className="font-sans">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-          themes={["light", "dark", "glassmorphism", "neubrutalism", "minimalist"]}
-        >
-          <PwaRegister />
-          <LevelUpWatcher />
-          <MainLayout>{children}</MainLayout>
-          <Toaster />
-        </ThemeProvider>
+        <QueryProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+            themes={["light", "dark", "glassmorphism", "neubrutalism", "minimalist"]}
+          >
+            <ErrorBoundary>
+              <PwaRegister />
+              <LevelUpWatcher />
+              <MainLayout>{children}</MainLayout>
+              <Toaster />
+            </ErrorBoundary>
+          </ThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   );

@@ -5,34 +5,34 @@ import { Progress } from "@/components/ui/progress";
 import { getUserStats } from "@/lib/actions";
 import { calculateProgress, calculateXPForNextLevel } from "@/lib/gamification";
 import { Trophy, Star } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 
 import confetti from "canvas-confetti";
 
 export function XPBar() {
-    const [stats, setStats] = useState<{ xp: number; level: number } | null>(null);
+    const { data: stats } = useQuery({
+        queryKey: ['userStats'],
+        queryFn: getUserStats,
+        refetchInterval: 2000, // Poll every 2 seconds
+        // Only update if data changed structurally, but confetti logic needs previous value
+    });
+
+    // We need to track previous level to trigger confetti
+    const [prevLevel, setPrevLevel] = useState<number | null>(null);
 
     useEffect(() => {
-        const loadStats = async () => {
-            const data = await getUserStats();
-            setStats(prev => {
-                if (prev && data.level > prev.level) {
-                    confetti({
-                        particleCount: 100,
-                        spread: 70,
-                        origin: { y: 0.6 }
-                    });
-                    // Could also show a toast or modal here
-                }
-                return data;
+        if (stats && prevLevel !== null && stats.level > prevLevel) {
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
             });
-        };
-        loadStats();
-
-        // Poll for updates (simple way to keep it in sync without complex sockets/context for now)
-        const interval = setInterval(loadStats, 2000); // Poll faster for better feedback
-        return () => clearInterval(interval);
-    }, []);
+        }
+        if (stats) {
+            setPrevLevel(stats.level);
+        }
+    }, [stats?.level]); // Only run when level changes
 
     if (!stats) return null;
 
