@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Inter, Quicksand, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -44,6 +45,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${quicksand.variable} ${spaceGrotesk.variable}`}>
+      <head>
+        {process.env.NODE_ENV === "development" && (
+          <Script
+            src="//unpkg.com/react-grab/dist/index.global.js"
+            crossOrigin="anonymous"
+            strategy="beforeInteractive"
+          />
+        )}
+      </head>
       <body className="font-sans">
         <QueryProvider>
           <ThemeProvider
