@@ -2,6 +2,7 @@
 
 A modern, professional daily task planner built with **Next.js 16**, **Bun**, and **SQLite**. Designed for speed, simplicity, and a great user experience.
 
+![CI](https://github.com/lassestilvang/todo-gemini3/actions/workflows/ci.yml/badge.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
 ![Bun](https://img.shields.io/badge/Bun-1.0+-orange)
