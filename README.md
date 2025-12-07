@@ -59,22 +59,45 @@ A modern, professional daily task planner built with **Next.js 16**, **Bun**, an
    bun dev
    ```
 
-5. **Open the app**:
-   Visit [http://localhost:3000](http://localhost:3000) in your browser.
+6. **Verify Installation**:
+   Ensure everything is running correctly by verifying:
+   - The app loads at http://localhost:3000
+   - You can create a new task
+   - The "Inbox" list is visible
+
+## 🧪 Running Tests
+
+We use `bun test` for running unit and integration tests.
+
+```bash
+# Run all tests
+bun test
+
+# Run specific test file
+bun test src/components/tasks/TaskDialog.test.tsx
+```
 
 ## 📂 Project Structure
 
-```
 src/
-├── app/              # Next.js App Router pages
-├── components/       # React components
-│   ├── layout/       # Layout components (Sidebar, Main)
-│   ├── tasks/        # Task-related components
-│   └── ui/           # shadcn/ui primitives
-├── db/               # Database schema and connection
-├── lib/              # Server actions and utilities
+├── app/                  # Next.js App Router pages (routes)
+│   ├── (dashboard)/      # Dashboard routes (inbox, today, etc.)
+│   ├── api/              # API routes
+│   └── layout.tsx        # Root layout
+├── components/           # React components
+│   ├── gamification/     # XP, Achievements, Streaks
+│   ├── layout/           # App shell (Sidebar, Main content area)
+│   ├── tasks/            # Task management (Dialogs, Lists, Items)
+│   ├── settings/         # User settings
+│   └── ui/               # Reusable primitives (shadcn/ui)
+├── db/                   # Database configuration
+│   ├── schema.ts         # Drizzle ORM schema definitions
+│   └── seed.ts           # Initial data seeding script
+├── lib/                  # Utilities and core logic
+│   ├── actions.ts        # Server Actions (CRUD operations)
+│   ├── hooks/            # Custom React hooks
+│   └── smart-scheduler.ts # AI task scheduling logic
 └── ...
-```
 
 ## 🧪 Running Tests
 
