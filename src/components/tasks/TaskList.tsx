@@ -11,9 +11,10 @@ interface TaskListProps {
     title?: string;
     listId?: number;
     labelId?: number;
+    defaultDueDate?: Date | string;
 }
 
-export function TaskList({ tasks, title, listId, labelId }: TaskListProps) {
+export function TaskList({ tasks, title, listId, labelId, defaultDueDate }: TaskListProps) {
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -56,6 +57,7 @@ export function TaskList({ tasks, title, listId, labelId }: TaskListProps) {
                 task={editingTask ?? undefined}
                 defaultListId={listId}
                 defaultLabelIds={labelId ? [labelId] : undefined}
+                defaultDueDate={defaultDueDate}
                 open={isDialogOpen}
                 onOpenChange={(open) => {
                     setIsDialogOpen(open);

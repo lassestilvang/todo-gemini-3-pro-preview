@@ -28,13 +28,14 @@ interface TaskDialogProps {
     trigger?: React.ReactNode;
     defaultListId?: number;
     defaultLabelIds?: number[];
+    defaultDueDate?: Date | string;
 }
 
 /**
  * Dialog for creating or editing a task.
  * Refactored to use custom hooks for state and data management.
  */
-export function TaskDialog({ task, open, onOpenChange, trigger, defaultListId, defaultLabelIds }: TaskDialogProps) {
+export function TaskDialog({ task, open, onOpenChange, trigger, defaultListId, defaultLabelIds, defaultDueDate }: TaskDialogProps) {
     const [internalOpen, setInternalOpen] = useState(false);
     const effectiveOpen = open !== undefined ? open : internalOpen;
     const setEffectiveOpen = onOpenChange || setInternalOpen;
@@ -50,6 +51,7 @@ export function TaskDialog({ task, open, onOpenChange, trigger, defaultListId, d
                     task={task}
                     defaultListId={defaultListId}
                     defaultLabelIds={defaultLabelIds}
+                    defaultDueDate={defaultDueDate}
                     onClose={() => setEffectiveOpen(false)}
                 />
             </DialogContent>
@@ -57,7 +59,7 @@ export function TaskDialog({ task, open, onOpenChange, trigger, defaultListId, d
     );
 }
 
-function TaskForm({ task, defaultListId, defaultLabelIds, onClose }: { task?: TaskType, defaultListId?: number, defaultLabelIds?: number[], onClose: () => void }) {
+function TaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, onClose }: { task?: TaskType, defaultListId?: number, defaultLabelIds?: number[], defaultDueDate?: Date | string, onClose: () => void }) {
     // Form State
     const {
         title, setTitle,
@@ -76,7 +78,7 @@ function TaskForm({ task, defaultListId, defaultLabelIds, onClose }: { task?: Ta
         handleDelete,
         toggleLabel,
         isEdit
-    } = useTaskForm({ task, defaultListId, defaultLabelIds, onClose });
+    } = useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, onClose });
 
     // Data State (Subtasks, Reminders, Logs, etc.)
     const {

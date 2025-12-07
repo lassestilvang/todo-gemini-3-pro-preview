@@ -17,9 +17,11 @@ import { toast } from "sonner";
 import { VoiceInput } from "./VoiceInput";
 
 
-export function CreateTaskInput({ listId }: { listId?: number }) {
+export function CreateTaskInput({ listId, defaultDueDate }: { listId?: number, defaultDueDate?: Date | string }) {
     const [title, setTitle] = useState("");
-    const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+    const [dueDate, setDueDate] = useState<Date | undefined>(
+        defaultDueDate ? new Date(defaultDueDate) : undefined
+    );
     const [priority, setPriority] = useState<"none" | "low" | "medium" | "high">("none");
     const [energyLevel, setEnergyLevel] = useState<"high" | "medium" | "low" | undefined>(undefined);
     const [context, setContext] = useState<"computer" | "phone" | "errands" | "meeting" | "home" | "anywhere" | undefined>(undefined);
@@ -73,7 +75,7 @@ export function CreateTaskInput({ listId }: { listId?: number }) {
         });
 
         setTitle("");
-        setDueDate(undefined);
+        setDueDate(defaultDueDate ? new Date(defaultDueDate) : undefined);
         setPriority("none");
         setEnergyLevel(undefined);
         setContext(undefined);

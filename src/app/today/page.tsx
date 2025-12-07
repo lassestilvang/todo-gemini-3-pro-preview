@@ -15,9 +15,9 @@ export default async function TodayPage() {
                     </p>
                 </div>
 
-                <CreateTaskInput />
+                <CreateTaskInput defaultDueDate={new Date().toISOString()} />
 
-                <TaskList tasks={tasks} />
+                <TaskList tasks={tasks} defaultDueDate={new Date().toISOString()} />
             </div>
         </div>
     );

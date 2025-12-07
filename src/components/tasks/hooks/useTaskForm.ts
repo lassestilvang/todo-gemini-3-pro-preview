@@ -21,6 +21,7 @@ interface UseTaskFormProps {
     task?: TaskType;
     defaultListId?: number;
     defaultLabelIds?: number[];
+    defaultDueDate?: Date | string;
     onClose: () => void;
 }
 
@@ -31,14 +32,19 @@ interface UseTaskFormProps {
  * @param task - Optional existing task to edit
  * @param defaultListId - Default list ID to select if creating a new task
  * @param defaultLabelIds - Default label IDs to select if creating a new task
+ * @param defaultDueDate - Default due date to select if creating a new task
  * @param onClose - Callback to close the dialog after successful submission
  */
-export function useTaskForm({ task, defaultListId, defaultLabelIds, onClose }: UseTaskFormProps) {
+export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, onClose }: UseTaskFormProps) {
     const [title, setTitle] = useState(task?.title || "");
     const [description, setDescription] = useState(task?.description || "");
     const [priority, setPriority] = useState<"none" | "low" | "medium" | "high">(task?.priority || "none");
     const [listId, setListId] = useState<string>(task?.listId?.toString() || defaultListId?.toString() || "inbox");
-    const [dueDate, setDueDate] = useState<Date | undefined>(task?.dueDate ? new Date(task.dueDate) : undefined);
+    const [dueDate, setDueDate] = useState<Date | undefined>(
+        task
+            ? (task.dueDate ? new Date(task.dueDate) : undefined)
+            : (defaultDueDate ? new Date(defaultDueDate) : undefined)
+    );
     const [deadline, setDeadline] = useState<Date | undefined>(task?.deadline ? new Date(task.deadline) : undefined);
     const [selectedLabelIds, setSelectedLabelIds] = useState<number[]>(task?.labels?.map((l) => l.id) || defaultLabelIds || []);
     const [energyLevel, setEnergyLevel] = useState<"high" | "medium" | "low" | "none">(task?.energyLevel || "none");
