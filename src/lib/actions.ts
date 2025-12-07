@@ -130,8 +130,14 @@ export async function getTasks(listId?: number | null, filter?: "today" | "upcom
         energyLevel: tasks.energyLevel,
         context: tasks.context,
         isHabit: tasks.isHabit,
-        blockedByCount: sql<number>`(SELECT COUNT(*) FROM ${taskDependencies} WHERE ${taskDependencies.taskId} = ${tasks.id})`
-    }).from(tasks).where(and(...conditions)).orderBy(desc(tasks.createdAt));
+        blockedByCount: sql<number>`(SELECT COUNT(*) FROM ${taskDependencies} WHERE ${taskDependencies.taskId} = ${tasks.id})`,
+        listName: lists.name,
+        listColor: lists.color,
+        listIcon: lists.icon,
+    }).from(tasks)
+        .leftJoin(lists, eq(tasks.listId, lists.id))
+        .where(and(...conditions))
+        .orderBy(desc(tasks.createdAt));
 
     // Fetch labels for each task
     const taskIds = tasksResult.map(t => t.id);

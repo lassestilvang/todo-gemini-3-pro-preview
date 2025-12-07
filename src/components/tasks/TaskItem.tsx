@@ -15,6 +15,9 @@ import { Target } from "lucide-react";
 import { playSuccessSound } from "@/lib/audio";
 
 
+import { createElement } from "react";
+import { getListIcon, getLabelIcon } from "@/lib/icons";
+
 // Define a type for the task prop based on the schema or a shared type
 // For now, I'll define a simplified interface matching the schema
 export interface Task {
@@ -28,19 +31,23 @@ export interface Task {
     estimateMinutes: number | null;
     isRecurring: boolean | null;
     listId: number | null;
+    listName?: string | null;
+    listColor?: string | null;
+    listIcon?: string | null;
     recurringRule: string | null;
     energyLevel: "high" | "medium" | "low" | null;
     context: "computer" | "phone" | "errands" | "meeting" | "home" | "anywhere" | null;
     isHabit: boolean | null;
-    labels?: Array<{ id: number; name: string; color: string | null }>;
+    labels?: Array<{ id: number; name: string; color: string | null; icon: string | null }>;
     blockedByCount?: number;
 }
 
 interface TaskItemProps {
     task: Task;
+    showListInfo?: boolean;
 }
 
-export function TaskItem({ task }: TaskItemProps) {
+export function TaskItem({ task, showListInfo = true }: TaskItemProps) {
     const [isCompleted, setIsCompleted] = useState(task.isCompleted || false);
 
     const handleToggle = async (checked: boolean) => {
@@ -117,6 +124,15 @@ export function TaskItem({ task }: TaskItemProps) {
                         {isBlocked && !isCompleted && (
                             <Lock className="h-3 w-3 text-orange-500" />
                         )}
+                        {showListInfo && task.listName && (
+                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full ml-auto">
+                                {createElement(getListIcon(task.listIcon || null), {
+                                    className: "w-3 h-3",
+                                    style: { color: task.listColor || 'currentColor' }
+                                })}
+                                <span>{task.listName}</span>
+                            </div>
+                        )}
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1.5">
                         {isBlocked && !isCompleted && (
@@ -184,8 +200,9 @@ export function TaskItem({ task }: TaskItemProps) {
                                         backgroundColor: (label.color || '#000000') + '10',
                                         color: label.color || '#000000'
                                     }}
-                                    className="text-[10px] px-1.5 py-0 h-5 font-normal border"
+                                    className="text-[10px] px-1.5 py-0 h-5 font-normal border flex items-center gap-1"
                                 >
+                                    {createElement(getLabelIcon(label.icon), { className: "h-3 w-3" })}
                                     {label.name}
                                 </Badge>
                             ))}

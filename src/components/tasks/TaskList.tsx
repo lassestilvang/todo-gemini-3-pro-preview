@@ -46,7 +46,7 @@ export function TaskList({ tasks, title, listId, labelId }: TaskListProps) {
                 <div className="space-y-2">
                     {tasks.map((task) => (
                         <div key={task.id} onClick={() => handleEdit(task)} className="cursor-pointer">
-                            <TaskItem task={task} />
+                            <TaskItem task={task} showListInfo={!listId} />
                         </div>
                     ))}
                 </div>
