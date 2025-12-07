@@ -3,7 +3,7 @@ import { TaskList } from "@/components/tasks/TaskList";
 
 
 export default async function InboxPage() {
-    const tasks = await getTasks(undefined, "all"); // TODO: Filter by inbox properly if needed
+    const tasks = await getTasks(null, "all"); // Filter by inbox (no list)
 
     return (
         <div className="container max-w-4xl py-6 lg:py-10">

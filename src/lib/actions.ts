@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { lists, tasks, labels, taskLogs, taskLabels, reminders, taskDependencies, templates, userStats, achievements, userAchievements } from "@/db/schema";
-import { eq, and, desc, gte, lte, inArray, sql } from "drizzle-orm";
+import { eq, and, desc, gte, lte, inArray, sql, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { startOfDay, endOfDay, addDays } from "date-fns";
 import { calculateLevel, calculateStreakUpdate } from "./gamification";
@@ -64,11 +64,13 @@ export async function deleteLabel(id: number) {
 
 // --- Tasks ---
 
-export async function getTasks(listId?: number, filter?: "today" | "upcoming" | "all" | "completed" | "next-7-days", labelId?: number) {
+export async function getTasks(listId?: number | null, filter?: "today" | "upcoming" | "all" | "completed" | "next-7-days", labelId?: number) {
     const conditions = [];
 
     if (listId) {
         conditions.push(eq(tasks.listId, listId));
+    } else if (listId === null) {
+        conditions.push(isNull(tasks.listId));
     }
 
     if (labelId) {
