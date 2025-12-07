@@ -87,7 +87,7 @@ export function AiBreakdownDialog({ open, onOpenChange, taskTitle, onConfirm }: 
                         AI Task Breakdown
                     </DialogTitle>
                     <DialogDescription>
-                        Suggested subtasks for "{taskTitle}"
+                        Suggested subtasks for &quot;{taskTitle}&quot;
                     </DialogDescription>
                 </DialogHeader>
 

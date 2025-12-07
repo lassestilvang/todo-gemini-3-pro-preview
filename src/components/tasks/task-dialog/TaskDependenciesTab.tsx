@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+
 import { Button } from "@/components/ui/button";
 import { TabsContent } from "@/components/ui/tabs";
 import { Link, Lock, X } from "lucide-react";

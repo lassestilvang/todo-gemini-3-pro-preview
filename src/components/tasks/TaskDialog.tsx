@@ -11,7 +11,7 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog";
 import { createTask, updateTask, deleteTask, getLists, getLabels, createSubtask, updateSubtask, deleteSubtask, getSubtasks, createReminder, deleteReminder, getReminders, getTaskLogs, addDependency, removeDependency, getBlockers, searchTasks } from "@/lib/actions";
-import { Focus, FocusIcon } from "lucide-react";
+import { Focus } from "lucide-react";
 import { ParsedSubtask } from "@/lib/smart-scheduler";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FocusMode } from "./FocusMode";

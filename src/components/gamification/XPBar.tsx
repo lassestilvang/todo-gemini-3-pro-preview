@@ -32,7 +32,7 @@ export function XPBar() {
         if (stats) {
             setPrevLevel(stats.level);
         }
-    }, [stats?.level]); // Only run when level changes
+    }, [stats?.level]); // eslint-disable-line react-hooks/exhaustive-deps
 
     if (!stats) return null;
 
