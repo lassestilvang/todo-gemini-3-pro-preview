@@ -1,5 +1,5 @@
 import { getList, getTasks } from "@/lib/actions";
-import { TaskList } from "@/components/tasks/TaskList";
+import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
 import { notFound } from "next/navigation";
 import { getListIcon } from "@/lib/icons";
 import { createElement } from "react";
@@ -37,8 +37,9 @@ export default async function ListPage({ params }: ListPageProps) {
                     </h1>
                 </div>
 
-                <TaskList tasks={tasks} listId={listId} />
+                <TaskListWithSettings tasks={tasks} listId={listId} viewId={`list-${listId}`} />
             </div>
         </div>
     );
 }
+

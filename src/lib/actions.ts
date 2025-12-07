@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { lists, tasks, labels, taskLogs, taskLabels, reminders, taskDependencies, templates, userStats, achievements, userAchievements } from "@/db/schema";
+import { lists, tasks, labels, taskLogs, taskLabels, reminders, taskDependencies, templates, userStats, achievements, userAchievements, viewSettings } from "@/db/schema";
 import { eq, and, desc, gte, lte, inArray, sql, isNull, asc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { startOfDay, endOfDay, addDays } from "date-fns";
@@ -846,4 +846,42 @@ export async function getUserAchievements() {
         .orderBy(desc(userAchievements.unlockedAt));
 
     return result;
+}
+
+// --- View Settings ---
+
+export async function getViewSettings(viewId: string) {
+    const result = await db.select().from(viewSettings).where(eq(viewSettings.id, viewId));
+    return result[0] || null;
+}
+
+export async function saveViewSettings(viewId: string, settings: {
+    layout?: "list" | "board" | "calendar";
+    showCompleted?: boolean;
+    groupBy?: "none" | "dueDate" | "priority" | "label";
+    sortBy?: "manual" | "dueDate" | "priority" | "name";
+    sortOrder?: "asc" | "desc";
+    filterDate?: "all" | "hasDate" | "noDate";
+    filterPriority?: string | null;
+    filterLabelId?: number | null;
+}) {
+    const existing = await getViewSettings(viewId);
+
+    if (existing) {
+        await db.update(viewSettings)
+            .set({ ...settings, updatedAt: new Date() })
+            .where(eq(viewSettings.id, viewId));
+    } else {
+        await db.insert(viewSettings).values({
+            id: viewId,
+            ...settings,
+        });
+    }
+
+    revalidatePath("/");
+}
+
+export async function resetViewSettings(viewId: string) {
+    await db.delete(viewSettings).where(eq(viewSettings.id, viewId));
+    revalidatePath("/");
 }

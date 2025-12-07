@@ -1,5 +1,5 @@
 import { getTasks } from "@/lib/actions";
-import { TaskList } from "@/components/tasks/TaskList";
+import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
 import { CreateTaskInput } from "@/components/tasks/CreateTaskInput";
 
 export default async function TodayPage() {
@@ -17,7 +17,11 @@ export default async function TodayPage() {
 
                 <CreateTaskInput defaultDueDate={new Date().toISOString()} />
 
-                <TaskList tasks={tasks} defaultDueDate={new Date().toISOString()} />
+                <TaskListWithSettings
+                    tasks={tasks}
+                    defaultDueDate={new Date().toISOString()}
+                    viewId="today"
+                />
             </div>
         </div>
     );

@@ -1,5 +1,5 @@
 import { getLabel, getTasks } from "@/lib/actions";
-import { TaskList } from "@/components/tasks/TaskList";
+import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
 import { notFound } from "next/navigation";
 import { getLabelIcon } from "@/lib/icons";
 import { createElement } from "react";
@@ -37,8 +37,9 @@ export default async function LabelPage({ params }: LabelPageProps) {
                     </h1>
                 </div>
 
-                <TaskList tasks={tasks} labelId={labelId} />
+                <TaskListWithSettings tasks={tasks} labelId={labelId} viewId={`label-${labelId}`} />
             </div>
         </div>
     );
 }
+

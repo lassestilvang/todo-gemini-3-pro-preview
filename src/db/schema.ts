@@ -160,3 +160,16 @@ export const userAchievements = sqliteTable("user_achievements", {
 }, (t) => ({
     pk: primaryKey({ columns: [t.achievementId] }),
 }));
+
+export const viewSettings = sqliteTable("view_settings", {
+    id: text("id").primaryKey(), // e.g., "today", "inbox", "list-1", "label-2"
+    layout: text("layout", { enum: ["list", "board", "calendar"] }).default("list"),
+    showCompleted: integer("show_completed", { mode: "boolean" }).default(true),
+    groupBy: text("group_by", { enum: ["none", "dueDate", "priority", "label"] }).default("none"),
+    sortBy: text("sort_by", { enum: ["manual", "dueDate", "priority", "name"] }).default("manual"),
+    sortOrder: text("sort_order", { enum: ["asc", "desc"] }).default("asc"),
+    filterDate: text("filter_date", { enum: ["all", "hasDate", "noDate"] }).default("all"),
+    filterPriority: text("filter_priority"), // null = all, or "high", "medium", "low", "none"
+    filterLabelId: integer("filter_label_id"), // null = all
+    updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+});

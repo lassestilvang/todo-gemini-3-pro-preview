@@ -1,5 +1,5 @@
 import { getTasks } from "@/lib/actions";
-import { TaskList } from "@/components/tasks/TaskList";
+import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
 
 
 export default async function InboxPage() {
@@ -15,8 +15,9 @@ export default async function InboxPage() {
                     </p>
                 </div>
 
-                <TaskList tasks={tasks} />
+                <TaskListWithSettings tasks={tasks} viewId="inbox" />
             </div>
         </div>
     );
 }
+

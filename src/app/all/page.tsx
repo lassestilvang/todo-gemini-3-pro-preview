@@ -1,5 +1,5 @@
 import { getTasks } from "@/lib/actions";
-import { TaskList } from "@/components/tasks/TaskList";
+import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
 import { CreateTaskInput } from "@/components/tasks/CreateTaskInput";
 
 export default async function AllTasksPage() {
@@ -17,8 +17,9 @@ export default async function AllTasksPage() {
 
                 <CreateTaskInput />
 
-                <TaskList tasks={tasks} />
+                <TaskListWithSettings tasks={tasks} viewId="all" />
             </div>
         </div>
     );
 }
+
