@@ -303,10 +303,12 @@ describe("Server Actions", () => {
 
             await instantiateTemplate(templates[0].id);
             const tasks = await getTasks(undefined, "all");
-            // Should have 2 tasks: Template Task and Subtask
-            expect(tasks.length).toBeGreaterThanOrEqual(2);
+            // Should have only 1 parent task (subtasks are now nested)
             const templateTask = tasks.find(t => t.title === "Template Task");
             expect(templateTask).toBeDefined();
+            // Verify subtasks are attached to parent
+            expect(templateTask?.subtaskCount).toBe(1);
+            expect(templateTask?.subtasks?.[0]?.title).toBe("Subtask");
         });
 
         it("should delete template", async () => {

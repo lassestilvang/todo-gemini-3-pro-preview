@@ -17,7 +17,9 @@ mock.module("next/navigation", () => ({
     useRouter: () => ({
         push: mockPush
     }),
-    useSearchParams: () => mockSearchParams
+    useSearchParams: () => mockSearchParams,
+    usePathname: () => "/test",
+    useParams: () => ({})
 }));
 
 // Mock TaskDialog
@@ -77,7 +79,7 @@ describe("TaskEditModalWrapper", () => {
 
         screen.getByText("Close").click();
 
-        expect(mockPush).toHaveBeenCalledWith("?");
+        expect(mockPush).toHaveBeenCalledWith("/test?");
     });
 
     it("should handle invalid taskId", async () => {
@@ -99,7 +101,7 @@ describe("TaskEditModalWrapper", () => {
         });
 
         await waitFor(() => {
-            expect(mockPush).toHaveBeenCalledWith("?");
+            expect(mockPush).toHaveBeenCalledWith("/test?");
         });
     });
 });

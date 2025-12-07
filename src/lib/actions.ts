@@ -67,6 +67,9 @@ export async function deleteLabel(id: number) {
 export async function getTasks(listId?: number | null, filter?: "today" | "upcoming" | "all" | "completed" | "next-7-days", labelId?: number) {
     const conditions = [];
 
+    // Always filter out subtasks - only show parent tasks
+    conditions.push(isNull(tasks.parentId));
+
     if (listId) {
         conditions.push(eq(tasks.listId, listId));
     } else if (listId === null) {
@@ -154,20 +157,38 @@ export async function getTasks(listId?: number | null, filter?: "today" | "upcom
         .leftJoin(labels, eq(taskLabels.labelId, labels.id))
         .where(inArray(taskLabels.taskId, taskIds));
 
-    const tasksWithLabels = tasksResult.map(task => {
+    // Fetch subtasks for all parent tasks
+    const subtasksResult = await db.select({
+        id: tasks.id,
+        parentId: tasks.parentId,
+        title: tasks.title,
+        isCompleted: tasks.isCompleted,
+        estimateMinutes: tasks.estimateMinutes,
+    }).from(tasks)
+        .where(inArray(tasks.parentId, taskIds))
+        .orderBy(asc(tasks.isCompleted), asc(tasks.createdAt));
+
+    const tasksWithLabelsAndSubtasks = tasksResult.map(task => {
         const taskLabelsList = labelsResult.filter(l => l.taskId === task.id).map(l => ({
             id: l.labelId,
             name: l.name || "", // Handle null name from left join
             color: l.color || "#000000", // Handle null color
             icon: l.icon
         }));
+
+        const taskSubtasks = subtasksResult.filter(s => s.parentId === task.id);
+        const completedSubtaskCount = taskSubtasks.filter(s => s.isCompleted).length;
+
         return {
             ...task,
-            labels: taskLabelsList
+            labels: taskLabelsList,
+            subtasks: taskSubtasks,
+            subtaskCount: taskSubtasks.length,
+            completedSubtaskCount,
         };
     });
 
-    return tasksWithLabels;
+    return tasksWithLabelsAndSubtasks;
 }
 
 export async function getTask(id: number) {

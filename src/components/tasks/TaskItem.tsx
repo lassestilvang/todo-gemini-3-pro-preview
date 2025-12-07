@@ -6,8 +6,8 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { Calendar, Flag, Clock, Repeat, AlertCircle, Lock } from "lucide-react";
-import { toggleTaskCompletion } from "@/lib/actions";
+import { Calendar, Flag, Clock, Repeat, AlertCircle, Lock, ChevronDown, GitBranch } from "lucide-react";
+import { toggleTaskCompletion, updateSubtask } from "@/lib/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FocusMode } from "./FocusMode";
@@ -20,6 +20,15 @@ import { getListIcon, getLabelIcon } from "@/lib/icons";
 
 // Define a type for the task prop based on the schema or a shared type
 // For now, I'll define a simplified interface matching the schema
+
+export interface Subtask {
+    id: number;
+    parentId: number | null;
+    title: string;
+    isCompleted: boolean | null;
+    estimateMinutes: number | null;
+}
+
 export interface Task {
     id: number;
     title: string;
@@ -40,6 +49,9 @@ export interface Task {
     isHabit: boolean | null;
     labels?: Array<{ id: number; name: string; color: string | null; icon: string | null }>;
     blockedByCount?: number;
+    subtasks?: Subtask[];
+    subtaskCount?: number;
+    completedSubtaskCount?: number;
 }
 
 interface TaskItemProps {
@@ -49,6 +61,19 @@ interface TaskItemProps {
 
 export function TaskItem({ task, showListInfo = true }: TaskItemProps) {
     const [isCompleted, setIsCompleted] = useState(task.isCompleted || false);
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [subtaskStates, setSubtaskStates] = useState<Record<number, boolean>>(
+        () => (task.subtasks || []).reduce((acc, s) => ({ ...acc, [s.id]: s.isCompleted || false }), {} as Record<number, boolean>)
+    );
+
+    const hasSubtasks = (task.subtaskCount || 0) > 0;
+    const completedCount = task.completedSubtaskCount || 0;
+    const totalCount = task.subtaskCount || 0;
+
+    const handleSubtaskToggle = async (subtaskId: number, checked: boolean) => {
+        setSubtaskStates(prev => ({ ...prev, [subtaskId]: checked }));
+        await updateSubtask(subtaskId, checked);
+    };
 
     const handleToggle = async (checked: boolean) => {
         if (task.blockedByCount && task.blockedByCount > 0 && checked) {
@@ -106,6 +131,26 @@ export function TaskItem({ task, showListInfo = true }: TaskItemProps) {
                     isBlocked && !isCompleted && "bg-orange-50/50 border-orange-100"
                 )}
             >
+                {/* Expand/Collapse Button */}
+                {hasSubtasks ? (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setIsExpanded(!isExpanded);
+                        }}
+                        className="flex items-center justify-center w-5 h-5 -ml-1 rounded hover:bg-muted transition-colors"
+                    >
+                        <ChevronDown
+                            className={cn(
+                                "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                                !isExpanded && "-rotate-90"
+                            )}
+                        />
+                    </button>
+                ) : (
+                    <div className="w-5 h-5 -ml-1" /> // Spacer for alignment
+                )}
+
                 <Checkbox
                     checked={isCompleted}
                     onCheckedChange={handleToggle}
@@ -135,6 +180,12 @@ export function TaskItem({ task, showListInfo = true }: TaskItemProps) {
                         )}
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1.5">
+                        {hasSubtasks && (
+                            <div className="flex items-center gap-1 text-muted-foreground">
+                                <GitBranch className="h-3 w-3" />
+                                <span>{completedCount}/{totalCount}</span>
+                            </div>
+                        )}
                         {isBlocked && !isCompleted && (
                             <div className="flex items-center gap-1 text-orange-500 font-medium">
                                 <Lock className="h-3 w-3" />
@@ -223,6 +274,44 @@ export function TaskItem({ task, showListInfo = true }: TaskItemProps) {
                     <Target className="h-4 w-4 text-muted-foreground hover:text-primary" />
                 </Button>
             </div>
+
+            {/* Subtasks Section */}
+            {hasSubtasks && isExpanded && (
+                <div className="ml-8 mt-1 space-y-1 border-l-2 border-muted pl-4">
+                    {(task.subtasks || []).map((subtask) => {
+                        const isSubtaskCompleted = subtaskStates[subtask.id] ?? subtask.isCompleted;
+                        return (
+                            <div
+                                key={subtask.id}
+                                className={cn(
+                                    "flex items-center gap-3 py-2 px-3 rounded-md hover:bg-muted/50 transition-colors",
+                                    isSubtaskCompleted && "opacity-60"
+                                )}
+                            >
+                                <Checkbox
+                                    checked={isSubtaskCompleted || false}
+                                    onCheckedChange={(checked) => handleSubtaskToggle(subtask.id, checked as boolean)}
+                                    className="rounded-full h-4 w-4"
+                                    onClick={(e) => e.stopPropagation()}
+                                />
+                                <span
+                                    className={cn(
+                                        "text-sm",
+                                        isSubtaskCompleted && "line-through text-muted-foreground"
+                                    )}
+                                >
+                                    {subtask.title}
+                                </span>
+                                {subtask.estimateMinutes && (
+                                    <span className="text-xs text-muted-foreground ml-auto">
+                                        {subtask.estimateMinutes}m
+                                    </span>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
 
             {showFocusMode && (
                 <FocusMode
