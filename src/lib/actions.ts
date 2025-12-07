@@ -303,25 +303,35 @@ export async function updateTask(id: number, data: Partial<typeof tasks.$inferIn
     }
 
     if (taskData.listId !== undefined && taskData.listId !== currentTask.listId) {
-        // We could fetch list names here for better logging, but for now keeping it simple or just noting the ID change is less readable.
-        // Let's just say "List changed". To be perfect we'd need to fetch the list names.
-        // Given the user asked for "from" and "to", let's try to be as specific as possible without extra DB calls if possible, 
-        // but list names require DB. For now, let's stick to "List changed" or maybe "List changed (ID: X -> Y)" if we want to be technical,
-        // but "List changed" is safer if we don't want to fetch. 
-        // Actually, let's just leave "List updated" as is for now unless we want to fetch list names. 
-        // The user said "The activity log should include the <from> and <to> values".
-        // Let's stick to the fields we have easy access to first.
-        changes.push("List updated");
+        let fromListName = "Inbox";
+        if (currentTask.listId) {
+            const list = await getList(currentTask.listId);
+            if (list) fromListName = list.name;
+        }
+
+        let toListName = "Inbox";
+        if (taskData.listId) {
+            const list = await getList(taskData.listId);
+            if (list) toListName = list.name;
+        }
+
+        changes.push(`List changed from "${fromListName}" to "${toListName}"`);
     }
 
     if (labelIds !== undefined) {
         const currentLabelIds = currentTask.labels.map(l => l.id).sort();
         const newLabelIds = [...labelIds].sort();
+
         if (JSON.stringify(currentLabelIds) !== JSON.stringify(newLabelIds)) {
-            // Similarly, listing label names would require fetching or mapping from the existing labels if we have them.
-            // currentTask.labels has names. We don't have names for newLabelIds easily without fetching.
-            // Let's just say "Labels updated" for now to avoid complexity, or maybe we can improve this later.
-            changes.push("Labels updated");
+            const allLabels = await getLabels();
+            const currentLabelNames = currentTask.labels.map(l => l.name || "Unknown");
+            const newLabelNames = newLabelIds.map(id => allLabels.find(l => l.id === id)?.name || "Unknown");
+
+            const added = newLabelNames.filter(n => !currentLabelNames.includes(n));
+            const removed = currentLabelNames.filter(n => !newLabelNames.includes(n));
+
+            if (added.length > 0) changes.push(`Added labels: ${added.join(", ")}`);
+            if (removed.length > 0) changes.push(`Removed labels: ${removed.join(", ")}`);
         }
     }
 

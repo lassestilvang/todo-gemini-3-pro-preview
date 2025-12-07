@@ -97,11 +97,7 @@ export function SearchDialog() {
                         </CommandItem>
                         <CommandItem onSelect={() => {
                             setOpen(false);
-                            // Focus the main input if possible, or just go to home
-                            router.push("/");
-                            setTimeout(() => {
-                                (document.querySelector('input[placeholder*="Add a task"]') as HTMLInputElement)?.focus();
-                            }, 100);
+                            router.push("?create=true");
                         }}>
                             <div className="flex items-center gap-2">
                                 <span className="font-medium">Create New Task</span>

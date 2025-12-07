@@ -48,7 +48,7 @@ export function TaskDependenciesTab({
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="p-0" align="end">
-                            <Command>
+                            <Command shouldFilter={false}>
                                 <CommandInput
                                     placeholder="Search tasks..."
                                     value={searchQuery}

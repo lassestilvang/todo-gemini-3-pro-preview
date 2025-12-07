@@ -37,7 +37,7 @@ export default async function LabelPage({ params }: LabelPageProps) {
                     </h1>
                 </div>
 
-                <TaskList tasks={tasks} />
+                <TaskList tasks={tasks} labelId={labelId} />
             </div>
         </div>
     );

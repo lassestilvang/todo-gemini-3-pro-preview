@@ -22,9 +22,12 @@ import { cn } from "@/lib/utils";
 import { AiBreakdownDialog } from "../AiBreakdownDialog";
 import { ParsedSubtask } from "@/lib/smart-scheduler";
 
+import { createElement } from "react";
+import { getListIcon, getLabelIcon } from "@/lib/icons";
+
 // Types
-type ListType = { id: number; name: string; color: string | null; };
-type LabelType = { id: number; name: string; color: string | null; };
+type ListType = { id: number; name: string; color: string | null; icon: string | null; };
+type LabelType = { id: number; name: string; color: string | null; icon: string | null; };
 type SubtaskType = { id: number; title: string; isCompleted: boolean | null; };
 type ReminderType = { id: number; remindAt: Date; };
 
@@ -95,6 +98,9 @@ export function TaskDetailsTab({
 }: TaskDetailsTabProps) {
     const [aiBreakdownOpen, setAiBreakdownOpen] = useState(false);
 
+    // List rendering helper to show selected value with icon
+    const selectedList = lists.find(l => l.id.toString() === listId);
+
     return (
         <TabsContent value="details">
             <form id="task-form" onSubmit={handleSubmit} className="space-y-4">
@@ -126,13 +132,39 @@ export function TaskDetailsTab({
                         <Label>List</Label>
                         <Select value={listId} onValueChange={setListId}>
                             <SelectTrigger>
-                                <SelectValue placeholder="Select List" />
+                                <SelectValue placeholder="Select List">
+                                    {listId === "inbox" ? (
+                                        <div className="flex items-center gap-2">
+                                            {createElement(getListIcon("list"), { className: "h-4 w-4" })}
+                                            Inbox
+                                        </div>
+                                    ) : selectedList ? (
+                                        <div className="flex items-center gap-2">
+                                            {createElement(getListIcon(selectedList.icon), {
+                                                style: { color: selectedList.color || 'currentColor' },
+                                                className: "h-4 w-4"
+                                            })}
+                                            {selectedList.name}
+                                        </div>
+                                    ) : "Select List"}
+                                </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="inbox">Inbox</SelectItem>
+                                <SelectItem value="inbox">
+                                    <div className="flex items-center gap-2">
+                                        {createElement(getListIcon("list"), { className: "h-4 w-4" })}
+                                        Inbox
+                                    </div>
+                                </SelectItem>
                                 {lists.map(list => (
                                     <SelectItem key={list.id} value={list.id.toString()}>
-                                        {list.name}
+                                        <div className="flex items-center gap-2">
+                                            {createElement(getListIcon(list.icon), {
+                                                style: { color: list.color || 'currentColor' },
+                                                className: "h-4 w-4"
+                                            })}
+                                            {list.name}
+                                        </div>
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -338,10 +370,11 @@ export function TaskDetailsTab({
                                 <Badge
                                     key={id}
                                     variant="secondary"
-                                    className="cursor-pointer hover:bg-destructive hover:text-destructive-foreground"
+                                    className="cursor-pointer hover:bg-destructive hover:text-destructive-foreground select-none"
                                     onClick={() => toggleLabel(id)}
                                     style={{ backgroundColor: (label.color || '#000000') + '20', color: label.color || '#000000' }}
                                 >
+                                    {createElement(getLabelIcon(label.icon), { className: "h-3 w-3 mr-1" })}
                                     {label.name}
                                     <X className="ml-1 h-3 w-3" />
                                 </Badge>
@@ -358,9 +391,10 @@ export function TaskDetailsTab({
                                 />
                                 <Label
                                     htmlFor={`label-${label.id}`}
-                                    className="cursor-pointer"
+                                    className="cursor-pointer flex items-center gap-1.5"
                                     style={{ color: label.color || '#000000' }}
                                 >
+                                    {createElement(getLabelIcon(label.icon), { className: "h-4 w-4" })}
                                     {label.name}
                                 </Label>
                             </div>

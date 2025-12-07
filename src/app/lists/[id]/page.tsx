@@ -37,7 +37,7 @@ export default async function ListPage({ params }: ListPageProps) {
                     </h1>
                 </div>
 
-                <TaskList tasks={tasks} />
+                <TaskList tasks={tasks} listId={listId} />
             </div>
         </div>
     );

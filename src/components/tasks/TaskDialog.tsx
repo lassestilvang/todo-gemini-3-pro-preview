@@ -27,13 +27,14 @@ interface TaskDialogProps {
     onOpenChange?: (open: boolean) => void;
     trigger?: React.ReactNode;
     defaultListId?: number;
+    defaultLabelIds?: number[];
 }
 
 /**
  * Dialog for creating or editing a task.
  * Refactored to use custom hooks for state and data management.
  */
-export function TaskDialog({ task, open, onOpenChange, trigger, defaultListId }: TaskDialogProps) {
+export function TaskDialog({ task, open, onOpenChange, trigger, defaultListId, defaultLabelIds }: TaskDialogProps) {
     const [internalOpen, setInternalOpen] = useState(false);
     const effectiveOpen = open !== undefined ? open : internalOpen;
     const setEffectiveOpen = onOpenChange || setInternalOpen;
@@ -43,11 +44,12 @@ export function TaskDialog({ task, open, onOpenChange, trigger, defaultListId }:
     return (
         <Dialog open={effectiveOpen} onOpenChange={setEffectiveOpen}>
             {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-            <DialogContent className="sm:max-w-[600px] p-0 gap-0 overflow-hidden">
+            <DialogContent className="sm:max-w-[600px] p-0 gap-0 overflow-hidden top-[10%] translate-y-0">
                 <TaskForm
                     key={formKey}
                     task={task}
                     defaultListId={defaultListId}
+                    defaultLabelIds={defaultLabelIds}
                     onClose={() => setEffectiveOpen(false)}
                 />
             </DialogContent>
@@ -55,7 +57,7 @@ export function TaskDialog({ task, open, onOpenChange, trigger, defaultListId }:
     );
 }
 
-function TaskForm({ task, defaultListId, onClose }: { task?: TaskType, defaultListId?: number, onClose: () => void }) {
+function TaskForm({ task, defaultListId, defaultLabelIds, onClose }: { task?: TaskType, defaultListId?: number, defaultLabelIds?: number[], onClose: () => void }) {
     // Form State
     const {
         title, setTitle,
@@ -74,7 +76,7 @@ function TaskForm({ task, defaultListId, onClose }: { task?: TaskType, defaultLi
         handleDelete,
         toggleLabel,
         isEdit
-    } = useTaskForm({ task, defaultListId, onClose });
+    } = useTaskForm({ task, defaultListId, defaultLabelIds, onClose });
 
     // Data State (Subtasks, Reminders, Logs, etc.)
     const {

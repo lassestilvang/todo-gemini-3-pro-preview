@@ -22,12 +22,14 @@ export type ListType = {
     id: number;
     name: string;
     color: string | null;
+    icon: string | null;
 };
 
 export type LabelType = {
     id: number;
     name: string;
     color: string | null;
+    icon: string | null;
 };
 
 export type SubtaskType = {

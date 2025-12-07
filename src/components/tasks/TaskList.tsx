@@ -9,9 +9,11 @@ import { Plus } from "lucide-react";
 interface TaskListProps {
     tasks: Task[];
     title?: string;
+    listId?: number;
+    labelId?: number;
 }
 
-export function TaskList({ tasks, title }: TaskListProps) {
+export function TaskList({ tasks, title, listId, labelId }: TaskListProps) {
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -52,6 +54,8 @@ export function TaskList({ tasks, title }: TaskListProps) {
 
             <TaskDialog
                 task={editingTask ?? undefined}
+                defaultListId={listId}
+                defaultLabelIds={labelId ? [labelId] : undefined}
                 open={isDialogOpen}
                 onOpenChange={(open) => {
                     setIsDialogOpen(open);
