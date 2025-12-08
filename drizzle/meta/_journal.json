@@ -8,6 +8,13 @@
       "when": 1765155472692,
       "tag": "0000_jittery_cloak",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1765229935958,
+      "tag": "0001_sloppy_mauler",
+      "breakpoints": true
     }
   ]
 }
