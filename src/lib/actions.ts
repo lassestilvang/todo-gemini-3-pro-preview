@@ -9,12 +9,12 @@ import { suggestMetadata } from "./smart-tags";
 
 // --- Lists ---
 
-export async function getLists() {
-    return await db.select().from(lists).orderBy(lists.createdAt);
+export async function getLists(userId: string) {
+    return await db.select().from(lists).where(eq(lists.userId, userId)).orderBy(lists.createdAt);
 }
 
-export async function getList(id: number) {
-    const result = await db.select().from(lists).where(eq(lists.id, id));
+export async function getList(id: number, userId: string) {
+    const result = await db.select().from(lists).where(and(eq(lists.id, id), eq(lists.userId, userId)));
     return result[0];
 }
 
@@ -24,24 +24,24 @@ export async function createList(data: typeof lists.$inferInsert) {
     return result[0];
 }
 
-export async function updateList(id: number, data: Partial<typeof lists.$inferInsert>) {
-    await db.update(lists).set(data).where(eq(lists.id, id));
+export async function updateList(id: number, userId: string, data: Partial<Omit<typeof lists.$inferInsert, 'userId'>>) {
+    await db.update(lists).set(data).where(and(eq(lists.id, id), eq(lists.userId, userId)));
     revalidatePath("/");
 }
 
-export async function deleteList(id: number) {
-    await db.delete(lists).where(eq(lists.id, id));
+export async function deleteList(id: number, userId: string) {
+    await db.delete(lists).where(and(eq(lists.id, id), eq(lists.userId, userId)));
     revalidatePath("/");
 }
 
 // --- Labels ---
 
-export async function getLabels() {
-    return await db.select().from(labels);
+export async function getLabels(userId: string) {
+    return await db.select().from(labels).where(eq(labels.userId, userId));
 }
 
-export async function getLabel(id: number) {
-    const result = await db.select().from(labels).where(eq(labels.id, id));
+export async function getLabel(id: number, userId: string) {
+    const result = await db.select().from(labels).where(and(eq(labels.id, id), eq(labels.userId, userId)));
     return result[0];
 }
 
@@ -51,20 +51,23 @@ export async function createLabel(data: typeof labels.$inferInsert) {
     return result[0];
 }
 
-export async function updateLabel(id: number, data: Partial<typeof labels.$inferInsert>) {
-    await db.update(labels).set(data).where(eq(labels.id, id));
+export async function updateLabel(id: number, userId: string, data: Partial<Omit<typeof labels.$inferInsert, 'userId'>>) {
+    await db.update(labels).set(data).where(and(eq(labels.id, id), eq(labels.userId, userId)));
     revalidatePath("/");
 }
 
-export async function deleteLabel(id: number) {
-    await db.delete(labels).where(eq(labels.id, id));
+export async function deleteLabel(id: number, userId: string) {
+    await db.delete(labels).where(and(eq(labels.id, id), eq(labels.userId, userId)));
     revalidatePath("/");
 }
 
 // --- Tasks ---
 
-export async function getTasks(listId?: number | null, filter?: "today" | "upcoming" | "all" | "completed" | "next-7-days", labelId?: number) {
+export async function getTasks(userId: string, listId?: number | null, filter?: "today" | "upcoming" | "all" | "completed" | "next-7-days", labelId?: number) {
     const conditions = [];
+
+    // Always filter by user
+    conditions.push(eq(tasks.userId, userId));
 
     // Always filter out subtasks - only show parent tasks
     conditions.push(isNull(tasks.parentId));
@@ -190,9 +193,10 @@ export async function getTasks(listId?: number | null, filter?: "today" | "upcom
     return tasksWithLabelsAndSubtasks;
 }
 
-export async function getTask(id: number) {
+export async function getTask(id: number, userId: string) {
     const result = await db.select({
         id: tasks.id,
+        userId: tasks.userId,
         listId: tasks.listId,
         title: tasks.title,
         description: tasks.description,
@@ -208,7 +212,7 @@ export async function getTask(id: number) {
         actualMinutes: tasks.actualMinutes,
         createdAt: tasks.createdAt,
         updatedAt: tasks.updatedAt
-    }).from(tasks).where(eq(tasks.id, id)).limit(1);
+    }).from(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, userId))).limit(1);
     const task = result[0];
     if (!task) return null;
 
@@ -241,9 +245,9 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
     let finalLabelIds = labelIds || [];
 
     // Smart Tagging: If no list or labels provided, try to guess them
-    if (!taskData.listId && finalLabelIds.length === 0 && taskData.title) {
-        const allLists = await getLists();
-        const allLabels = await getLabels();
+    if (!taskData.listId && finalLabelIds.length === 0 && taskData.title && taskData.userId) {
+        const allLists = await getLists(taskData.userId);
+        const allLabels = await getLabels(taskData.userId);
         const suggestions = await suggestMetadata(taskData.title, allLists, allLabels);
 
         if (suggestions.listId) taskData.listId = suggestions.listId;
@@ -265,6 +269,7 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
     }
 
     await db.insert(taskLogs).values({
+        userId: taskData.userId,
         taskId: task.id,
         action: "created",
         details: "Task created",
@@ -274,13 +279,13 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
     return task;
 }
 
-export async function updateTask(id: number, data: Partial<typeof tasks.$inferInsert> & { labelIds?: number[] }) {
+export async function updateTask(id: number, userId: string, data: Partial<Omit<typeof tasks.$inferInsert, 'userId'>> & { labelIds?: number[] }) {
     const { labelIds, ...taskData } = data;
 
-    const currentTask = await getTask(id);
+    const currentTask = await getTask(id, userId);
     if (!currentTask) return;
 
-    await db.update(tasks).set({ ...taskData, updatedAt: new Date() }).where(eq(tasks.id, id));
+    await db.update(tasks).set({ ...taskData, updatedAt: new Date() }).where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
 
     if (labelIds !== undefined) {
         // Replace labels
@@ -333,13 +338,13 @@ export async function updateTask(id: number, data: Partial<typeof tasks.$inferIn
     if (taskData.listId !== undefined && taskData.listId !== currentTask.listId) {
         let fromListName = "Inbox";
         if (currentTask.listId) {
-            const list = await getList(currentTask.listId);
+            const list = await getList(currentTask.listId, userId);
             if (list) fromListName = list.name;
         }
 
         let toListName = "Inbox";
         if (taskData.listId) {
-            const list = await getList(taskData.listId);
+            const list = await getList(taskData.listId, userId);
             if (list) toListName = list.name;
         }
 
@@ -351,7 +356,7 @@ export async function updateTask(id: number, data: Partial<typeof tasks.$inferIn
         const newLabelIds = [...labelIds].sort();
 
         if (JSON.stringify(currentLabelIds) !== JSON.stringify(newLabelIds)) {
-            const allLabels = await getLabels();
+            const allLabels = await getLabels(userId);
             const currentLabelNames = currentTask.labels.map(l => l.name || "Unknown");
             const newLabelNames = newLabelIds.map(id => allLabels.find(l => l.id === id)?.name || "Unknown");
 
@@ -365,6 +370,7 @@ export async function updateTask(id: number, data: Partial<typeof tasks.$inferIn
 
     if (changes.length > 0) {
         await db.insert(taskLogs).values({
+            userId,
             taskId: id,
             action: "updated",
             details: changes.join("\n"),
@@ -374,18 +380,18 @@ export async function updateTask(id: number, data: Partial<typeof tasks.$inferIn
     revalidatePath("/");
 }
 
-export async function deleteTask(id: number) {
+export async function deleteTask(id: number, userId: string) {
     // Log before deleting (though cascading delete might remove the log if not careful, but taskLogs has cascade delete on task_id)
     // Actually, if we delete the task, the logs might be deleted too if we have ON DELETE CASCADE.
     // Let's check schema. Yes, taskLogs references tasks.id with onDelete: "cascade".
     // So we can't keep logs for deleted tasks unless we make taskId nullable or remove the FK constraint.
     // For now, we accept that logs are deleted with the task.
-    await db.delete(tasks).where(eq(tasks.id, id));
+    await db.delete(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
     revalidatePath("/");
 }
 
-export async function toggleTaskCompletion(id: number, isCompleted: boolean) {
-    const task = await getTask(id);
+export async function toggleTaskCompletion(id: number, userId: string, isCompleted: boolean) {
+    const task = await getTask(id, userId);
     if (!task) return;
 
     if (isCompleted && task.isRecurring && task.recurringRule) {

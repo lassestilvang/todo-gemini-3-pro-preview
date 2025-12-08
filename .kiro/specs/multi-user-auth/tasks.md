@@ -75,8 +75,8 @@
 - [-] 4. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 5. Update server actions for multi-user data isolation
-  - [ ] 5.1 Update list actions with userId filtering
+- [-] 5. Update server actions for multi-user data isolation
+  - [-] 5.1 Update list actions with userId filtering
     - Modify getLists, getList, createList, updateList, deleteList
     - Add userId parameter and WHERE clause filtering
     - _Requirements: 4.3, 4.4_
