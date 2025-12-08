@@ -87,7 +87,7 @@ jobs:
           DATABASE_URL: ${{ steps.neon-branch.outputs.db_url_with_pooler }}
 
       - name: Setup Database (Main)
-        if: github.event_name == 'push' && secrets.DATABASE_URL != ''
+        if: github.event_name == 'push'
         run: bun run db:push
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
