@@ -1,44 +1,43 @@
-import { sql } from "drizzle-orm";
-import { integer, sqliteTable, text, primaryKey, foreignKey, index } from "drizzle-orm/sqlite-core";
+import { serial, integer, pgTable, text, primaryKey, foreignKey, index, timestamp, boolean } from "drizzle-orm/pg-core";
 
-export const lists = sqliteTable("lists", {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+export const lists = pgTable("lists", {
+    id: serial("id").primaryKey(),
     name: text("name").notNull(),
     color: text("color").default("#000000"),
     icon: text("icon"),
     slug: text("slug").notNull().unique(),
-    createdAt: integer("created_at", { mode: "timestamp" })
+    createdAt: timestamp("created_at")
         .notNull()
-        .default(sql`(unixepoch())`),
-    updatedAt: integer("updated_at", { mode: "timestamp" })
+        .defaultNow(),
+    updatedAt: timestamp("updated_at")
         .notNull()
-        .default(sql`(unixepoch())`),
+        .defaultNow(),
 });
 
-export const tasks = sqliteTable("tasks", {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+export const tasks = pgTable("tasks", {
+    id: serial("id").primaryKey(),
     listId: integer("list_id").references(() => lists.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     description: text("description"),
     priority: text("priority", { enum: ["none", "low", "medium", "high"] }).default("none"),
-    dueDate: integer("due_date", { mode: "timestamp" }),
-    isCompleted: integer("is_completed", { mode: "boolean" }).default(false),
-    completedAt: integer("completed_at", { mode: "timestamp" }),
-    isRecurring: integer("is_recurring", { mode: "boolean" }).default(false),
+    dueDate: timestamp("due_date"),
+    isCompleted: boolean("is_completed").default(false),
+    completedAt: timestamp("completed_at"),
+    isRecurring: boolean("is_recurring").default(false),
     recurringRule: text("recurring_rule"), // RRule string
     parentId: integer("parent_id"), // For subtasks
     estimateMinutes: integer("estimate_minutes"),
     actualMinutes: integer("actual_minutes"),
     energyLevel: text("energy_level", { enum: ["high", "medium", "low"] }),
     context: text("context", { enum: ["computer", "phone", "errands", "meeting", "home", "anywhere"] }),
-    isHabit: integer("is_habit", { mode: "boolean" }).default(false),
-    createdAt: integer("created_at", { mode: "timestamp" })
+    isHabit: boolean("is_habit").default(false),
+    createdAt: timestamp("created_at")
         .notNull()
-        .default(sql`(unixepoch())`),
-    updatedAt: integer("updated_at", { mode: "timestamp" })
+        .defaultNow(),
+    updatedAt: timestamp("updated_at")
         .notNull()
-        .default(sql`(unixepoch())`),
-    deadline: integer("deadline", { mode: "timestamp" }),
+        .defaultNow(),
+    deadline: timestamp("deadline"),
 }, (table) => ({
     parentReference: foreignKey({
         columns: [table.parentId],
@@ -52,14 +51,15 @@ export const tasks = sqliteTable("tasks", {
     completedAtIdx: index("tasks_completed_at_idx").on(table.completedAt),
 }));
 
-export const labels = sqliteTable("labels", {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+export const labels = pgTable("labels", {
+    id: serial("id").primaryKey(),
     name: text("name").notNull(),
     color: text("color").default("#000000"),
     icon: text("icon"),
 });
 
-export const taskLabels = sqliteTable("task_labels", {
+
+export const taskLabels = pgTable("task_labels", {
     taskId: integer("task_id")
         .notNull()
         .references(() => tasks.id, { onDelete: "cascade" }),
@@ -71,43 +71,43 @@ export const taskLabels = sqliteTable("task_labels", {
     labelIdIdx: index("task_labels_label_id_idx").on(t.labelId),
 }));
 
-export const reminders = sqliteTable("reminders", {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+export const reminders = pgTable("reminders", {
+    id: serial("id").primaryKey(),
     taskId: integer("task_id")
         .notNull()
         .references(() => tasks.id, { onDelete: "cascade" }),
-    remindAt: integer("remind_at", { mode: "timestamp" }).notNull(),
-    isSent: integer("is_sent", { mode: "boolean" }).default(false),
-    createdAt: integer("created_at", { mode: "timestamp" })
+    remindAt: timestamp("remind_at").notNull(),
+    isSent: boolean("is_sent").default(false),
+    createdAt: timestamp("created_at")
         .notNull()
-        .default(sql`(unixepoch())`),
+        .defaultNow(),
 });
 
-export const taskLogs = sqliteTable("task_logs", {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+export const taskLogs = pgTable("task_logs", {
+    id: serial("id").primaryKey(),
     taskId: integer("task_id")
         .references(() => tasks.id, { onDelete: "cascade" }),
     action: text("action").notNull(), // e.g., "created", "updated", "completed"
     details: text("details"), // JSON string or text description of change
-    createdAt: integer("created_at", { mode: "timestamp" })
+    createdAt: timestamp("created_at")
         .notNull()
-        .default(sql`(unixepoch())`),
+        .defaultNow(),
 }, (t) => ({
     taskIdIdx: index("task_logs_task_id_idx").on(t.taskId),
 }));
 
-export const habitCompletions = sqliteTable("habit_completions", {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+export const habitCompletions = pgTable("habit_completions", {
+    id: serial("id").primaryKey(),
     taskId: integer("task_id")
         .notNull()
         .references(() => tasks.id, { onDelete: "cascade" }),
-    completedAt: integer("completed_at", { mode: "timestamp" }).notNull(),
-    createdAt: integer("created_at", { mode: "timestamp" })
+    completedAt: timestamp("completed_at").notNull(),
+    createdAt: timestamp("created_at")
         .notNull()
-        .default(sql`(unixepoch())`),
+        .defaultNow(),
 });
 
-export const taskDependencies = sqliteTable("task_dependencies", {
+export const taskDependencies = pgTable("task_dependencies", {
     taskId: integer("task_id")
         .notNull()
         .references(() => tasks.id, { onDelete: "cascade" }),
@@ -119,28 +119,28 @@ export const taskDependencies = sqliteTable("task_dependencies", {
     blockerIdIdx: index("task_dependencies_blocker_id_idx").on(t.blockerId),
 }));
 
-export const templates = sqliteTable("templates", {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+export const templates = pgTable("templates", {
+    id: serial("id").primaryKey(),
     name: text("name").notNull(),
     content: text("content").notNull(), // JSON string of task data
-    createdAt: integer("created_at", { mode: "timestamp" })
+    createdAt: timestamp("created_at")
         .notNull()
-        .default(sql`(unixepoch())`),
-    updatedAt: integer("updated_at", { mode: "timestamp" })
+        .defaultNow(),
+    updatedAt: timestamp("updated_at")
         .notNull()
-        .default(sql`(unixepoch())`),
+        .defaultNow(),
 });
 
-export const userStats = sqliteTable("user_stats", {
+export const userStats = pgTable("user_stats", {
     id: integer("id").primaryKey().default(1), // Singleton row
     xp: integer("xp").notNull().default(0),
     level: integer("level").notNull().default(1),
-    lastLogin: integer("last_login", { mode: "timestamp" }),
+    lastLogin: timestamp("last_login"),
     currentStreak: integer("current_streak").notNull().default(0),
     longestStreak: integer("longest_streak").notNull().default(0),
 });
 
-export const achievements = sqliteTable("achievements", {
+export const achievements = pgTable("achievements", {
     id: text("id").primaryKey(),
     name: text("name").notNull(),
     description: text("description").notNull(),
@@ -150,26 +150,26 @@ export const achievements = sqliteTable("achievements", {
     xpReward: integer("xp_reward").notNull(),
 });
 
-export const userAchievements = sqliteTable("user_achievements", {
+export const userAchievements = pgTable("user_achievements", {
     achievementId: text("achievement_id")
         .notNull()
         .references(() => achievements.id, { onDelete: "cascade" }),
-    unlockedAt: integer("unlocked_at", { mode: "timestamp" })
+    unlockedAt: timestamp("unlocked_at")
         .notNull()
-        .default(sql`(unixepoch())`),
+        .defaultNow(),
 }, (t) => ({
     pk: primaryKey({ columns: [t.achievementId] }),
 }));
 
-export const viewSettings = sqliteTable("view_settings", {
+export const viewSettings = pgTable("view_settings", {
     id: text("id").primaryKey(), // e.g., "today", "inbox", "list-1", "label-2"
     layout: text("layout", { enum: ["list", "board", "calendar"] }).default("list"),
-    showCompleted: integer("show_completed", { mode: "boolean" }).default(true),
+    showCompleted: boolean("show_completed").default(true),
     groupBy: text("group_by", { enum: ["none", "dueDate", "priority", "label"] }).default("none"),
     sortBy: text("sort_by", { enum: ["manual", "dueDate", "priority", "name"] }).default("manual"),
     sortOrder: text("sort_order", { enum: ["asc", "desc"] }).default("asc"),
     filterDate: text("filter_date", { enum: ["all", "hasDate", "noDate"] }).default("all"),
     filterPriority: text("filter_priority"), // null = all, or "high", "medium", "low", "none"
     filterLabelId: integer("filter_label_id"), // null = all
-    updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+    updatedAt: timestamp("updated_at").defaultNow(),
 });

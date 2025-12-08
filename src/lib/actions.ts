@@ -1,7 +1,6 @@
 "use server";
 
-import { db } from "@/db";
-import { lists, tasks, labels, taskLogs, taskLabels, reminders, taskDependencies, templates, userStats, achievements, userAchievements, viewSettings } from "@/db/schema";
+import { db, lists, tasks, labels, taskLogs, taskLabels, reminders, taskDependencies, templates, userStats, achievements, userAchievements, viewSettings } from "@/db";
 import { eq, and, desc, gte, lte, inArray, sql, isNull, asc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { startOfDay, endOfDay, addDays } from "date-fns";

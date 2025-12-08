@@ -1,5 +1,11 @@
 name: CI
 
+# Required GitHub Secrets:
+# - DATABASE_URL: Neon PostgreSQL connection string for the main branch
+#   (Used by build job for schema push and build validation)
+# 
+# Note: Tests use in-memory SQLite (NODE_ENV=test) and don't require DATABASE_URL
+
 on:
   push:
     branches: ["main"]
@@ -63,7 +69,11 @@ jobs:
 
       - name: Setup Database
         run: bun run db:push
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Build
         run: bun run build
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 

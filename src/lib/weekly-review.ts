@@ -1,7 +1,6 @@
 "use server";
 
-import { db } from "@/db";
-import { tasks } from "@/db/schema";
+import { db, tasks } from "@/db";
 import { eq, and, gte, lte } from "drizzle-orm";
 import { startOfWeek, endOfWeek, subWeeks } from "date-fns";
 import { getGeminiClient, GEMINI_MODEL } from "@/lib/gemini";

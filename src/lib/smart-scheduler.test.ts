@@ -1,7 +1,6 @@
 import { describe, it, expect, mock, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, resetTestDb } from "../test/setup";
-import { db } from "@/db";
-import { tasks } from "@/db/schema";
+import { db, tasks } from "@/db";
 import { eq } from "drizzle-orm";
 import { generateSubtasks, extractDeadline, generateSmartSchedule, analyzePriorities, applyScheduleSuggestion } from "./smart-scheduler";
 

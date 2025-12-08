@@ -2,7 +2,7 @@
 
 ## Overview
 
-Todo Gemini is an AI-powered daily task planner built with Next.js 16 (App Router), React 19, TypeScript (strict mode), and SQLite via Drizzle ORM. The app features task management with lists, labels, priorities, due dates, recurring tasks, subtasks, dependencies, gamification (XP/levels/achievements), and Gemini AI integration for smart scheduling.
+Todo Gemini is an AI-powered daily task planner built with Next.js 16 (App Router), React 19, TypeScript (strict mode), and Neon PostgreSQL via Drizzle ORM. The app features task management with lists, labels, priorities, due dates, recurring tasks, subtasks, dependencies, gamification (XP/levels/achievements), and Gemini AI integration for smart scheduling.
 
 ## Quick Reference
 
@@ -11,7 +11,7 @@ Todo Gemini is an AI-powered daily task planner built with Next.js 16 (App Route
 | Runtime | Bun 1.0+ |
 | Framework | Next.js 16 with App Router |
 | Language | TypeScript (strict mode) |
-| Database | SQLite (`sqlite.db`) via Drizzle ORM |
+| Database | Neon PostgreSQL (serverless) via Drizzle ORM |
 | Styling | Tailwind CSS v4 |
 | UI Components | shadcn/ui (new-york style) |
 | Path Alias | `@/*` → `./src/*` |
@@ -30,7 +30,7 @@ bun lint
 # 3. Run tests (uses in-memory SQLite, no setup needed)
 bun test
 
-# 4. Database setup (only needed for build/dev, not tests)
+# 4. Database setup (requires DATABASE_URL in .env.local)
 bun run db:push
 
 # 5. Build (validates TypeScript compilation and Next.js build)
@@ -48,16 +48,36 @@ bun install && bun lint
 # Test job (NODE_ENV=test uses in-memory SQLite automatically)
 bun install && bun test
 
-# Build job
+# Build job (requires DATABASE_URL environment variable)
 bun install && bun run db:push && bun run build
 ```
 
 ### Command Notes
 
-- `bun test` - Uses in-memory SQLite via `bun:sqlite`, no database file needed
-- `bun run db:push` - Required before `bun build` or `bun dev` (creates/updates `sqlite.db`)
+- `bun test` - Uses in-memory SQLite via `bun:sqlite` for fast test execution
+- `bun run db:push` - Pushes schema to Neon PostgreSQL (requires `DATABASE_URL` in `.env.local`)
 - `bun run db:seed` - Seeds default data (Inbox list, labels, achievements) - optional for dev
 - Tests run in ~2-3 seconds; build takes ~5-10 seconds
+
+### Database Configuration
+
+The application uses Neon PostgreSQL for development and production:
+
+1. Copy `.env.example` to `.env.local`
+2. Set `DATABASE_URL` to your Neon connection string
+3. Run `bun run db:push` to create/update tables
+
+```bash
+# .env.local example
+DATABASE_URL=postgresql://user:pass@host.neon.tech/neondb?sslmode=require
+```
+
+### Database Branching
+
+Each Git branch can have its own isolated database branch via GitHub Actions:
+- Push a new branch → Neon branch is automatically created
+- Merge/delete branch → Neon branch is automatically deleted
+- See README.md for detailed branching documentation
 
 ## Project Structure
 
@@ -78,8 +98,9 @@ src/
 │   └── providers/          # React Query provider
 │
 ├── db/
-│   ├── schema.ts           # Drizzle schema definitions (source of truth)
-│   ├── index.ts            # Database connection (auto-switches to in-memory for tests)
+│   ├── schema.ts           # Drizzle schema definitions for PostgreSQL (source of truth)
+│   ├── schema-sqlite.ts    # SQLite schema for in-memory test database
+│   ├── index.ts            # Database connection (Neon for prod, in-memory SQLite for tests)
 │   └── seed.ts             # Initial data seeding
 │
 ├── lib/
@@ -123,13 +144,15 @@ export async function createTask(data: typeof tasks.$inferInsert) {
 
 ### Database Schema
 
-Schema defined in `src/db/schema.ts` using Drizzle ORM. Key tables:
+Schema defined in `src/db/schema.ts` using Drizzle ORM with PostgreSQL types. Key tables:
 - `tasks` - Main task table with all fields
 - `lists` - Task lists (Inbox is default)
 - `labels` - Task labels/tags
 - `taskLabels` - Many-to-many junction table
 - `userStats` - XP, level, streaks (singleton row)
 - `achievements` / `userAchievements` - Gamification
+
+Note: `src/db/schema-sqlite.ts` contains a SQLite-compatible version of the schema used only for in-memory testing.
 
 ### Testing
 
@@ -164,7 +187,9 @@ mock.module("./smart-tags", () => ({
 
 | File | Purpose |
 |------|---------|
-| `drizzle.config.ts` | Drizzle ORM config (schema at `src/db/schema.ts`) |
+| `drizzle.config.ts` | Drizzle ORM config for PostgreSQL (schema at `src/db/schema.ts`) |
+| `.env.local` | Local environment variables (DATABASE_URL for Neon) |
+| `.env.example` | Template for environment variables |
 | `components.json` | shadcn/ui configuration (new-york style) |
 | `next.config.ts` | Next.js config with PWA and React Compiler enabled |
 | `tsconfig.json` | TypeScript config with `@/*` path alias |

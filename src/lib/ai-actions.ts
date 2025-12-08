@@ -1,8 +1,7 @@
 "use server";
 
 import { getGeminiClient, GEMINI_MODEL } from "@/lib/gemini";
-import { db } from "@/db";
-import { tasks } from "@/db/schema";
+import { db, tasks } from "@/db";
 import { and, eq, lt } from "drizzle-orm";
 import { startOfDay, format } from "date-fns";
 

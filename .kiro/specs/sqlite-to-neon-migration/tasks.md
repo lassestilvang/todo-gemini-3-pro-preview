@@ -1,0 +1,122 @@
+# Implementation Plan
+
+- [x] 1. Create Neon project and initial setup
+  - [x] 1.1 Create new Neon project in "Lasse" organization (org-broad-haze-11674340) in eu-central-1 region
+    - Use Neon MCP tools to create the project
+    - Name the project "todo-gemini" or similar
+    - _Requirements: 1.1, 1.3_
+  - [x] 1.2 Get connection string and create environment configuration
+    - Create `.env.local` with DATABASE_URL
+    - Create `.env.example` template for team reference
+    - _Requirements: 1.2_
+
+- [x] 2. Update dependencies and configuration
+  - [x] 2.1 Update package.json with PostgreSQL dependencies
+    - Add `@neondatabase/serverless`
+    - Remove `better-sqlite3` and `@types/better-sqlite3`
+    - Run `bun install`
+    - _Requirements: 3.1, 6.2_
+  - [x] 2.2 Update drizzle.config.ts for PostgreSQL
+    - Change dialect from "sqlite" to "postgresql"
+    - Update dbCredentials to use DATABASE_URL env var
+    - _Requirements: 6.1_
+
+- [x] 3. Convert database schema to PostgreSQL
+  - [x] 3.1 Update src/db/schema.ts with PostgreSQL types
+    - Change imports from `drizzle-orm/sqlite-core` to `drizzle-orm/pg-core`
+    - Replace `integer().primaryKey({ autoIncrement: true })` with `serial().primaryKey()`
+    - Replace `integer("...", { mode: "timestamp" })` with `timestamp("...")`
+    - Replace `integer("...", { mode: "boolean" })` with `boolean("...")`
+    - Update default timestamp from `unixepoch()` to `NOW()`
+    - _Requirements: 2.1, 2.2, 2.3_
+  - [x] 3.2 Update src/db/index.ts for Neon connection
+    - Replace SQLite imports with Neon serverless driver
+    - Configure connection using DATABASE_URL environment variable
+    - Handle test environment appropriately
+    - _Requirements: 3.2, 3.3, 3.4_
+  - [x] 3.3 Push schema to Neon database
+    - Run `bun run db:push` to create tables in PostgreSQL
+    - Verify tables are created correctly
+    - _Requirements: 2.2_
+
+- [x] 4. Implement data migration
+  - [x] 4.1 Create data transformation utilities (src/lib/migration-utils.ts)
+    - Implement `transformTimestamp(sqliteEpoch: number): Date` function
+    - Implement `transformBoolean(sqliteInt: number): boolean` function
+    - _Requirements: 1.5.2_
+  - [x] 4.2 Write property test for timestamp transformation
+    - **Property 1: Timestamp Transformation Correctness**
+    - Test round-trip: transformTimestamp then back to epoch equals original
+    - **Validates: Requirements 1.5.2**
+  - [x] 4.3 Write property test for boolean transformation
+    - **Property 2: Boolean Transformation Correctness**
+    - Test 0 → false, 1 → true, idempotent for boolean inputs
+    - **Validates: Requirements 1.5.2**
+  - [x] 4.4 Create data migration script (scripts/migrate-data.ts)
+    - Connect to both SQLite (source) and PostgreSQL (destination)
+    - Export data from each SQLite table
+    - Transform timestamps and booleans
+    - Insert into PostgreSQL in dependency order
+    - _Requirements: 1.5.1, 1.5.3_
+  - [x] 4.5 Write property test for record count preservation
+    - **Property 3: Data Migration Record Count Preservation**
+    - After migration, count in destination equals count in source
+    - **Validates: Requirements 1.5.1, 1.5.4**
+  - [x] 4.6 Run data migration
+    - Execute migration script against production SQLite and Neon
+    - Verify record counts match for all tables
+    - _Requirements: 1.5.3, 1.5.4_
+
+- [x] 5. Checkpoint - Verify migration and tests
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 6. Set up GitHub Actions for database branching
+  - [x] 6.1 Create branch creation workflow (.github/workflows/neon-branch-create.yml)
+    - Trigger on push to non-main branches
+    - Use Neon API to create database branch
+    - Output connection string for the branch
+    - _Requirements: 4.1, 4.2, 4.5_
+  - [x] 6.2 Create branch deletion workflow (.github/workflows/neon-branch-delete.yml)
+    - Trigger on branch delete or PR merge
+    - Use Neon API to delete corresponding database branch
+    - _Requirements: 4.4, 4.5_
+  - [x] 6.3 Document required GitHub Secrets
+    - NEON_API_KEY
+    - NEON_PROJECT_ID
+    - _Requirements: 4.5_
+
+- [x] 7. Update test infrastructure
+  - [x] 7.1 Update test setup for PostgreSQL compatibility
+    - Modify src/test/setup.ts for PostgreSQL test environment
+    - Configure test database connection (mock or test branch)
+    - _Requirements: 5.1, 5.2_
+  - [x] 7.2 Run existing test suite and fix any failures
+    - Execute `bun test` and verify all tests pass
+    - Fix any PostgreSQL-specific issues in tests
+    - _Requirements: 5.3, 2.4_
+
+- [x] 8. Update seed script
+  - [x] 8.1 Update src/db/seed.ts for PostgreSQL
+    - Ensure seed script works with new schema
+    - Update any SQLite-specific syntax
+    - _Requirements: 2.4_
+
+- [x] 9. Update CI/CD configuration
+  - [x] 9.1 Update GitHub Actions CI workflow for PostgreSQL
+    - Update .github/workflows for new database setup
+    - Configure DATABASE_URL for CI environment
+    - _Requirements: 6.4_
+
+- [x] 10. Cleanup and documentation
+  - [x] 10.1 Remove SQLite-related files
+    - Delete sqlite.db file (after confirming migration success)
+    - Remove any SQLite-specific code paths
+    - _Requirements: 3.1_
+  - [x] 10.2 Update documentation
+    - Update README.md with Neon setup instructions
+    - Document database branching workflow for developers
+    - Update AGENTS.md with new database commands
+    - _Requirements: 7.1, 7.2, 7.3_
+
+- [x] 11. Final Checkpoint - Verify complete migration
+  - Ensure all tests pass, ask the user if questions arise.

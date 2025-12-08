@@ -1,30 +1,58 @@
-import * as schema from "./schema";
-import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
+import * as pgSchema from "./schema";
+import * as sqliteSchema from "./schema-sqlite";
+import { drizzle as drizzleNeon } from "drizzle-orm/neon-http";
+import { neon } from "@neondatabase/serverless";
+import type { NeonHttpDatabase } from "drizzle-orm/neon-http";
 
-// Use bun:sqlite in test mode to match the test setup and avoid native module issues in CI
-// At runtime, both drivers have compatible APIs, but we use the better-sqlite3 type for TypeScript
-let db: BetterSQLite3Database<typeof schema>;
+// Type for the database connection
+type DbConnection = NeonHttpDatabase<typeof pgSchema>;
+
+let db: DbConnection;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let sqliteConnection: any; // Raw SQLite connection for direct access in tests
+let sqliteConnection: any = null; // Raw SQLite connection for direct access in tests
+
+// Select schema based on environment - SQLite for tests, PostgreSQL for production
+// Cast to pgSchema type for TypeScript compatibility (both schemas have same structure)
+const schema = (process.env.NODE_ENV === "test" ? sqliteSchema : pgSchema) as typeof pgSchema;
 
 if (process.env.NODE_ENV === "test") {
+    // Use in-memory SQLite for tests to maintain fast test execution
+    // and avoid requiring a database connection during CI
     const { Database } = await import("bun:sqlite");
     const { drizzle } = await import("drizzle-orm/bun-sqlite");
+    
+    // Create SQLite database
     sqliteConnection = new Database(":memory:");
+    
+    // Use SQLite-specific schema that has compatible defaults (datetime('now') instead of NOW())
+    // Cast to DbConnection for type compatibility - tests use SQLite but share the same interface
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    db = drizzle(sqliteConnection, { schema }) as any;
-} else if (typeof Bun !== "undefined") {
-    const { Database } = await import("bun:sqlite");
-    const { drizzle } = await import("drizzle-orm/bun-sqlite");
-    sqliteConnection = new Database("sqlite.db");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    db = drizzle(sqliteConnection, { schema }) as any;
+    db = drizzle(sqliteConnection, { schema: sqliteSchema }) as any;
 } else {
-    const { default: Database } = await import("better-sqlite3");
-    const { drizzle } = await import("drizzle-orm/better-sqlite3");
-    sqliteConnection = new Database("sqlite.db");
-    db = drizzle(sqliteConnection, { schema });
+    // Use Neon PostgreSQL for development and production
+    if (!process.env.DATABASE_URL) {
+        throw new Error("DATABASE_URL environment variable is required");
+    }
+    const sql = neon(process.env.DATABASE_URL);
+    db = drizzleNeon(sql, { schema: pgSchema });
 }
 
-export { db, sqliteConnection };
+// Export schema tables - uses SQLite schema at runtime for tests, PostgreSQL for production
+// TypeScript sees these as PostgreSQL types for consistent type checking
+export const {
+    lists,
+    tasks,
+    labels,
+    taskLabels,
+    reminders,
+    taskLogs,
+    habitCompletions,
+    taskDependencies,
+    templates,
+    userStats,
+    achievements,
+    userAchievements,
+    viewSettings,
+} = schema;
 
+export { db, sqliteConnection, schema };

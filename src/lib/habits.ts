@@ -1,7 +1,6 @@
 "use server";
 
-import { db } from "@/db";
-import { habitCompletions, tasks } from "@/db/schema";
+import { db, habitCompletions, tasks } from "@/db";
 import { eq, and, gte, sql, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { startOfDay, endOfDay, subDays } from "date-fns";

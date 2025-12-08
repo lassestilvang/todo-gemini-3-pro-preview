@@ -1,5 +1,4 @@
-import { db } from "./index";
-import { lists, labels, achievements } from "./schema";
+import { db, lists, labels, achievements } from "./index";
 
 async function seed() {
     console.log("Seeding database...");
@@ -10,7 +9,7 @@ async function seed() {
         slug: "inbox",
         color: "#3b82f6", // Blue
         icon: "inbox",
-    }).onConflictDoNothing().returning().get();
+    }).onConflictDoNothing();
 
     // Create some default labels
     await db.insert(labels).values([

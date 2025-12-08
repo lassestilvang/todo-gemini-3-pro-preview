@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeEach } from "bun:test";
 import { calculateStreakUpdate } from "@/lib/gamification";
 import { toggleTaskCompletion, createTask } from "@/lib/actions";
-import { db } from "@/db";
-import { userStats, userAchievements, achievements } from "@/db/schema";
+import { db, userStats, userAchievements, achievements } from "@/db";
 import { eq } from "drizzle-orm";
 
 import { setupTestDb, resetTestDb } from "@/test/setup";

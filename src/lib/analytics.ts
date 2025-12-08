@@ -1,7 +1,6 @@
 "use server";
 
-import { db } from "@/db";
-import { tasks } from "@/db/schema";
+import { db, tasks } from "@/db";
 import { subDays, format, startOfDay } from "date-fns";
 
 export async function getAnalytics() {
