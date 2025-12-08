@@ -418,12 +418,13 @@ export async function toggleTaskCompletion(id: number, userId: string, isComplet
         }
     }
 
-    await updateTask(id, {
+    await updateTask(id, userId, {
         isCompleted,
         completedAt: isCompleted ? new Date() : null
     });
 
     await db.insert(taskLogs).values({
+        userId,
         taskId: id,
         action: isCompleted ? "completed" : "uncompleted",
         details: isCompleted ? "Task marked as completed" : "Task marked as uncompleted",
@@ -452,6 +453,7 @@ export async function toggleTaskCompletion(id: number, userId: string, isComplet
             const isNowUnblocked = remainingBlockers[0].count === 0;
 
             await db.insert(taskLogs).values({
+                userId,
                 taskId: blockedTask.id,
                 action: "blocker_completed",
                 details: `Blocker "${task.title}" completed.${isNowUnblocked ? " Task is now unblocked!" : ""}`,
@@ -460,7 +462,7 @@ export async function toggleTaskCompletion(id: number, userId: string, isComplet
     }
 
     // Update Streak
-    await updateStreak();
+    await updateStreak(userId);
 
     // Award XP
     const baseXP = 10;
@@ -468,11 +470,11 @@ export async function toggleTaskCompletion(id: number, userId: string, isComplet
     if (task.priority === "medium") bonusXP += 5;
     if (task.priority === "high") bonusXP += 10;
 
-    return await addXP(baseXP + bonusXP);
+    return await addXP(userId, baseXP + bonusXP);
 }
 
-export async function updateStreak() {
-    const stats = await getUserStats();
+export async function updateStreak(userId: string) {
+    const stats = await getUserStats(userId);
     const { newStreak, shouldUpdate } = calculateStreakUpdate(stats.currentStreak, stats.lastLogin);
 
     if (shouldUpdate) {
@@ -482,10 +484,11 @@ export async function updateStreak() {
                 longestStreak: Math.max(stats.longestStreak, newStreak),
                 lastLogin: new Date() // Using lastLogin as "last activity" for simplicity
             })
-            .where(eq(userStats.id, 1));
+            .where(eq(userStats.userId, userId));
 
         if (newStreak > stats.currentStreak) {
             await db.insert(taskLogs).values({
+                userId,
                 taskId: null,
                 action: "streak_updated",
                 details: `Streak increased to ${newStreak} days! 🔥`,
@@ -494,13 +497,14 @@ export async function updateStreak() {
     }
 }
 
-export async function getSubtasks(taskId: number) {
-    const result = await db.select().from(tasks).where(eq(tasks.parentId, taskId)).orderBy(tasks.createdAt);
+export async function getSubtasks(taskId: number, userId: string) {
+    const result = await db.select().from(tasks).where(and(eq(tasks.parentId, taskId), eq(tasks.userId, userId))).orderBy(tasks.createdAt);
     return result;
 }
 
-export async function createSubtask(parentId: number, title: string, estimateMinutes?: number) {
+export async function createSubtask(parentId: number, userId: string, title: string, estimateMinutes?: number) {
     const result = await db.insert(tasks).values({
+        userId,
         title,
         parentId,
         listId: null,
@@ -510,6 +514,7 @@ export async function createSubtask(parentId: number, title: string, estimateMin
     const subtask = result[0];
 
     await db.insert(taskLogs).values({
+        userId,
         taskId: parentId,
         action: "subtask_created",
         details: `Subtask created: ${title}`,
@@ -519,20 +524,20 @@ export async function createSubtask(parentId: number, title: string, estimateMin
     return subtask;
 }
 
-export async function updateSubtask(id: number, isCompleted: boolean) {
+export async function updateSubtask(id: number, userId: string, isCompleted: boolean) {
     await db.update(tasks).set({
         isCompleted,
         completedAt: isCompleted ? new Date() : null
-    }).where(eq(tasks.id, id));
+    }).where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
     revalidatePath("/");
 }
 
-export async function deleteSubtask(id: number) {
-    await db.delete(tasks).where(eq(tasks.id, id));
+export async function deleteSubtask(id: number, userId: string) {
+    await db.delete(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
     revalidatePath("/");
 }
 
-export async function searchTasks(query: string) {
+export async function searchTasks(userId: string, query: string) {
     if (!query || query.trim().length === 0) return [];
 
     const lowerQuery = `%${query.toLowerCase()}%`;
@@ -546,7 +551,10 @@ export async function searchTasks(query: string) {
     })
         .from(tasks)
         .where(
-            sql`lower(${tasks.title}) LIKE ${lowerQuery} OR lower(${tasks.description}) LIKE ${lowerQuery}`
+            and(
+                eq(tasks.userId, userId),
+                sql`(lower(${tasks.title}) LIKE ${lowerQuery} OR lower(${tasks.description}) LIKE ${lowerQuery})`
+            )
         )
         .limit(10);
 
@@ -559,13 +567,14 @@ export async function getReminders(taskId: number) {
     return await db.select().from(reminders).where(eq(reminders.taskId, taskId));
 }
 
-export async function createReminder(taskId: number, remindAt: Date) {
+export async function createReminder(userId: string, taskId: number, remindAt: Date) {
     await db.insert(reminders).values({
         taskId,
         remindAt,
     });
 
     await db.insert(taskLogs).values({
+        userId,
         taskId,
         action: "reminder_added",
         details: `Reminder set for ${remindAt.toLocaleString()}`,
@@ -574,11 +583,12 @@ export async function createReminder(taskId: number, remindAt: Date) {
     revalidatePath("/");
 }
 
-export async function deleteReminder(id: number) {
+export async function deleteReminder(userId: string, id: number) {
     // Get reminder to log it before deleting
     const reminder = await db.select().from(reminders).where(eq(reminders.id, id)).limit(1);
     if (reminder.length > 0) {
         await db.insert(taskLogs).values({
+            userId,
             taskId: reminder[0].taskId,
             action: "reminder_removed",
             details: `Reminder removed for ${reminder[0].remindAt.toLocaleString()}`,
@@ -595,7 +605,7 @@ export async function getTaskLogs(taskId: number) {
     return await db.select().from(taskLogs).where(eq(taskLogs.taskId, taskId)).orderBy(desc(taskLogs.createdAt), desc(taskLogs.id));
 }
 
-export async function getActivityLog() {
+export async function getActivityLog(userId: string) {
     return await db.select({
         id: taskLogs.id,
         taskId: taskLogs.taskId,
@@ -606,13 +616,14 @@ export async function getActivityLog() {
     })
         .from(taskLogs)
         .leftJoin(tasks, eq(taskLogs.taskId, tasks.id))
+        .where(eq(taskLogs.userId, userId))
         .orderBy(desc(taskLogs.createdAt))
         .limit(50);
 }
 
 // --- Dependencies ---
 
-export async function addDependency(taskId: number, blockerId: number) {
+export async function addDependency(userId: string, taskId: number, blockerId: number) {
     if (taskId === blockerId) throw new Error("Task cannot block itself");
 
     // Check for circular dependency (simple check: is blocker blocked by task?)
@@ -627,6 +638,7 @@ export async function addDependency(taskId: number, blockerId: number) {
     });
 
     await db.insert(taskLogs).values({
+        userId,
         taskId,
         action: "dependency_added",
         details: `Blocked by task #${blockerId}`,
@@ -635,11 +647,12 @@ export async function addDependency(taskId: number, blockerId: number) {
     revalidatePath("/");
 }
 
-export async function removeDependency(taskId: number, blockerId: number) {
+export async function removeDependency(userId: string, taskId: number, blockerId: number) {
     await db.delete(taskDependencies)
         .where(and(eq(taskDependencies.taskId, taskId), eq(taskDependencies.blockerId, blockerId)));
 
     await db.insert(taskLogs).values({
+        userId,
         taskId,
         action: "dependency_removed",
         details: `No longer blocked by task #${blockerId}`,
@@ -676,25 +689,26 @@ export async function getBlockedTasks(blockerId: number) {
 
 // --- Templates ---
 
-export async function getTemplates() {
-    return await db.select().from(templates).orderBy(desc(templates.createdAt));
+export async function getTemplates(userId: string) {
+    return await db.select().from(templates).where(eq(templates.userId, userId)).orderBy(desc(templates.createdAt));
 }
 
-export async function createTemplate(name: string, content: string) {
+export async function createTemplate(userId: string, name: string, content: string) {
     await db.insert(templates).values({
+        userId,
         name,
         content,
     });
     revalidatePath("/");
 }
 
-export async function deleteTemplate(id: number) {
-    await db.delete(templates).where(eq(templates.id, id));
+export async function deleteTemplate(id: number, userId: string) {
+    await db.delete(templates).where(and(eq(templates.id, id), eq(templates.userId, userId)));
     revalidatePath("/");
 }
 
-export async function instantiateTemplate(templateId: number, listId: number | null = null) {
-    const template = await db.select().from(templates).where(eq(templates.id, templateId)).limit(1);
+export async function instantiateTemplate(userId: string, templateId: number, listId: number | null = null) {
+    const template = await db.select().from(templates).where(and(eq(templates.id, templateId), eq(templates.userId, userId))).limit(1);
     if (template.length === 0) throw new Error("Template not found");
 
     const data = JSON.parse(template[0].content);
@@ -726,6 +740,7 @@ export async function instantiateTemplate(templateId: number, listId: number | n
         // Clean up data for insertion
         const insertData = {
             ...processedData,
+            userId,
             listId: parentId ? null : (listId || processedData.listId), // Only top-level tasks get the listId override
             parentId,
             createdAt: new Date(),
@@ -764,18 +779,18 @@ export async function instantiateTemplate(templateId: number, listId: number | n
 
 // --- Gamification ---
 
-export async function getUserStats() {
-    const stats = await db.select().from(userStats).where(eq(userStats.id, 1));
+export async function getUserStats(userId: string) {
+    const stats = await db.select().from(userStats).where(eq(userStats.userId, userId));
     if (stats.length === 0) {
         // Initialize if not exists
-        const newStats = await db.insert(userStats).values({ id: 1 }).returning();
+        const newStats = await db.insert(userStats).values({ userId }).returning();
         return newStats[0];
     }
     return stats[0];
 }
 
-export async function addXP(amount: number) {
-    const stats = await getUserStats();
+export async function addXP(userId: string, amount: number) {
+    const stats = await getUserStats(userId);
     const newXP = stats.xp + amount;
     const newLevel = calculateLevel(newXP);
 
@@ -784,27 +799,27 @@ export async function addXP(amount: number) {
             xp: newXP,
             level: newLevel,
         })
-        .where(eq(userStats.id, 1));
+        .where(eq(userStats.userId, userId));
 
     // Check for achievements
-    await checkAchievements(stats.xp + amount, stats.currentStreak);
+    await checkAchievements(userId, stats.xp + amount, stats.currentStreak);
 
     revalidatePath("/");
     return { newXP, newLevel, leveledUp: newLevel > stats.level };
 }
 
-export async function checkAchievements(currentXP: number, currentStreak: number) {
+export async function checkAchievements(userId: string, currentXP: number, currentStreak: number) {
     // Get all achievements
     const allAchievements = await db.select().from(achievements);
 
-    // Get unlocked achievements
-    const unlocked = await db.select().from(userAchievements);
+    // Get unlocked achievements for this user
+    const unlocked = await db.select().from(userAchievements).where(eq(userAchievements.userId, userId));
     const unlockedIds = new Set(unlocked.map(u => u.achievementId));
 
-    // Get total tasks completed
+    // Get total tasks completed by this user
     const completedTasks = await db.select({ count: sql<number>`count(*)` })
         .from(tasks)
-        .where(eq(tasks.isCompleted, true));
+        .where(and(eq(tasks.userId, userId), eq(tasks.isCompleted, true)));
     const totalCompleted = completedTasks[0].count;
 
     // Get tasks completed today for "Hat Trick"
@@ -813,6 +828,7 @@ export async function checkAchievements(currentXP: number, currentStreak: number
     const completedToday = await db.select({ count: sql<number>`count(*)` })
         .from(tasks)
         .where(and(
+            eq(tasks.userId, userId),
             eq(tasks.isCompleted, true),
             gte(tasks.completedAt, todayStart),
             lte(tasks.completedAt, todayEnd)
@@ -822,30 +838,32 @@ export async function checkAchievements(currentXP: number, currentStreak: number
     for (const achievement of allAchievements) {
         if (unlockedIds.has(achievement.id)) continue;
 
-        let unlocked = false;
+        let isUnlocked = false;
 
         switch (achievement.conditionType) {
             case "count_total":
-                if (totalCompleted >= achievement.conditionValue) unlocked = true;
+                if (totalCompleted >= achievement.conditionValue) isUnlocked = true;
                 break;
             case "count_daily":
-                if (dailyCompleted >= achievement.conditionValue) unlocked = true;
+                if (dailyCompleted >= achievement.conditionValue) isUnlocked = true;
                 break;
             case "streak":
-                if (currentStreak >= achievement.conditionValue) unlocked = true;
+                if (currentStreak >= achievement.conditionValue) isUnlocked = true;
                 break;
         }
 
-        if (unlocked) {
+        if (isUnlocked) {
             await db.insert(userAchievements).values({
+                userId,
                 achievementId: achievement.id
             });
 
             // Award XP for achievement
-            await addXP(achievement.xpReward);
+            await addXP(userId, achievement.xpReward);
 
             // Log it
             await db.insert(taskLogs).values({
+                userId,
                 taskId: null, // System log
                 action: "achievement_unlocked",
                 details: `Unlocked achievement: ${achievement.name} (+${achievement.xpReward} XP)`,
@@ -858,7 +876,7 @@ export async function getAchievements() {
     return await db.select().from(achievements);
 }
 
-export async function getUserAchievements() {
+export async function getUserAchievements(userId: string) {
     const result = await db.select({
         achievementId: userAchievements.achievementId,
         unlockedAt: userAchievements.unlockedAt,
@@ -869,6 +887,7 @@ export async function getUserAchievements() {
     })
         .from(userAchievements)
         .leftJoin(achievements, eq(userAchievements.achievementId, achievements.id))
+        .where(eq(userAchievements.userId, userId))
         .orderBy(desc(userAchievements.unlockedAt));
 
     return result;
@@ -876,12 +895,12 @@ export async function getUserAchievements() {
 
 // --- View Settings ---
 
-export async function getViewSettings(viewId: string) {
-    const result = await db.select().from(viewSettings).where(eq(viewSettings.id, viewId));
+export async function getViewSettings(userId: string, viewId: string) {
+    const result = await db.select().from(viewSettings).where(and(eq(viewSettings.userId, userId), eq(viewSettings.viewId, viewId)));
     return result[0] || null;
 }
 
-export async function saveViewSettings(viewId: string, settings: {
+export async function saveViewSettings(userId: string, viewId: string, settings: {
     layout?: "list" | "board" | "calendar";
     showCompleted?: boolean;
     groupBy?: "none" | "dueDate" | "priority" | "label";
@@ -891,15 +910,16 @@ export async function saveViewSettings(viewId: string, settings: {
     filterPriority?: string | null;
     filterLabelId?: number | null;
 }) {
-    const existing = await getViewSettings(viewId);
+    const existing = await getViewSettings(userId, viewId);
 
     if (existing) {
         await db.update(viewSettings)
             .set({ ...settings, updatedAt: new Date() })
-            .where(eq(viewSettings.id, viewId));
+            .where(and(eq(viewSettings.userId, userId), eq(viewSettings.viewId, viewId)));
     } else {
         await db.insert(viewSettings).values({
-            id: viewId,
+            userId,
+            viewId,
             ...settings,
         });
     }
@@ -907,7 +927,7 @@ export async function saveViewSettings(viewId: string, settings: {
     revalidatePath("/");
 }
 
-export async function resetViewSettings(viewId: string) {
-    await db.delete(viewSettings).where(eq(viewSettings.id, viewId));
+export async function resetViewSettings(userId: string, viewId: string) {
+    await db.delete(viewSettings).where(and(eq(viewSettings.userId, userId), eq(viewSettings.viewId, viewId)));
     revalidatePath("/");
 }
