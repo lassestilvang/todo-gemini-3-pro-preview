@@ -68,6 +68,7 @@ jobs:
         run: bun install
 
       - name: Setup Database
+        if: ${{ secrets.DATABASE_URL != '' }}
         run: bun run db:push
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -75,5 +76,5 @@ jobs:
       - name: Build
         run: bun run build
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://placeholder:placeholder@localhost/placeholder' }}
 

@@ -8,29 +8,13 @@
  * **Validates: Requirements 1.4, 5.5**
  */
 
-import { describe, it, expect, beforeEach, mock } from "bun:test";
+import { describe, it, expect, beforeEach } from "bun:test";
 import fc from "fast-check";
 import { setupTestDb, resetTestDb } from "@/test/setup";
 import { db, users, lists, userStats } from "@/db";
 import { eq } from "drizzle-orm";
 
-// Mock authkit-nextjs
-mock.module("@workos-inc/authkit-nextjs", () => ({
-  withAuth: mock(() => Promise.resolve({ user: null })),
-  signOut: mock(() => Promise.resolve()),
-}));
-
-// Mock next/cache
-mock.module("next/cache", () => ({
-  revalidatePath: () => {},
-}));
-
-// Mock next/navigation
-mock.module("next/navigation", () => ({
-  redirect: mock((url: string) => {
-    throw new Error(`REDIRECT:${url}`);
-  }),
-}));
+// Note: WorkOS, next/cache, and next/navigation mocks are provided globally via src/test/mocks.ts
 
 // Generator for valid WorkOS user IDs
 const workosUserIdArb = fc.string({ minLength: 10, maxLength: 30 })

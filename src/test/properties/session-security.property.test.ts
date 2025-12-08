@@ -15,9 +15,12 @@
  * behavior and verify that our auth utilities enforce proper access control.
  */
 
-import { describe, it, expect, beforeEach, mock } from "bun:test";
+import { describe, it, expect, beforeEach } from "bun:test";
 import fc from "fast-check";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
+import { setMockAuthUser, clearMockAuthUser } from "@/test/mocks";
+import { getCurrentUser, requireAuth } from "@/lib/auth";
+import { getTasks, getLists, getLabels } from "@/lib/actions";
 
 // Generator for valid WorkOS user IDs
 const workosUserIdArb = fc.string({ minLength: 10, maxLength: 30 })
@@ -40,6 +43,7 @@ describe("Property Tests: Session Security", () => {
   beforeEach(async () => {
     await setupTestDb();
     await resetTestDb();
+    clearMockAuthUser();
   });
 
   /**
@@ -118,29 +122,18 @@ describe("Property Tests: Session Security", () => {
    */
   describe("Property 8: Valid Session Grants Access", () => {
     it("Authenticated users can access their data via getCurrentUser", async () => {
-      // Mock withAuth to simulate authenticated session
-      let mockUser: { id: string; email: string; firstName: string | null; lastName: string | null; profilePictureUrl: string | null } | null = null;
-      
-      mock.module("@workos-inc/authkit-nextjs", () => ({
-        withAuth: mock(() => Promise.resolve({ user: mockUser })),
-        signOut: mock(() => Promise.resolve()),
-      }));
-
-      // Re-import auth module to pick up the mock
-      const { getCurrentUser } = await import("@/lib/auth");
-
       await fc.assert(
         fc.asyncProperty(workosUserArb, async (workosUser) => {
           await resetTestDb();
           
           // Set up mock to return this user
-          mockUser = {
+          setMockAuthUser({
             id: workosUser.id,
             email: workosUser.email,
             firstName: workosUser.firstName,
             lastName: workosUser.lastName,
             profilePictureUrl: workosUser.profilePictureUrl,
-          };
+          });
 
           // Create user in database
           await createTestUser(workosUser.id, workosUser.email);
@@ -157,15 +150,6 @@ describe("Property Tests: Session Security", () => {
     });
 
     it("Valid sessions provide consistent user identity", async () => {
-      let mockUser: { id: string; email: string; firstName: string | null; lastName: string | null; profilePictureUrl: string | null } | null = null;
-      
-      mock.module("@workos-inc/authkit-nextjs", () => ({
-        withAuth: mock(() => Promise.resolve({ user: mockUser })),
-        signOut: mock(() => Promise.resolve()),
-      }));
-
-      const { getCurrentUser } = await import("@/lib/auth");
-
       await fc.assert(
         fc.asyncProperty(
           workosUserArb,
@@ -173,18 +157,19 @@ describe("Property Tests: Session Security", () => {
           async (workosUser, callCount) => {
             await resetTestDb();
             
-            mockUser = {
+            setMockAuthUser({
               id: workosUser.id,
               email: workosUser.email,
               firstName: workosUser.firstName,
               lastName: workosUser.lastName,
               profilePictureUrl: workosUser.profilePictureUrl,
-            };
+            });
 
             await createTestUser(workosUser.id, workosUser.email);
 
             // Property: Multiple calls return consistent user identity
-            const results: (typeof mockUser | null)[] = [];
+            type MockUserType = { id: string; email: string; firstName: string | null; lastName: string | null; avatarUrl: string | null } | null;
+            const results: MockUserType[] = [];
             for (let i = 0; i < callCount; i++) {
               const user = await getCurrentUser();
               results.push(user);
@@ -209,18 +194,13 @@ describe("Property Tests: Session Security", () => {
    */
   describe("Property 9: API Unauthorized Response", () => {
     it("requireAuth throws UNAUTHORIZED when no session exists", async () => {
-      // Mock withAuth to simulate no session
-      mock.module("@workos-inc/authkit-nextjs", () => ({
-        withAuth: mock(() => Promise.resolve({ user: null })),
-        signOut: mock(() => Promise.resolve()),
-      }));
-
-      const { requireAuth } = await import("@/lib/auth");
-
       await fc.assert(
         fc.asyncProperty(
           fc.constant(null), // No user
           async () => {
+            // Ensure no user is authenticated
+            clearMockAuthUser();
+            
             // Property: requireAuth throws UNAUTHORIZED when not authenticated
             let thrownError: Error | null = null;
             
@@ -239,17 +219,13 @@ describe("Property Tests: Session Security", () => {
     });
 
     it("getCurrentUser returns null for unauthenticated requests", async () => {
-      mock.module("@workos-inc/authkit-nextjs", () => ({
-        withAuth: mock(() => Promise.resolve({ user: null })),
-        signOut: mock(() => Promise.resolve()),
-      }));
-
-      const { getCurrentUser } = await import("@/lib/auth");
-
       await fc.assert(
         fc.asyncProperty(
           fc.constant(null),
           async () => {
+            // Ensure no user is authenticated
+            clearMockAuthUser();
+            
             // Property: getCurrentUser returns null when not authenticated
             const user = await getCurrentUser();
             expect(user).toBeNull();
@@ -260,25 +236,12 @@ describe("Property Tests: Session Security", () => {
     });
 
     it("Server actions reject unauthenticated access to user data", async () => {
-      // Mock next/cache
-      mock.module("next/cache", () => ({
-        revalidatePath: () => {},
-      }));
-
-      // Mock smart-tags
-      mock.module("@/lib/smart-tags", () => ({
-        suggestMetadata: mock(() => Promise.resolve({ listId: null, labelIds: [] }))
-      }));
-
       await fc.assert(
         fc.asyncProperty(
           workosUserIdArb,
           async (userId) => {
             await resetTestDb();
             await createTestUser(userId, `${userId}@test.com`);
-
-            // Import actions
-            const { getTasks, getLists, getLabels } = await import("@/lib/actions");
 
             // Property: Querying with a non-existent user ID returns empty results
             // (This simulates what happens when someone tries to access data without proper auth)

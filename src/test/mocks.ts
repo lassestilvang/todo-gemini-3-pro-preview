@@ -32,3 +32,39 @@ mock.module("next/cache", () => ({
 mock.module("canvas-confetti", () => ({
     default: () => Promise.resolve(),
 }));
+
+/**
+ * WorkOS AuthKit mock for testing.
+ * Tests can control the mock user via setMockAuthUser().
+ * 
+ * Note: We use a global object to store the mock user so that the mock function
+ * can dynamically read the current value when called.
+ */
+interface MockAuthUser {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+    profilePictureUrl: string | null;
+}
+
+// Use globalThis to ensure the mock state is shared across module boundaries
+const mockState = globalThis as unknown as { __mockAuthUser: MockAuthUser | null };
+mockState.__mockAuthUser = null;
+
+export function setMockAuthUser(user: MockAuthUser | null) {
+    mockState.__mockAuthUser = user;
+}
+
+export function clearMockAuthUser() {
+    mockState.__mockAuthUser = null;
+}
+
+export function getMockAuthUser(): MockAuthUser | null {
+    return mockState.__mockAuthUser;
+}
+
+mock.module("@workos-inc/authkit-nextjs", () => ({
+    withAuth: mock(async () => ({ user: getMockAuthUser() })),
+    signOut: mock(() => Promise.resolve()),
+}));
