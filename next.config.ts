@@ -10,7 +10,9 @@ const withPWA = withPWAInit({
 const nextConfig: NextConfig = {
   serverExternalPackages: ["better-sqlite3"],
   reactCompiler: true,
-  turbopack: {},
+  turbopack: {
+    root: __dirname,
+  },
 };
 
 export default withPWA(nextConfig);

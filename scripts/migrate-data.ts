@@ -101,8 +101,9 @@ async function migrateTable<T>(
         } catch (error) {
             // Check if it's a duplicate key error
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            if ((error as any)?.sourceError?.code === "23505" || 
-                (error as unknown)?.cause?.code === "23505" ||
+            const err = error as any;
+            if (err?.sourceError?.code === "23505" || 
+                err?.cause?.code === "23505" ||
                 String(error).includes("duplicate key")) {
                 console.log(`   ⏭️  Skipping batch (already exists)`);
                 stats[tableName].skipped = (stats[tableName].skipped || 0) + batch.length;
