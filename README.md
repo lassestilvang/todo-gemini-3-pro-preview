@@ -26,6 +26,7 @@ A modern, professional daily task planner built with **Next.js 16**, **Bun**, an
 - **Runtime**: [Bun](https://bun.sh/)
 - **Database**: [Neon PostgreSQL](https://neon.tech/) (serverless)
 - **ORM**: [Drizzle ORM](https://orm.drizzle.team/)
+- **Authentication**: [WorkOS AuthKit](https://workos.com/docs/user-management)
 - **UI Components**: [shadcn/ui](https://ui.shadcn.com/)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 
@@ -48,11 +49,22 @@ A modern, professional daily task planner built with **Next.js 16**, **Bun**, an
    bun install
    ```
 
-3. **Configure the database**:
-   Copy the environment template and add your Neon database connection string:
+3. **Configure environment variables**:
+   Copy the environment template and configure your settings:
    ```bash
    cp .env.example .env.local
-   # Edit .env.local and set DATABASE_URL to your Neon connection string
+   ```
+   
+   Edit `.env.local` and set the following:
+   ```bash
+   # Database (Neon PostgreSQL)
+   DATABASE_URL=postgresql://user:pass@host.neon.tech/neondb?sslmode=require
+   
+   # Authentication (WorkOS AuthKit)
+   WORKOS_API_KEY=sk_...
+   WORKOS_CLIENT_ID=client_...
+   WORKOS_COOKIE_PASSWORD=your-32-character-or-longer-password
+   WORKOS_REDIRECT_URI=http://localhost:3000/auth/callback
    ```
 
 4. **Setup the database**:
@@ -72,6 +84,31 @@ A modern, professional daily task planner built with **Next.js 16**, **Bun**, an
    - The app loads at http://localhost:3000
    - You can create a new task
    - The "Inbox" list is visible
+
+## 🔐 Authentication
+
+This app uses [WorkOS AuthKit](https://workos.com/docs/user-management) for authentication, providing:
+
+- Email/password authentication
+- Social login (Google, GitHub, etc.)
+- Enterprise SSO support
+- Secure session management
+
+### Setting Up WorkOS
+
+1. Create a [WorkOS account](https://dashboard.workos.com/signup)
+2. Create a new project in the WorkOS dashboard
+3. Enable "AuthKit" in your project settings
+4. Configure your redirect URI: `http://localhost:3000/auth/callback` (for local dev)
+5. Copy your API key and Client ID to `.env.local`
+6. Generate a secure cookie password (32+ characters) for `WORKOS_COOKIE_PASSWORD`
+
+### Authentication Flow
+
+- Unauthenticated users are redirected to `/login`
+- After successful authentication, users are redirected to `/inbox`
+- Each user has isolated data (tasks, lists, labels, etc.)
+- User profile and sign-out available in the sidebar
 
 ## 🗄️ Database Branching
 
