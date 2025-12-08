@@ -221,9 +221,11 @@ mock.module("./smart-tags", () => ({
 
 1. **Integration test skipped in CI**: `src/test/integration/task-flow.test.ts` is skipped in CI due to race conditions with parallel execution. Unit tests in `actions.test.ts` cover the same functionality.
 
-2. **Next.js workspace root warning**: Build may show a warning about multiple lockfiles. This is cosmetic and doesn't affect the build.
+2. **Property tests skipped in CI**: Multi-user auth property tests (`src/test/properties/*.property.test.ts`) are skipped in CI due to parallel test execution issues with Bun's module mocking. These tests run successfully locally and verify authorization, data isolation, and session security properties.
 
-3. **Dialog accessibility warnings**: Some dialogs show "Missing Description" warnings in tests. These are non-blocking.
+3. **Next.js workspace root warning**: Build may show a warning about multiple lockfiles. This is cosmetic and doesn't affect the build.
+
+4. **Dialog accessibility warnings**: Some dialogs show "Missing Description" warnings in tests. These are non-blocking.
 
 ## Validation Checklist
 
