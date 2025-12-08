@@ -99,9 +99,22 @@ This app uses [WorkOS AuthKit](https://workos.com/docs/user-management) for auth
 1. Create a [WorkOS account](https://dashboard.workos.com/signup)
 2. Create a new project in the WorkOS dashboard
 3. Enable "AuthKit" in your project settings
-4. Configure your redirect URI: `http://localhost:3000/auth/callback` (for local dev)
+4. Configure redirect URIs in the WorkOS dashboard (Redirects section):
+   - `http://localhost:3000/auth/callback` (local development)
+   - `https://your-production-domain.com/auth/callback` (production)
+   - `https://*.vercel.app/auth/callback` (Vercel preview deployments - wildcard)
 5. Copy your API key and Client ID to `.env.local`
 6. Generate a secure cookie password (32+ characters) for `WORKOS_COOKIE_PASSWORD`
+
+### Dynamic Redirect URI for Vercel
+
+The app automatically handles redirect URIs for different environments:
+
+- **Local development**: Uses `NEXT_PUBLIC_WORKOS_REDIRECT_URI` from `.env.local`
+- **Vercel preview deployments**: Automatically uses `VERCEL_URL` to construct the redirect URI
+- **Production**: Set `NEXT_PUBLIC_WORKOS_REDIRECT_URI` in Vercel environment variables
+
+This is configured in `next.config.ts` and requires no additional setup for preview deployments.
 
 ### Authentication Flow
 
