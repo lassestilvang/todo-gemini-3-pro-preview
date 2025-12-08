@@ -52,12 +52,12 @@ export async function isHabitCompletedToday(taskId: number): Promise<boolean> {
     return completion.length > 0;
 }
 
-// Get all habits
-export async function getHabits() {
+// Get all habits for a user
+export async function getHabits(userId: string) {
     const habits = await db
         .select()
         .from(tasks)
-        .where(eq(tasks.isHabit, true))
+        .where(and(eq(tasks.isHabit, true), eq(tasks.userId, userId)))
         .orderBy(desc(tasks.createdAt));
 
     return habits;

@@ -1,9 +1,16 @@
 import { getTasks } from "@/lib/actions";
+import { getCurrentUser } from "@/lib/auth";
 import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
 import { CreateTaskInput } from "@/components/tasks/CreateTaskInput";
+import { redirect } from "next/navigation";
 
 export default async function TodayPage() {
-    const tasks = await getTasks(undefined, "today");
+    const user = await getCurrentUser();
+    if (!user) {
+        redirect("/login");
+    }
+
+    const tasks = await getTasks(user.id, undefined, "today");
 
     return (
         <div className="container max-w-4xl py-6 lg:py-10">
@@ -15,12 +22,13 @@ export default async function TodayPage() {
                     </p>
                 </div>
 
-                <CreateTaskInput defaultDueDate={new Date().toISOString()} />
+                <CreateTaskInput defaultDueDate={new Date().toISOString()} userId={user.id} />
 
                 <TaskListWithSettings
                     tasks={tasks}
                     defaultDueDate={new Date().toISOString()}
                     viewId="today"
+                    userId={user.id}
                 />
             </div>
         </div>

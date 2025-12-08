@@ -1,9 +1,15 @@
 import { getTasks } from "@/lib/actions";
+import { getCurrentUser } from "@/lib/auth";
 import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
-
+import { redirect } from "next/navigation";
 
 export default async function InboxPage() {
-    const tasks = await getTasks(null, "all"); // Filter by inbox (no list)
+    const user = await getCurrentUser();
+    if (!user) {
+        redirect("/login");
+    }
+
+    const tasks = await getTasks(user.id, null, "all"); // Filter by inbox (no list)
 
     return (
         <div className="container max-w-4xl py-6 lg:py-10">
@@ -15,9 +21,8 @@ export default async function InboxPage() {
                     </p>
                 </div>
 
-                <TaskListWithSettings tasks={tasks} viewId="inbox" />
+                <TaskListWithSettings tasks={tasks} viewId="inbox" userId={user.id} />
             </div>
         </div>
     );
 }
-

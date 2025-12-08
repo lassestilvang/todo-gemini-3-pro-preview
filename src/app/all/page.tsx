@@ -1,9 +1,16 @@
 import { getTasks } from "@/lib/actions";
+import { getCurrentUser } from "@/lib/auth";
 import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
 import { CreateTaskInput } from "@/components/tasks/CreateTaskInput";
+import { redirect } from "next/navigation";
 
 export default async function AllTasksPage() {
-    const tasks = await getTasks(undefined, "all");
+    const user = await getCurrentUser();
+    if (!user) {
+        redirect("/login");
+    }
+
+    const tasks = await getTasks(user.id, undefined, "all");
 
     return (
         <div className="container max-w-4xl py-6 lg:py-10">
@@ -15,11 +22,10 @@ export default async function AllTasksPage() {
                     </p>
                 </div>
 
-                <CreateTaskInput />
+                <CreateTaskInput userId={user.id} />
 
-                <TaskListWithSettings tasks={tasks} viewId="all" />
+                <TaskListWithSettings tasks={tasks} viewId="all" userId={user.id} />
             </div>
         </div>
     );
 }
-

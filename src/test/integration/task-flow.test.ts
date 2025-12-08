@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from "bun:test";
-import { setupTestDb, resetTestDb } from "@/test/setup";
+import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
+import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { createList, createTask, toggleTaskCompletion, getTasks, deleteTask, deleteList } from "@/lib/actions";
 
 // Skip in CI as this test has race condition issues with parallel execution
@@ -7,14 +7,18 @@ import { createList, createTask, toggleTaskCompletion, getTasks, deleteTask, del
 const describeOrSkip = process.env.CI ? describe.skip : describe;
 
 describeOrSkip("Integration: Task Flow", () => {
+    let testUserId: string;
+
+    beforeAll(async () => {
+        await setupTestDb();
+    });
+
     // Ensure database is set up and clean before each test
     beforeEach(async () => {
-        try {
-            await setupTestDb();
-        } catch {
-            // Tables might already exist, that's ok
-        }
         await resetTestDb();
+        // Create a test user for each test
+        const user = await createTestUser("test_user_integration", "test@integration.com");
+        testUserId = user.id;
     });
 
     it("should create a list, add a task, and complete it", async () => {
@@ -23,6 +27,7 @@ describeOrSkip("Integration: Task Flow", () => {
 
         // 1. Create a list
         const list = await createList({
+            userId: testUserId,
             name: `Integration List ${timestamp}`,
             color: "#ff0000",
             icon: "List",
@@ -35,6 +40,7 @@ describeOrSkip("Integration: Task Flow", () => {
 
         // 2. Add a task to the list
         const task = await createTask({
+            userId: testUserId,
             title: `Integration Task ${timestamp}`,
             listId: list.id,
             priority: "high"
@@ -47,7 +53,7 @@ describeOrSkip("Integration: Task Flow", () => {
         expect(task.priority).toBe("high");
 
         // 3. Verify task is in the list
-        const tasks = await getTasks(list.id);
+        const tasks = await getTasks(testUserId, list.id);
         expect(tasks.length).toBeGreaterThanOrEqual(1);
 
         const createdTask = tasks.find(t => t.id === task.id);
@@ -55,17 +61,17 @@ describeOrSkip("Integration: Task Flow", () => {
         expect(createdTask?.title).toBe(`Integration Task ${timestamp}`);
 
         // 4. Complete the task
-        await toggleTaskCompletion(task.id, true);
+        await toggleTaskCompletion(task.id, testUserId, true);
 
         // 5. Verify task is completed
-        const completedTasks = await getTasks(list.id);
+        const completedTasks = await getTasks(testUserId, list.id);
         const completedTask = completedTasks.find(t => t.id === task.id);
 
         expect(completedTask).toBeDefined();
         expect(completedTask?.isCompleted).toBe(true);
 
         // Clean up
-        await deleteTask(task.id);
-        await deleteList(list.id);
+        await deleteTask(task.id, testUserId);
+        await deleteList(list.id, testUserId);
     });
 });

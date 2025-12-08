@@ -1,13 +1,14 @@
 "use server";
 
 import { db, tasks } from "@/db";
+import { eq } from "drizzle-orm";
 import { subDays, format, startOfDay } from "date-fns";
 
-export async function getAnalytics() {
+export async function getAnalytics(userId: string) {
     const now = new Date();
 
-    // Total tasks
-    const allTasks = await db.select().from(tasks);
+    // Total tasks for this user
+    const allTasks = await db.select().from(tasks).where(eq(tasks.userId, userId));
     const totalTasks = allTasks.length;
     const completedTasks = allTasks.filter(t => t.isCompleted).length;
     const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;

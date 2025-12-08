@@ -1,6 +1,7 @@
 import { getList, getTasks } from "@/lib/actions";
+import { getCurrentUser } from "@/lib/auth";
 import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getListIcon } from "@/lib/icons";
 import { createElement } from "react";
 
@@ -11,18 +12,21 @@ interface ListPageProps {
 }
 
 export default async function ListPage({ params }: ListPageProps) {
+    const user = await getCurrentUser();
+    if (!user) {
+        redirect("/login");
+    }
+
     const { id } = await params;
     const listId = parseInt(id);
     if (isNaN(listId)) return notFound();
 
     const [list, tasks] = await Promise.all([
-        getList(listId),
-        getTasks(listId)
+        getList(listId, user.id),
+        getTasks(user.id, listId)
     ]);
 
     if (!list) return notFound();
-
-
 
     return (
         <div className="container max-w-4xl py-6 lg:py-10">
@@ -37,9 +41,8 @@ export default async function ListPage({ params }: ListPageProps) {
                     </h1>
                 </div>
 
-                <TaskListWithSettings tasks={tasks} listId={listId} viewId={`list-${listId}`} />
+                <TaskListWithSettings tasks={tasks} listId={listId} viewId={`list-${listId}`} userId={user.id} />
             </div>
         </div>
     );
 }
-

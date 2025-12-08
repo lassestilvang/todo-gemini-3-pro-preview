@@ -32,7 +32,7 @@ describe("CreateTaskInput", () => {
     });
 
     it("should create task on submit", async () => {
-        render(<CreateTaskInput />);
+        render(<CreateTaskInput userId="test_user_123" />);
         const input = screen.getByPlaceholderText(/Add a task/i);
 
         // Focus to expand
@@ -48,6 +48,7 @@ describe("CreateTaskInput", () => {
         await waitFor(() => {
             expect(mockCreateTask).toHaveBeenCalledTimes(1);
             expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining({
+                userId: "test_user_123",
                 title: "New Task",
                 priority: "none"
             }));

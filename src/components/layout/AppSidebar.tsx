@@ -10,6 +10,7 @@ import { InstallPrompt } from "@/components/InstallPrompt";
 import { SearchDialog } from "@/components/tasks/SearchDialog";
 import { TemplateManager } from "@/components/tasks/TemplateManager";
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
+import { UserProfile } from "./UserProfile";
 import { Sparkles } from "lucide-react";
 import { useState } from "react";
 import { SmartScheduleDialog } from "@/components/tasks/SmartScheduleDialog";
@@ -35,7 +36,15 @@ type Label = {
     icon: string | null;
 };
 
-export function AppSidebar({ className, lists, labels }: { className?: string; lists: List[]; labels: Label[] }) {
+type User = {
+    id: string;
+    email: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    avatarUrl?: string | null;
+} | null;
+
+export function AppSidebar({ className, lists, labels, user }: { className?: string; lists: List[]; labels: Label[]; user?: User }) {
     const [smartScheduleOpen, setSmartScheduleOpen] = useState(false);
 
     return (
@@ -82,6 +91,7 @@ export function AppSidebar({ className, lists, labels }: { className?: string; l
             />
 
             <div className="p-4 mt-auto border-t space-y-2">
+                {user && <UserProfile user={user} />}
                 <InstallPrompt />
                 <RescheduleButton />
                 <SettingsDialog />

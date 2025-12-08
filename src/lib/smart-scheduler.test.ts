@@ -1,5 +1,5 @@
 import { describe, it, expect, mock, beforeEach, beforeAll } from "bun:test";
-import { setupTestDb, resetTestDb } from "../test/setup";
+import { setupTestDb, resetTestDb, createTestUser } from "../test/setup";
 import { db, tasks } from "@/db";
 import { eq } from "drizzle-orm";
 import { generateSubtasks, extractDeadline, generateSmartSchedule, analyzePriorities, applyScheduleSuggestion } from "./smart-scheduler";
@@ -29,12 +29,17 @@ mock.module("./gemini", () => ({
 // The smart-scheduler functions can use the real test database
 
 describe("smart-scheduler", () => {
+    let testUserId: string;
+
     beforeAll(async () => {
         await setupTestDb();
     });
 
     beforeEach(async () => {
         await resetTestDb();
+        // Create a test user for each test
+        const user = await createTestUser("test_user_scheduler", "test@scheduler.com");
+        testUserId = user.id;
         mockGenerateContent.mockClear();
         mockGetGeminiClient.mockClear();
     });
@@ -145,10 +150,11 @@ describe("smart-scheduler", () => {
 
     describe("applyScheduleSuggestion", () => {
         it("updates task due date", async () => {
-            // Create a task first
+            // Create a task first with userId
             const [inserted] = await db.insert(tasks).values({
+                userId: testUserId,
                 title: "Test Task",
-                listId: 1,
+                listId: null,
             }).returning();
 
             const date = new Date("2023-12-01");
