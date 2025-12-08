@@ -11,12 +11,13 @@
 import { sqliteTable, text, integer, primaryKey, index } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
-export const lists = sqliteTable("lists", {
-    id: integer("id").primaryKey({ autoIncrement: true }),
-    name: text("name").notNull(),
-    color: text("color").default("#000000"),
-    icon: text("icon"),
-    slug: text("slug").notNull().unique(),
+// Users table - stores WorkOS user data
+export const users = sqliteTable("users", {
+    id: text("id").primaryKey(), // WorkOS user ID
+    email: text("email").notNull(),
+    firstName: text("first_name"),
+    lastName: text("last_name"),
+    avatarUrl: text("avatar_url"),
     createdAt: integer("created_at", { mode: "timestamp" })
         .notNull()
         .default(sql`(strftime('%s', 'now'))`),
@@ -25,8 +26,30 @@ export const lists = sqliteTable("lists", {
         .default(sql`(strftime('%s', 'now'))`),
 });
 
+export const lists = sqliteTable("lists", {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    color: text("color").default("#000000"),
+    icon: text("icon"),
+    slug: text("slug").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" })
+        .notNull()
+        .default(sql`(strftime('%s', 'now'))`),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+        .notNull()
+        .default(sql`(strftime('%s', 'now'))`),
+}, (table) => ({
+    userIdIdx: index("lists_user_id_idx").on(table.userId),
+}));
+
 export const tasks = sqliteTable("tasks", {
     id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
     listId: integer("list_id").references(() => lists.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     description: text("description"),
@@ -50,6 +73,7 @@ export const tasks = sqliteTable("tasks", {
         .default(sql`(strftime('%s', 'now'))`),
     deadline: integer("deadline", { mode: "timestamp" }),
 }, (table) => ({
+    userIdIdx: index("tasks_user_id_idx").on(table.userId),
     listIdIdx: index("tasks_list_id_idx").on(table.listId),
     parentIdIdx: index("tasks_parent_id_idx").on(table.parentId),
     isCompletedIdx: index("tasks_is_completed_idx").on(table.isCompleted),
@@ -60,10 +84,15 @@ export const tasks = sqliteTable("tasks", {
 
 export const labels = sqliteTable("labels", {
     id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     color: text("color").default("#000000"),
     icon: text("icon"),
-});
+}, (table) => ({
+    userIdIdx: index("labels_user_id_idx").on(table.userId),
+}));
 
 export const taskLabels = sqliteTable("task_labels", {
     taskId: integer("task_id")
@@ -91,6 +120,8 @@ export const reminders = sqliteTable("reminders", {
 
 export const taskLogs = sqliteTable("task_logs", {
     id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: text("user_id")
+        .references(() => users.id, { onDelete: "cascade" }),
     taskId: integer("task_id")
         .references(() => tasks.id, { onDelete: "cascade" }),
     action: text("action").notNull(),
@@ -99,6 +130,7 @@ export const taskLogs = sqliteTable("task_logs", {
         .notNull()
         .default(sql`(strftime('%s', 'now'))`),
 }, (t) => ({
+    userIdIdx: index("task_logs_user_id_idx").on(t.userId),
     taskIdIdx: index("task_logs_task_id_idx").on(t.taskId),
 }));
 
@@ -127,6 +159,9 @@ export const taskDependencies = sqliteTable("task_dependencies", {
 
 export const templates = sqliteTable("templates", {
     id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     content: text("content").notNull(),
     createdAt: integer("created_at", { mode: "timestamp" })
@@ -135,10 +170,15 @@ export const templates = sqliteTable("templates", {
     updatedAt: integer("updated_at", { mode: "timestamp" })
         .notNull()
         .default(sql`(strftime('%s', 'now'))`),
-});
+}, (table) => ({
+    userIdIdx: index("templates_user_id_idx").on(table.userId),
+}));
 
+// User stats - now per-user instead of singleton
 export const userStats = sqliteTable("user_stats", {
-    id: integer("id").primaryKey().default(1),
+    userId: text("user_id")
+        .primaryKey()
+        .references(() => users.id, { onDelete: "cascade" }),
     xp: integer("xp").notNull().default(0),
     level: integer("level").notNull().default(1),
     lastLogin: integer("last_login", { mode: "timestamp" }),
@@ -146,6 +186,7 @@ export const userStats = sqliteTable("user_stats", {
     longestStreak: integer("longest_streak").notNull().default(0),
 });
 
+// Achievements are global (not per-user)
 export const achievements = sqliteTable("achievements", {
     id: text("id").primaryKey(),
     name: text("name").notNull(),
@@ -156,7 +197,11 @@ export const achievements = sqliteTable("achievements", {
     xpReward: integer("xp_reward").notNull(),
 });
 
+// User achievements - now includes userId in primary key
 export const userAchievements = sqliteTable("user_achievements", {
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
     achievementId: text("achievement_id")
         .notNull()
         .references(() => achievements.id, { onDelete: "cascade" }),
@@ -164,11 +209,15 @@ export const userAchievements = sqliteTable("user_achievements", {
         .notNull()
         .default(sql`(strftime('%s', 'now'))`),
 }, (t) => ({
-    pk: primaryKey({ columns: [t.achievementId] }),
+    pk: primaryKey({ columns: [t.userId, t.achievementId] }),
 }));
 
+// View settings - now includes userId in primary key
 export const viewSettings = sqliteTable("view_settings", {
-    id: text("id").primaryKey(),
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    viewId: text("view_id").notNull(), // e.g., "today", "inbox", "list-1", "label-2"
     layout: text("layout", { enum: ["list", "board", "calendar"] }).default("list"),
     showCompleted: integer("show_completed", { mode: "boolean" }).default(true),
     groupBy: text("group_by", { enum: ["none", "dueDate", "priority", "label"] }).default("none"),
@@ -178,4 +227,6 @@ export const viewSettings = sqliteTable("view_settings", {
     filterPriority: text("filter_priority"),
     filterLabelId: integer("filter_label_id"),
     updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
-});
+}, (t) => ({
+    pk: primaryKey({ columns: [t.userId, t.viewId] }),
+}));

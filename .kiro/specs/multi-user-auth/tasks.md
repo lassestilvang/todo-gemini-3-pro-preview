@@ -1,0 +1,212 @@
+# Implementation Plan
+
+- [x] 1. Set up WorkOS AuthKit and authentication infrastructure
+  - [x] 1.1 Install @workos-inc/authkit-nextjs package
+    - Run `bun add @workos-inc/authkit-nextjs`
+    - _Requirements: 1.2, 2.2_
+  - [x] 1.2 Add WorkOS environment variables to .env.example
+    - Add WORKOS_API_KEY, WORKOS_CLIENT_ID, WORKOS_COOKIE_PASSWORD, WORKOS_REDIRECT_URI
+    - _Requirements: 7.1, 7.2_
+  - [x] 1.3 Create authentication middleware
+    - Create `src/middleware.ts` with authkitMiddleware
+    - Configure protected and public routes
+    - _Requirements: 1.1, 2.4, 2.5, 2.6_
+  - [x] 1.4 Create auth callback route
+    - Create `src/app/auth/callback/route.ts` with handleAuth
+    - _Requirements: 1.3, 1.5, 2.3_
+  - [x] 1.5 Create login page
+    - Create `src/app/login/page.tsx` with sign-in and sign-up links
+    - Style with existing design system
+    - _Requirements: 1.2, 2.1, 2.2_
+  - [x] 1.6 Write unit tests for authentication flow
+    - Test middleware redirects unauthenticated users
+    - Test callback route handles auth code
+    - _Requirements: 1.1, 2.3_
+
+- [x] 2. Update database schema for multi-user support
+  - [x] 2.1 Create users table in schema
+    - Add users table with id (WorkOS ID), email, firstName, lastName, avatarUrl, timestamps
+    - _Requirements: 1.3, 9.1_
+  - [x] 2.2 Add userId column to tasks table
+    - Add userId foreign key referencing users.id with cascade delete
+    - Add index on userId
+    - _Requirements: 4.1, 9.1, 9.2_
+  - [x] 2.3 Add userId column to lists table
+    - Add userId foreign key referencing users.id with cascade delete
+    - Add index on userId
+    - _Requirements: 4.3, 9.1, 9.2_
+  - [x] 2.4 Add userId column to labels table
+    - Add userId foreign key referencing users.id with cascade delete
+    - Add index on userId
+    - _Requirements: 4.5, 9.1, 9.2_
+  - [x] 2.5 Update userStats table for multi-user
+    - Change from singleton to per-user with userId as part of primary key
+    - _Requirements: 5.2, 9.1_
+  - [x] 2.6 Update userAchievements table for multi-user
+    - Add userId to composite primary key
+    - _Requirements: 5.4, 9.1_
+  - [x] 2.7 Add userId to remaining tables
+    - Update templates, viewSettings, taskLogs tables with userId
+    - Add appropriate indexes
+    - _Requirements: 6.1, 9.1, 9.2_
+  - [x] 2.8 Update SQLite test schema to match
+    - Update src/db/schema-sqlite.ts with same changes
+    - _Requirements: 9.1_
+  - [x] 2.9 Write property test for user creation idempotence
+    - **Property 1: User Creation Idempotence**
+    - **Validates: Requirements 1.3**
+
+- [x] 3. Create auth utilities and user management
+  - [x] 3.1 Create auth utilities module
+    - Create `src/lib/auth.ts` with getCurrentUser, requireAuth functions
+    - Use withAuth from authkit-nextjs
+    - _Requirements: 2.4, 7.3, 7.4_
+  - [x] 3.2 Create user sync function
+    - Create syncUser function to create/update local user from WorkOS data
+    - Initialize default data for new users (Inbox list, userStats)
+    - _Requirements: 1.3, 1.4, 5.5_
+  - [x] 3.3 Create sign-out server action
+    - Implement signOut action that clears session and redirects
+    - _Requirements: 3.1, 3.2, 3.3_
+  - [x] 3.4 Write property test for default data initialization
+    - **Property 2: Default Data Initialization**
+    - **Validates: Requirements 1.4, 5.5**
+
+- [-] 4. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 5. Update server actions for multi-user data isolation
+  - [ ] 5.1 Update list actions with userId filtering
+    - Modify getLists, getList, createList, updateList, deleteList
+    - Add userId parameter and WHERE clause filtering
+    - _Requirements: 4.3, 4.4_
+  - [ ] 5.2 Update label actions with userId filtering
+    - Modify getLabels, getLabel, createLabel, updateLabel, deleteLabel
+    - Add userId parameter and WHERE clause filtering
+    - _Requirements: 4.5, 4.6_
+  - [ ] 5.3 Update task actions with userId filtering
+    - Modify getTasks, getTask, createTask, updateTask, deleteTask
+    - Add userId parameter and WHERE clause filtering
+    - _Requirements: 4.1, 4.2_
+  - [ ] 5.4 Update gamification actions with userId
+    - Modify getUserStats, addXP, checkAchievements, getUserAchievements
+    - Filter by authenticated user
+    - _Requirements: 5.1, 5.2, 5.3, 5.4_
+  - [ ] 5.5 Update view settings actions with userId
+    - Modify getViewSettings, updateViewSettings
+    - Filter by authenticated user
+    - _Requirements: 6.1, 6.2_
+  - [ ] 5.6 Update remaining actions with userId
+    - Update template, reminder, dependency, log actions
+    - Ensure all user data is properly scoped
+    - _Requirements: 4.7_
+  - [ ] 5.7 Write property test for resource ownership on create
+    - **Property 3: Resource Ownership on Create**
+    - **Validates: Requirements 4.1, 4.3, 4.5, 6.1**
+  - [ ] 5.8 Write property test for query data isolation
+    - **Property 4: Query Data Isolation**
+    - **Validates: Requirements 4.2, 4.4, 4.6, 5.2, 5.4, 6.2**
+  - [ ] 5.9 Write property test for update isolation
+    - **Property 5: Update Isolation**
+    - **Validates: Requirements 5.1, 5.3**
+
+- [ ] 6. Implement authorization checks
+  - [ ] 6.1 Add authorization helper function
+    - Create checkResourceOwnership function in auth.ts
+    - Verify resource belongs to authenticated user before access
+    - _Requirements: 4.7, 7.3_
+  - [ ] 6.2 Add authorization to task actions
+    - Verify task ownership before update/delete operations
+    - Return 403 for unauthorized access attempts
+    - _Requirements: 4.7_
+  - [ ] 6.3 Add authorization to list and label actions
+    - Verify ownership before update/delete operations
+    - _Requirements: 4.7_
+  - [ ] 6.4 Write property test for authorization denial
+    - **Property 6: Authorization Denial**
+    - **Validates: Requirements 4.7**
+
+- [ ] 7. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 8. Update UI components for authentication
+  - [ ] 8.1 Create UserProfile component
+    - Create `src/components/layout/UserProfile.tsx`
+    - Display user avatar, name/email, sign-out button
+    - _Requirements: 8.1, 8.2, 8.3_
+  - [ ] 8.2 Update AppSidebar to include UserProfile
+    - Add UserProfile component to sidebar footer
+    - Pass user data from session
+    - _Requirements: 8.1, 8.2_
+  - [ ] 8.3 Update MainLayout to pass auth context
+    - Get user from withAuth in layout
+    - Pass user data to child components
+    - _Requirements: 8.1_
+  - [ ] 8.4 Write unit tests for UserProfile component
+    - Test displays user name when available
+    - Test displays email as fallback
+    - Test sign-out button triggers action
+    - _Requirements: 8.1, 8.2, 8.3_
+
+- [ ] 9. Update pages to use authenticated user
+  - [ ] 9.1 Update inbox page
+    - Get userId from session and pass to getTasks
+    - _Requirements: 4.2_
+  - [ ] 9.2 Update today page
+    - Get userId from session and pass to getTasks
+    - _Requirements: 4.2_
+  - [ ] 9.3 Update remaining pages
+    - Update all pages (calendar, upcoming, next-7-days, all, lists, labels, etc.)
+    - Ensure all data fetching uses authenticated userId
+    - _Requirements: 4.2, 4.4, 4.6_
+  - [ ] 9.4 Update settings page
+    - Ensure settings are user-scoped
+    - _Requirements: 6.2_
+
+- [ ] 10. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 11. Create database migration script
+  - [ ] 11.1 Create migration script for existing data
+    - Create script to add userId to existing records
+    - Handle data migration for single-user to multi-user
+    - _Requirements: 9.3_
+  - [ ] 11.2 Update seed script for multi-user
+    - Modify seed.ts to create test user and associate data
+    - _Requirements: 1.4, 9.3_
+
+- [ ] 12. Security and session testing
+  - [ ] 12.1 Write property test for session cookie security
+    - **Property 7: Session Cookie Security**
+    - **Validates: Requirements 2.3, 7.1**
+  - [ ] 12.2 Write property test for valid session access
+    - **Property 8: Valid Session Grants Access**
+    - **Validates: Requirements 2.4**
+  - [ ] 12.3 Write property test for API unauthorized response
+    - **Property 9: API Unauthorized Response**
+    - **Validates: Requirements 7.3**
+
+- [ ] 13. Final integration and cleanup
+  - [ ] 13.1 Update existing tests for multi-user context
+    - Update test setup to mock authenticated user
+    - Fix any broken tests due to userId requirements
+    - _Requirements: 4.1, 4.2_
+  - [ ] 13.2 Run full test suite and fix issues
+    - Run `bun test` and fix any failures
+    - Run `bun lint` and fix any issues
+    - _Requirements: 7.4, 7.5_
+  - [ ] 13.3 Update documentation
+    - Update README with auth setup instructions
+    - Document environment variables
+    - _Requirements: 7.2_
+
+- [ ] 14. Create git branch and draft PR
+  - [ ] 14.1 Create feature branch
+    - Create branch `feature/multi-user-auth`
+    - Commit all changes with descriptive messages
+  - [ ] 14.2 Push branch and create draft PR
+    - Push to remote
+    - Create draft pull request with description
+
+- [ ] 15. Final Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.

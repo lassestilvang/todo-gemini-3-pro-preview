@@ -1,11 +1,12 @@
 import { serial, integer, pgTable, text, primaryKey, foreignKey, index, timestamp, boolean } from "drizzle-orm/pg-core";
 
-export const lists = pgTable("lists", {
-    id: serial("id").primaryKey(),
-    name: text("name").notNull(),
-    color: text("color").default("#000000"),
-    icon: text("icon"),
-    slug: text("slug").notNull().unique(),
+// Users table - stores WorkOS user data
+export const users = pgTable("users", {
+    id: text("id").primaryKey(), // WorkOS user ID
+    email: text("email").notNull(),
+    firstName: text("first_name"),
+    lastName: text("last_name"),
+    avatarUrl: text("avatar_url"),
     createdAt: timestamp("created_at")
         .notNull()
         .defaultNow(),
@@ -14,8 +15,31 @@ export const lists = pgTable("lists", {
         .defaultNow(),
 });
 
+export const lists = pgTable("lists", {
+    id: serial("id").primaryKey(),
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    color: text("color").default("#000000"),
+    icon: text("icon"),
+    slug: text("slug").notNull(),
+    createdAt: timestamp("created_at")
+        .notNull()
+        .defaultNow(),
+    updatedAt: timestamp("updated_at")
+        .notNull()
+        .defaultNow(),
+}, (table) => ({
+    userIdIdx: index("lists_user_id_idx").on(table.userId),
+    userSlugUnique: index("lists_user_slug_unique").on(table.userId, table.slug),
+}));
+
 export const tasks = pgTable("tasks", {
     id: serial("id").primaryKey(),
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
     listId: integer("list_id").references(() => lists.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     description: text("description"),
@@ -43,6 +67,7 @@ export const tasks = pgTable("tasks", {
         columns: [table.parentId],
         foreignColumns: [table.id],
     }).onDelete("cascade"),
+    userIdIdx: index("tasks_user_id_idx").on(table.userId),
     listIdIdx: index("tasks_list_id_idx").on(table.listId),
     parentIdIdx: index("tasks_parent_id_idx").on(table.parentId),
     isCompletedIdx: index("tasks_is_completed_idx").on(table.isCompleted),
@@ -53,10 +78,15 @@ export const tasks = pgTable("tasks", {
 
 export const labels = pgTable("labels", {
     id: serial("id").primaryKey(),
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     color: text("color").default("#000000"),
     icon: text("icon"),
-});
+}, (table) => ({
+    userIdIdx: index("labels_user_id_idx").on(table.userId),
+}));
 
 
 export const taskLabels = pgTable("task_labels", {
@@ -85,6 +115,8 @@ export const reminders = pgTable("reminders", {
 
 export const taskLogs = pgTable("task_logs", {
     id: serial("id").primaryKey(),
+    userId: text("user_id")
+        .references(() => users.id, { onDelete: "cascade" }),
     taskId: integer("task_id")
         .references(() => tasks.id, { onDelete: "cascade" }),
     action: text("action").notNull(), // e.g., "created", "updated", "completed"
@@ -93,6 +125,7 @@ export const taskLogs = pgTable("task_logs", {
         .notNull()
         .defaultNow(),
 }, (t) => ({
+    userIdIdx: index("task_logs_user_id_idx").on(t.userId),
     taskIdIdx: index("task_logs_task_id_idx").on(t.taskId),
 }));
 
@@ -121,6 +154,9 @@ export const taskDependencies = pgTable("task_dependencies", {
 
 export const templates = pgTable("templates", {
     id: serial("id").primaryKey(),
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     content: text("content").notNull(), // JSON string of task data
     createdAt: timestamp("created_at")
@@ -129,10 +165,15 @@ export const templates = pgTable("templates", {
     updatedAt: timestamp("updated_at")
         .notNull()
         .defaultNow(),
-});
+}, (table) => ({
+    userIdIdx: index("templates_user_id_idx").on(table.userId),
+}));
 
+// User stats - now per-user instead of singleton
 export const userStats = pgTable("user_stats", {
-    id: integer("id").primaryKey().default(1), // Singleton row
+    userId: text("user_id")
+        .primaryKey()
+        .references(() => users.id, { onDelete: "cascade" }),
     xp: integer("xp").notNull().default(0),
     level: integer("level").notNull().default(1),
     lastLogin: timestamp("last_login"),
@@ -140,6 +181,7 @@ export const userStats = pgTable("user_stats", {
     longestStreak: integer("longest_streak").notNull().default(0),
 });
 
+// Achievements are global (not per-user)
 export const achievements = pgTable("achievements", {
     id: text("id").primaryKey(),
     name: text("name").notNull(),
@@ -150,7 +192,11 @@ export const achievements = pgTable("achievements", {
     xpReward: integer("xp_reward").notNull(),
 });
 
+// User achievements - now includes userId in primary key
 export const userAchievements = pgTable("user_achievements", {
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
     achievementId: text("achievement_id")
         .notNull()
         .references(() => achievements.id, { onDelete: "cascade" }),
@@ -158,11 +204,15 @@ export const userAchievements = pgTable("user_achievements", {
         .notNull()
         .defaultNow(),
 }, (t) => ({
-    pk: primaryKey({ columns: [t.achievementId] }),
+    pk: primaryKey({ columns: [t.userId, t.achievementId] }),
 }));
 
+// View settings - now includes userId in primary key
 export const viewSettings = pgTable("view_settings", {
-    id: text("id").primaryKey(), // e.g., "today", "inbox", "list-1", "label-2"
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    viewId: text("view_id").notNull(), // e.g., "today", "inbox", "list-1", "label-2"
     layout: text("layout", { enum: ["list", "board", "calendar"] }).default("list"),
     showCompleted: boolean("show_completed").default(true),
     groupBy: text("group_by", { enum: ["none", "dueDate", "priority", "label"] }).default("none"),
@@ -172,4 +222,6 @@ export const viewSettings = pgTable("view_settings", {
     filterPriority: text("filter_priority"), // null = all, or "high", "medium", "low", "none"
     filterLabelId: integer("filter_label_id"), // null = all
     updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (t) => ({
+    pk: primaryKey({ columns: [t.userId, t.viewId] }),
+}));
