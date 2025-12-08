@@ -75,22 +75,23 @@ A modern, professional daily task planner built with **Next.js 16**, **Bun**, an
 
 ## 🗄️ Database Branching
 
-This project uses [Neon's database branching](https://neon.tech/docs/introduction/branching) for isolated development environments. Each Git branch automatically gets its own database branch.
+This project uses [Neon's database branching](https://neon.tech/docs/introduction/branching) for isolated development environments via the **Vercel + Neon integration**.
 
 ### How It Works
 
-1. **Push a new branch**: When you push a non-main branch to GitHub, a corresponding Neon database branch is automatically created
-2. **Isolated environment**: Each branch has its own copy of the database, inheriting data from the main branch
-3. **Automatic cleanup**: When a branch is merged or deleted, the corresponding Neon branch is automatically deleted
+Database branching is automatically managed by the [Neon Vercel Integration](https://neon.tech/docs/guides/vercel):
 
-### Required GitHub Secrets
+1. **Create a preview deployment**: When you push a branch or open a PR, Vercel creates a preview deployment with its own Neon database branch
+2. **Isolated environment**: Each preview has its own copy of the database, inheriting data from the main branch
+3. **Automatic cleanup**: When the preview is removed, the corresponding Neon branch is automatically deleted
 
-To enable database branching, configure these secrets in your GitHub repository settings (`Settings > Secrets and variables > Actions`):
+### Setup
 
-| Secret | Description | How to Get |
-|--------|-------------|------------|
-| `NEON_API_KEY` | Neon API key for authentication | [Neon Console](https://console.neon.tech/) → Account Settings → API Keys |
-| `NEON_PROJECT_ID` | Your Neon project identifier | [Neon Console](https://console.neon.tech/) → Project Settings → General |
+The Vercel + Neon integration handles everything automatically. To enable:
+
+1. Connect your Neon project to Vercel via the [Neon Vercel Integration](https://vercel.com/integrations/neon)
+2. Enable "Create a branch for each preview deployment" in the integration settings
+3. That's it! Preview deployments will automatically get isolated database branches
 
 ### Local Development with Branches
 
@@ -103,15 +104,6 @@ To work with a specific database branch locally:
    ```bash
    DATABASE_URL=postgresql://user:pass@host.neon.tech/neondb?sslmode=require
    ```
-
-### Creating Branches Manually
-
-You can also create branches manually via the Neon Console or CLI:
-
-```bash
-# Using Neon CLI
-neonctl branches create --name feature-xyz --project-id your-project-id
-```
 
 ## 🧪 Running Tests
 

@@ -117,16 +117,13 @@ export default defineConfig({
 });
 ```
 
-### 4. GitHub Actions Workflow
+### 4. Vercel + Neon Integration
 
-**Branch Creation (.github/workflows/neon-branch-create.yml):**
-- Triggers on: `push` to non-main branches
-- Creates a Neon branch with the same name as the Git branch
-- Outputs the branch connection string
+Database branching is handled automatically by the [Neon Vercel Integration](https://neon.tech/docs/guides/vercel):
 
-**Branch Deletion (.github/workflows/neon-branch-delete.yml):**
-- Triggers on: `delete` event or PR merge
-- Deletes the corresponding Neon branch
+- **Preview Deployments**: Each Vercel preview deployment automatically gets its own Neon database branch
+- **Automatic Cleanup**: When a preview deployment is removed, the corresponding Neon branch is deleted
+- **Environment Variables**: The integration automatically sets `DATABASE_URL` for each deployment
 
 ### 5. Data Migration Script (scripts/migrate-data.ts)
 
@@ -307,9 +304,8 @@ DATABASE_URL=postgresql://user:pass@host.neon.tech/neondb?sslmode=require
 # .env.example (template)
 DATABASE_URL=postgresql://user:password@host.neon.tech/database?sslmode=require
 
-# GitHub Secrets (for Actions)
-NEON_API_KEY=neon_api_key_here
-NEON_PROJECT_ID=project_id_here
+# Vercel Integration
+# DATABASE_URL is automatically set by the Neon Vercel Integration for each deployment
 ```
 
 ### Package Changes
@@ -322,9 +318,9 @@ NEON_PROJECT_ID=project_id_here
 - `better-sqlite3` - No longer needed
 - `@types/better-sqlite3` - No longer needed
 
-### Vercel Integration (Optional)
+### Vercel Integration
 
-If deploying to Vercel, the Neon integration can automatically:
-- Set `DATABASE_URL` for production
-- Create preview branches for PR deployments
-- This may replace or complement the GitHub Actions approach
+The Neon Vercel Integration handles database branching automatically:
+- Sets `DATABASE_URL` for production deployments
+- Creates preview branches for PR deployments
+- Automatically cleans up branches when previews are removed

@@ -70,19 +70,18 @@
 - [x] 5. Checkpoint - Verify migration and tests
   - Ensure all tests pass, ask the user if questions arise.
 
-- [x] 6. Set up GitHub Actions for database branching
-  - [x] 6.1 Create branch creation workflow (.github/workflows/neon-branch-create.yml)
-    - Trigger on push to non-main branches
-    - Use Neon API to create database branch
-    - Output connection string for the branch
+- [x] 6. Set up database branching via Vercel + Neon integration
+  - [x] 6.1 Configure Vercel + Neon integration
+    - Connect Neon project to Vercel via the Neon Vercel Integration
+    - Enable "Create a branch for each preview deployment"
     - _Requirements: 4.1, 4.2, 4.5_
-  - [x] 6.2 Create branch deletion workflow (.github/workflows/neon-branch-delete.yml)
-    - Trigger on branch delete or PR merge
-    - Use Neon API to delete corresponding database branch
+  - [x] 6.2 Verify automatic branch management
+    - Preview deployments automatically get isolated database branches
+    - Branches are cleaned up when previews are removed
     - _Requirements: 4.4, 4.5_
-  - [x] 6.3 Document required GitHub Secrets
-    - NEON_API_KEY
-    - NEON_PROJECT_ID
+  - [x] 6.3 Remove legacy GitHub Actions workflows
+    - Deleted neon-branch-create.yml and neon-branch-delete.yml
+    - Database branching now handled by Vercel integration
     - _Requirements: 4.5_
 
 - [x] 7. Update test infrastructure
@@ -114,7 +113,7 @@
     - _Requirements: 3.1_
   - [x] 10.2 Update documentation
     - Update README.md with Neon setup instructions
-    - Document database branching workflow for developers
+    - Document Vercel + Neon integration for database branching
     - Update AGENTS.md with new database commands
     - _Requirements: 7.1, 7.2, 7.3_
 

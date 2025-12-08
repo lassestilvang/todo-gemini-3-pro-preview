@@ -74,10 +74,10 @@ DATABASE_URL=postgresql://user:pass@host.neon.tech/neondb?sslmode=require
 
 ### Database Branching
 
-Each Git branch can have its own isolated database branch via GitHub Actions:
-- Push a new branch → Neon branch is automatically created
-- Merge/delete branch → Neon branch is automatically deleted
-- See README.md for detailed branching documentation
+Database branching is handled automatically by the Vercel + Neon integration:
+- Each Vercel preview deployment gets its own isolated Neon database branch
+- Branches are automatically created and cleaned up with preview deployments
+- See README.md for setup details
 
 ## Project Structure
 

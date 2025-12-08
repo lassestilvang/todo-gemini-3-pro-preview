@@ -60,15 +60,15 @@ This document specifies the requirements for migrating the Todo Gemini applicati
 
 ### Requirement 4
 
-**User Story:** As a developer, I want automatic database branching via GitHub Actions, so that each feature branch automatically gets its own isolated database environment.
+**User Story:** As a developer, I want automatic database branching via Vercel integration, so that each preview deployment automatically gets its own isolated database environment.
 
 #### Acceptance Criteria
 
-1. WHEN a new Git branch is pushed to GitHub THEN the System SHALL automatically create a corresponding Neon database branch via GitHub Actions
+1. WHEN a preview deployment is created THEN the System SHALL automatically create a corresponding Neon database branch via the Vercel + Neon integration
 2. WHEN a database branch is created THEN the System SHALL inherit all data and schema from the parent branch (main)
-3. WHEN a pull request is opened THEN the System SHALL provide the branch-specific database connection string as an environment variable
-4. WHEN a Git branch is merged or deleted THEN the System SHALL automatically delete the corresponding Neon database branch via GitHub Actions
-5. WHEN the GitHub Action runs THEN the System SHALL use the Neon API with secure credentials stored in GitHub Secrets
+3. WHEN a preview deployment is created THEN the System SHALL provide the branch-specific database connection string as an environment variable
+4. WHEN a preview deployment is removed THEN the System SHALL automatically delete the corresponding Neon database branch via the Vercel + Neon integration
+5. WHEN the integration runs THEN the System SHALL use the Neon API with secure credentials managed by Vercel
 
 ### Requirement 5
 
