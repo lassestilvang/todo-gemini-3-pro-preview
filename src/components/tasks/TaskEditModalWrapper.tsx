@@ -21,7 +21,11 @@ type TaskType = {
     labels?: Array<{ id: number; name: string; color: string | null }>;
 };
 
-export function TaskEditModalWrapper() {
+interface TaskEditModalWrapperProps {
+    userId: string;
+}
+
+export function TaskEditModalWrapper({ userId }: TaskEditModalWrapperProps) {
     const searchParams = useSearchParams();
     const taskIdParam = searchParams.get("taskId");
     const createParam = searchParams.get("create");
@@ -60,7 +64,7 @@ export function TaskEditModalWrapper() {
         if (taskIdParam) {
             const taskId = parseInt(taskIdParam);
             if (!isNaN(taskId)) {
-                getTask(taskId).then((t) => {
+                getTask(taskId, userId).then((t) => {
                     if (t) {
                         setTask(t as unknown as TaskType);
                         setIsOpen(true);
@@ -76,7 +80,7 @@ export function TaskEditModalWrapper() {
             setTask(null);
             setIsOpen(false);
         }
-    }, [taskIdParam, createParam, handleClose]);
+    }, [taskIdParam, createParam, handleClose, userId]);
 
     if (!isOpen) return null;
 

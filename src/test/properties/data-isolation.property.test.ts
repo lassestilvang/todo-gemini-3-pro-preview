@@ -3,11 +3,10 @@ import * as fc from "fast-check";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import {
     createTask, getTasks, getTask, updateTask, deleteTask,
-    createList, getLists, getList, updateList, deleteList,
-    createLabel, getLabels, getLabel, updateLabel, deleteLabel,
-    createTemplate, getTemplates, deleteTemplate,
-    getUserStats, addXP, getUserAchievements,
-    getViewSettings, saveViewSettings
+    createList, getLists,
+    createLabel, getLabels,
+    createTemplate, getTemplates,
+    getUserStats, addXP
 } from "@/lib/actions";
 
 // Mock next/cache

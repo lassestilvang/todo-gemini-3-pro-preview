@@ -33,7 +33,7 @@ export async function MainLayout({ children }: { children: React.ReactNode }) {
                 {children}
             </main>
             <Suspense fallback={null}>
-                <TaskEditModalWrapper />
+                <TaskEditModalWrapper userId={userId} />
                 <KeyboardShortcuts />
             </Suspense>
         </div>

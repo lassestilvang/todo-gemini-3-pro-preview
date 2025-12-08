@@ -141,7 +141,7 @@
     - Get user from getCurrentUser in layout
     - Pass user data to AppSidebar
     - _Requirements: 8.1_
-  - [ ] 8.4 Write unit tests for UserProfile component
+  - [x] 8.4 Write unit tests for UserProfile component
     - Test displays user name when available
     - Test displays email as fallback
     - Test sign-out button triggers action
@@ -165,23 +165,23 @@
 - [x] 10. Checkpoint - Ensure all tests pass
   - 228 tests passing (4 pre-existing failures unrelated to auth changes)
 
-- [ ] 11. Create database migration script
-  - [ ] 11.1 Create migration script for existing data
+- [x] 11. Create database migration script
+  - [x] 11.1 Create migration script for existing data
     - Create script to add userId to existing records
     - Handle data migration for single-user to multi-user
     - _Requirements: 9.3_
-  - [ ] 11.2 Update seed script for multi-user
+  - [x] 11.2 Update seed script for multi-user
     - Modify seed.ts to create test user and associate data
     - _Requirements: 1.4, 9.3_
 
-- [ ] 12. Security and session testing
-  - [ ] 12.1 Write property test for session cookie security
+- [x] 12. Security and session testing
+  - [x] 12.1 Write property test for session cookie security
     - **Property 7: Session Cookie Security**
     - **Validates: Requirements 2.3, 7.1**
-  - [ ] 12.2 Write property test for valid session access
+  - [x] 12.2 Write property test for valid session access
     - **Property 8: Valid Session Grants Access**
     - **Validates: Requirements 2.4**
-  - [ ] 12.3 Write property test for API unauthorized response
+  - [x] 12.3 Write property test for API unauthorized response
     - **Property 9: API Unauthorized Response**
     - **Validates: Requirements 7.3**
 

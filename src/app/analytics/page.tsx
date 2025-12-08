@@ -19,7 +19,7 @@ export default async function AnalyticsPage() {
                 <p className="text-muted-foreground">Track your productivity and progress.</p>
             </div>
 
-            <WeeklyReview userId={user.id} />
+            <WeeklyReview />
             <AnalyticsCharts data={data} />
         </div>
     );

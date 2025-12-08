@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, mock, beforeEach } from "bun:test";
-import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { CreateTaskInput } from "./CreateTaskInput";
 import React from "react";
 
@@ -45,14 +45,15 @@ describe("CreateTaskInput", () => {
         const addButton = screen.getByText("Add Task");
         fireEvent.click(addButton);
 
-        await waitFor(() => {
-            expect(mockCreateTask).toHaveBeenCalledTimes(1);
-            expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining({
-                userId: "test_user_123",
-                title: "New Task",
-                priority: "none"
-            }));
-        });
+        // Allow async action to complete
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        expect(mockCreateTask).toHaveBeenCalledTimes(1);
+        expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining({
+            userId: "test_user_123",
+            title: "New Task",
+            priority: "none"
+        }));
     });
 
     it("should not create task if title is empty", async () => {

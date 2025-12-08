@@ -29,13 +29,14 @@ interface TaskDialogProps {
     defaultListId?: number;
     defaultLabelIds?: number[];
     defaultDueDate?: Date | string;
+    userId?: string;
 }
 
 /**
  * Dialog for creating or editing a task.
  * Refactored to use custom hooks for state and data management.
  */
-export function TaskDialog({ task, open, onOpenChange, trigger, defaultListId, defaultLabelIds, defaultDueDate }: TaskDialogProps) {
+export function TaskDialog({ task, open, onOpenChange, trigger, defaultListId, defaultLabelIds, defaultDueDate, userId }: TaskDialogProps) {
     const [internalOpen, setInternalOpen] = useState(false);
     const effectiveOpen = open !== undefined ? open : internalOpen;
     const setEffectiveOpen = onOpenChange || setInternalOpen;
@@ -52,6 +53,7 @@ export function TaskDialog({ task, open, onOpenChange, trigger, defaultListId, d
                     defaultListId={defaultListId}
                     defaultLabelIds={defaultLabelIds}
                     defaultDueDate={defaultDueDate}
+                    userId={userId}
                     onClose={() => setEffectiveOpen(false)}
                 />
             </DialogContent>
@@ -59,7 +61,7 @@ export function TaskDialog({ task, open, onOpenChange, trigger, defaultListId, d
     );
 }
 
-function TaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, onClose }: { task?: TaskType, defaultListId?: number, defaultLabelIds?: number[], defaultDueDate?: Date | string, onClose: () => void }) {
+function TaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId, onClose }: { task?: TaskType, defaultListId?: number, defaultLabelIds?: number[], defaultDueDate?: Date | string, userId?: string, onClose: () => void }) {
     // Form State
     const {
         title, setTitle,
@@ -78,7 +80,7 @@ function TaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, onClos
         handleDelete,
         toggleLabel,
         isEdit
-    } = useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, onClose });
+    } = useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId, onClose });
 
     // Data State (Subtasks, Reminders, Logs, etc.)
     const {
@@ -89,7 +91,7 @@ function TaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, onClos
         handleAddSubtask, handleToggleSubtask, handleDeleteSubtask, handleOnAiConfirm,
         handleAddReminder, handleDeleteReminder,
         handleAddBlocker, handleRemoveBlocker
-    } = useTaskData({ taskId: task?.id, isEdit });
+    } = useTaskData({ taskId: task?.id, isEdit, userId });
 
     const [focusModeOpen, setFocusModeOpen] = useState(false);
 
@@ -175,6 +177,7 @@ function TaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, onClos
                         description: description,
                         priority: priority
                     }}
+                    userId={userId}
                     onClose={() => setFocusModeOpen(false)}
                 />
             )}

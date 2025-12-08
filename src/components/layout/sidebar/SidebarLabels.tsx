@@ -24,9 +24,10 @@ type Label = {
 
 interface SidebarLabelsProps {
     labels: Label[];
+    userId?: string;
 }
 
-export function SidebarLabels({ labels }: SidebarLabelsProps) {
+export function SidebarLabels({ labels, userId }: SidebarLabelsProps) {
     const pathname = usePathname();
     const [editingLabel, setEditingLabel] = useState<Label | null>(null);
 
@@ -43,6 +44,7 @@ export function SidebarLabels({ labels }: SidebarLabelsProps) {
                             <span className="sr-only">Add Label</span>
                         </Button>
                     }
+                    userId={userId}
                 />
             </div>
             <div className="space-y-1 p-2">
@@ -86,6 +88,7 @@ export function SidebarLabels({ labels }: SidebarLabelsProps) {
                     label={editingLabel}
                     open={!!editingLabel}
                     onOpenChange={(open) => !open && setEditingLabel(null)}
+                    userId={userId}
                 />
             )}
         </div>

@@ -28,7 +28,7 @@ export default async function CalendarPage() {
             </div>
 
             <div className="flex-1 min-h-0">
-                <CalendarView tasks={tasks} userId={user.id} />
+                <CalendarView tasks={tasks} />
             </div>
         </div>
     );

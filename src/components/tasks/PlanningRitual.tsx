@@ -19,27 +19,29 @@ interface PlanningRitualProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     type: "morning" | "evening";
+    userId?: string;
 }
 
-export function PlanningRitual({ open, onOpenChange, type }: PlanningRitualProps) {
+export function PlanningRitual({ open, onOpenChange, type, userId }: PlanningRitualProps) {
     const [todayTasks, setTodayTasks] = useState<TaskType[]>([]);
     const [priorities, setPriorities] = useState<string[]>(["", "", ""]);
     const [reflection, setReflection] = useState("");
     const [step, setStep] = useState(1);
 
-    const loadTodayTasks = async () => {
-        const tasks = await getTasks(undefined, "today");
-        setTodayTasks(tasks as TaskType[]);
-    };
-
     useEffect(() => {
+        const loadTodayTasks = async () => {
+            if (!userId) return;
+            const tasks = await getTasks(userId, undefined, "today");
+            setTodayTasks(tasks as TaskType[]);
+        };
+
         if (open) {
             loadTodayTasks();
             setStep(1);
             setPriorities(["", "", ""]);
             setReflection("");
         }
-    }, [open]);
+    }, [open, userId]);
 
     const completedCount = todayTasks.filter(t => t.isCompleted).length;
     const totalCount = todayTasks.length;

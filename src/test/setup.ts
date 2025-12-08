@@ -1,4 +1,4 @@
-import { expect, mock } from "bun:test";
+import { expect } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import * as matchers from "@testing-library/jest-dom/matchers";
 import { sqliteConnection } from "@/db";
@@ -9,15 +9,8 @@ GlobalRegistrator.register();
 // Extend expect with jest-dom matchers
 expect.extend(matchers);
 
-// Mock next/cache globally
-mock.module("next/cache", () => ({
-    revalidatePath: () => { },
-}));
-
-// Mock canvas-confetti
-mock.module("canvas-confetti", () => ({
-    default: () => Promise.resolve(),
-}));
+// Note: Global mocks for next/cache, next/navigation, and canvas-confetti
+// are defined in src/test/mocks.ts which is preloaded before this file.
 
 /**
  * Sets up the test database with SQLite tables that mirror the PostgreSQL schema.

@@ -101,25 +101,6 @@ describe("Middleware behavior", () => {
       ],
     };
     
-    // Test that the matcher pattern excludes static files
-    const staticPaths = [
-      "_next/static/chunk.js",
-      "_next/image/photo.jpg",
-      "favicon.ico",
-      "manifest.json",
-      "sw.js",
-      "icon-192x192.png",
-      "logo.svg",
-    ];
-    
-    const protectedPaths = [
-      "/inbox",
-      "/today",
-      "/calendar",
-      "/settings",
-      "/api/tasks",
-    ];
-    
     // Verify config structure
     expect(config.matcher).toHaveLength(1);
     expect(config.matcher[0]).toContain("_next/static");

@@ -54,7 +54,7 @@ export function AppSidebar({ className, lists, labels, user }: { className?: str
                     <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
                         Planner
                     </h2>
-                    <XPBar />
+                    <XPBar userId={user?.id} />
                     <div className="mb-4">
                         <SearchDialog />
                     </div>
@@ -69,7 +69,7 @@ export function AppSidebar({ className, lists, labels, user }: { className?: str
                             Smart Schedule
                         </Button>
                         <div className="mt-2">
-                            <TemplateManager />
+                            <TemplateManager userId={user?.id} />
                         </div>
                     </div>
 
@@ -78,10 +78,10 @@ export function AppSidebar({ className, lists, labels, user }: { className?: str
                 </div>
 
                 <Separator />
-                <SidebarLists lists={lists} />
+                <SidebarLists lists={lists} userId={user?.id} />
 
                 <Separator />
-                <SidebarLabels labels={labels} />
+                <SidebarLabels labels={labels} userId={user?.id} />
             </div>
 
             {/* Smart Schedule Dialog (Triggered by the top button) */}

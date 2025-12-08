@@ -233,6 +233,7 @@ export function TaskListWithSettings({
                     setIsDialogOpen(open);
                     if (!open) setEditingTask(null);
                 }}
+                userId={userId}
             />
         </div>
     );

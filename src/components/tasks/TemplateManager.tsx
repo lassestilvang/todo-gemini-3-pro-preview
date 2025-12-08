@@ -25,7 +25,11 @@ type Template = {
     createdAt: Date;
 };
 
-export function TemplateManager() {
+interface TemplateManagerProps {
+    userId?: string;
+}
+
+export function TemplateManager({ userId }: TemplateManagerProps) {
     const [templates, setTemplates] = useState<Template[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -33,25 +37,25 @@ export function TemplateManager() {
     const [newTemplateContent, setNewTemplateContent] = useState("");
 
     const loadTemplates = useCallback(async () => {
-        const data = await getTemplates();
+        if (!userId) return;
+        const data = await getTemplates(userId);
         setTemplates(data);
-    }, []);
+    }, [userId]);
 
     useEffect(() => {
-        if (isOpen) {
-            // Call the async function directly in the effect
-            getTemplates().then(data => {
+        if (isOpen && userId) {
+            getTemplates(userId).then(data => {
                 setTemplates(data);
             });
         }
-    }, [isOpen]);
+    }, [isOpen, userId]);
 
     const handleCreate = async () => {
-        if (!newTemplateName || !newTemplateContent) return;
+        if (!newTemplateName || !newTemplateContent || !userId) return;
         try {
             // Validate JSON
             JSON.parse(newTemplateContent);
-            await createTemplate(newTemplateName, newTemplateContent);
+            await createTemplate(userId, newTemplateName, newTemplateContent);
             setNewTemplateName("");
             setNewTemplateContent("");
             setIsCreateOpen(false);
@@ -63,16 +67,18 @@ export function TemplateManager() {
     };
 
     const handleDelete = async (id: number) => {
+        if (!userId) return;
         if (confirm("Delete this template?")) {
-            await deleteTemplate(id);
+            await deleteTemplate(id, userId);
             loadTemplates();
             toast.success("Template deleted");
         }
     };
 
     const handleInstantiate = async (id: number) => {
+        if (!userId) return;
         try {
-            await instantiateTemplate(id);
+            await instantiateTemplate(userId, id);
             setIsOpen(false);
             toast.success("Task created from template");
         } catch (e) {

@@ -25,9 +25,10 @@ type List = {
 
 interface SidebarListsProps {
     lists: List[];
+    userId?: string;
 }
 
-export function SidebarLists({ lists }: SidebarListsProps) {
+export function SidebarLists({ lists, userId }: SidebarListsProps) {
     const pathname = usePathname();
     const [editingList, setEditingList] = useState<List | null>(null);
 
@@ -44,6 +45,7 @@ export function SidebarLists({ lists }: SidebarListsProps) {
                             <span className="sr-only">Add List</span>
                         </Button>
                     }
+                    userId={userId}
                 />
             </div>
             <div className="space-y-1 p-2">
@@ -87,6 +89,7 @@ export function SidebarLists({ lists }: SidebarListsProps) {
                     list={editingList}
                     open={!!editingList}
                     onOpenChange={(open) => !open && setEditingList(null)}
+                    userId={userId}
                 />
             )}
         </div>

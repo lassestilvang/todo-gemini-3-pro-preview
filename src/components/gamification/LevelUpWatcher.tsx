@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getUserStats } from "@/lib/actions";
 import { LevelUpModal } from "./LevelUpModal";
 import { playLevelUpSound } from "@/lib/audio";
 
@@ -10,14 +9,6 @@ export function LevelUpWatcher() {
     const [newLevel, setNewLevel] = useState(1);
 
     useEffect(() => {
-        const checkLevel = async () => {
-            const stats = await getUserStats();
-            if (!stats) return;
-        };
-
-        // Initial check
-        checkLevel();
-
         const handleLevelUpdate = (event: CustomEvent<{ level: number; leveledUp: boolean }>) => {
             if (event.detail.leveledUp) {
                 setNewLevel(event.detail.level);

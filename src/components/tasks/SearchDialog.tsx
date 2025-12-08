@@ -20,7 +20,7 @@ type SearchResult = {
     description: string | null;
 };
 
-export function SearchDialog() {
+export function SearchDialog({ userId }: { userId?: string }) {
     const [open, setOpen] = React.useState(false);
     const [query, setQuery] = React.useState("");
     const [results, setResults] = React.useState<SearchResult[]>([]);
@@ -48,8 +48,8 @@ export function SearchDialog() {
 
     React.useEffect(() => {
         const search = async () => {
-            if (query.trim().length > 0) {
-                const data = await searchTasks(query);
+            if (query.trim().length > 0 && userId) {
+                const data = await searchTasks(userId, query);
                 setResults(data);
             } else {
                 setResults([]);
@@ -57,7 +57,7 @@ export function SearchDialog() {
         };
         const debounce = setTimeout(search, 300);
         return () => clearTimeout(debounce);
-    }, [query]);
+    }, [query, userId]);
 
     const handleSelect = (taskId: number) => {
         setOpen(false);

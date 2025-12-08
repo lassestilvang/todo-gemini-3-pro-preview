@@ -329,6 +329,7 @@ export function TaskItem({ task, showListInfo = true, userId }: TaskItemProps) {
             {showFocusMode && (
                 <FocusMode
                     task={task}
+                    userId={userId}
                     onClose={() => setShowFocusMode(false)}
                 />
             )}
