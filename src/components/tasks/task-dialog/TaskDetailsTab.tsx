@@ -12,6 +12,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
+import { TimePicker } from "@/components/ui/time-picker";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -222,17 +223,81 @@ export function TaskDetailsTab({
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-4">
                     <div className="space-y-2">
                         <Label>Due Date</Label>
-                        <div className="block">
-                            <DatePicker date={dueDate} setDate={setDueDate} />
+                        <div className="grid grid-cols-2 gap-2">
+                            <DatePicker date={dueDate} setDate={(d) => {
+                                if (d) {
+                                    // Preserve existing time when changing date (only if time was explicitly set)
+                                    const existingHours = dueDate?.getHours();
+                                    const existingMinutes = dueDate?.getMinutes();
+                                    // Only preserve time if it's not midnight (indicating time was set)
+                                    if (existingHours !== undefined && existingMinutes !== undefined && 
+                                        !(existingHours === 0 && existingMinutes === 0)) {
+                                        d.setHours(existingHours, existingMinutes, 0, 0);
+                                    }
+                                }
+                                setDueDate(d);
+                            }} />
+                            <TimePicker
+                                time={dueDate && (dueDate.getHours() !== 0 || dueDate.getMinutes() !== 0) 
+                                    ? `${dueDate.getHours().toString().padStart(2, "0")}:${dueDate.getMinutes().toString().padStart(2, "0")}` 
+                                    : undefined}
+                                setTime={(t) => {
+                                    if (t && dueDate) {
+                                        const [hours, minutes] = t.split(":").map(Number);
+                                        const newDate = new Date(dueDate);
+                                        newDate.setHours(hours, minutes, 0, 0);
+                                        setDueDate(newDate);
+                                    } else if (!t && dueDate) {
+                                        // Clear time - keep date but reset to midnight
+                                        const newDate = new Date(dueDate);
+                                        newDate.setHours(0, 0, 0, 0);
+                                        setDueDate(newDate);
+                                    }
+                                }}
+                                placeholder="Time"
+                                disabled={!dueDate}
+                            />
                         </div>
                     </div>
                     <div className="space-y-2">
                         <Label>Deadline</Label>
-                        <div className="block">
-                            <DatePicker date={deadline} setDate={setDeadline} />
+                        <div className="grid grid-cols-2 gap-2">
+                            <DatePicker date={deadline} setDate={(d) => {
+                                if (d) {
+                                    // Preserve existing time when changing date (only if time was explicitly set)
+                                    const existingHours = deadline?.getHours();
+                                    const existingMinutes = deadline?.getMinutes();
+                                    // Only preserve time if it's not midnight (indicating time was set)
+                                    if (existingHours !== undefined && existingMinutes !== undefined && 
+                                        !(existingHours === 0 && existingMinutes === 0)) {
+                                        d.setHours(existingHours, existingMinutes, 0, 0);
+                                    }
+                                }
+                                setDeadline(d);
+                            }} />
+                            <TimePicker
+                                time={deadline && (deadline.getHours() !== 0 || deadline.getMinutes() !== 0) 
+                                    ? `${deadline.getHours().toString().padStart(2, "0")}:${deadline.getMinutes().toString().padStart(2, "0")}` 
+                                    : undefined}
+                                setTime={(t) => {
+                                    if (t && deadline) {
+                                        const [hours, minutes] = t.split(":").map(Number);
+                                        const newDate = new Date(deadline);
+                                        newDate.setHours(hours, minutes, 0, 0);
+                                        setDeadline(newDate);
+                                    } else if (!t && deadline) {
+                                        // Clear time - keep date but reset to midnight
+                                        const newDate = new Date(deadline);
+                                        newDate.setHours(0, 0, 0, 0);
+                                        setDeadline(newDate);
+                                    }
+                                }}
+                                placeholder="Time"
+                                disabled={!deadline}
+                            />
                         </div>
                     </div>
                 </div>

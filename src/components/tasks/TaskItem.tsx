@@ -196,12 +196,22 @@ export function TaskItem({ task, showListInfo = true }: TaskItemProps) {
                             <div className={cn("flex items-center gap-1", isOverdue ? "text-red-500 font-medium" : "")}>
                                 <Calendar className="h-3 w-3" />
                                 {format(task.dueDate, "MMM d")}
+                                {(task.dueDate.getHours() !== 0 || task.dueDate.getMinutes() !== 0) && (
+                                    <span className="text-muted-foreground">
+                                        {format(task.dueDate, "HH:mm")}
+                                    </span>
+                                )}
                             </div>
                         )}
                         {task.deadline && (
                             <div className={cn("flex items-center gap-1", isDeadlineExceeded ? "text-red-600 font-bold" : "text-orange-500")}>
                                 <AlertCircle className="h-3 w-3" />
                                 {format(task.deadline, "MMM d")}
+                                {(task.deadline.getHours() !== 0 || task.deadline.getMinutes() !== 0) && (
+                                    <span>
+                                        {format(task.deadline, "HH:mm")}
+                                    </span>
+                                )}
                             </div>
                         )}
                         {task.priority && task.priority !== "none" && (
