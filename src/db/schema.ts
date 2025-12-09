@@ -13,7 +13,8 @@ export const users = pgTable("users", {
         .defaultNow(),
     updatedAt: timestamp("updated_at")
         .notNull()
-        .defaultNow(),
+        .defaultNow()
+        .$onUpdate(() => new Date()),
 });
 
 export const lists = pgTable("lists", {
@@ -30,7 +31,8 @@ export const lists = pgTable("lists", {
         .defaultNow(),
     updatedAt: timestamp("updated_at")
         .notNull()
-        .defaultNow(),
+        .defaultNow()
+        .$onUpdate(() => new Date()),
 }, (table) => ({
     userIdIdx: index("lists_user_id_idx").on(table.userId),
     userSlugUnique: uniqueIndex("lists_user_slug_unique").on(table.userId, table.slug),
@@ -63,7 +65,8 @@ export const tasks = pgTable("tasks", {
         .defaultNow(),
     updatedAt: timestamp("updated_at")
         .notNull()
-        .defaultNow(),
+        .defaultNow()
+        .$onUpdate(() => new Date()),
     deadline: timestamp("deadline"),
 }, (table) => ({
     parentReference: foreignKey({
@@ -173,7 +176,8 @@ export const templates = pgTable("templates", {
         .defaultNow(),
     updatedAt: timestamp("updated_at")
         .notNull()
-        .defaultNow(),
+        .defaultNow()
+        .$onUpdate(() => new Date()),
 }, (table) => ({
     userIdIdx: index("templates_user_id_idx").on(table.userId),
 }));
@@ -230,7 +234,7 @@ export const viewSettings = pgTable("view_settings", {
     filterDate: text("filter_date", { enum: ["all", "hasDate", "noDate"] }).default("all"),
     filterPriority: text("filter_priority"), // null = all, or "high", "medium", "low", "none"
     filterLabelId: integer("filter_label_id"), // null = all
-    updatedAt: timestamp("updated_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
 }, (t) => ({
     pk: primaryKey({ columns: [t.userId, t.viewId] }),
 }));
