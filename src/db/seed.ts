@@ -1,5 +1,5 @@
 import { db, users, lists, labels, achievements, userStats } from "./index";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 /**
  * Default test user for development and seeding
@@ -48,8 +48,7 @@ async function initializeUserData(userId: string): Promise<void> {
     const existingInbox = await db
         .select()
         .from(lists)
-        .where(eq(lists.userId, userId))
-        .where(eq(lists.slug, "inbox"))
+        .where(and(eq(lists.userId, userId), eq(lists.slug, "inbox")))
         .limit(1);
 
     if (existingInbox.length === 0) {

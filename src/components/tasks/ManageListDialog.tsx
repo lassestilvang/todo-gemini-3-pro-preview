@@ -41,7 +41,7 @@ interface ManageListDialogProps {
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
     trigger?: React.ReactNode;
-    userId: string;
+    userId?: string;
 }
 
 export function ManageListDialog({ list, open, onOpenChange, trigger, userId }: ManageListDialogProps) {
@@ -72,7 +72,7 @@ interface ListFormProps {
         color: string | null;
         icon: string | null;
     };
-    userId: string;
+    userId?: string;
     onClose: () => void;
 }
 

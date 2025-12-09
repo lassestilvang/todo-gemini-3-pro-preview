@@ -56,7 +56,7 @@ export function AppSidebar({ className, lists, labels, user }: { className?: str
                     </h2>
                     <XPBar userId={user?.id} />
                     <div className="mb-4">
-                        <SearchDialog />
+                        <SearchDialog userId={user?.id} />
                     </div>
                     <div className="py-2">
                         <Button

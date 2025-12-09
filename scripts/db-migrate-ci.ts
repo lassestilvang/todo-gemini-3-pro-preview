@@ -177,7 +177,7 @@ async function runMigrations() {
         // Debug: show what's in the migrations table before running
         let existingMigrations: { hash: string; created_at: string }[] = [];
         if (has_migrations_table) {
-            existingMigrations = await sql`SELECT hash, created_at FROM drizzle."__drizzle_migrations" ORDER BY created_at DESC LIMIT 1`;
+            existingMigrations = await sql`SELECT hash, created_at FROM drizzle."__drizzle_migrations" ORDER BY created_at DESC LIMIT 1` as { hash: string; created_at: string }[];
             console.log("   Last migration in DB:", existingMigrations[0]?.hash?.substring(0, 16) + "...", "created_at:", existingMigrations[0]?.created_at);
         } else {
             console.log("   No migrations table yet (fresh database)");
