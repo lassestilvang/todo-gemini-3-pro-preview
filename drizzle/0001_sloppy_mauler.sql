@@ -75,7 +75,18 @@ END $$;--> statement-breakpoint
 ALTER TABLE "user_stats" DROP COLUMN IF EXISTS "id";--> statement-breakpoint
 ALTER TABLE "view_settings" DROP COLUMN IF EXISTS "id";--> statement-breakpoint
 
--- Step 6: Add new primary key constraints
+-- Step 6: Delete orphaned data (rows with NULL user_id from pre-multi-user era)
+-- This is safe because this data cannot be associated with any user
+DELETE FROM "user_achievements" WHERE "user_id" IS NULL;--> statement-breakpoint
+DELETE FROM "user_stats" WHERE "user_id" IS NULL;--> statement-breakpoint
+DELETE FROM "view_settings" WHERE "user_id" IS NULL;--> statement-breakpoint
+DELETE FROM "templates" WHERE "user_id" IS NULL;--> statement-breakpoint
+DELETE FROM "task_logs" WHERE "user_id" IS NULL;--> statement-breakpoint
+DELETE FROM "tasks" WHERE "user_id" IS NULL;--> statement-breakpoint
+DELETE FROM "labels" WHERE "user_id" IS NULL;--> statement-breakpoint
+DELETE FROM "lists" WHERE "user_id" IS NULL;--> statement-breakpoint
+
+-- Step 7: Add new primary key constraints
 DO $$
 DECLARE
     pk_exists boolean;
@@ -120,7 +131,7 @@ EXCEPTION WHEN others THEN
     NULL;
 END $$;--> statement-breakpoint
 
--- Step 7: Add foreign key constraints
+-- Step 8: Add foreign key constraints
 DO $$ BEGIN
     ALTER TABLE "labels" ADD CONSTRAINT "labels_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION WHEN duplicate_object THEN NULL;
@@ -154,7 +165,7 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;--> statement-breakpoint
 
--- Step 8: Create indexes
+-- Step 9: Create indexes
 CREATE INDEX IF NOT EXISTS "labels_user_id_idx" ON "labels" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "lists_user_id_idx" ON "lists" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "lists_user_slug_unique" ON "lists" USING btree ("user_id","slug");--> statement-breakpoint
