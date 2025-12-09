@@ -99,6 +99,34 @@ async function runMigrations() {
                 VALUES (${migration0000Hash}, ${migration0000Timestamp})
             `;
             
+            console.log("   ✓ Migration 0000 recorded");
+            
+            // Check if migration 0001 schema is also already applied (users table exists with user_id columns)
+            // This happens when db:push was run after the multi-user schema was added
+            const usersTableCheck = await sql`
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_schema = 'public' 
+                    AND table_name = 'users'
+                ) as has_users_table
+            `;
+            
+            if (usersTableCheck[0].has_users_table) {
+                console.log("   Detected multi-user schema (users table exists).");
+                console.log("   Marking migration 0001 as already applied...");
+                
+                const migration0001Entry = journal.entries.find((e: { tag: string }) => e.tag === "0001_sloppy_mauler");
+                const migration0001Timestamp = migration0001Entry?.when || 0;
+                const migration0001Hash = computeMigrationHash("./drizzle/0001_sloppy_mauler.sql");
+                
+                await sql`
+                    INSERT INTO drizzle."__drizzle_migrations" (hash, created_at)
+                    VALUES (${migration0001Hash}, ${migration0001Timestamp})
+                `;
+                
+                console.log("   ✓ Migration 0001 recorded");
+            }
+            
             console.log("   ✓ Migration tracking initialized");
         } else if (has_old_schema && has_migrations_table) {
             // Check if migration 0000 is properly recorded with correct hash AND timestamp
