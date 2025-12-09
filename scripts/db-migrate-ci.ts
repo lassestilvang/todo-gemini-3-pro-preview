@@ -38,6 +38,7 @@ async function runMigrations() {
     try {
         // Check if this is an existing database with old schema (no migration tracking)
         // This handles the transition from db:push to proper migrations
+        // NOTE: Drizzle uses the "drizzle" schema for migrations, not "public"
         const result = await sql`
             SELECT EXISTS (
                 SELECT FROM information_schema.tables 
@@ -46,7 +47,7 @@ async function runMigrations() {
             ) as has_old_schema,
             EXISTS (
                 SELECT FROM information_schema.tables 
-                WHERE table_schema = 'public' 
+                WHERE table_schema = 'drizzle' 
                 AND table_name = '__drizzle_migrations'
             ) as has_migrations_table
         `;
@@ -60,10 +61,11 @@ async function runMigrations() {
             console.log("⚠️  Detected existing database without migration tracking.");
             console.log("   Initializing migration tracking for existing schema...");
             
-            // Create the migrations table and mark migration 0000 as applied
-            // since the old schema already exists from db:push
+            // Create the drizzle schema and migrations table
+            // Mark migration 0000 as applied since the old schema already exists from db:push
+            await sql`CREATE SCHEMA IF NOT EXISTS drizzle`;
             await sql`
-                CREATE TABLE IF NOT EXISTS "__drizzle_migrations" (
+                CREATE TABLE IF NOT EXISTS drizzle."__drizzle_migrations" (
                     id SERIAL PRIMARY KEY,
                     hash text NOT NULL,
                     created_at bigint
@@ -75,7 +77,7 @@ async function runMigrations() {
             // Mark the first migration (0000_jittery_cloak) as already applied
             // This migration created the original single-user schema
             await sql`
-                INSERT INTO "__drizzle_migrations" (hash, created_at)
+                INSERT INTO drizzle."__drizzle_migrations" (hash, created_at)
                 VALUES (${migration0000Hash}, ${Date.now()})
             `;
             
@@ -84,7 +86,7 @@ async function runMigrations() {
             // Check if migration 0000 is properly recorded with correct hash
             const migrationCheck = await sql`
                 SELECT EXISTS (
-                    SELECT FROM "__drizzle_migrations" 
+                    SELECT FROM drizzle."__drizzle_migrations" 
                     WHERE hash = ${migration0000Hash}
                 ) as has_migration_0000
             `;
@@ -95,13 +97,17 @@ async function runMigrations() {
                 
                 // Insert the correct hash for migration 0000
                 await sql`
-                    INSERT INTO "__drizzle_migrations" (hash, created_at)
+                    INSERT INTO drizzle."__drizzle_migrations" (hash, created_at)
                     VALUES (${migration0000Hash}, ${Date.now()})
                 `;
                 
                 console.log("   ✓ Migration 0000 recorded");
             }
         }
+        
+        // Debug: show what's in the migrations table
+        const existingMigrations = await sql`SELECT hash, created_at FROM drizzle."__drizzle_migrations" ORDER BY id`;
+        console.log("   Existing migrations in DB:", existingMigrations.map(m => m.hash.substring(0, 16) + "..."));
         
         // Run all pending migrations
         // Drizzle automatically skips migrations that are already in __drizzle_migrations
