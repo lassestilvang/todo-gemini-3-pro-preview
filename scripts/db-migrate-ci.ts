@@ -54,6 +54,11 @@ async function runMigrations() {
         
         const { has_old_schema, has_migrations_table } = result[0];
         
+        // Read the journal to get correct migration timestamps
+        const journal = JSON.parse(readFileSync("./drizzle/meta/_journal.json", "utf8"));
+        const migration0000Entry = journal.entries.find((e: { tag: string }) => e.tag === "0000_jittery_cloak");
+        const migration0000Timestamp = migration0000Entry?.when || 0;
+        
         // Compute the hash for migration 0000 (same way Drizzle does it)
         const migration0000Hash = computeMigrationHash("./drizzle/0000_jittery_cloak.sql");
         
@@ -73,35 +78,50 @@ async function runMigrations() {
             `;
             
             console.log(`   Migration 0000 hash: ${migration0000Hash}`);
+            console.log(`   Migration 0000 timestamp: ${migration0000Timestamp}`);
             
             // Mark the first migration (0000_jittery_cloak) as already applied
-            // This migration created the original single-user schema
+            // Use the timestamp from the journal so Drizzle knows to run later migrations
             await sql`
                 INSERT INTO drizzle."__drizzle_migrations" (hash, created_at)
-                VALUES (${migration0000Hash}, ${Date.now()})
+                VALUES (${migration0000Hash}, ${migration0000Timestamp})
             `;
             
             console.log("   ✓ Migration tracking initialized");
         } else if (has_old_schema && has_migrations_table) {
-            // Check if migration 0000 is properly recorded with correct hash
+            // Check if migration 0000 is properly recorded with correct hash AND timestamp
             const migrationCheck = await sql`
-                SELECT EXISTS (
-                    SELECT FROM drizzle."__drizzle_migrations" 
-                    WHERE hash = ${migration0000Hash}
-                ) as has_migration_0000
+                SELECT hash, created_at FROM drizzle."__drizzle_migrations" 
+                WHERE hash = ${migration0000Hash}
             `;
             
-            if (!migrationCheck[0].has_migration_0000) {
+            if (migrationCheck.length === 0) {
                 console.log("⚠️  Migration tracking exists but migration 0000 not recorded.");
                 console.log(`   Adding migration 0000 hash: ${migration0000Hash}`);
                 
-                // Insert the correct hash for migration 0000
+                // Insert the correct hash for migration 0000 with correct timestamp
                 await sql`
                     INSERT INTO drizzle."__drizzle_migrations" (hash, created_at)
-                    VALUES (${migration0000Hash}, ${Date.now()})
+                    VALUES (${migration0000Hash}, ${migration0000Timestamp})
                 `;
                 
                 console.log("   ✓ Migration 0000 recorded");
+            } else {
+                // Check if the timestamp is correct (should be <= migration 0000's when)
+                const storedTimestamp = Number(migrationCheck[0].created_at);
+                if (storedTimestamp > migration0000Timestamp) {
+                    console.log(`⚠️  Migration 0000 has incorrect timestamp: ${storedTimestamp} > ${migration0000Timestamp}`);
+                    console.log("   Fixing timestamp...");
+                    
+                    // Update to correct timestamp
+                    await sql`
+                        UPDATE drizzle."__drizzle_migrations" 
+                        SET created_at = ${migration0000Timestamp}
+                        WHERE hash = ${migration0000Hash}
+                    `;
+                    
+                    console.log("   ✓ Timestamp fixed");
+                }
             }
         }
         
@@ -109,8 +129,7 @@ async function runMigrations() {
         const existingMigrations = await sql`SELECT hash, created_at FROM drizzle."__drizzle_migrations" ORDER BY created_at DESC LIMIT 1`;
         console.log("   Last migration in DB:", existingMigrations[0]?.hash?.substring(0, 16) + "...", "created_at:", existingMigrations[0]?.created_at);
         
-        // Read the journal to get migration timestamps
-        const journal = JSON.parse(readFileSync("./drizzle/meta/_journal.json", "utf8"));
+        // Show journal entries for debugging
         console.log("   Journal entries:");
         for (const entry of journal.entries) {
             console.log(`     - ${entry.tag}: when=${entry.when}`);
@@ -122,7 +141,8 @@ async function runMigrations() {
         
         // Check: should migration 0001 run?
         const lastCreatedAt = Number(existingMigrations[0]?.created_at || 0);
-        const migration0001When = journal.entries[1].when;
+        const migration0001Entry = journal.entries.find((e: { tag: string }) => e.tag === "0001_sloppy_mauler");
+        const migration0001When = migration0001Entry?.when || 0;
         console.log(`   Comparison: lastCreatedAt(${lastCreatedAt}) < migration0001When(${migration0001When}) = ${lastCreatedAt < migration0001When}`);
         
         // Run all pending migrations
