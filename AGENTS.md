@@ -55,7 +55,10 @@ bun install && bun run db:push && bun run build
 ### Command Notes
 
 - `bun test` - Uses in-memory SQLite via `bun:sqlite` for fast test execution
-- `bun run db:push` - Pushes schema to Neon PostgreSQL (requires `DATABASE_URL` in `.env.local`)
+- `bun run db:push` - Interactive schema push for local development
+- `bun run db:generate` - Generate SQL migration files from schema changes
+- `bun run db:migrate` - Apply migrations locally
+- `bun run db:migrate:ci` - Apply migrations in CI (handles legacy databases)
 - `bun run db:seed` - Seeds default data (Inbox list, labels, achievements) - optional for dev
 - Tests run in ~2-3 seconds; build takes ~5-10 seconds
 
@@ -65,17 +68,36 @@ The application uses Neon PostgreSQL for development and production:
 
 1. Copy `.env.example` to `.env.local`
 2. Set `DATABASE_URL` to your Neon connection string
-3. Run `bun run db:push` to create/update tables
+3. Run `bun run db:push` to create/update tables (for local dev)
 
 ```bash
 # .env.local example
 DATABASE_URL=postgresql://user:pass@host.neon.tech/neondb?sslmode=require
 ```
 
+### Database Migrations
+
+The project uses Drizzle migrations for schema changes:
+
+```bash
+# 1. Modify schema in src/db/schema.ts
+# 2. Generate migration
+bun run db:generate
+
+# 3. Apply migration locally
+bun run db:migrate
+
+# 4. Commit the migration files in drizzle/
+git add drizzle/*.sql drizzle/meta/
+```
+
+Migration files are in `drizzle/` and are applied automatically in CI via `db:migrate:ci`.
+
 ### Database Branching
 
 Database branching is handled automatically by the Vercel + Neon integration:
 - Each Vercel preview deployment gets its own isolated Neon database branch
+- CI automatically runs migrations on preview branches via GitHub Actions
 - Branches are automatically created and cleaned up with preview deployments
 - See README.md for setup details
 

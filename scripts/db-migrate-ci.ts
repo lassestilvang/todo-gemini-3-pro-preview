@@ -1,0 +1,84 @@
+#!/usr/bin/env bun
+/**
+ * CI Database Migration Script
+ * 
+ * Handles migrations for both fresh databases and existing ones.
+ * - For fresh DBs: runs all migrations from scratch
+ * - For existing DBs without migration tracking: initializes tracking, marks
+ *   pre-existing migrations as applied, then runs pending migrations
+ * 
+ * This script is idempotent and safe to run multiple times.
+ */
+
+import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
+import { migrate } from "drizzle-orm/neon-http/migrator";
+
+const DATABASE_URL = process.env.DATABASE_URL;
+
+if (!DATABASE_URL) {
+    console.error("DATABASE_URL environment variable is required");
+    process.exit(1);
+}
+
+const sql = neon(DATABASE_URL);
+const db = drizzle(sql);
+
+async function runMigrations() {
+    console.log("Running database migrations...");
+
+    try {
+        // Check if this is an existing database with old schema (no migration tracking)
+        // This handles the transition from db:push to proper migrations
+        const result = await sql`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'achievements'
+            ) as has_old_schema,
+            EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = '__drizzle_migrations'
+            ) as has_migrations_table
+        `;
+        
+        const { has_old_schema, has_migrations_table } = result[0];
+        
+        if (has_old_schema && !has_migrations_table) {
+            console.log("⚠️  Detected existing database without migration tracking.");
+            console.log("   Initializing migration tracking for existing schema...");
+            
+            // Create the migrations table and mark migration 0000 as applied
+            // since the old schema already exists from db:push
+            await sql`
+                CREATE TABLE IF NOT EXISTS "__drizzle_migrations" (
+                    id SERIAL PRIMARY KEY,
+                    hash text NOT NULL,
+                    created_at bigint
+                )
+            `;
+            
+            // Mark the first migration (0000_jittery_cloak) as already applied
+            // This migration created the original single-user schema
+            await sql`
+                INSERT INTO "__drizzle_migrations" (hash, created_at)
+                VALUES ('0000_jittery_cloak', ${Date.now()})
+                ON CONFLICT DO NOTHING
+            `;
+            
+            console.log("   ✓ Migration tracking initialized");
+        }
+        
+        // Run all pending migrations
+        // Drizzle automatically skips migrations that are already in __drizzle_migrations
+        await migrate(db, { migrationsFolder: "./drizzle" });
+        
+        console.log("✅ Migrations completed successfully!");
+    } catch (error) {
+        console.error("❌ Migration failed:", error);
+        process.exit(1);
+    }
+}
+
+runMigrations();

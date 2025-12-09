@@ -68,7 +68,13 @@ A modern, professional daily task planner built with **Next.js 16**, **Bun**, an
    ```
 
 4. **Setup the database**:
-   Push the schema to your Neon database and seed it with default data (Inbox, Labels).
+   Apply migrations to your Neon database and seed it with default data.
+   ```bash
+   bun run db:migrate
+   bun run db:seed
+   ```
+   
+   Or for interactive development (auto-detects schema changes):
    ```bash
    bun run db:push
    bun run db:seed
@@ -137,11 +143,15 @@ Database branching is automatically managed by the [Neon Vercel Integration](htt
 
 ### Setup
 
-The Vercel + Neon integration handles everything automatically. To enable:
+The Vercel + Neon integration handles database branching automatically. To enable:
 
 1. Connect your Neon project to Vercel via the [Neon Vercel Integration](https://vercel.com/integrations/neon)
 2. Enable "Create a branch for each preview deployment" in the integration settings
-3. That's it! Preview deployments will automatically get isolated database branches
+3. Add these GitHub secrets for CI migrations:
+   - `NEON_API_KEY` - From Neon dashboard → Account Settings → API Keys
+   - `NEON_PROJECT_ID` - From your Neon project settings
+   - `DATABASE_URL` - Main branch connection string
+4. That's it! Preview deployments will automatically get isolated database branches with migrations applied
 
 ### Local Development with Branches
 
@@ -154,6 +164,45 @@ To work with a specific database branch locally:
    ```bash
    DATABASE_URL=postgresql://user:pass@host.neon.tech/neondb?sslmode=require
    ```
+
+## 🔄 Database Migrations
+
+This project uses [Drizzle migrations](https://orm.drizzle.team/docs/migrations) for schema changes.
+
+### Making Schema Changes
+
+```bash
+# 1. Edit the schema
+#    Modify src/db/schema.ts
+
+# 2. Generate a migration
+bun run db:generate
+
+# 3. Apply the migration locally
+bun run db:migrate
+
+# 4. Commit the migration files
+git add drizzle/*.sql drizzle/meta/
+git commit -m "Add migration for schema changes"
+```
+
+### Available Commands
+
+| Command | Description |
+|---------|-------------|
+| `bun run db:push` | Interactive schema push (local dev) |
+| `bun run db:generate` | Generate migration from schema changes |
+| `bun run db:migrate` | Apply migrations locally |
+| `bun run db:migrate:ci` | Apply migrations in CI (used by GitHub Actions) |
+| `bun run db:seed` | Seed database with default data |
+
+### CI/CD
+
+Migrations are automatically applied in CI:
+- **Pull requests**: Migrations run against the Neon preview branch
+- **Main branch**: Migrations run against the production database
+
+The `db:migrate:ci` script handles both fresh databases and existing ones that predate the migration system.
 
 ## 🧪 Running Tests
 

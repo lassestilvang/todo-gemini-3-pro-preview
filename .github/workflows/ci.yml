@@ -79,16 +79,18 @@ jobs:
           # Match Vercel + Neon integration naming: preview/{git-branch-name}
           branch_name: preview/${{ github.head_ref }}
           username: neondb_owner
+          # Don't suspend - keep branch active for Vercel preview
+          suspend_timeout: 0
 
       - name: Setup Database (PR)
         if: github.event_name == 'pull_request' && steps.neon-branch.outputs.db_url != ''
-        run: bun run db:migrate
+        run: bun run db:migrate:ci
         env:
           DATABASE_URL: ${{ steps.neon-branch.outputs.db_url_with_pooler }}
 
       - name: Setup Database (Main)
         if: github.event_name == 'push'
-        run: bun run db:migrate
+        run: bun run db:migrate:ci
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
