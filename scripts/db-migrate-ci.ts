@@ -13,6 +13,8 @@
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import { migrate } from "drizzle-orm/neon-http/migrator";
+import { createHash } from "crypto";
+import { readFileSync } from "fs";
 
 const DATABASE_URL = process.env.DATABASE_URL;
 
@@ -23,6 +25,12 @@ if (!DATABASE_URL) {
 
 const sql = neon(DATABASE_URL);
 const db = drizzle(sql);
+
+// Compute the hash the same way Drizzle does (SHA256 of file content)
+function computeMigrationHash(filePath: string): string {
+    const content = readFileSync(filePath, "utf8");
+    return createHash("sha256").update(content).digest("hex");
+}
 
 async function runMigrations() {
     console.log("Running database migrations...");
@@ -59,11 +67,15 @@ async function runMigrations() {
                 )
             `;
             
+            // Compute the hash for migration 0000 (same way Drizzle does it)
+            const migration0000Hash = computeMigrationHash("./drizzle/0000_jittery_cloak.sql");
+            console.log(`   Migration 0000 hash: ${migration0000Hash}`);
+            
             // Mark the first migration (0000_jittery_cloak) as already applied
             // This migration created the original single-user schema
             await sql`
                 INSERT INTO "__drizzle_migrations" (hash, created_at)
-                VALUES ('0000_jittery_cloak', ${Date.now()})
+                VALUES (${migration0000Hash}, ${Date.now()})
                 ON CONFLICT DO NOTHING
             `;
             
