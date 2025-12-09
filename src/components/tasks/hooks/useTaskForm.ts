@@ -103,10 +103,19 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
     };
 
     const handleDelete = async () => {
-        if (!isEdit || !task || !userId) return;
+        if (!isEdit || !task) return;
+        if (!userId) {
+            console.error("Cannot delete task: userId is required");
+            alert("Unable to delete task. Please try logging in again.");
+            return;
+        }
         if (confirm("Are you sure you want to delete this task?")) {
-            await deleteTask(task.id, userId);
-            onClose();
+            try {
+                await deleteTask(task.id, userId);
+                onClose();
+            } catch (error) {
+                console.error("Failed to delete task:", error);
+            }
         }
     };
 

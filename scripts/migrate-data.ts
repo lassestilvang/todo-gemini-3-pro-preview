@@ -359,7 +359,9 @@ async function main() {
         await sql`SELECT setval('habit_completions_id_seq', COALESCE((SELECT MAX(id) FROM habit_completions), 1))`;
         await sql`SELECT setval('templates_id_seq', COALESCE((SELECT MAX(id) FROM templates), 1))`;
         await sql`SELECT setval('user_stats_id_seq', COALESCE((SELECT MAX(id) FROM user_stats), 1))`;
-        await sql`SELECT setval('view_settings_id_seq', COALESCE((SELECT MAX(id) FROM view_settings), 1))`;
+        if (viewSettingsExists) {
+            await sql`SELECT setval('view_settings_id_seq', COALESCE((SELECT MAX(id) FROM view_settings), 1))`;
+        }
         console.log("   ✅ Sequences reset to match migrated data");
 
         // Print summary

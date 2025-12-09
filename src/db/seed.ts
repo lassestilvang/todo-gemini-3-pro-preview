@@ -86,22 +86,12 @@ async function initializeUserData(userId: string): Promise<void> {
     }
 
     // Create default labels for the user
-    const existingLabels = await db
-        .select()
-        .from(labels)
-        .where(eq(labels.userId, userId))
-        .limit(1);
-
-    if (existingLabels.length === 0) {
-        await db.insert(labels).values([
-            { userId, name: "Work", color: "#ef4444" }, // Red
-            { userId, name: "Personal", color: "#10b981" }, // Green
-            { userId, name: "Urgent", color: "#f59e0b" }, // Amber
-        ]);
-        console.log("   ✅ Created default labels for test user");
-    } else {
-        console.log("   ⏭️  Labels already exist");
-    }
+    await db.insert(labels).values([
+        { userId, name: "Work", color: "#ef4444" }, // Red
+        { userId, name: "Personal", color: "#10b981" }, // Green
+        { userId, name: "Urgent", color: "#f59e0b" }, // Amber
+    ]).onConflictDoNothing();
+    console.log("   ✅ Ensured default labels exist for test user");
 }
 
 /**

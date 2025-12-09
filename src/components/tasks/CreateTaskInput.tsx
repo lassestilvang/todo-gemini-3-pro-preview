@@ -65,7 +65,10 @@ export function CreateTaskInput({ listId, defaultDueDate, userId }: { listId?: n
         // Parse again for final submission to get clean title
         const parsed = parseNaturalLanguage(title);
 
-        if (!userId) return;
+        if (!userId) {
+            toast.error("Unable to create task: missing user ID");
+            return;
+        }
         await createTask({
             userId,
             title: parsed.title || title,
@@ -202,7 +205,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId }: { listId?: n
                                 <Button type="button" variant="ghost" size="sm" onClick={() => setIsExpanded(false)}>
                                     Cancel
                                 </Button>
-                                <Button type="submit" size="sm" disabled={!title.trim()}>
+                                <Button type="submit" size="sm" disabled={!title.trim() || !userId}>
                                     Add Task
                                 </Button>
                             </div>

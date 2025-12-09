@@ -122,7 +122,10 @@ async function runMigrations() {
                 console.log("   Marking migration 0001 as already applied...");
                 
                 const migration0001Entry = journal.entries.find((e: { tag: string }) => e.tag === "0001_sloppy_mauler");
-                const migration0001Timestamp = migration0001Entry?.when || 0;
+                if (!migration0001Entry) {
+                    throw new Error("Migration 0001_sloppy_mauler not found in journal");
+                }
+                const migration0001Timestamp = migration0001Entry.when;
                 const migration0001Hash = computeMigrationHash("./drizzle/0001_sloppy_mauler.sql");
                 
                 await sql`
@@ -170,10 +173,15 @@ async function runMigrations() {
                 }
             }
         }
-        
+
         // Debug: show what's in the migrations table before running
-        const existingMigrations = await sql`SELECT hash, created_at FROM drizzle."__drizzle_migrations" ORDER BY created_at DESC LIMIT 1`;
-        console.log("   Last migration in DB:", existingMigrations[0]?.hash?.substring(0, 16) + "...", "created_at:", existingMigrations[0]?.created_at);
+        let existingMigrations: { hash: string; created_at: string }[] = [];
+        if (has_migrations_table) {
+            existingMigrations = await sql`SELECT hash, created_at FROM drizzle."__drizzle_migrations" ORDER BY created_at DESC LIMIT 1`;
+            console.log("   Last migration in DB:", existingMigrations[0]?.hash?.substring(0, 16) + "...", "created_at:", existingMigrations[0]?.created_at);
+        } else {
+            console.log("   No migrations table yet (fresh database)");
+        }
         
         // Show journal entries for debugging
         console.log("   Journal entries:");

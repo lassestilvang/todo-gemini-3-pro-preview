@@ -59,66 +59,61 @@ export async function syncUser(workosUser: {
   lastName?: string | null;
   profilePictureUrl?: string | null;
 }): Promise<AuthUser> {
-  const existingUser = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, workosUser.id))
-    .limit(1);
-
-  if (existingUser.length > 0) {
-    // Update existing user
-    await db
-      .update(users)
-      .set({
+  // Upsert user with onConflictDoUpdate to avoid race conditions
+  const [upsertedUser] = await db
+    .insert(users)
+    .values({
+      id: workosUser.id,
+      email: workosUser.email,
+      firstName: workosUser.firstName ?? null,
+      lastName: workosUser.lastName ?? null,
+      avatarUrl: workosUser.profilePictureUrl ?? null,
+    })
+    .onConflictDoUpdate({
+      target: users.id,
+      set: {
         email: workosUser.email,
         firstName: workosUser.firstName ?? null,
         lastName: workosUser.lastName ?? null,
         avatarUrl: workosUser.profilePictureUrl ?? null,
         updatedAt: new Date(),
-      })
-      .where(eq(users.id, workosUser.id));
+      },
+    })
+    .returning();
 
-    return {
-      id: workosUser.id,
-      email: workosUser.email,
-      firstName: workosUser.firstName ?? null,
-      lastName: workosUser.lastName ?? null,
-      avatarUrl: workosUser.profilePictureUrl ?? null,
-    };
+  // Check if user has any lists to determine if this is a new user
+  const existingLists = await db
+    .select({ id: lists.id })
+    .from(lists)
+    .where(eq(lists.userId, upsertedUser.id))
+    .limit(1);
+
+  // Initialize default data for new users (no existing lists)
+  if (existingLists.length === 0) {
+    await db.batch([
+      db.insert(lists).values({
+        userId: upsertedUser.id,
+        name: "Inbox",
+        slug: "inbox",
+        color: "#6366f1",
+        icon: "inbox",
+      }),
+      db.insert(userStats).values({
+        userId: upsertedUser.id,
+        xp: 0,
+        level: 1,
+        currentStreak: 0,
+        longestStreak: 0,
+      }),
+    ]);
   }
 
-  // Create new user and initialize default data in a single atomic batch
-  // This ensures if initialization fails, the user insert is rolled back
-  await db.batch([
-    db.insert(users).values({
-      id: workosUser.id,
-      email: workosUser.email,
-      firstName: workosUser.firstName ?? null,
-      lastName: workosUser.lastName ?? null,
-      avatarUrl: workosUser.profilePictureUrl ?? null,
-    }),
-    db.insert(lists).values({
-      userId: workosUser.id,
-      name: "Inbox",
-      slug: "inbox",
-      color: "#6366f1",
-      icon: "inbox",
-    }),
-    db.insert(userStats).values({
-      userId: workosUser.id,
-      xp: 0,
-      level: 1,
-      currentStreak: 0,
-      longestStreak: 0,
-    }),
-  ]);
-
   return {
-    id: workosUser.id,
-    email: workosUser.email,
-    firstName: workosUser.firstName ?? null,
-    lastName: workosUser.lastName ?? null,
-    avatarUrl: workosUser.profilePictureUrl ?? null,
+    id: upsertedUser.id,
+    email: upsertedUser.email,
+    firstName: upsertedUser.firstName,
+    lastName: upsertedUser.lastName,
+    avatarUrl: upsertedUser.avatarUrl,
   };
 }
 

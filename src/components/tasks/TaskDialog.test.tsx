@@ -90,7 +90,8 @@ describe("TaskDialog", () => {
             expect(mockCreateTask).toHaveBeenCalledTimes(1);
         });
         expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining({
-            title: "New Task"
+            title: "New Task",
+            userId: "test_user_123"
         }));
     });
 

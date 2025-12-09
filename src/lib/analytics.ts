@@ -5,6 +5,23 @@ import { eq } from "drizzle-orm";
 import { subDays, format, startOfDay } from "date-fns";
 
 export async function getAnalytics(userId: string) {
+    // Validate userId before querying the database
+    if (typeof userId !== "string" || userId.trim().length === 0) {
+        return {
+            summary: {
+                totalTasks: 0,
+                completedTasks: 0,
+                completionRate: 0,
+                avgEstimate: 0,
+                avgActual: 0,
+            },
+            tasksOverTime: [],
+            priorityDist: { high: 0, medium: 0, low: 0, none: 0 },
+            energyStats: { high: 0, medium: 0, low: 0 },
+            energyCompleted: { high: 0, medium: 0, low: 0 },
+        };
+    }
+
     const now = new Date();
 
     // Total tasks for this user

@@ -10,6 +10,7 @@ import { ChevronDown, ChevronUp, Settings2, List, LayoutGrid, Calendar, RotateCc
 import { ViewSettings, defaultViewSettings } from "@/lib/view-settings";
 import { getViewSettings, saveViewSettings, resetViewSettings, getLabels } from "@/lib/actions";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface ViewOptionsPopoverProps {
     viewId: string;
@@ -72,17 +73,22 @@ export function ViewOptionsPopover({ viewId, userId, onSettingsChange }: ViewOpt
     };
 
     const handleReset = () => {
+        const previousSettings = settings;
         setSettings(defaultViewSettings);
+
         startTransition(async () => {
             if (userId) {
                 try {
                     await resetViewSettings(userId, viewId);
+                    onSettingsChange?.(defaultViewSettings);
                 } catch (error) {
                     console.error("Failed to reset view settings:", error);
-                    // Consider reverting to previous state or showing error notification
+                    setSettings(previousSettings);
+                    toast.error("Failed to reset view settings");
                 }
+            } else {
+                onSettingsChange?.(defaultViewSettings);
             }
-            onSettingsChange?.(defaultViewSettings);
         });
     };
 

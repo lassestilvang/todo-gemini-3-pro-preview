@@ -1,5 +1,5 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import { SmartScheduleDialog } from "./SmartScheduleDialog";
 import * as smartScheduler from "@/lib/smart-scheduler";
 import { toast } from "sonner";
@@ -18,19 +18,26 @@ mock.module("sonner", () => ({
     }
 }));
 
+type MockFn = ReturnType<typeof mock> & {
+    mockClear: () => void;
+    mockResolvedValue: (value: unknown) => void;
+    mockRejectedValue: (value: unknown) => void;
+    mockReturnValue: (value: unknown) => void;
+};
+
 describe("SmartScheduleDialog", () => {
     const mockOnOpenChange = mock();
-    const mockGenerateSmartSchedule = smartScheduler.generateSmartSchedule as unknown as jest.Mock;
-    const mockApplyScheduleSuggestion = smartScheduler.applyScheduleSuggestion as unknown as jest.Mock;
+    const mockGenerateSmartSchedule = smartScheduler.generateSmartSchedule as unknown as MockFn;
+    const mockApplyScheduleSuggestion = smartScheduler.applyScheduleSuggestion as unknown as MockFn;
 
     beforeEach(() => {
         mockOnOpenChange.mockClear();
         mockGenerateSmartSchedule.mockClear();
         mockApplyScheduleSuggestion.mockClear();
         // Reset toast mocks
-        (toast.success as jest.Mock).mockClear();
-        (toast.error as jest.Mock).mockClear();
-        (toast.info as jest.Mock).mockClear();
+        (toast.success as unknown as MockFn).mockClear();
+        (toast.error as unknown as MockFn).mockClear();
+        (toast.info as unknown as MockFn).mockClear();
     });
 
     afterEach(() => {
@@ -50,7 +57,8 @@ describe("SmartScheduleDialog", () => {
         fireEvent.click(screen.getByText("Generate Schedule"));
 
         expect(screen.getByText("Analyzing tasks...")).toBeDefined();
-        expect(screen.getByRole("button", { name: /Analyzing tasks/i })).toBeDisabled();
+        const button = screen.getByRole("button", { name: /Analyzing tasks/i });
+        expect(button.hasAttribute("disabled") || button.getAttribute("aria-disabled") === "true").toBe(true);
     });
 
     it("should display suggestions after generation", async () => {
@@ -69,12 +77,11 @@ describe("SmartScheduleDialog", () => {
 
         fireEvent.click(screen.getByText("Generate Schedule"));
 
-        // Wait for async action
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        expect(screen.getByText("Task 1")).toBeDefined();
-        expect(screen.getByText("High priority")).toBeDefined();
-        expect(screen.getByText("90% match")).toBeDefined();
+        await waitFor(() => {
+            expect(screen.getByText("Task 1")).toBeDefined();
+            expect(screen.getByText("High priority")).toBeDefined();
+            expect(screen.getByText("90% match")).toBeDefined();
+        });
     });
 
     it("should handle empty suggestions", async () => {
@@ -85,10 +92,10 @@ describe("SmartScheduleDialog", () => {
         fireEvent.click(screen.getByText("Generate Schedule"));
 
         // Wait for async action to complete
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        expect(toast.info).toHaveBeenCalledWith("No unscheduled tasks found to schedule!");
-        expect(mockOnOpenChange).toHaveBeenCalledWith(false);
+        await waitFor(() => {
+            expect(toast.info).toHaveBeenCalledWith("No unscheduled tasks found to schedule!");
+            expect(mockOnOpenChange).toHaveBeenCalledWith(false);
+        });
     });
 
     it("should handle generation error", async () => {
@@ -98,10 +105,9 @@ describe("SmartScheduleDialog", () => {
 
         fireEvent.click(screen.getByText("Generate Schedule"));
 
-        // Wait for async action to complete
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        expect(toast.error).toHaveBeenCalledWith("Failed to generate schedule. Please check your API key.");
+        await waitFor(() => {
+            expect(toast.error).toHaveBeenCalledWith("Failed to generate schedule. Please check your API key.");
+        });
     });
 
     it("should apply suggestion", async () => {
@@ -121,15 +127,22 @@ describe("SmartScheduleDialog", () => {
 
         // Generate first
         fireEvent.click(screen.getByText("Generate Schedule"));
-        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Wait for Accept button to appear
+        await waitFor(() => {
+            expect(screen.getByText("Accept")).toBeDefined();
+        });
 
         // Apply
         fireEvent.click(screen.getByText("Accept"));
 
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        expect(mockApplyScheduleSuggestion).toHaveBeenCalledWith(1, suggestions[0].suggestedDate);
-        expect(toast.success).toHaveBeenCalledWith("Task scheduled!");
+        // Wait for the apply action to complete
+        await waitFor(() => {
+            expect(mockApplyScheduleSuggestion).toHaveBeenCalledWith(1, suggestions[0].suggestedDate);
+        });
+        await waitFor(() => {
+            expect(toast.success).toHaveBeenCalledWith("Task scheduled!");
+        });
     });
 
     it("should reject suggestion", async () => {

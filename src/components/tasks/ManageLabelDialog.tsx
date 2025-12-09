@@ -76,7 +76,10 @@ function LabelForm({ label, userId, onClose }: { label?: { id: number; name: str
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!userId) return;
+        if (!userId) {
+            console.error("Cannot save label: userId is missing");
+            return;
+        }
         try {
             if (label) {
                 await updateLabel(label.id, userId, { name, color, icon });
@@ -90,10 +93,17 @@ function LabelForm({ label, userId, onClose }: { label?: { id: number; name: str
     };
 
     const handleDelete = async () => {
-        if (!label || !userId) return;
+        if (!label || !userId) {
+            console.error("Cannot delete label: userId is missing");
+            return;
+        }
         if (confirm("Are you sure you want to delete this label?")) {
-            await deleteLabel(label.id, userId);
-            onClose();
+            try {
+                await deleteLabel(label.id, userId);
+                onClose();
+            } catch (error) {
+                console.error("Failed to delete label:", error);
+            }
         }
     };
 

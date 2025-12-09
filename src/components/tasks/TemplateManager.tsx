@@ -38,17 +38,20 @@ export function TemplateManager({ userId }: TemplateManagerProps) {
 
     const loadTemplates = useCallback(async () => {
         if (!userId) return;
-        const data = await getTemplates(userId);
-        setTemplates(data);
+        try {
+            const data = await getTemplates(userId);
+            setTemplates(data);
+        } catch (error) {
+            console.error("Failed to load templates:", error);
+            toast.error("Failed to load templates");
+        }
     }, [userId]);
 
     useEffect(() => {
         if (isOpen && userId) {
-            getTemplates(userId).then(data => {
-                setTemplates(data);
-            });
+            loadTemplates();
         }
-    }, [isOpen, userId]);
+    }, [isOpen, userId, loadTemplates]);
 
     const handleCreate = async () => {
         if (!newTemplateName || !newTemplateContent || !userId) return;

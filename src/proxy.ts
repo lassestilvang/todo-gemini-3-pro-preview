@@ -4,6 +4,10 @@ import { syncUser } from '@/lib/auth';
 
 const unauthenticatedPaths = ['/login', '/auth/callback'];
 
+// Sync user at most once per hour (in milliseconds)
+const USER_SYNC_INTERVAL_MS = 60 * 60 * 1000;
+const USER_SYNC_COOKIE_NAME = 'user_last_synced';
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -32,8 +36,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // Protected route - redirect to login if no session
-  // Protected route - redirect to login if no session
-  if (!session.user) {
+  if (!session?.user) {
     if (!authorizationUrl) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
@@ -50,24 +53,39 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  // Sync user to database (creates if not exists, updates if exists)
-  try {
-    await syncUser({
-      id: session.user.id,
-      email: session.user.email,
-      firstName: session.user.firstName,
-      lastName: session.user.lastName,
-      profilePictureUrl: session.user.profilePictureUrl,
-    });
-  } catch (error) {
-    console.error('Failed to sync user:', error);
-    // Continue anyway - user might already exist
-  }
+  // Check if we need to sync user (only sync periodically, not on every request)
+  const lastSyncedCookie = request.cookies.get(USER_SYNC_COOKIE_NAME);
+  const lastSynced = lastSyncedCookie ? parseInt(lastSyncedCookie.value, 10) : 0;
+  const now = Date.now();
+  const shouldSync = now - lastSynced > USER_SYNC_INTERVAL_MS;
 
   // User is authenticated, forward request with authkit headers
   const response = NextResponse.next({
     request: { headers: new Headers(request.headers) },
   });
+
+  // Sync user to database periodically (creates if not exists, updates if exists)
+  if (shouldSync) {
+    try {
+      await syncUser({
+        id: session.user.id,
+        email: session.user.email,
+        firstName: session.user.firstName,
+        lastName: session.user.lastName,
+        profilePictureUrl: session.user.profilePictureUrl,
+      });
+      // Update the last synced timestamp cookie
+      response.cookies.set(USER_SYNC_COOKIE_NAME, now.toString(), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: USER_SYNC_INTERVAL_MS / 1000, // Cookie expires when sync is needed again
+      });
+    } catch (error) {
+      console.error('Failed to sync user to database:', error);
+      // Continue anyway - the upsert may have partially succeeded or will retry on next interval
+    }
+  }
 
   for (const [key, value] of authkitHeaders) {
     if (key.toLowerCase() === 'set-cookie') {

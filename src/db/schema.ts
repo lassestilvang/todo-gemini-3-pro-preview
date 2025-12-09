@@ -3,7 +3,7 @@ import { serial, integer, pgTable, text, primaryKey, foreignKey, index, uniqueIn
 // Users table - stores WorkOS user data
 export const users = pgTable("users", {
     id: text("id").primaryKey(), // WorkOS user ID
-    email: text("email").notNull(),
+    email: text("email").notNull().unique(),
     firstName: text("first_name"),
     lastName: text("last_name"),
     avatarUrl: text("avatar_url"),
@@ -123,6 +123,7 @@ export const reminders = pgTable("reminders", {
 export const taskLogs = pgTable("task_logs", {
     id: serial("id").primaryKey(),
     userId: text("user_id")
+        .notNull()
         .references(() => users.id, { onDelete: "cascade" }),
     taskId: integer("task_id")
         .references(() => tasks.id, { onDelete: "cascade" }),
