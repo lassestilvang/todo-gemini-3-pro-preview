@@ -5,14 +5,10 @@ import { syncUser } from '@/lib/auth';
 // This exchanges the authorization code for a session, syncs the user to the DB,
 // and sets the session cookie. After successful auth, redirects to the inbox page.
 export const GET = handleAuth({
-  onSignIn: async ({ user }) => {
-    // Sync user on every sign-in to keep profile data fresh
-    await syncUser(user);
-  },
-  onSignUp: async ({ user }) => {
-    // Sync user on sign-up to create local record and default data
-    await syncUser(user);
-  },
   returnPathname: '/inbox',
+  onSuccess: async ({ user }) => {
+    // Sync user on every sign-in/sign-up to keep profile data fresh
+    await syncUser(user);
+  },
 });
 
