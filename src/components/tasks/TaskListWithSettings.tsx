@@ -16,6 +16,7 @@ interface TaskListWithSettingsProps {
     labelId?: number;
     defaultDueDate?: Date | string;
     viewId: string;
+    userId?: string;
 }
 
 /**
@@ -127,7 +128,8 @@ export function TaskListWithSettings({
     listId,
     labelId,
     defaultDueDate,
-    viewId
+    viewId,
+    userId
 }: TaskListWithSettingsProps) {
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -136,7 +138,8 @@ export function TaskListWithSettings({
     // Load initial settings
     useEffect(() => {
         async function loadSettings() {
-            const savedSettings = await getViewSettings(viewId);
+            if (!userId) return;
+            const savedSettings = await getViewSettings(userId, viewId);
             if (savedSettings) {
                 setSettings({
                     layout: savedSettings.layout || defaultViewSettings.layout,
@@ -151,7 +154,7 @@ export function TaskListWithSettings({
             }
         }
         loadSettings();
-    }, [viewId]);
+    }, [viewId, userId]);
 
     const handleEdit = (task: Task) => {
         setEditingTask(task);
@@ -180,6 +183,7 @@ export function TaskListWithSettings({
                 <div className="flex items-center gap-2">
                     <ViewOptionsPopover
                         viewId={viewId}
+                        userId={userId}
                         onSettingsChange={setSettings}
                     />
                     <Button onClick={handleAdd} size="sm">
@@ -198,7 +202,7 @@ export function TaskListWithSettings({
                 <div className="space-y-2">
                     {processedTasks.map((task) => (
                         <div key={task.id} onClick={() => handleEdit(task)} className="cursor-pointer">
-                            <TaskItem task={task} showListInfo={!listId} />
+                            <TaskItem task={task} showListInfo={!listId} userId={userId} />
                         </div>
                     ))}
                 </div>
@@ -211,7 +215,7 @@ export function TaskListWithSettings({
                             </h3>
                             {groupTasks.map((task) => (
                                 <div key={task.id} onClick={() => handleEdit(task)} className="cursor-pointer">
-                                    <TaskItem task={task} showListInfo={!listId} />
+                                    <TaskItem task={task} showListInfo={!listId} userId={userId} />
                                 </div>
                             ))}
                         </div>
@@ -229,6 +233,7 @@ export function TaskListWithSettings({
                     setIsDialogOpen(open);
                     if (!open) setEditingTask(null);
                 }}
+                userId={userId}
             />
         </div>
     );

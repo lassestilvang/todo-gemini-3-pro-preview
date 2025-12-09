@@ -1,9 +1,16 @@
 import { getAnalytics } from "@/lib/analytics";
+import { getCurrentUser } from "@/lib/auth";
 import { AnalyticsCharts } from "@/components/analytics/AnalyticsCharts";
 import { WeeklyReview } from "@/components/analytics/WeeklyReview";
+import { redirect } from "next/navigation";
 
 export default async function AnalyticsPage() {
-    const data = await getAnalytics();
+    const user = await getCurrentUser();
+    if (!user) {
+        redirect("/login");
+    }
+
+    const data = await getAnalytics(user.id);
 
     return (
         <div className="space-y-6">

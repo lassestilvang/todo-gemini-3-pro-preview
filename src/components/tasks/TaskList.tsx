@@ -12,9 +12,10 @@ interface TaskListProps {
     listId?: number;
     labelId?: number;
     defaultDueDate?: Date | string;
+    userId?: string;
 }
 
-export function TaskList({ tasks, title, listId, labelId, defaultDueDate }: TaskListProps) {
+export function TaskList({ tasks, title, listId, labelId, defaultDueDate, userId }: TaskListProps) {
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -63,6 +64,7 @@ export function TaskList({ tasks, title, listId, labelId, defaultDueDate }: Task
                     setIsDialogOpen(open);
                     if (!open) setEditingTask(null);
                 }}
+                userId={userId}
             />
         </div>
     );

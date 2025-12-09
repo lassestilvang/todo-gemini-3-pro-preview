@@ -1,9 +1,16 @@
 import { getTasks } from "@/lib/actions";
+import { getCurrentUser } from "@/lib/auth";
 import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
 import { CreateTaskInput } from "@/components/tasks/CreateTaskInput";
+import { redirect } from "next/navigation";
 
 export default async function Next7DaysPage() {
-    const tasks = await getTasks(undefined, "next-7-days");
+    const user = await getCurrentUser();
+    if (!user) {
+        redirect("/login");
+    }
+
+    const tasks = await getTasks(user.id, undefined, "next-7-days");
 
     return (
         <div className="container max-w-4xl py-6 lg:py-10">
@@ -15,11 +22,10 @@ export default async function Next7DaysPage() {
                     </p>
                 </div>
 
-                <CreateTaskInput />
+                <CreateTaskInput userId={user.id} />
 
-                <TaskListWithSettings tasks={tasks} viewId="next-7-days" />
+                <TaskListWithSettings tasks={tasks} viewId="next-7-days" userId={user.id} />
             </div>
         </div>
     );
 }
-

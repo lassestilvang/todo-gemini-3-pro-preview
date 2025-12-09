@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeAll, mock, beforeEach } from "bun:test";
-import { setupTestDb, resetTestDb } from "@/test/setup";
+import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import {
     createTask, getTasks, updateTask, deleteTask, getTask, createReminder, getReminders, getTaskLogs,
     createList, getLists, updateList, deleteList, getList,
@@ -25,6 +25,8 @@ mock.module("./smart-tags", () => ({
 }));
 
 describe("Server Actions", () => {
+    let testUserId: string;
+
     beforeAll(async () => {
         // Ensure tables exist for this test suite
         // The global setup may have been interrupted by parallel execution
@@ -33,11 +35,15 @@ describe("Server Actions", () => {
 
     beforeEach(async () => {
         await resetTestDb();
+        // Create a test user for each test
+        const user = await createTestUser("test_user_actions", "test@actions.com");
+        testUserId = user.id;
     });
 
     describe("Tasks", () => {
         it("should create a task", async () => {
             const task = await createTask({
+                userId: testUserId,
                 title: "Test Task",
                 description: "This is a test task",
                 priority: "high",
@@ -49,31 +55,31 @@ describe("Server Actions", () => {
         });
 
         it("should get tasks", async () => {
-            const task = await createTask({ title: "Get Test Task" });
-            const allTasks = await getTasks(undefined, "all");
+            const task = await createTask({ userId: testUserId, title: "Get Test Task" });
+            const allTasks = await getTasks(testUserId, undefined, "all");
             expect(allTasks.length).toBeGreaterThan(0);
             const found = allTasks.find((t) => t.id === task.id);
             expect(found).toBeDefined();
         });
 
         it("should get a single task", async () => {
-            const task = await createTask({ title: "Single Task" });
-            const fetchedTask = await getTask(task.id);
+            const task = await createTask({ userId: testUserId, title: "Single Task" });
+            const fetchedTask = await getTask(task.id, testUserId);
             expect(fetchedTask).toBeDefined();
             expect(fetchedTask?.id).toBe(task.id);
         });
 
         it("should update a task", async () => {
-            const task = await createTask({ title: "Original Task" });
-            await updateTask(task.id, { title: "Updated Task" });
-            const updated = await getTask(task.id);
+            const task = await createTask({ userId: testUserId, title: "Original Task" });
+            await updateTask(task.id, testUserId, { title: "Updated Task" });
+            const updated = await getTask(task.id, testUserId);
             expect(updated?.title).toBe("Updated Task");
         });
 
         it("should delete a task", async () => {
-            const task = await createTask({ title: "Task to Delete" });
-            await deleteTask(task.id);
-            const deleted = await getTask(task.id);
+            const task = await createTask({ userId: testUserId, title: "Task to Delete" });
+            await deleteTask(task.id, testUserId);
+            const deleted = await getTask(task.id, testUserId);
             expect(deleted).toBeNull();
         });
 
@@ -81,6 +87,7 @@ describe("Server Actions", () => {
             const deadline = new Date();
             deadline.setMilliseconds(0);
             const task = await createTask({
+                userId: testUserId,
                 title: "Deadline Task",
                 deadline
             });
@@ -89,14 +96,14 @@ describe("Server Actions", () => {
         });
 
         it("should toggle task completion", async () => {
-            const task = await createTask({ title: "Task to Complete" });
-            await toggleTaskCompletion(task.id, true);
-            const completed = await getTask(task.id);
+            const task = await createTask({ userId: testUserId, title: "Task to Complete" });
+            await toggleTaskCompletion(task.id, testUserId, true);
+            const completed = await getTask(task.id, testUserId);
             expect(completed?.isCompleted).toBe(true);
             expect(completed?.completedAt).toBeDefined();
 
-            await toggleTaskCompletion(task.id, false);
-            const uncompleted = await getTask(task.id);
+            await toggleTaskCompletion(task.id, testUserId, false);
+            const uncompleted = await getTask(task.id, testUserId);
             expect(uncompleted?.isCompleted).toBe(false);
             expect(uncompleted?.completedAt).toBeNull();
         });
@@ -104,34 +111,34 @@ describe("Server Actions", () => {
 
     describe("Task Filters", () => {
         it("should filter tasks by list", async () => {
-            const list1 = await createList({ name: "List 1", slug: "l1" });
-            const list2 = await createList({ name: "List 2", slug: "l2" });
-            const task1 = await createTask({ title: "Task 1", listId: list1.id });
-            await createTask({ title: "Task 2", listId: list2.id });
+            const list1 = await createList({ userId: testUserId, name: "List 1", slug: "l1" });
+            const list2 = await createList({ userId: testUserId, name: "List 2", slug: "l2" });
+            const task1 = await createTask({ userId: testUserId, title: "Task 1", listId: list1.id });
+            await createTask({ userId: testUserId, title: "Task 2", listId: list2.id });
 
-            const tasks = await getTasks(list1.id);
+            const tasks = await getTasks(testUserId, list1.id);
             expect(tasks).toHaveLength(1);
             expect(tasks[0].id).toBe(task1.id);
         });
 
         it("should filter tasks by label", async () => {
-            const label = await createLabel({ name: "Label 1" });
-            const task = await createTask({ title: "Task with Label", labelIds: [label.id] });
-            await createTask({ title: "Task without Label" });
+            const label = await createLabel({ userId: testUserId, name: "Label 1" });
+            const task = await createTask({ userId: testUserId, title: "Task with Label", labelIds: [label.id] });
+            await createTask({ userId: testUserId, title: "Task without Label" });
 
-            const tasks = await getTasks(undefined, "all", label.id);
+            const tasks = await getTasks(testUserId, undefined, "all", label.id);
             expect(tasks).toHaveLength(1);
             expect(tasks[0].id).toBe(task.id);
         });
 
         it("should filter tasks by date (today)", async () => {
             const today = new Date();
-            const task = await createTask({ title: "Today Task", dueDate: today });
+            const task = await createTask({ userId: testUserId, title: "Today Task", dueDate: today });
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
-            await createTask({ title: "Tomorrow Task", dueDate: tomorrow });
+            await createTask({ userId: testUserId, title: "Tomorrow Task", dueDate: tomorrow });
 
-            const tasks = await getTasks(undefined, "today");
+            const tasks = await getTasks(testUserId, undefined, "today");
             expect(tasks).toHaveLength(1);
             expect(tasks[0].id).toBe(task.id);
         });
@@ -140,14 +147,15 @@ describe("Server Actions", () => {
     describe("Recurring Tasks", () => {
         it("should create next occurrence when completing recurring task", async () => {
             const task = await createTask({
+                userId: testUserId,
                 title: "Recurring Task",
                 isRecurring: true,
                 recurringRule: "FREQ=DAILY"
             });
 
-            await toggleTaskCompletion(task.id, true);
+            await toggleTaskCompletion(task.id, testUserId, true);
 
-            const tasks = await getTasks(undefined, "all");
+            const tasks = await getTasks(testUserId, undefined, "all");
             // Should have original completed task AND new task
             expect(tasks).toHaveLength(2);
             const newTask = tasks.find(t => t.id !== task.id);
@@ -163,102 +171,102 @@ describe("Server Actions", () => {
             const { sqliteConnection } = await import("@/db");
             sqliteConnection.run(`INSERT INTO achievements (id, name, description, icon, condition_type, condition_value, xp_reward) VALUES ('first_task', 'First Task', 'Complete your first task', '🏆', 'count_total', 1, 50)`);
 
-            const task = await createTask({ title: "Achievement Task" });
-            await toggleTaskCompletion(task.id, true);
+            const task = await createTask({ userId: testUserId, title: "Achievement Task" });
+            await toggleTaskCompletion(task.id, testUserId, true);
 
-            const userAchievements = await getUserAchievements();
-            expect(userAchievements).toHaveLength(1);
-            expect(userAchievements[0].achievementId).toBe("first_task");
+            const userAchievementsList = await getUserAchievements(testUserId);
+            expect(userAchievementsList).toHaveLength(1);
+            expect(userAchievementsList[0].achievementId).toBe("first_task");
         });
     });
 
     describe("Lists", () => {
         it("should create and get lists", async () => {
-            const list = await createList({ name: "My List", slug: "my-list" });
+            const list = await createList({ userId: testUserId, name: "My List", slug: "my-list" });
             expect(list).toBeDefined();
             expect(list.name).toBe("My List");
 
-            const lists = await getLists();
+            const lists = await getLists(testUserId);
             expect(lists).toHaveLength(1);
             expect(lists[0].id).toBe(list.id);
         });
 
         it("should update a list", async () => {
-            const list = await createList({ name: "Old Name", slug: "old-name" });
-            await updateList(list.id, { name: "New Name" });
-            const updated = await getList(list.id);
+            const list = await createList({ userId: testUserId, name: "Old Name", slug: "old-name" });
+            await updateList(list.id, testUserId, { name: "New Name" });
+            const updated = await getList(list.id, testUserId);
             expect(updated.name).toBe("New Name");
         });
 
         it("should delete a list", async () => {
-            const list = await createList({ name: "To Delete", slug: "to-delete" });
-            await deleteList(list.id);
-            const deleted = await getList(list.id);
+            const list = await createList({ userId: testUserId, name: "To Delete", slug: "to-delete" });
+            await deleteList(list.id, testUserId);
+            const deleted = await getList(list.id, testUserId);
             expect(deleted).toBeUndefined();
         });
     });
 
     describe("Labels", () => {
         it("should create and get labels", async () => {
-            await createLabel({ name: "Work", color: "red" });
-            const labels = await getLabels();
-            expect(labels).toHaveLength(1);
-            expect(labels[0].name).toBe("Work");
+            await createLabel({ userId: testUserId, name: "Work", color: "red" });
+            const labelsList = await getLabels(testUserId);
+            expect(labelsList).toHaveLength(1);
+            expect(labelsList[0].name).toBe("Work");
         });
 
         it("should update a label", async () => {
-            await createLabel({ name: "Old Label", color: "blue" });
-            const labels = await getLabels();
-            const label = labels[0];
-            await updateLabel(label.id, { name: "New Label" });
-            const updated = await getLabel(label.id);
+            await createLabel({ userId: testUserId, name: "Old Label", color: "blue" });
+            const labelsList = await getLabels(testUserId);
+            const label = labelsList[0];
+            await updateLabel(label.id, testUserId, { name: "New Label" });
+            const updated = await getLabel(label.id, testUserId);
             expect(updated.name).toBe("New Label");
         });
 
         it("should delete a label", async () => {
-            await createLabel({ name: "Delete Label", color: "green" });
-            const labels = await getLabels();
-            const label = labels[0];
-            await deleteLabel(label.id);
-            const deleted = await getLabel(label.id);
+            await createLabel({ userId: testUserId, name: "Delete Label", color: "green" });
+            const labelsList = await getLabels(testUserId);
+            const label = labelsList[0];
+            await deleteLabel(label.id, testUserId);
+            const deleted = await getLabel(label.id, testUserId);
             expect(deleted).toBeUndefined();
         });
     });
 
     describe("Subtasks", () => {
         it("should create and get subtasks", async () => {
-            const parent = await createTask({ title: "Parent Task" });
-            const subtask = await createSubtask(parent.id, "Subtask 1");
+            const parent = await createTask({ userId: testUserId, title: "Parent Task" });
+            const subtask = await createSubtask(parent.id, testUserId, "Subtask 1");
             expect(subtask.parentId).toBe(parent.id);
 
-            const subtasks = await getSubtasks(parent.id);
+            const subtasks = await getSubtasks(parent.id, testUserId);
             expect(subtasks).toHaveLength(1);
             expect(subtasks[0].title).toBe("Subtask 1");
         });
 
         it("should update subtask", async () => {
-            const parent = await createTask({ title: "Parent Task" });
-            const subtask = await createSubtask(parent.id, "Subtask");
-            await updateSubtask(subtask.id, true);
-            const updated = await getTask(subtask.id);
+            const parent = await createTask({ userId: testUserId, title: "Parent Task" });
+            const subtask = await createSubtask(parent.id, testUserId, "Subtask");
+            await updateSubtask(subtask.id, testUserId, true);
+            const updated = await getTask(subtask.id, testUserId);
             expect(updated?.isCompleted).toBe(true);
         });
 
         it("should delete subtask", async () => {
-            const parent = await createTask({ title: "Parent Task" });
-            const subtask = await createSubtask(parent.id, "Subtask");
-            await deleteSubtask(subtask.id);
-            const deleted = await getTask(subtask.id);
+            const parent = await createTask({ userId: testUserId, title: "Parent Task" });
+            const subtask = await createSubtask(parent.id, testUserId, "Subtask");
+            await deleteSubtask(subtask.id, testUserId);
+            const deleted = await getTask(subtask.id, testUserId);
             expect(deleted).toBeNull();
         });
     });
 
     describe("Dependencies", () => {
         it("should add and remove dependencies", async () => {
-            const task1 = await createTask({ title: "Task 1" });
-            const task2 = await createTask({ title: "Task 2" });
+            const task1 = await createTask({ userId: testUserId, title: "Task 1" });
+            const task2 = await createTask({ userId: testUserId, title: "Task 2" });
 
-            await addDependency(task1.id, task2.id); // Task 1 blocked by Task 2
+            await addDependency(testUserId, task1.id, task2.id); // Task 1 blocked by Task 2
 
             const blockers = await getBlockers(task1.id);
             expect(blockers).toHaveLength(1);
@@ -268,24 +276,24 @@ describe("Server Actions", () => {
             expect(blocked).toHaveLength(1);
             expect(blocked[0].id).toBe(task1.id);
 
-            await removeDependency(task1.id, task2.id);
+            await removeDependency(testUserId, task1.id, task2.id);
             const blockersAfter = await getBlockers(task1.id);
             expect(blockersAfter).toHaveLength(0);
         });
 
         it("should prevent circular dependency", async () => {
-            const task1 = await createTask({ title: "Task 1" });
-            const task2 = await createTask({ title: "Task 2" });
+            const task1 = await createTask({ userId: testUserId, title: "Task 1" });
+            const task2 = await createTask({ userId: testUserId, title: "Task 2" });
 
-            await addDependency(task1.id, task2.id);
+            await addDependency(testUserId, task1.id, task2.id);
 
             // Try to make Task 2 blocked by Task 1 (cycle)
-            expect(addDependency(task2.id, task1.id)).rejects.toThrow("Circular dependency detected");
+            expect(addDependency(testUserId, task2.id, task1.id)).rejects.toThrow("Circular dependency detected");
         });
 
         it("should prevent self dependency", async () => {
-            const task = await createTask({ title: "Task" });
-            expect(addDependency(task.id, task.id)).rejects.toThrow("Task cannot block itself");
+            const task = await createTask({ userId: testUserId, title: "Task" });
+            expect(addDependency(testUserId, task.id, task.id)).rejects.toThrow("Task cannot block itself");
         });
     });
 
@@ -295,14 +303,14 @@ describe("Server Actions", () => {
                 title: "Template Task",
                 subtasks: [{ title: "Subtask" }]
             });
-            await createTemplate("My Template", content);
+            await createTemplate(testUserId, "My Template", content);
 
-            const templates = await getTemplates();
-            expect(templates).toHaveLength(1);
-            expect(templates[0].name).toBe("My Template");
+            const templatesList = await getTemplates(testUserId);
+            expect(templatesList).toHaveLength(1);
+            expect(templatesList[0].name).toBe("My Template");
 
-            await instantiateTemplate(templates[0].id);
-            const tasks = await getTasks(undefined, "all");
+            await instantiateTemplate(testUserId, templatesList[0].id);
+            const tasks = await getTasks(testUserId, undefined, "all");
             // Should have only 1 parent task (subtasks are now nested)
             const templateTask = tasks.find(t => t.title === "Template Task");
             expect(templateTask).toBeDefined();
@@ -312,30 +320,30 @@ describe("Server Actions", () => {
         });
 
         it("should delete template", async () => {
-            await createTemplate("Temp", "{}");
-            const templates = await getTemplates();
-            await deleteTemplate(templates[0].id);
-            const remaining = await getTemplates();
+            await createTemplate(testUserId, "Temp", "{}");
+            const templatesList = await getTemplates(testUserId);
+            await deleteTemplate(templatesList[0].id, testUserId);
+            const remaining = await getTemplates(testUserId);
             expect(remaining).toHaveLength(0);
         });
     });
 
     describe("Gamification", () => {
         it("should add XP and update stats", async () => {
-            const result = await addXP(100);
+            const result = await addXP(testUserId, 100);
             expect(result.newXP).toBe(100);
 
-            const stats = await getUserStats();
+            const stats = await getUserStats(testUserId);
             expect(stats.xp).toBe(100);
         });
     });
 
     describe("Search", () => {
         it("should search tasks", async () => {
-            await createTask({ title: "Apple Pie" });
-            await createTask({ title: "Banana Bread" });
+            await createTask({ userId: testUserId, title: "Apple Pie" });
+            await createTask({ userId: testUserId, title: "Banana Bread" });
 
-            const results = await searchTasks("Apple");
+            const results = await searchTasks(testUserId, "Apple");
             expect(results).toHaveLength(1);
             expect(results[0].title).toBe("Apple Pie");
         });
@@ -343,19 +351,19 @@ describe("Server Actions", () => {
 
     describe("Reminders", () => {
         it("should create and get reminders", async () => {
-            const task = await createTask({ title: "Reminder Task" });
+            const task = await createTask({ userId: testUserId, title: "Reminder Task" });
             const remindAt = new Date();
             remindAt.setMilliseconds(0);
-            await createReminder(task.id, remindAt);
-            const reminders = await getReminders(task.id);
-            expect(reminders.length).toBe(1);
-            expect(reminders[0].remindAt.getTime()).toBe(remindAt.getTime());
+            await createReminder(testUserId, task.id, remindAt);
+            const remindersList = await getReminders(task.id);
+            expect(remindersList.length).toBe(1);
+            expect(remindersList[0].remindAt.getTime()).toBe(remindAt.getTime());
         });
     });
 
     describe("Logs", () => {
         it("should log task creation", async () => {
-            const task = await createTask({ title: "Logged Task" });
+            const task = await createTask({ userId: testUserId, title: "Logged Task" });
             const logs = await getTaskLogs(task.id);
             expect(logs.length).toBeGreaterThan(0);
             expect(logs[0].action).toBe("created");

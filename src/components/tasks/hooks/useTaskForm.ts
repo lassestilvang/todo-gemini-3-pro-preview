@@ -22,6 +22,7 @@ interface UseTaskFormProps {
     defaultListId?: number;
     defaultLabelIds?: number[];
     defaultDueDate?: Date | string;
+    userId?: string;
     onClose: () => void;
 }
 
@@ -35,7 +36,7 @@ interface UseTaskFormProps {
  * @param defaultDueDate - Default due date to select if creating a new task
  * @param onClose - Callback to close the dialog after successful submission
  */
-export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, onClose }: UseTaskFormProps) {
+export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId, onClose }: UseTaskFormProps) {
     const [title, setTitle] = useState(task?.title || "");
     const [description, setDescription] = useState(task?.description || "");
     const [priority, setPriority] = useState<"none" | "low" | "medium" | "high">(task?.priority || "none");
@@ -77,10 +78,15 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
                 isHabit: isRecurring ? isHabit : false,
             };
 
+            if (!userId) {
+                console.error("Cannot submit task: userId is required");
+                alert("Unable to save task. Please try logging in again.");
+                return;
+            }
             if (isEdit && task) {
-                await updateTask(task.id, data);
+                await updateTask(task.id, userId, data);
             } else {
-                await createTask(data);
+                await createTask({ ...data, userId });
             }
             onClose();
         } catch (error) {
@@ -98,9 +104,18 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
 
     const handleDelete = async () => {
         if (!isEdit || !task) return;
+        if (!userId) {
+            console.error("Cannot delete task: userId is required");
+            alert("Unable to delete task. Please try logging in again.");
+            return;
+        }
         if (confirm("Are you sure you want to delete this task?")) {
-            await deleteTask(task.id);
-            onClose();
+            try {
+                await deleteTask(task.id, userId);
+                onClose();
+            } catch (error) {
+                console.error("Failed to delete task:", error);
+            }
         }
     };
 

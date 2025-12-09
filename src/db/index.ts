@@ -40,6 +40,7 @@ if (process.env.NODE_ENV === "test") {
 // Export schema tables - uses SQLite schema at runtime for tests, PostgreSQL for production
 // TypeScript sees these as PostgreSQL types for consistent type checking
 export const {
+    users,
     lists,
     tasks,
     labels,

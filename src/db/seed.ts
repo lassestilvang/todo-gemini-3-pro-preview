@@ -1,24 +1,104 @@
-import { db, lists, labels, achievements } from "./index";
+import { db, users, lists, labels, achievements, userStats } from "./index";
+import { eq, and } from "drizzle-orm";
 
-async function seed() {
-    console.log("Seeding database...");
+/**
+ * Default test user for development and seeding
+ * In production, users are created via WorkOS authentication
+ */
+const TEST_USER = {
+    id: "test_user_seed",
+    email: "test@example.com",
+    firstName: "Test",
+    lastName: "User",
+};
 
-    // Create Inbox list if not exists
-    await db.insert(lists).values({
-        name: "Inbox",
-        slug: "inbox",
-        color: "#3b82f6", // Blue
-        icon: "inbox",
-    }).onConflictDoNothing();
+/**
+ * Ensure the test user exists in the database
+ * Creates the user if not exists, returns the user ID
+ */
+async function ensureTestUser(): Promise<string> {
+    const existingUser = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, TEST_USER.id))
+        .limit(1);
 
-    // Create some default labels
+    if (existingUser.length > 0) {
+        console.log(`   ✅ Test user already exists: ${TEST_USER.email}`);
+        return TEST_USER.id;
+    }
+
+    await db.insert(users).values({
+        id: TEST_USER.id,
+        email: TEST_USER.email,
+        firstName: TEST_USER.firstName,
+        lastName: TEST_USER.lastName,
+        avatarUrl: null,
+    });
+
+    console.log(`   ✅ Created test user: ${TEST_USER.email}`);
+    return TEST_USER.id;
+}
+
+/**
+ * Initialize default data for a user (Inbox list and stats)
+ */
+async function initializeUserData(userId: string): Promise<void> {
+    // Check if user already has an Inbox list
+    const existingInbox = await db
+        .select()
+        .from(lists)
+        .where(and(eq(lists.userId, userId), eq(lists.slug, "inbox")))
+        .limit(1);
+
+    if (existingInbox.length === 0) {
+        await db.insert(lists).values({
+            userId,
+            name: "Inbox",
+            slug: "inbox",
+            color: "#6366f1", // Indigo
+            icon: "inbox",
+        });
+        console.log("   ✅ Created Inbox list for test user");
+    } else {
+        console.log("   ⏭️  Inbox list already exists");
+    }
+
+    // Check if user already has stats
+    const existingStats = await db
+        .select()
+        .from(userStats)
+        .where(eq(userStats.userId, userId))
+        .limit(1);
+
+    if (existingStats.length === 0) {
+        await db.insert(userStats).values({
+            userId,
+            xp: 0,
+            level: 1,
+            currentStreak: 0,
+            longestStreak: 0,
+        });
+        console.log("   ✅ Created user stats for test user");
+    } else {
+        console.log("   ⏭️  User stats already exist");
+    }
+
+    // Create default labels for the user
     await db.insert(labels).values([
-        { name: "Work", color: "#ef4444" }, // Red
-        { name: "Personal", color: "#10b981" }, // Green
-        { name: "Urgent", color: "#f59e0b" }, // Amber
+        { userId, name: "Work", color: "#ef4444" }, // Red
+        { userId, name: "Personal", color: "#10b981" }, // Green
+        { userId, name: "Urgent", color: "#f59e0b" }, // Amber
     ]).onConflictDoNothing();
+    console.log("   ✅ Ensured default labels exist for test user");
+}
 
-    // Seed Achievements
+/**
+ * Seed global achievements (not user-specific)
+ */
+async function seedAchievements(): Promise<void> {
+    console.log("\n📦 Seeding achievements...");
+    
     await db.insert(achievements).values([
         {
             id: "first_blood",
@@ -57,11 +137,34 @@ async function seed() {
             xpReward: 500
         }
     ]).onConflictDoNothing();
+    
+    console.log("   ✅ Achievements seeded");
+}
 
-    console.log("Database seeded!");
+async function seed() {
+    console.log("\n🌱 Seeding database...\n");
+    console.log("=".repeat(50));
+
+    // Step 1: Create test user
+    console.log("\n👤 Setting up test user...");
+    const userId = await ensureTestUser();
+
+    // Step 2: Initialize user data (Inbox, stats, labels)
+    console.log("\n📦 Initializing user data...");
+    await initializeUserData(userId);
+
+    // Step 3: Seed global achievements
+    await seedAchievements();
+
+    console.log("\n" + "=".repeat(50));
+    console.log("✅ Database seeded successfully!");
+    console.log("\n📝 Test user credentials:");
+    console.log(`   ID: ${TEST_USER.id}`);
+    console.log(`   Email: ${TEST_USER.email}`);
+    console.log("\n💡 Note: In production, users are created via WorkOS authentication.");
 }
 
 seed().catch((err) => {
-    console.error("Seeding failed:", err);
+    console.error("\n❌ Seeding failed:", err);
     process.exit(1);
 });

@@ -1,18 +1,22 @@
-import { describe, it, expect, beforeEach } from "bun:test";
+import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { calculateStreakUpdate } from "@/lib/gamification";
-import { toggleTaskCompletion, createTask } from "@/lib/actions";
-import { db, userStats, userAchievements, achievements } from "@/db";
-import { eq } from "drizzle-orm";
+import { toggleTaskCompletion, createTask, getUserStats } from "@/lib/actions";
+import { db, userAchievements, achievements } from "@/db";
 
-import { setupTestDb, resetTestDb } from "@/test/setup";
+import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 
 describe("Gamification Logic", () => {
-    beforeEach(async () => {
-        await setupTestDb();
-        await resetTestDb();
+    let testUserId: string;
 
-        // Seed initial stats
-        await db.insert(userStats).values({ id: 1, xp: 0, level: 1, currentStreak: 0, longestStreak: 0 });
+    beforeAll(async () => {
+        await setupTestDb();
+    });
+
+    beforeEach(async () => {
+        await resetTestDb();
+        // Create a test user for each test
+        const user = await createTestUser("test_user_gamification", "test@gamification.com");
+        testUserId = user.id;
 
         // Seed achievements
         await db.insert(achievements).values([
@@ -57,23 +61,23 @@ describe("Gamification Logic", () => {
 
     it("should update streak in DB on task completion", async () => {
         // Create a task
-        const task = await createTask({ title: "Test Task" });
+        const task = await createTask({ userId: testUserId, title: "Test Task" });
 
         // Complete it
-        await toggleTaskCompletion(task.id, true);
+        await toggleTaskCompletion(task.id, testUserId, true);
 
         // Check stats
-        const stats = await db.select().from(userStats).where(eq(userStats.id, 1));
-        expect(stats[0].currentStreak).toBe(1);
-        expect(stats[0].longestStreak).toBe(1);
+        const stats = await getUserStats(testUserId);
+        expect(stats.currentStreak).toBe(1);
+        expect(stats.longestStreak).toBe(1);
     });
 
     it("should unlock 'First Blood' achievement", async () => {
-        const task = await createTask({ title: "First Task" });
-        await toggleTaskCompletion(task.id, true);
+        const task = await createTask({ userId: testUserId, title: "First Task" });
+        await toggleTaskCompletion(task.id, testUserId, true);
 
-        const achievements = await db.select().from(userAchievements);
-        expect(achievements.length).toBeGreaterThan(0);
-        expect(achievements.some(a => a.achievementId === "first_blood")).toBe(true);
+        const achievementsList = await db.select().from(userAchievements);
+        expect(achievementsList.length).toBeGreaterThan(0);
+        expect(achievementsList.some(a => a.achievementId === "first_blood")).toBe(true);
     });
 });

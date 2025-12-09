@@ -54,17 +54,22 @@ describe("ManageListDialog", () => {
     });
 
     it("should create a new list", async () => {
-        render(<ManageListDialog trigger={<button>Manage Lists</button>} />);
+        render(<ManageListDialog trigger={<button>Manage Lists</button>} userId="test_user_123" />);
         fireEvent.click(screen.getByText("Manage Lists"));
 
-        await waitFor(() => screen.getByPlaceholderText("List Name"));
+        // Wait for dialog to open
+        await waitFor(() => {
+            expect(screen.getByRole("dialog")).toBeInTheDocument();
+        });
 
-        fireEvent.change(screen.getByPlaceholderText("List Name"), { target: { value: "New List" } });
+        const nameInput = screen.getByPlaceholderText("List Name");
+        fireEvent.change(nameInput, { target: { value: "New List" } });
         fireEvent.click(screen.getByText("Save"));
 
         await waitFor(() => {
             expect(mockCreateList).toHaveBeenCalledWith(expect.objectContaining({
-                name: "New List"
+                name: "New List",
+                userId: "test_user_123"
             }));
         });
     });

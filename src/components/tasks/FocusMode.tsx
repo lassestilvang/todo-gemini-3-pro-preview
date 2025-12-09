@@ -15,10 +15,11 @@ interface FocusModeProps {
         description: string | null;
         priority: string | null;
     };
+    userId?: string;
     onClose: () => void;
 }
 
-export function FocusMode({ task, onClose }: FocusModeProps) {
+export function FocusMode({ task, userId, onClose }: FocusModeProps) {
     const [timeLeft, setTimeLeft] = React.useState(25 * 60); // 25 minutes
     const [isActive, setIsActive] = React.useState(false);
     const [isBreak, setIsBreak] = React.useState(false);
@@ -61,8 +62,12 @@ export function FocusMode({ task, onClose }: FocusModeProps) {
     };
 
     const handleComplete = async () => {
+        if (!userId) {
+            toast.error("Unable to complete task: User not authenticated");
+            return;
+        }
         try {
-            await updateTask(task.id, { isCompleted: true });
+            await updateTask(task.id, userId, { isCompleted: true });
             confetti({
                 particleCount: 100,
                 spread: 70,

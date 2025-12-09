@@ -1,9 +1,16 @@
 import { getActivityLog } from "@/lib/actions";
+import { getCurrentUser } from "@/lib/auth";
 import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { redirect } from "next/navigation";
 
 export default async function ActivityLogPage() {
-    const logs = await getActivityLog();
+    const user = await getCurrentUser();
+    if (!user) {
+        redirect("/login");
+    }
+
+    const logs = await getActivityLog(user.id);
 
     return (
         <div className="flex flex-col h-full p-8">

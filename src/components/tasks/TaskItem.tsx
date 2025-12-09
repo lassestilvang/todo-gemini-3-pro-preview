@@ -57,9 +57,10 @@ export interface Task {
 interface TaskItemProps {
     task: Task;
     showListInfo?: boolean;
+    userId?: string;
 }
 
-export function TaskItem({ task, showListInfo = true }: TaskItemProps) {
+export function TaskItem({ task, showListInfo = true, userId }: TaskItemProps) {
     const [isCompleted, setIsCompleted] = useState(task.isCompleted || false);
     const [isExpanded, setIsExpanded] = useState(false);
     const [subtaskStates, setSubtaskStates] = useState<Record<number, boolean>>(
@@ -71,8 +72,9 @@ export function TaskItem({ task, showListInfo = true }: TaskItemProps) {
     const totalCount = task.subtaskCount || 0;
 
     const handleSubtaskToggle = async (subtaskId: number, checked: boolean) => {
+        if (!userId) return;
         setSubtaskStates(prev => ({ ...prev, [subtaskId]: checked }));
-        await updateSubtask(subtaskId, checked);
+        await updateSubtask(subtaskId, userId, checked);
     };
 
     const handleToggle = async (checked: boolean) => {
@@ -94,7 +96,8 @@ export function TaskItem({ task, showListInfo = true }: TaskItemProps) {
             playSuccessSound();
         }
 
-        const result = await toggleTaskCompletion(task.id, checked);
+        if (!userId) return;
+        const result = await toggleTaskCompletion(task.id, userId, checked);
 
         if (result && result.leveledUp) {
             const event = new CustomEvent("user-level-update", {
@@ -326,6 +329,7 @@ export function TaskItem({ task, showListInfo = true }: TaskItemProps) {
             {showFocusMode && (
                 <FocusMode
                     task={task}
+                    userId={userId}
                     onClose={() => setShowFocusMode(false)}
                 />
             )}

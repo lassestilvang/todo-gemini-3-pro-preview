@@ -41,9 +41,10 @@ interface ManageListDialogProps {
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
     trigger?: React.ReactNode;
+    userId?: string;
 }
 
-export function ManageListDialog({ list, open, onOpenChange, trigger }: ManageListDialogProps) {
+export function ManageListDialog({ list, open, onOpenChange, trigger, userId }: ManageListDialogProps) {
     const [internalOpen, setInternalOpen] = useState(false);
 
     const effectiveOpen = open !== undefined ? open : internalOpen;
@@ -58,7 +59,7 @@ export function ManageListDialog({ list, open, onOpenChange, trigger }: ManageLi
                 <DialogHeader>
                     <DialogTitle>{list ? "Edit List" : "New List"}</DialogTitle>
                 </DialogHeader>
-                <ListForm key={formKey} list={list} onClose={() => setEffectiveOpen(false)} />
+                <ListForm key={formKey} list={list} userId={userId} onClose={() => setEffectiveOpen(false)} />
             </DialogContent>
         </Dialog>
     );
@@ -71,10 +72,11 @@ interface ListFormProps {
         color: string | null;
         icon: string | null;
     };
+    userId?: string;
     onClose: () => void;
 }
 
-function ListForm({ list, onClose }: ListFormProps) {
+function ListForm({ list, userId, onClose }: ListFormProps) {
     const [name, setName] = useState(list?.name || "");
     const [color, setColor] = useState(list?.color || COLORS[0]);
     const [icon, setIcon] = useState(list?.icon || "list");
@@ -83,15 +85,17 @@ function ListForm({ list, onClose }: ListFormProps) {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!userId) return;
         try {
             if (isEdit) {
-                await updateList(list.id, { name, color, icon });
+                await updateList(list.id, userId, { name, color, icon });
             } else {
                 await createList({
                     name,
                     color,
                     icon,
-                    slug: name.toLowerCase().replace(/\s+/g, "-") + "-" + Date.now() // Simple slug generation
+                    slug: name.toLowerCase().replace(/\s+/g, "-") + "-" + Date.now(), // Simple slug generation
+                    userId
                 });
             }
             onClose();
@@ -101,10 +105,14 @@ function ListForm({ list, onClose }: ListFormProps) {
     };
 
     const handleDelete = async () => {
-        if (!isEdit) return;
+        if (!isEdit || !userId) return;
         if (confirm("Are you sure you want to delete this list? Tasks will be deleted.")) {
-            await deleteList(list.id);
-            onClose();
+            try {
+                await deleteList(list.id, userId);
+                onClose();
+            } catch (error) {
+                console.error("Failed to delete list:", error);
+            }
         }
     };
 

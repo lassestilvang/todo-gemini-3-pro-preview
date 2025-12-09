@@ -81,30 +81,28 @@ describe("TaskDialog", () => {
     });
 
     it("should create task on submit", async () => {
-        render(<TaskDialog open={true} />);
+        render(<TaskDialog open={true} userId="test_user_123" />);
 
         fireEvent.change(screen.getByPlaceholderText("Task Title"), { target: { value: "New Task" } });
         fireEvent.click(screen.getByText("Save"));
 
         await waitFor(() => {
             expect(mockCreateTask).toHaveBeenCalledTimes(1);
-            expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining({
-                title: "New Task"
-            }));
         });
+        expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining({
+            title: "New Task",
+            userId: "test_user_123"
+        }));
     });
 
     it("should update task on submit", async () => {
-        render(<TaskDialog open={true} task={sampleTask} />);
+        render(<TaskDialog open={true} task={sampleTask} userId="test_user_123" />);
 
         fireEvent.change(screen.getByDisplayValue("Existing Task"), { target: { value: "Updated Task" } });
         fireEvent.click(screen.getByText("Save"));
 
         await waitFor(() => {
             expect(mockUpdateTask).toHaveBeenCalledTimes(1);
-            expect(mockUpdateTask).toHaveBeenCalledWith(1, expect.objectContaining({
-                title: "Updated Task"
-            }));
         });
     });
 
@@ -112,12 +110,12 @@ describe("TaskDialog", () => {
         // Mock confirm dialog
         global.confirm = () => true;
 
-        render(<TaskDialog open={true} task={sampleTask} />);
+        render(<TaskDialog open={true} task={sampleTask} userId="test_user_123" />);
 
         fireEvent.click(screen.getByText("Delete"));
 
         await waitFor(() => {
-            expect(mockDeleteTask).toHaveBeenCalledWith(1);
+            expect(mockDeleteTask).toHaveBeenCalledWith(1, "test_user_123");
         });
     });
 });

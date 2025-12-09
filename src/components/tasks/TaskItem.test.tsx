@@ -44,13 +44,13 @@ describe("TaskItem", () => {
     });
 
     it("should toggle completion status", () => {
-        render(<TaskItem task={sampleTask} />);
+        render(<TaskItem task={sampleTask} userId="test_user_123" />);
         const checkbox = screen.getByRole("checkbox");
 
         fireEvent.click(checkbox);
 
         expect(mockToggleTaskCompletion).toHaveBeenCalledTimes(1);
-        expect(mockToggleTaskCompletion).toHaveBeenCalledWith(1, true);
+        expect(mockToggleTaskCompletion).toHaveBeenCalledWith(1, "test_user_123", true);
     });
 
     it("should render completed state", () => {

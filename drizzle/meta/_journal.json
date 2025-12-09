@@ -8,6 +8,34 @@
       "when": 1765155472692,
       "tag": "0000_jittery_cloak",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1765229935958,
+      "tag": "0001_sloppy_mauler",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1765262434664,
+      "tag": "0002_freezing_molly_hayes",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1765262530122,
+      "tag": "0003_exotic_jazinda",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1765267564185,
+      "tag": "0004_nasty_thor",
+      "breakpoints": true
     }
   ]
 }

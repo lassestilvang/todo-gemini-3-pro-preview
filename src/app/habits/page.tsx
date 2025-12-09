@@ -1,8 +1,15 @@
 import { getHabits } from "@/lib/habits";
+import { getCurrentUser } from "@/lib/auth";
 import { TaskItem } from "@/components/tasks/TaskItem";
+import { redirect } from "next/navigation";
 
 export default async function HabitsPage() {
-    const habits = await getHabits();
+    const user = await getCurrentUser();
+    if (!user) {
+        redirect("/login");
+    }
+
+    const habits = await getHabits(user.id);
 
     return (
         <div className="container mx-auto p-6">
@@ -23,7 +30,7 @@ export default async function HabitsPage() {
             ) : (
                 <div className="space-y-3">
                     {habits.map((habit) => (
-                        <TaskItem key={habit.id} task={habit as unknown as Parameters<typeof TaskItem>[0]['task']} />
+                        <TaskItem key={habit.id} task={habit as unknown as Parameters<typeof TaskItem>[0]['task']} userId={user.id} />
                     ))}
                 </div>
             )}

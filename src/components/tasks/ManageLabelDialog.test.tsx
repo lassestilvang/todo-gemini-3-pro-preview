@@ -40,23 +40,24 @@ describe("ManageLabelDialog", () => {
         render(<ManageLabelDialog trigger={<button>Manage Labels</button>} />);
         fireEvent.click(screen.getByText("Manage Labels"));
 
-        await waitFor(() => {
-            expect(screen.getByText("New Label")).toBeInTheDocument();
-        });
+        // Wait for dialog to open
+        expect(await screen.findByText("New Label")).toBeInTheDocument();
     });
 
     it("should create a new label", async () => {
-        render(<ManageLabelDialog trigger={<button>Manage Labels</button>} />);
+        render(<ManageLabelDialog trigger={<button>Manage Labels</button>} userId="test_user_123" />);
         fireEvent.click(screen.getByText("Manage Labels"));
 
-        await waitFor(() => screen.getByPlaceholderText("Label Name"));
-
-        fireEvent.change(screen.getByPlaceholderText("Label Name"), { target: { value: "New Label" } });
+        // Wait for dialog to open
+        const labelInput = await screen.findByPlaceholderText("Label Name");
+        fireEvent.change(labelInput, { target: { value: "New Label" } });
         fireEvent.click(screen.getByText("Save"));
 
+        // Wait for async action
         await waitFor(() => {
             expect(mockCreateLabel).toHaveBeenCalledWith(expect.objectContaining({
-                name: "New Label"
+                name: "New Label",
+                userId: "test_user_123"
             }));
         });
     });
@@ -66,14 +67,15 @@ describe("ManageLabelDialog", () => {
         global.confirm = () => true;
         const label = { id: 1, name: "Existing Label", color: "#ff0000", icon: "Tag" };
 
-        render(<ManageLabelDialog label={label} open={true} />);
+        render(<ManageLabelDialog label={label} open={true} userId="test_user_123" />);
 
-        await waitFor(() => screen.getByDisplayValue("Existing Label"));
+        // Wait for dialog to render and click delete
+        const deleteButton = await screen.findByText("Delete");
+        fireEvent.click(deleteButton);
 
-        fireEvent.click(screen.getByText("Delete"));
-
+        // Wait for async action
         await waitFor(() => {
-            expect(mockDeleteLabel).toHaveBeenCalledWith(1);
+            expect(mockDeleteLabel).toHaveBeenCalledWith(1, "test_user_123");
         });
     });
 });

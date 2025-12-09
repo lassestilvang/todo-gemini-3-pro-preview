@@ -41,9 +41,10 @@ interface ManageLabelDialogProps {
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
     trigger?: React.ReactNode;
+    userId?: string;
 }
 
-export function ManageLabelDialog({ label, open, onOpenChange, trigger }: ManageLabelDialogProps) {
+export function ManageLabelDialog({ label, open, onOpenChange, trigger, userId }: ManageLabelDialogProps) {
     const [internalOpen, setInternalOpen] = useState(false);
 
     const isEdit = !!label;
@@ -60,13 +61,13 @@ export function ManageLabelDialog({ label, open, onOpenChange, trigger }: Manage
                 <DialogHeader>
                     <DialogTitle>{isEdit ? "Edit Label" : "New Label"}</DialogTitle>
                 </DialogHeader>
-                <LabelForm key={formKey} label={label} onClose={() => setEffectiveOpen(false)} />
+                <LabelForm key={formKey} label={label} userId={userId} onClose={() => setEffectiveOpen(false)} />
             </DialogContent>
         </Dialog>
     );
 }
 
-function LabelForm({ label, onClose }: { label?: { id: number; name: string; color: string | null; icon: string | null; }, onClose: () => void }) {
+function LabelForm({ label, userId, onClose }: { label?: { id: number; name: string; color: string | null; icon: string | null; }, userId?: string, onClose: () => void }) {
     const [name, setName] = useState(label?.name || "");
     const [color, setColor] = useState(label?.color || COLORS[0]);
     const [icon, setIcon] = useState(label?.icon || "hash");
@@ -75,11 +76,15 @@ function LabelForm({ label, onClose }: { label?: { id: number; name: string; col
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!userId) {
+            console.error("Cannot save label: userId is missing");
+            return;
+        }
         try {
             if (label) {
-                await updateLabel(label.id, { name, color, icon });
+                await updateLabel(label.id, userId, { name, color, icon });
             } else {
-                await createLabel({ name, color, icon });
+                await createLabel({ name, color, icon, userId });
             }
             onClose();
         } catch (error) {
@@ -88,10 +93,17 @@ function LabelForm({ label, onClose }: { label?: { id: number; name: string; col
     };
 
     const handleDelete = async () => {
-        if (!label) return;
+        if (!label || !userId) {
+            console.error("Cannot delete label: userId is missing");
+            return;
+        }
         if (confirm("Are you sure you want to delete this label?")) {
-            await deleteLabel(label.id);
-            onClose();
+            try {
+                await deleteLabel(label.id, userId);
+                onClose();
+            } catch (error) {
+                console.error("Failed to delete label:", error);
+            }
         }
     };
 

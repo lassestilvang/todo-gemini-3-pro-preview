@@ -59,6 +59,7 @@ export type BlockerType = {
 interface UseTaskDataProps {
     taskId?: number;
     isEdit: boolean;
+    userId?: string;
 }
 
 /**
@@ -68,7 +69,7 @@ interface UseTaskDataProps {
  * @param taskId - ID of the task to fetch data for (if editing)
  * @param isEdit - Boolean indicating if the form is in edit mode
  */
-export function useTaskData({ taskId, isEdit }: UseTaskDataProps) {
+export function useTaskData({ taskId, isEdit, userId }: UseTaskDataProps) {
     const [lists, setLists] = useState<ListType[]>([]);
     const [labels, setLabels] = useState<LabelType[]>([]);
 
@@ -88,11 +89,11 @@ export function useTaskData({ taskId, isEdit }: UseTaskDataProps) {
     const [searchQuery, setSearchQuery] = useState("");
 
     const fetchSubtasks = useCallback(async () => {
-        if (taskId) {
-            const subs = await getSubtasks(taskId);
+        if (taskId && userId) {
+            const subs = await getSubtasks(taskId, userId);
             setSubtasks(subs);
         }
-    }, [taskId]);
+    }, [taskId, userId]);
 
     const fetchRemindersAndLogs = useCallback(async () => {
         if (taskId) {
@@ -115,9 +116,10 @@ export function useTaskData({ taskId, isEdit }: UseTaskDataProps) {
     // Initial Data Fetch
     useEffect(() => {
         const fetchData = async () => {
+            if (!userId) return;
             const [fetchedLists, fetchedLabels] = await Promise.all([
-                getLists(),
-                getLabels()
+                getLists(userId),
+                getLabels(userId)
             ]);
             setLists(fetchedLists);
             setLabels(fetchedLabels);
@@ -129,63 +131,66 @@ export function useTaskData({ taskId, isEdit }: UseTaskDataProps) {
             }
         };
         fetchData();
-    }, [isEdit, taskId, fetchSubtasks, fetchRemindersAndLogs, fetchBlockers]);
+    }, [isEdit, taskId, userId, fetchSubtasks, fetchRemindersAndLogs, fetchBlockers]);
 
     // Search tasks for blockers
     useEffect(() => {
-        if (searchQuery.length > 1) {
+        if (searchQuery.length > 1 && userId) {
             const delayDebounceFn = setTimeout(async () => {
-                const results = await searchTasks(searchQuery);
+                const results = await searchTasks(userId, searchQuery);
                 const filtered = results.filter(t => t.id !== taskId); // Exclude self
                 setSearchResults(filtered);
             }, 300);
             return () => clearTimeout(delayDebounceFn);
         }
-    }, [searchQuery, taskId]);
+    }, [searchQuery, taskId, userId]);
 
     // --- Actions ---
 
     const handleAddSubtask = async () => {
-        if (!newSubtask.trim() || !taskId) return;
-        await createSubtask(taskId, newSubtask);
+        if (!newSubtask.trim() || !taskId || !userId) return;
+        await createSubtask(taskId, userId, newSubtask);
         setNewSubtask("");
         fetchSubtasks();
     };
 
     const handleToggleSubtask = async (id: number, checked: boolean) => {
-        await updateSubtask(id, checked);
+        if (!userId) return;
+        await updateSubtask(id, userId, checked);
         fetchSubtasks();
     };
 
     const handleDeleteSubtask = async (id: number) => {
-        await deleteSubtask(id);
+        if (!userId) return;
+        await deleteSubtask(id, userId);
         fetchSubtasks();
     };
 
     const handleOnAiConfirm = async (aiSubtasks: ParsedSubtask[]) => {
-        if (!taskId) return;
+        if (!taskId || !userId) return;
         for (const sub of aiSubtasks) {
-            await createSubtask(taskId, sub.title, sub.estimateMinutes);
+            await createSubtask(taskId, userId, sub.title, sub.estimateMinutes);
         }
         fetchSubtasks();
     };
 
     const handleAddReminder = async () => {
-        if (!newReminderDate || !taskId) return;
-        await createReminder(taskId, newReminderDate);
+        if (!newReminderDate || !taskId || !userId) return;
+        await createReminder(userId, taskId, newReminderDate);
         setNewReminderDate(undefined);
         fetchRemindersAndLogs();
     };
 
     const handleDeleteReminder = async (id: number) => {
-        await deleteReminder(id);
+        if (!userId) return;
+        await deleteReminder(userId, id);
         fetchRemindersAndLogs();
     };
 
     const handleAddBlocker = async (blockerId: number) => {
-        if (!taskId) return;
+        if (!taskId || !userId) return;
         try {
-            await addDependency(taskId, blockerId);
+            await addDependency(userId, taskId, blockerId);
             fetchBlockers();
             setBlockerSearchOpen(false);
             setSearchQuery("");
@@ -196,8 +201,8 @@ export function useTaskData({ taskId, isEdit }: UseTaskDataProps) {
     };
 
     const handleRemoveBlocker = async (blockerId: number) => {
-        if (!taskId) return;
-        await removeDependency(taskId, blockerId);
+        if (!taskId || !userId) return;
+        await removeDependency(userId, taskId, blockerId);
         fetchBlockers();
     };
 

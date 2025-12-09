@@ -25,7 +25,11 @@ type Template = {
     createdAt: Date;
 };
 
-export function TemplateManager() {
+interface TemplateManagerProps {
+    userId?: string;
+}
+
+export function TemplateManager({ userId }: TemplateManagerProps) {
     const [templates, setTemplates] = useState<Template[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -33,25 +37,28 @@ export function TemplateManager() {
     const [newTemplateContent, setNewTemplateContent] = useState("");
 
     const loadTemplates = useCallback(async () => {
-        const data = await getTemplates();
-        setTemplates(data);
-    }, []);
+        if (!userId) return;
+        try {
+            const data = await getTemplates(userId);
+            setTemplates(data);
+        } catch (error) {
+            console.error("Failed to load templates:", error);
+            toast.error("Failed to load templates");
+        }
+    }, [userId]);
 
     useEffect(() => {
-        if (isOpen) {
-            // Call the async function directly in the effect
-            getTemplates().then(data => {
-                setTemplates(data);
-            });
+        if (isOpen && userId) {
+            loadTemplates();
         }
-    }, [isOpen]);
+    }, [isOpen, userId, loadTemplates]);
 
     const handleCreate = async () => {
-        if (!newTemplateName || !newTemplateContent) return;
+        if (!newTemplateName || !newTemplateContent || !userId) return;
         try {
             // Validate JSON
             JSON.parse(newTemplateContent);
-            await createTemplate(newTemplateName, newTemplateContent);
+            await createTemplate(userId, newTemplateName, newTemplateContent);
             setNewTemplateName("");
             setNewTemplateContent("");
             setIsCreateOpen(false);
@@ -63,16 +70,23 @@ export function TemplateManager() {
     };
 
     const handleDelete = async (id: number) => {
+        if (!userId) return;
         if (confirm("Delete this template?")) {
-            await deleteTemplate(id);
-            loadTemplates();
-            toast.success("Template deleted");
+            try {
+                await deleteTemplate(id, userId);
+                await loadTemplates();
+                toast.success("Template deleted");
+            } catch (error) {
+                console.error("Failed to delete template:", error);
+                toast.error("Failed to delete template");
+            }
         }
     };
 
     const handleInstantiate = async (id: number) => {
+        if (!userId) return;
         try {
-            await instantiateTemplate(id);
+            await instantiateTemplate(userId, id);
             setIsOpen(false);
             toast.success("Task created from template");
         } catch (e) {

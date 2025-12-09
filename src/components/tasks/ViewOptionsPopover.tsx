@@ -10,9 +10,11 @@ import { ChevronDown, ChevronUp, Settings2, List, LayoutGrid, Calendar, RotateCc
 import { ViewSettings, defaultViewSettings } from "@/lib/view-settings";
 import { getViewSettings, saveViewSettings, resetViewSettings, getLabels } from "@/lib/actions";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface ViewOptionsPopoverProps {
     viewId: string;
+    userId?: string;
     onSettingsChange?: (settings: ViewSettings) => void;
 }
 
@@ -22,7 +24,7 @@ interface LabelOption {
     color: string | null;
 }
 
-export function ViewOptionsPopover({ viewId, onSettingsChange }: ViewOptionsPopoverProps) {
+export function ViewOptionsPopover({ viewId, userId, onSettingsChange }: ViewOptionsPopoverProps) {
     const [open, setOpen] = useState(false);
     const [settings, setSettings] = useState<ViewSettings>(defaultViewSettings);
     const [sortExpanded, setSortExpanded] = useState(true);
@@ -33,9 +35,10 @@ export function ViewOptionsPopover({ viewId, onSettingsChange }: ViewOptionsPopo
     // Load settings and labels on mount
     useEffect(() => {
         async function loadData() {
+            if (!userId) return;
             const [savedSettings, allLabels] = await Promise.all([
-                getViewSettings(viewId),
-                getLabels()
+                getViewSettings(userId, viewId),
+                getLabels(userId)
             ]);
 
             if (savedSettings) {
@@ -55,23 +58,37 @@ export function ViewOptionsPopover({ viewId, onSettingsChange }: ViewOptionsPopo
         }
 
         loadData();
-    }, [viewId]);
+    }, [viewId, userId]);
 
     const updateSetting = <K extends keyof ViewSettings>(key: K, value: ViewSettings[K]) => {
         const newSettings = { ...settings, [key]: value };
         setSettings(newSettings);
 
         startTransition(async () => {
-            await saveViewSettings(viewId, { [key]: value });
+            if (userId) {
+                await saveViewSettings(userId, viewId, { [key]: value });
+            }
             onSettingsChange?.(newSettings);
         });
     };
 
     const handleReset = () => {
+        const previousSettings = settings;
         setSettings(defaultViewSettings);
+
         startTransition(async () => {
-            await resetViewSettings(viewId);
-            onSettingsChange?.(defaultViewSettings);
+            if (userId) {
+                try {
+                    await resetViewSettings(userId, viewId);
+                    onSettingsChange?.(defaultViewSettings);
+                } catch (error) {
+                    console.error("Failed to reset view settings:", error);
+                    setSettings(previousSettings);
+                    toast.error("Failed to reset view settings");
+                }
+            } else {
+                onSettingsChange?.(defaultViewSettings);
+            }
         });
     };
 

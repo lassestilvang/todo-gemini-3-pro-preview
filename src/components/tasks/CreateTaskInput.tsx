@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { VoiceInput } from "./VoiceInput";
 
 
-export function CreateTaskInput({ listId, defaultDueDate }: { listId?: number, defaultDueDate?: Date | string }) {
+export function CreateTaskInput({ listId, defaultDueDate, userId }: { listId?: number, defaultDueDate?: Date | string, userId: string }) {
     const [title, setTitle] = useState("");
     const [dueDate, setDueDate] = useState<Date | undefined>(
         defaultDueDate ? new Date(defaultDueDate) : undefined
@@ -65,7 +65,12 @@ export function CreateTaskInput({ listId, defaultDueDate }: { listId?: number, d
         // Parse again for final submission to get clean title
         const parsed = parseNaturalLanguage(title);
 
+        if (!userId) {
+            toast.error("Unable to create task: missing user ID");
+            return;
+        }
         await createTask({
+            userId,
             title: parsed.title || title,
             listId: listId || null,
             dueDate: dueDate || parsed.dueDate || null,
@@ -200,7 +205,7 @@ export function CreateTaskInput({ listId, defaultDueDate }: { listId?: number, d
                                 <Button type="button" variant="ghost" size="sm" onClick={() => setIsExpanded(false)}>
                                     Cancel
                                 </Button>
-                                <Button type="submit" size="sm" disabled={!title.trim()}>
+                                <Button type="submit" size="sm" disabled={!title.trim() || !userId}>
                                     Add Task
                                 </Button>
                             </div>

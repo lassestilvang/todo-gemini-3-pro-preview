@@ -10,11 +10,12 @@ import { useQuery } from "@tanstack/react-query";
 
 import confetti from "canvas-confetti";
 
-export function XPBar() {
+export function XPBar({ userId }: { userId?: string }) {
     const { data: stats } = useQuery({
-        queryKey: ['userStats'],
-        queryFn: getUserStats,
+        queryKey: ['userStats', userId],
+        queryFn: () => userId ? getUserStats(userId) : Promise.resolve(null),
         refetchInterval: 2000, // Poll every 2 seconds
+        enabled: !!userId,
         // Only update if data changed structurally, but confetti logic needs previous value
     });
 

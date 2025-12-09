@@ -1,6 +1,7 @@
 import { getLabel, getTasks } from "@/lib/actions";
+import { getCurrentUser } from "@/lib/auth";
 import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getLabelIcon } from "@/lib/icons";
 import { createElement } from "react";
 
@@ -11,18 +12,21 @@ interface LabelPageProps {
 }
 
 export default async function LabelPage({ params }: LabelPageProps) {
+    const user = await getCurrentUser();
+    if (!user) {
+        redirect("/login");
+    }
+
     const { id } = await params;
     const labelId = parseInt(id);
     if (isNaN(labelId)) return notFound();
 
     const [label, tasks] = await Promise.all([
-        getLabel(labelId),
-        getTasks(undefined, undefined, labelId)
+        getLabel(labelId, user.id),
+        getTasks(user.id, undefined, undefined, labelId)
     ]);
 
     if (!label) return notFound();
-
-
 
     return (
         <div className="container max-w-4xl py-6 lg:py-10">
@@ -37,9 +41,8 @@ export default async function LabelPage({ params }: LabelPageProps) {
                     </h1>
                 </div>
 
-                <TaskListWithSettings tasks={tasks} labelId={labelId} viewId={`label-${labelId}`} />
+                <TaskListWithSettings tasks={tasks} labelId={labelId} viewId={`label-${labelId}`} userId={user.id} />
             </div>
         </div>
     );
 }
-

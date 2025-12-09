@@ -28,6 +28,7 @@ describe("FocusMode", () => {
         description: "Test Description",
         priority: "high"
     };
+    const mockUserId = "test_user_123";
     const mockOnClose = mock();
 
     beforeEach(() => {
@@ -40,7 +41,7 @@ describe("FocusMode", () => {
     });
 
     it("should render task details", () => {
-        render(<FocusMode task={mockTask} onClose={mockOnClose} />);
+        render(<FocusMode task={mockTask} userId={mockUserId} onClose={mockOnClose} />);
         expect(screen.getByText("Test Task")).toBeDefined();
         expect(screen.getByText("Test Description")).toBeDefined();
         expect(screen.getByText("Focus Mode")).toBeDefined();
@@ -48,7 +49,7 @@ describe("FocusMode", () => {
     });
 
     it("should toggle timer on play/pause click", async () => {
-        render(<FocusMode task={mockTask} onClose={mockOnClose} />);
+        render(<FocusMode task={mockTask} userId={mockUserId} onClose={mockOnClose} />);
 
         const startBtn = screen.getByLabelText("Start Timer");
         fireEvent.click(startBtn);
@@ -62,7 +63,7 @@ describe("FocusMode", () => {
     });
 
     it("should reset timer", () => {
-        render(<FocusMode task={mockTask} onClose={mockOnClose} />);
+        render(<FocusMode task={mockTask} userId={mockUserId} onClose={mockOnClose} />);
 
         // Start timer
         fireEvent.click(screen.getByLabelText("Start Timer"));
@@ -74,31 +75,19 @@ describe("FocusMode", () => {
     });
 
     it("should complete task", async () => {
-        // Mock setTimeout
-        const originalSetTimeout = global.setTimeout;
-        const mockSetTimeout = Object.assign(
-            mock((cb: () => void) => {
-                cb();
-                return 0 as number;
-            }),
-            { __promisify__: mock() }
-        );
-        global.setTimeout = mockSetTimeout as unknown as typeof setTimeout;
-
-        render(<FocusMode task={mockTask} onClose={mockOnClose} />);
+        render(<FocusMode task={mockTask} userId={mockUserId} onClose={mockOnClose} />);
 
         await act(async () => {
             fireEvent.click(screen.getByLabelText("Complete Task"));
+            // Allow promise to resolve
+            await new Promise(resolve => setTimeout(resolve, 10));
         });
 
-        expect(mockUpdateTask).toHaveBeenCalledWith(1, { isCompleted: true });
-        expect(mockOnClose).toHaveBeenCalled();
-
-        global.setTimeout = originalSetTimeout;
+        expect(mockUpdateTask).toHaveBeenCalledWith(1, mockUserId, { isCompleted: true });
     });
 
     it("should close on minimize click", () => {
-        render(<FocusMode task={mockTask} onClose={mockOnClose} />);
+        render(<FocusMode task={mockTask} userId={mockUserId} onClose={mockOnClose} />);
         fireEvent.click(screen.getByLabelText("Minimize Focus Mode"));
         expect(mockOnClose).toHaveBeenCalled();
     });

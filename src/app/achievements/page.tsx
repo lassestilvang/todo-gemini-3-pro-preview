@@ -1,14 +1,21 @@
 import { getAchievements, getUserAchievements, getUserStats } from "@/lib/actions";
+import { getCurrentUser } from "@/lib/auth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Trophy, Lock } from "lucide-react";
+import { redirect } from "next/navigation";
 
 import { calculateProgress, calculateXPForNextLevel } from "@/lib/gamification";
 
 export default async function AchievementsPage() {
-    const stats = await getUserStats();
+    const user = await getCurrentUser();
+    if (!user) {
+        redirect("/login");
+    }
+
+    const stats = await getUserStats(user.id);
     const allAchievements = await getAchievements();
-    const userAchievements = await getUserAchievements();
+    const userAchievements = await getUserAchievements(user.id);
 
     const unlockedIds = new Set(userAchievements.map(u => u.achievementId));
 

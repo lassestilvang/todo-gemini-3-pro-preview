@@ -14,6 +14,8 @@ mock.module("@/lib/actions", () => ({
 }));
 
 describe("PlanningRitual", () => {
+    const mockUserId = "test_user_123";
+
     beforeEach(() => {
         mockGetTasks.mockClear();
     });
@@ -24,7 +26,7 @@ describe("PlanningRitual", () => {
     });
 
     it("should render morning ritual", async () => {
-        render(<PlanningRitual open={true} onOpenChange={() => { }} type="morning" />);
+        render(<PlanningRitual open={true} onOpenChange={() => { }} type="morning" userId={mockUserId} />);
 
         await waitFor(() => {
             expect(screen.getByText("Morning Planning Ritual")).toBeInTheDocument();
@@ -34,7 +36,7 @@ describe("PlanningRitual", () => {
     });
 
     it("should render evening ritual", async () => {
-        render(<PlanningRitual open={true} onOpenChange={() => { }} type="evening" />);
+        render(<PlanningRitual open={true} onOpenChange={() => { }} type="evening" userId={mockUserId} />);
 
         await waitFor(() => {
             expect(screen.getByText("Evening Review")).toBeInTheDocument();
@@ -43,9 +45,12 @@ describe("PlanningRitual", () => {
     });
 
     it("should step through morning ritual", async () => {
-        render(<PlanningRitual open={true} onOpenChange={() => { }} type="morning" />);
+        render(<PlanningRitual open={true} onOpenChange={() => { }} type="morning" userId={mockUserId} />);
 
-        await waitFor(() => screen.getByText("Set Priorities"));
+        await waitFor(() => {
+            expect(screen.getByText("Set Priorities")).toBeInTheDocument();
+        });
+
         fireEvent.click(screen.getByText("Set Priorities"));
 
         await waitFor(() => {
@@ -56,14 +61,15 @@ describe("PlanningRitual", () => {
         fireEvent.change(inputs[0], { target: { value: "Priority 1" } });
 
         fireEvent.click(screen.getByText("Start Your Day! 🚀"));
-        // onOpenChange should be called, but we mocked it as no-op. 
-        // We can test if the button is present.
     });
 
     it("should step through evening ritual", async () => {
-        render(<PlanningRitual open={true} onOpenChange={() => { }} type="evening" />);
+        render(<PlanningRitual open={true} onOpenChange={() => { }} type="evening" userId={mockUserId} />);
 
-        await waitFor(() => screen.getByText("Reflect on Your Day"));
+        await waitFor(() => {
+            expect(screen.getByText("Reflect on Your Day")).toBeInTheDocument();
+        });
+
         fireEvent.click(screen.getByText("Reflect on Your Day"));
 
         await waitFor(() => {
@@ -78,7 +84,7 @@ describe("PlanningRitual", () => {
 
     it("should handle empty tasks", async () => {
         mockGetTasks.mockResolvedValueOnce([]);
-        render(<PlanningRitual open={true} onOpenChange={() => { }} type="morning" />);
+        render(<PlanningRitual open={true} onOpenChange={() => { }} type="morning" userId={mockUserId} />);
 
         await waitFor(() => {
             expect(screen.getByText("No tasks scheduled for today")).toBeInTheDocument();
