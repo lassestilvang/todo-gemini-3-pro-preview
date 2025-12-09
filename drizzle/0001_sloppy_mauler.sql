@@ -22,8 +22,6 @@ CREATE TABLE IF NOT EXISTS "users" (
 -- Step 2: Drop old constraints that will be replaced
 ALTER TABLE "lists" DROP CONSTRAINT IF EXISTS "lists_slug_unique";--> statement-breakpoint
 ALTER TABLE "user_achievements" DROP CONSTRAINT IF EXISTS "user_achievements_achievement_id_pk";--> statement-breakpoint
-ALTER TABLE "view_settings" DROP CONSTRAINT IF EXISTS "view_settings_pkey";--> statement-breakpoint
-ALTER TABLE "user_stats" DROP CONSTRAINT IF EXISTS "user_stats_pkey";--> statement-breakpoint
 
 -- Step 3: Add user_id columns to all tables BEFORE adding constraints
 DO $$ BEGIN
@@ -63,25 +61,66 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_column THEN NULL;
 END $$;--> statement-breakpoint
 
--- Step 4: Drop old columns
+-- Step 4: Drop old primary keys before dropping columns
+DO $$ BEGIN
+    ALTER TABLE "user_stats" DROP CONSTRAINT IF EXISTS "user_stats_pkey";
+EXCEPTION WHEN undefined_object THEN NULL;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+    ALTER TABLE "view_settings" DROP CONSTRAINT IF EXISTS "view_settings_pkey";
+EXCEPTION WHEN undefined_object THEN NULL;
+END $$;--> statement-breakpoint
+
+-- Step 5: Drop old columns (now that PKs are removed)
 ALTER TABLE "user_stats" DROP COLUMN IF EXISTS "id";--> statement-breakpoint
 ALTER TABLE "view_settings" DROP COLUMN IF EXISTS "id";--> statement-breakpoint
 
--- Step 5: Add primary key constraints (now that columns exist)
-DO $$ BEGIN
-    ALTER TABLE "user_achievements" ADD CONSTRAINT "user_achievements_user_id_achievement_id_pk" PRIMARY KEY("user_id","achievement_id");
-EXCEPTION WHEN duplicate_object THEN NULL;
+-- Step 6: Add new primary key constraints
+DO $$
+DECLARE
+    pk_exists boolean;
+BEGIN
+    SELECT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'user_achievements_user_id_achievement_id_pk'
+    ) INTO pk_exists;
+    
+    IF NOT pk_exists THEN
+        ALTER TABLE "user_achievements" DROP CONSTRAINT IF EXISTS "user_achievements_pkey";
+        ALTER TABLE "user_achievements" DROP CONSTRAINT IF EXISTS "user_achievements_achievement_id_pk";
+        ALTER TABLE "user_achievements" ADD CONSTRAINT "user_achievements_user_id_achievement_id_pk" PRIMARY KEY("user_id","achievement_id");
+    END IF;
 END $$;--> statement-breakpoint
-DO $$ BEGIN
-    ALTER TABLE "view_settings" ADD CONSTRAINT "view_settings_user_id_view_id_pk" PRIMARY KEY("user_id","view_id");
-EXCEPTION WHEN duplicate_object THEN NULL;
+DO $$
+DECLARE
+    pk_exists boolean;
+BEGIN
+    SELECT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'view_settings_user_id_view_id_pk'
+    ) INTO pk_exists;
+    
+    IF NOT pk_exists THEN
+        ALTER TABLE "view_settings" ADD CONSTRAINT "view_settings_user_id_view_id_pk" PRIMARY KEY("user_id","view_id");
+    END IF;
 END $$;--> statement-breakpoint
-DO $$ BEGIN
-    ALTER TABLE "user_stats" ADD CONSTRAINT "user_stats_pkey" PRIMARY KEY("user_id");
-EXCEPTION WHEN duplicate_object THEN NULL;
+DO $$
+DECLARE
+    pk_exists boolean;
+BEGIN
+    SELECT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'user_stats_pkey' AND conrelid = 'user_stats'::regclass
+    ) INTO pk_exists;
+    
+    IF NOT pk_exists THEN
+        ALTER TABLE "user_stats" ADD CONSTRAINT "user_stats_pkey" PRIMARY KEY("user_id");
+    END IF;
+EXCEPTION WHEN others THEN
+    NULL;
 END $$;--> statement-breakpoint
 
--- Step 6: Add foreign key constraints
+-- Step 7: Add foreign key constraints
 DO $$ BEGIN
     ALTER TABLE "labels" ADD CONSTRAINT "labels_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION WHEN duplicate_object THEN NULL;
@@ -115,7 +154,7 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;--> statement-breakpoint
 
--- Step 7: Create indexes
+-- Step 8: Create indexes
 CREATE INDEX IF NOT EXISTS "labels_user_id_idx" ON "labels" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "lists_user_id_idx" ON "lists" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "lists_user_slug_unique" ON "lists" USING btree ("user_id","slug");--> statement-breakpoint
