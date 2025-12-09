@@ -284,12 +284,13 @@ mock.module("./smart-tags", () => ({
 
 1. **Integration test skipped in CI**: `src/test/integration/task-flow.test.ts` is skipped in CI due to race conditions with parallel execution. Unit tests in `actions.test.ts` cover the same functionality.
 
-2. **Property tests skipped in CI**: The following property tests are skipped in CI due to parallel test execution issues with Bun's module mocking:
+2. **Property tests skipped in CI**: The following property tests are skipped in CI due to parallel test execution issues with Bun's module mocking and shared in-memory SQLite database:
    - `src/test/properties/authorization.property.test.ts` - Tests authorization denial (User B cannot access User A's resources)
    - `src/test/properties/data-isolation.property.test.ts` - Tests data isolation between users
    - `src/test/properties/session-security.property.test.ts` - Tests session cookie security and authentication
+   - `src/test/properties/server-actions.property.test.ts` - Tests Server Actions error handling with ActionResult types
    
-   These tests run successfully locally and verify critical security properties. The skip is controlled by `CI=true` environment variable.
+   These tests run successfully locally and verify critical security and error handling properties. The skip is controlled by `CI=true` environment variable.
 
 3. **Property test reproducibility**: All property-based tests use `FAST_CHECK_SEED` environment variable for reproducibility. In CI, this is set to `12345` to ensure consistent test runs.
 
