@@ -8,6 +8,18 @@
  *   pre-existing migrations as applied, then runs pending migrations
  * 
  * This script is idempotent and safe to run multiple times.
+ * 
+ * TODO: After the multi-user-auth PR merges and all environments have proper
+ * migration tracking, this script can be simplified to just:
+ * 
+ *   const sql = neon(DATABASE_URL);
+ *   const db = drizzle(sql);
+ *   await migrate(db, { migrationsFolder: "./drizzle" });
+ * 
+ * The legacy detection code (checking for old schema, fixing timestamps, etc.)
+ * is only needed for the transition from db:push to proper migrations.
+ * Once all databases have the drizzle.__drizzle_migrations table with correct
+ * entries, this complexity can be removed.
  */
 
 import { neon } from "@neondatabase/serverless";
