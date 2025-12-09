@@ -84,7 +84,7 @@ describe("SmartScheduleDialog", () => {
 
         fireEvent.click(screen.getByText("Generate Schedule"));
 
-        // Wait for async action
+        // Wait for async action to complete
         await new Promise(resolve => setTimeout(resolve, 100));
 
         expect(toast.info).toHaveBeenCalledWith("No unscheduled tasks found to schedule!");
@@ -98,7 +98,7 @@ describe("SmartScheduleDialog", () => {
 
         fireEvent.click(screen.getByText("Generate Schedule"));
 
-        // Wait for async action
+        // Wait for async action to complete
         await new Promise(resolve => setTimeout(resolve, 100));
 
         expect(toast.error).toHaveBeenCalledWith("Failed to generate schedule. Please check your API key.");

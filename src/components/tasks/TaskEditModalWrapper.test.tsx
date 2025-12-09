@@ -1,5 +1,5 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import React from "react";
 
 // Mock dependencies
@@ -58,13 +58,12 @@ describe("TaskEditModalWrapper", () => {
 
         render(<TaskEditModalWrapperMock taskId="123" />);
 
-        // Wait for the task to be fetched with longer timeout
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Wait for the dialog to appear
+        await waitFor(() => {
+            expect(screen.queryByTestId("task-dialog")).not.toBeNull();
+        });
 
         expect(mockGetTask).toHaveBeenCalledWith(123);
-        // The dialog should be rendered
-        const dialog = screen.queryByTestId("task-dialog");
-        expect(dialog).not.toBeNull();
     });
 
     it("should handle invalid taskId", () => {

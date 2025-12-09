@@ -87,17 +87,31 @@ export async function syncUser(workosUser: {
     };
   }
 
-  // Create new user
-  await db.insert(users).values({
-    id: workosUser.id,
-    email: workosUser.email,
-    firstName: workosUser.firstName ?? null,
-    lastName: workosUser.lastName ?? null,
-    avatarUrl: workosUser.profilePictureUrl ?? null,
-  });
-
-  // Initialize default data for new user
-  await initializeUserData(workosUser.id);
+  // Create new user and initialize default data in a single atomic batch
+  // This ensures if initialization fails, the user insert is rolled back
+  await db.batch([
+    db.insert(users).values({
+      id: workosUser.id,
+      email: workosUser.email,
+      firstName: workosUser.firstName ?? null,
+      lastName: workosUser.lastName ?? null,
+      avatarUrl: workosUser.profilePictureUrl ?? null,
+    }),
+    db.insert(lists).values({
+      userId: workosUser.id,
+      name: "Inbox",
+      slug: "inbox",
+      color: "#6366f1",
+      icon: "inbox",
+    }),
+    db.insert(userStats).values({
+      userId: workosUser.id,
+      xp: 0,
+      level: 1,
+      currentStreak: 0,
+      longestStreak: 0,
+    }),
+  ]);
 
   return {
     id: workosUser.id,
@@ -106,30 +120,6 @@ export async function syncUser(workosUser: {
     lastName: workosUser.lastName ?? null,
     avatarUrl: workosUser.profilePictureUrl ?? null,
   };
-}
-
-/**
- * Initialize default data for a new user.
- * Creates default Inbox list and user stats.
- */
-async function initializeUserData(userId: string): Promise<void> {
-  // Create default Inbox list
-  await db.insert(lists).values({
-    userId,
-    name: "Inbox",
-    slug: "inbox",
-    color: "#6366f1",
-    icon: "inbox",
-  });
-
-  // Initialize user stats
-  await db.insert(userStats).values({
-    userId,
-    xp: 0,
-    level: 1,
-    currentStreak: 0,
-    longestStreak: 0,
-  });
 }
 
 /**

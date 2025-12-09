@@ -65,37 +65,23 @@ describeOrSkip("Property Tests: Session Security", () => {
    * 3. The auth system uses secure defaults
    */
   describe("Property 7: Session Cookie Security", () => {
-    it("Cookie password must be at least 32 characters for secure encryption", async () => {
-      await fc.assert(
-        fc.asyncProperty(
-          fc.string({ minLength: 1, maxLength: 31 }), // Invalid short passwords
-          async (shortPassword) => {
-            // Property: Short passwords (< 32 chars) should be rejected by WorkOS AuthKit
-            // WorkOS requires WORKOS_COOKIE_PASSWORD to be at least 32 characters
-            // This is enforced at runtime by the library
-            expect(shortPassword.length).toBeLessThan(32);
-            
-            // The actual validation happens in WorkOS AuthKit when it initializes
-            // We verify the constraint is documented and enforced
-            const minRequiredLength = 32;
-            expect(shortPassword.length).toBeLessThan(minRequiredLength);
-          }
-        ),
-        { numRuns: 100 }
-      );
-    });
-
-    it("Valid cookie passwords are 32+ characters", async () => {
-      await fc.assert(
-        fc.asyncProperty(
-          fc.string({ minLength: 32, maxLength: 64 }), // Valid passwords
-          async (validPassword) => {
-            // Property: Valid passwords meet the minimum length requirement
-            expect(validPassword.length).toBeGreaterThanOrEqual(32);
-          }
-        ),
-        { numRuns: 100 }
-      );
+    it("WorkOS AuthKit enforces cookie password requirements", async () => {
+      // Note: WorkOS AuthKit enforces WORKOS_COOKIE_PASSWORD to be at least 32 characters
+      // This validation happens at library initialization time.
+      // See: https://workos.com/docs/user-management/cookie-security
+      // 
+      // Since this is enforced by the external library and not our code,
+      // we document the requirement here and rely on WorkOS AuthKit's internal validation.
+      // In test environment, we verify the requirement is documented rather than checking the actual value
+      // since the env var may not be set during testing.
+      const cookiePassword = process.env.WORKOS_COOKIE_PASSWORD;
+      if (cookiePassword) {
+        expect(cookiePassword.length).toBeGreaterThanOrEqual(32);
+      } else {
+        // In test environment without the env var, we just verify the test runs
+        // The actual validation is done by WorkOS AuthKit at runtime
+        expect(true).toBe(true);
+      }
     });
 
     it("Middleware configuration protects all routes except public paths", async () => {

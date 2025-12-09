@@ -75,7 +75,12 @@ export function ViewOptionsPopover({ viewId, userId, onSettingsChange }: ViewOpt
         setSettings(defaultViewSettings);
         startTransition(async () => {
             if (userId) {
-                await resetViewSettings(userId, viewId);
+                try {
+                    await resetViewSettings(userId, viewId);
+                } catch (error) {
+                    console.error("Failed to reset view settings:", error);
+                    // Consider reverting to previous state or showing error notification
+                }
             }
             onSettingsChange?.(defaultViewSettings);
         });

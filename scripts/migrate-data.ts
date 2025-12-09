@@ -350,6 +350,7 @@ async function main() {
         console.log("\n🔄 Resetting PostgreSQL sequences...");
         
         // Reset sequences using tagged template literals (required by Neon)
+        await sql`SELECT setval('achievements_id_seq', COALESCE((SELECT MAX(id) FROM achievements), 1))`;
         await sql`SELECT setval('lists_id_seq', COALESCE((SELECT MAX(id) FROM lists), 1))`;
         await sql`SELECT setval('tasks_id_seq', COALESCE((SELECT MAX(id) FROM tasks), 1))`;
         await sql`SELECT setval('labels_id_seq', COALESCE((SELECT MAX(id) FROM labels), 1))`;
@@ -357,6 +358,8 @@ async function main() {
         await sql`SELECT setval('task_logs_id_seq', COALESCE((SELECT MAX(id) FROM task_logs), 1))`;
         await sql`SELECT setval('habit_completions_id_seq', COALESCE((SELECT MAX(id) FROM habit_completions), 1))`;
         await sql`SELECT setval('templates_id_seq', COALESCE((SELECT MAX(id) FROM templates), 1))`;
+        await sql`SELECT setval('user_stats_id_seq', COALESCE((SELECT MAX(id) FROM user_stats), 1))`;
+        await sql`SELECT setval('view_settings_id_seq', COALESCE((SELECT MAX(id) FROM view_settings), 1))`;
         console.log("   ✅ Sequences reset to match migrated data");
 
         // Print summary

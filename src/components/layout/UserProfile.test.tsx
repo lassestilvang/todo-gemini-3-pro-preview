@@ -7,7 +7,8 @@ mock.module("@/lib/auth", () => ({
     signOut: mockSignOut,
 }));
 
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { UserProfile } from "./UserProfile";
 
 describe("UserProfile", () => {
@@ -91,7 +92,8 @@ describe("UserProfile", () => {
     });
 
     it("triggers sign-out action when sign out is clicked", async () => {
-        const user = {
+        const testUser = userEvent.setup();
+        const userData = {
             id: "user_123",
             email: "john@example.com",
             firstName: "John",
@@ -99,19 +101,18 @@ describe("UserProfile", () => {
             avatarUrl: null,
         };
 
-        render(<UserProfile user={user} />);
+        render(<UserProfile user={userData} />);
 
-        // Click the trigger button to open dropdown
+        // Open dropdown using userEvent
         const triggerButton = screen.getByRole("button");
-        fireEvent.pointerDown(triggerButton);
-        fireEvent.click(triggerButton);
+        await testUser.click(triggerButton);
 
-        // Wait for dropdown to open
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Wait for dropdown to appear and click sign out
+        const signOutItem = await screen.findByRole("menuitem", { name: /sign out/i });
+        await testUser.click(signOutItem);
 
-        const signOutItem = screen.getByText("Sign Out");
-        fireEvent.click(signOutItem);
-
-        expect(mockSignOut).toHaveBeenCalled();
+        await waitFor(() => {
+            expect(mockSignOut).toHaveBeenCalled();
+        });
     });
 });

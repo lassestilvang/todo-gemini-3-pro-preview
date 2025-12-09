@@ -20,7 +20,7 @@ type SearchResult = {
     description: string | null;
 };
 
-export function SearchDialog({ userId }: { userId?: string }) {
+export function SearchDialog({ userId }: { userId: string }) {
     const [open, setOpen] = React.useState(false);
     const [query, setQuery] = React.useState("");
     const [results, setResults] = React.useState<SearchResult[]>([]);

@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, mock, beforeEach } from "bun:test";
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 import { TaskDialog } from "./TaskDialog";
 import React from "react";
 
@@ -86,10 +86,9 @@ describe("TaskDialog", () => {
         fireEvent.change(screen.getByPlaceholderText("Task Title"), { target: { value: "New Task" } });
         fireEvent.click(screen.getByText("Save"));
 
-        // Wait for async action
-        await new Promise(resolve => setTimeout(resolve, 50));
-
-        expect(mockCreateTask).toHaveBeenCalledTimes(1);
+        await waitFor(() => {
+            expect(mockCreateTask).toHaveBeenCalledTimes(1);
+        });
         expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining({
             title: "New Task"
         }));
@@ -101,10 +100,9 @@ describe("TaskDialog", () => {
         fireEvent.change(screen.getByDisplayValue("Existing Task"), { target: { value: "Updated Task" } });
         fireEvent.click(screen.getByText("Save"));
 
-        // Wait for async action
-        await new Promise(resolve => setTimeout(resolve, 50));
-
-        expect(mockUpdateTask).toHaveBeenCalledTimes(1);
+        await waitFor(() => {
+            expect(mockUpdateTask).toHaveBeenCalledTimes(1);
+        });
     });
 
     it("should delete task", async () => {
@@ -115,9 +113,8 @@ describe("TaskDialog", () => {
 
         fireEvent.click(screen.getByText("Delete"));
 
-        // Wait for async action
-        await new Promise(resolve => setTimeout(resolve, 50));
-
-        expect(mockDeleteTask).toHaveBeenCalledWith(1, "test_user_123");
+        await waitFor(() => {
+            expect(mockDeleteTask).toHaveBeenCalledWith(1, "test_user_123");
+        });
     });
 });

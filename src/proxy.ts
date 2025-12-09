@@ -32,8 +32,12 @@ export async function proxy(request: NextRequest) {
   }
 
   // Protected route - redirect to login if no session
+  // Protected route - redirect to login if no session
   if (!session.user) {
-    const response = NextResponse.redirect(authorizationUrl!);
+    if (!authorizationUrl) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+    const response = NextResponse.redirect(authorizationUrl);
 
     for (const [key, value] of authkitHeaders) {
       if (key.toLowerCase() === 'set-cookie') {

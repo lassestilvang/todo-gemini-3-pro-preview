@@ -41,7 +41,7 @@ interface ManageListDialogProps {
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
     trigger?: React.ReactNode;
-    userId?: string;
+    userId: string;
 }
 
 export function ManageListDialog({ list, open, onOpenChange, trigger, userId }: ManageListDialogProps) {
@@ -72,7 +72,7 @@ interface ListFormProps {
         color: string | null;
         icon: string | null;
     };
-    userId?: string;
+    userId: string;
     onClose: () => void;
 }
 
@@ -107,8 +107,12 @@ function ListForm({ list, userId, onClose }: ListFormProps) {
     const handleDelete = async () => {
         if (!isEdit || !userId) return;
         if (confirm("Are you sure you want to delete this list? Tasks will be deleted.")) {
-            await deleteList(list.id, userId);
-            onClose();
+            try {
+                await deleteList(list.id, userId);
+                onClose();
+            } catch (error) {
+                console.error("Failed to delete list:", error);
+            }
         }
     };
 

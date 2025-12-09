@@ -26,7 +26,7 @@ import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import { migrate } from "drizzle-orm/neon-http/migrator";
 import { createHash } from "crypto";
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 
 const DATABASE_URL = process.env.DATABASE_URL;
 
@@ -40,6 +40,9 @@ const db = drizzle(sql);
 
 // Compute the hash the same way Drizzle does (SHA256 of file content)
 function computeMigrationHash(filePath: string): string {
+    if (!existsSync(filePath)) {
+        throw new Error(`Migration file not found: ${filePath}`);
+    }
     const content = readFileSync(filePath, "utf8");
     return createHash("sha256").update(content).digest("hex");
 }
@@ -69,7 +72,10 @@ async function runMigrations() {
         // Read the journal to get correct migration timestamps
         const journal = JSON.parse(readFileSync("./drizzle/meta/_journal.json", "utf8"));
         const migration0000Entry = journal.entries.find((e: { tag: string }) => e.tag === "0000_jittery_cloak");
-        const migration0000Timestamp = migration0000Entry?.when || 0;
+        if (!migration0000Entry) {
+            throw new Error("Migration 0000_jittery_cloak not found in journal");
+        }
+        const migration0000Timestamp = migration0000Entry.when;
         
         // Compute the hash for migration 0000 (same way Drizzle does it)
         const migration0000Hash = computeMigrationHash("./drizzle/0000_jittery_cloak.sql");

@@ -97,5 +97,5 @@ jobs:
       - name: Build
         run: bun run build
         env:
-          DATABASE_URL: ${{ steps.neon-branch.outputs.db_url_with_pooler || secrets.DATABASE_URL || 'postgresql://placeholder:placeholder@localhost/placeholder' }}
+          DATABASE_URL: ${{ steps.neon-branch.outputs.db_url_with_pooler || secrets.DATABASE_URL }}
 

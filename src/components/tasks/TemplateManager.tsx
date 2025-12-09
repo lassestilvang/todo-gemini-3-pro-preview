@@ -69,9 +69,14 @@ export function TemplateManager({ userId }: TemplateManagerProps) {
     const handleDelete = async (id: number) => {
         if (!userId) return;
         if (confirm("Delete this template?")) {
-            await deleteTemplate(id, userId);
-            loadTemplates();
-            toast.success("Template deleted");
+            try {
+                await deleteTemplate(id, userId);
+                await loadTemplates();
+                toast.success("Template deleted");
+            } catch (error) {
+                console.error("Failed to delete template:", error);
+                toast.error("Failed to delete template");
+            }
         }
     };
 

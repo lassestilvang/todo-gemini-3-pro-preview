@@ -1,5 +1,5 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 import { ManageLabelDialog } from "./ManageLabelDialog";
 import React from "react";
 
@@ -41,9 +41,7 @@ describe("ManageLabelDialog", () => {
         fireEvent.click(screen.getByText("Manage Labels"));
 
         // Wait for dialog to open
-        await new Promise(resolve => setTimeout(resolve, 50));
-
-        expect(screen.getByText("New Label")).toBeInTheDocument();
+        expect(await screen.findByText("New Label")).toBeInTheDocument();
     });
 
     it("should create a new label", async () => {
@@ -51,17 +49,17 @@ describe("ManageLabelDialog", () => {
         fireEvent.click(screen.getByText("Manage Labels"));
 
         // Wait for dialog to open
-        await new Promise(resolve => setTimeout(resolve, 50));
-
-        fireEvent.change(screen.getByPlaceholderText("Label Name"), { target: { value: "New Label" } });
+        const labelInput = await screen.findByPlaceholderText("Label Name");
+        fireEvent.change(labelInput, { target: { value: "New Label" } });
         fireEvent.click(screen.getByText("Save"));
 
         // Wait for async action
-        await new Promise(resolve => setTimeout(resolve, 50));
-
-        expect(mockCreateLabel).toHaveBeenCalledWith(expect.objectContaining({
-            name: "New Label"
-        }));
+        await waitFor(() => {
+            expect(mockCreateLabel).toHaveBeenCalledWith(expect.objectContaining({
+                name: "New Label",
+                userId: "test_user_123"
+            }));
+        });
     });
 
     it("should delete a label", async () => {
@@ -71,14 +69,13 @@ describe("ManageLabelDialog", () => {
 
         render(<ManageLabelDialog label={label} open={true} userId="test_user_123" />);
 
-        // Wait for dialog to render
-        await new Promise(resolve => setTimeout(resolve, 50));
-
-        fireEvent.click(screen.getByText("Delete"));
+        // Wait for dialog to render and click delete
+        const deleteButton = await screen.findByText("Delete");
+        fireEvent.click(deleteButton);
 
         // Wait for async action
-        await new Promise(resolve => setTimeout(resolve, 50));
-
-        expect(mockDeleteLabel).toHaveBeenCalledWith(1, "test_user_123");
+        await waitFor(() => {
+            expect(mockDeleteLabel).toHaveBeenCalledWith(1, "test_user_123");
+        });
     });
 });

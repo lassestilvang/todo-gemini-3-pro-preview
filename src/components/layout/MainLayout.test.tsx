@@ -40,7 +40,7 @@ mock.module("./AppSidebar", () => ({
 }));
 
 // Import component after mocks are set up
-let MainLayout: typeof import("./MainLayout").MainLayout;
+let MainLayout!: typeof import("./MainLayout").MainLayout;
 
 beforeAll(async () => {
     const layoutModule = await import("./MainLayout");

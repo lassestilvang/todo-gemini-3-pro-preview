@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { VoiceInput } from "./VoiceInput";
 
 
-export function CreateTaskInput({ listId, defaultDueDate, userId }: { listId?: number, defaultDueDate?: Date | string, userId?: string }) {
+export function CreateTaskInput({ listId, defaultDueDate, userId }: { listId?: number, defaultDueDate?: Date | string, userId: string }) {
     const [title, setTitle] = useState("");
     const [dueDate, setDueDate] = useState<Date | undefined>(
         defaultDueDate ? new Date(defaultDueDate) : undefined

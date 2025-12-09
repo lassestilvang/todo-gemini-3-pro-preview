@@ -64,7 +64,7 @@ A modern, professional daily task planner built with **Next.js 16**, **Bun**, an
    WORKOS_API_KEY=sk_...
    WORKOS_CLIENT_ID=client_...
    WORKOS_COOKIE_PASSWORD=your-32-character-or-longer-password
-   WORKOS_REDIRECT_URI=http://localhost:3000/auth/callback
+   NEXT_PUBLIC_WORKOS_REDIRECT_URI=http://localhost:3000/auth/callback
    ```
 
 4. **Setup the database**:

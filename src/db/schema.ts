@@ -1,4 +1,4 @@
-import { serial, integer, pgTable, text, primaryKey, foreignKey, index, timestamp, boolean } from "drizzle-orm/pg-core";
+import { serial, integer, pgTable, text, primaryKey, foreignKey, index, uniqueIndex, timestamp, boolean, unique } from "drizzle-orm/pg-core";
 
 // Users table - stores WorkOS user data
 export const users = pgTable("users", {
@@ -32,7 +32,9 @@ export const lists = pgTable("lists", {
         .defaultNow(),
 }, (table) => ({
     userIdIdx: index("lists_user_id_idx").on(table.userId),
-    userSlugUnique: index("lists_user_slug_unique").on(table.userId, table.slug),
+    userSlugUnique: uniqueIndex("lists_user_slug_unique").on(table.userId, table.slug),
+    // Unique constraint on (id, userId) to support composite FK from tasks
+    idUserUnique: unique("lists_id_user_id_unique").on(table.id, table.userId),
 }));
 
 export const tasks = pgTable("tasks", {
@@ -66,6 +68,11 @@ export const tasks = pgTable("tasks", {
     parentReference: foreignKey({
         columns: [table.parentId],
         foreignColumns: [table.id],
+    }).onDelete("cascade"),
+    // Composite FK ensures task's list belongs to the same user
+    listUserReference: foreignKey({
+        columns: [table.listId, table.userId],
+        foreignColumns: [lists.id, lists.userId],
     }).onDelete("cascade"),
     userIdIdx: index("tasks_user_id_idx").on(table.userId),
     listIdIdx: index("tasks_list_id_idx").on(table.listId),

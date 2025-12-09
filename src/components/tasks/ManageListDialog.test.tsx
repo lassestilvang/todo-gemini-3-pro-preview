@@ -58,17 +58,19 @@ describe("ManageListDialog", () => {
         fireEvent.click(screen.getByText("Manage Lists"));
 
         // Wait for dialog to open
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await waitFor(() => {
+            expect(screen.getByRole("dialog")).toBeInTheDocument();
+        });
 
         const nameInput = screen.getByPlaceholderText("List Name");
         fireEvent.change(nameInput, { target: { value: "New List" } });
         fireEvent.click(screen.getByText("Save"));
 
-        // Wait for async action
-        await new Promise(resolve => setTimeout(resolve, 50));
-
-        expect(mockCreateList).toHaveBeenCalledWith(expect.objectContaining({
-            name: "New List"
-        }));
+        await waitFor(() => {
+            expect(mockCreateList).toHaveBeenCalledWith(expect.objectContaining({
+                name: "New List",
+                userId: "test_user_123"
+            }));
+        });
     });
 });

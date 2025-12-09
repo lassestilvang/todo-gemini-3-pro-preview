@@ -59,7 +59,7 @@ export type BlockerType = {
 interface UseTaskDataProps {
     taskId?: number;
     isEdit: boolean;
-    userId?: string;
+    userId: string;
 }
 
 /**

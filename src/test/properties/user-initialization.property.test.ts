@@ -195,6 +195,7 @@ describe("Property Tests: User Initialization", () => {
         expect(retrieved[0].email).toBe(workosUser.email);
         expect(retrieved[0].firstName).toBe(workosUser.firstName);
         expect(retrieved[0].lastName).toBe(workosUser.lastName);
+        expect(retrieved[0].avatarUrl).toBe(workosUser.profilePictureUrl);
       }),
       { numRuns: 100 }
     );

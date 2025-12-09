@@ -1,5 +1,5 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 import { PlanningRitual } from "./PlanningRitual";
 import React from "react";
 
@@ -28,33 +28,34 @@ describe("PlanningRitual", () => {
     it("should render morning ritual", async () => {
         render(<PlanningRitual open={true} onOpenChange={() => { }} type="morning" userId={mockUserId} />);
 
-        // Wait for async data load
-        await new Promise(resolve => setTimeout(resolve, 50));
-
-        expect(screen.getByText("Morning Planning Ritual")).toBeInTheDocument();
-        expect(screen.getByText("Today's Tasks (2)")).toBeInTheDocument();
-        expect(screen.getByText("Task 1")).toBeInTheDocument();
+        await waitFor(() => {
+            expect(screen.getByText("Morning Planning Ritual")).toBeInTheDocument();
+            expect(screen.getByText("Today's Tasks (2)")).toBeInTheDocument();
+            expect(screen.getByText("Task 1")).toBeInTheDocument();
+        });
     });
 
     it("should render evening ritual", async () => {
         render(<PlanningRitual open={true} onOpenChange={() => { }} type="evening" userId={mockUserId} />);
 
-        // Wait for async data load
-        await new Promise(resolve => setTimeout(resolve, 50));
-
-        expect(screen.getByText("Evening Review")).toBeInTheDocument();
-        expect(screen.getByText("1 / 2")).toBeInTheDocument(); // Progress
+        await waitFor(() => {
+            expect(screen.getByText("Evening Review")).toBeInTheDocument();
+            expect(screen.getByText("1 / 2")).toBeInTheDocument(); // Progress
+        });
     });
 
     it("should step through morning ritual", async () => {
         render(<PlanningRitual open={true} onOpenChange={() => { }} type="morning" userId={mockUserId} />);
 
-        // Wait for async data load
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await waitFor(() => {
+            expect(screen.getByText("Set Priorities")).toBeInTheDocument();
+        });
 
         fireEvent.click(screen.getByText("Set Priorities"));
 
-        expect(screen.getByText("What are your top 3 priorities today?")).toBeInTheDocument();
+        await waitFor(() => {
+            expect(screen.getByText("What are your top 3 priorities today?")).toBeInTheDocument();
+        });
 
         const inputs = screen.getAllByPlaceholderText(/priority.../);
         fireEvent.change(inputs[0], { target: { value: "Priority 1" } });
@@ -65,12 +66,15 @@ describe("PlanningRitual", () => {
     it("should step through evening ritual", async () => {
         render(<PlanningRitual open={true} onOpenChange={() => { }} type="evening" userId={mockUserId} />);
 
-        // Wait for async data load
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await waitFor(() => {
+            expect(screen.getByText("Reflect on Your Day")).toBeInTheDocument();
+        });
 
         fireEvent.click(screen.getByText("Reflect on Your Day"));
 
-        expect(screen.getByText("Daily Reflection")).toBeInTheDocument();
+        await waitFor(() => {
+            expect(screen.getByText("Daily Reflection")).toBeInTheDocument();
+        });
 
         const textarea = screen.getByPlaceholderText(/What went well today?/);
         fireEvent.change(textarea, { target: { value: "Good day" } });
@@ -82,9 +86,8 @@ describe("PlanningRitual", () => {
         mockGetTasks.mockResolvedValueOnce([]);
         render(<PlanningRitual open={true} onOpenChange={() => { }} type="morning" userId={mockUserId} />);
 
-        // Wait for async data load
-        await new Promise(resolve => setTimeout(resolve, 50));
-
-        expect(screen.getByText("No tasks scheduled for today")).toBeInTheDocument();
+        await waitFor(() => {
+            expect(screen.getByText("No tasks scheduled for today")).toBeInTheDocument();
+        });
     });
 });

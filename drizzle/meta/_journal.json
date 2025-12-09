@@ -15,6 +15,20 @@
       "when": 1765229935958,
       "tag": "0001_sloppy_mauler",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1765262434664,
+      "tag": "0002_freezing_molly_hayes",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1765262530122,
+      "tag": "0003_exotic_jazinda",
+      "breakpoints": true
     }
   ]
 }

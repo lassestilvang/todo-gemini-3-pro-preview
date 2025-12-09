@@ -8,13 +8,13 @@
  * - Uses integer with mode: "boolean" for boolean fields (stores as 0/1)
  * - Uses strftime for default timestamps instead of NOW()
  */
-import { sqliteTable, text, integer, primaryKey, index } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, primaryKey, index, uniqueIndex, unique, foreignKey } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
 // Users table - stores WorkOS user data
 export const users = sqliteTable("users", {
     id: text("id").primaryKey(), // WorkOS user ID
-    email: text("email").notNull(),
+    email: text("email").notNull().unique(),
     firstName: text("first_name"),
     lastName: text("last_name"),
     avatarUrl: text("avatar_url"),
@@ -24,7 +24,9 @@ export const users = sqliteTable("users", {
     updatedAt: integer("updated_at", { mode: "timestamp" })
         .notNull()
         .default(sql`(strftime('%s', 'now'))`),
-});
+}, (table) => ({
+    emailIdx: index("users_email_idx").on(table.email),
+}));
 
 export const lists = sqliteTable("lists", {
     id: integer("id").primaryKey({ autoIncrement: true }),
@@ -43,6 +45,9 @@ export const lists = sqliteTable("lists", {
         .default(sql`(strftime('%s', 'now'))`),
 }, (table) => ({
     userIdIdx: index("lists_user_id_idx").on(table.userId),
+    userSlugUnique: uniqueIndex("lists_user_slug_unique").on(table.userId, table.slug),
+    // Unique constraint on (id, userId) to support composite FK from tasks
+    idUserUnique: unique("lists_id_user_id_unique").on(table.id, table.userId),
 }));
 
 export const tasks = sqliteTable("tasks", {
@@ -73,6 +78,11 @@ export const tasks = sqliteTable("tasks", {
         .default(sql`(strftime('%s', 'now'))`),
     deadline: integer("deadline", { mode: "timestamp" }),
 }, (table) => ({
+    // Composite FK ensures task's list belongs to the same user
+    listUserReference: foreignKey({
+        columns: [table.listId, table.userId],
+        foreignColumns: [lists.id, lists.userId],
+    }).onDelete("cascade"),
     userIdIdx: index("tasks_user_id_idx").on(table.userId),
     listIdIdx: index("tasks_list_id_idx").on(table.listId),
     parentIdIdx: index("tasks_parent_id_idx").on(table.parentId),

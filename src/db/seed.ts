@@ -49,6 +49,7 @@ async function initializeUserData(userId: string): Promise<void> {
         .select()
         .from(lists)
         .where(eq(lists.userId, userId))
+        .where(eq(lists.slug, "inbox"))
         .limit(1);
 
     if (existingInbox.length === 0) {

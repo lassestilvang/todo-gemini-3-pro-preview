@@ -78,7 +78,11 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
                 isHabit: isRecurring ? isHabit : false,
             };
 
-            if (!userId) return;
+            if (!userId) {
+                console.error("Cannot submit task: userId is required");
+                alert("Unable to save task. Please try logging in again.");
+                return;
+            }
             if (isEdit && task) {
                 await updateTask(task.id, userId, data);
             } else {

@@ -62,7 +62,10 @@ export function FocusMode({ task, userId, onClose }: FocusModeProps) {
     };
 
     const handleComplete = async () => {
-        if (!userId) return;
+        if (!userId) {
+            toast.error("Unable to complete task: User not authenticated");
+            return;
+        }
         try {
             await updateTask(task.id, userId, { isCompleted: true });
             confetti({

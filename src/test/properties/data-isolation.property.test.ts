@@ -104,7 +104,7 @@ describeOrSkip("Property Tests: Data Isolation", () => {
             await fc.assert(
                 fc.asyncProperty(
                     fc.string({ minLength: 1, maxLength: 20 }).filter(s => s.trim().length > 0),
-                    fc.string({ minLength: 1, maxLength: 20 }).filter(s => s.trim().length > 0 && s !== "userA"),
+                    fc.string({ minLength: 1, maxLength: 20 }).filter(s => s.trim().length > 0),
                     async (userAId, userBId) => {
                         // Ensure distinct users
                         if (userAId === userBId) return;
