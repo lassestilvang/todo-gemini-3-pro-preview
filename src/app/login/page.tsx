@@ -13,29 +13,35 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   let signInUrl: string;
   let signUpUrl: string;
 
-  try {
-    signInUrl = await getSignInUrl();
-    signUpUrl = await getSignUpUrl();
-  } catch (error) {
-    console.error('Failed to get authentication URLs:', error);
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-violet-50 via-white to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-violet-950 p-4">
-        <div className="w-full max-w-md space-y-6 text-center">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-              <CheckCircle2 className="w-7 h-7 text-white" aria-hidden="true" />
+  // In E2E test mode, use placeholder URLs since we bypass WorkOS OAuth
+  if (process.env.E2E_TEST_MODE === 'true') {
+    signInUrl = '/api/test-auth';
+    signUpUrl = '/api/test-auth';
+  } else {
+    try {
+      signInUrl = await getSignInUrl();
+      signUpUrl = await getSignUpUrl();
+    } catch (error) {
+      console.error('Failed to get authentication URLs:', error);
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-violet-50 via-white to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-violet-950 p-4">
+          <div className="w-full max-w-md space-y-6 text-center">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                <CheckCircle2 className="w-7 h-7 text-white" aria-hidden="true" />
+              </div>
             </div>
+            <h1 className="text-3xl font-bold tracking-tight">Todo Gemini</h1>
+            <p className="text-muted-foreground">
+              Unable to load authentication. Please try again later.
+            </p>
+            <Button asChild variant="outline" className="mt-4">
+              <Link href="/">Retry</Link>
+            </Button>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">Todo Gemini</h1>
-          <p className="text-muted-foreground">
-            Unable to load authentication. Please try again later.
-          </p>
-          <Button asChild variant="outline" className="mt-4">
-            <Link href="/">Retry</Link>
-          </Button>
         </div>
-      </div>
-    );
+      );
+    }
   }
 
   return (

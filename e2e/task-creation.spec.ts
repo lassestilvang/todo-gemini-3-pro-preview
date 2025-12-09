@@ -96,16 +96,17 @@ test.describe('Task Creation Flow', () => {
 
   test('should clear input after creating task', async ({ page }) => {
     const taskInput = page.getByTestId('task-input');
+    const uniqueId = Date.now();
+    const taskTitle = `Task to clear input ${uniqueId}`;
     
     // Create a task
-    await taskInput.fill('Task to clear input');
+    await taskInput.fill(taskTitle);
     await taskInput.press('Enter');
     
-    // Wait for task creation
-    await page.waitForTimeout(500);
+    // Wait for task to appear in the list (confirms creation completed)
+    await waitForTask(page, `Task to clear input ${uniqueId}`);
     
-    // Input should be cleared (or collapsed)
-    const inputValue = await taskInput.inputValue().catch(() => '');
-    expect(inputValue).toBe('');
+    // Input should be cleared after successful creation
+    await expect(taskInput).toHaveValue('');
   });
 });
