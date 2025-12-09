@@ -28,6 +28,13 @@ mock.module("next/cache", () => ({
     revalidateTag: () => { },
 }));
 
+// Mock gemini client globally to prevent AI calls during tests
+// Individual tests can override this mock if they need to test AI functionality
+mock.module("@/lib/gemini", () => ({
+    getGeminiClient: () => null,
+    GEMINI_MODEL: "gemini-pro",
+}));
+
 // Mock canvas-confetti
 mock.module("canvas-confetti", () => ({
     default: () => Promise.resolve(),

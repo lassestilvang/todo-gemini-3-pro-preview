@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, mock } from "bun:test";
+import { describe, it, expect, beforeEach } from "bun:test";
 import * as fc from "fast-check";
 import { setupTestDb, resetTestDb } from "@/test/setup";
 import {
@@ -10,15 +10,7 @@ import {
 } from "@/lib/actions";
 import { isSuccess, isFailure } from "@/lib/action-result";
 
-// Mock next/cache to prevent revalidatePath errors in tests
-mock.module("next/cache", () => ({
-    revalidatePath: () => {},
-}));
-
-// Mock smart-tags to prevent AI calls
-mock.module("@/lib/smart-tags", () => ({
-    suggestMetadata: mock(() => Promise.resolve({ listId: null, labelIds: [] })),
-}));
+// Note: next/cache and smart-tags mocks are provided globally via src/test/mocks.ts
 
 // Configure fast-check for reproducibility in CI
 const FAST_CHECK_SEED = process.env.FAST_CHECK_SEED
