@@ -1,12 +1,17 @@
 import { authkit } from '@workos-inc/authkit-nextjs';
 import { NextRequest, NextResponse } from 'next/server';
-import { syncUser } from '@/lib/auth';
 
 const unauthenticatedPaths = ['/login', '/auth/callback'];
 
-// Sync user at most once per hour (in milliseconds)
-const USER_SYNC_INTERVAL_MS = 60 * 60 * 1000;
-const USER_SYNC_COOKIE_NAME = 'user_last_synced';
+function applyAuthkitHeaders(response: NextResponse, authkitHeaders: Headers) {
+  for (const [key, value] of authkitHeaders) {
+    if (key.toLowerCase() === 'set-cookie') {
+      response.headers.append(key, value);
+    } else {
+      response.headers.set(key, value);
+    }
+  }
+}
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -23,78 +28,24 @@ export async function proxy(request: NextRequest) {
     const response = NextResponse.next({
       request: { headers: new Headers(request.headers) },
     });
-
-    for (const [key, value] of authkitHeaders) {
-      if (key.toLowerCase() === 'set-cookie') {
-        response.headers.append(key, value);
-      } else {
-        response.headers.set(key, value);
-      }
-    }
-
+    applyAuthkitHeaders(response, authkitHeaders);
     return response;
   }
 
   // Protected route - redirect to login if no session
   if (!session?.user) {
-    if (!authorizationUrl) {
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
-    const response = NextResponse.redirect(authorizationUrl);
-
-    for (const [key, value] of authkitHeaders) {
-      if (key.toLowerCase() === 'set-cookie') {
-        response.headers.append(key, value);
-      } else {
-        response.headers.set(key, value);
-      }
-    }
-
+    const redirectUrl = authorizationUrl || new URL('/login', request.url);
+    const response = NextResponse.redirect(redirectUrl);
+    applyAuthkitHeaders(response, authkitHeaders);
     return response;
   }
 
-  // Check if we need to sync user (only sync periodically, not on every request)
-  const lastSyncedCookie = request.cookies.get(USER_SYNC_COOKIE_NAME);
-  const lastSynced = lastSyncedCookie ? parseInt(lastSyncedCookie.value, 10) : 0;
-  const now = Date.now();
-  const shouldSync = now - lastSynced > USER_SYNC_INTERVAL_MS;
-
   // User is authenticated, forward request with authkit headers
+  // Note: User sync happens in /auth/callback on sign-in, not on every request
   const response = NextResponse.next({
     request: { headers: new Headers(request.headers) },
   });
-
-  // Sync user to database periodically (creates if not exists, updates if exists)
-  if (shouldSync) {
-    try {
-      await syncUser({
-        id: session.user.id,
-        email: session.user.email,
-        firstName: session.user.firstName,
-        lastName: session.user.lastName,
-        profilePictureUrl: session.user.profilePictureUrl,
-      });
-      // Update the last synced timestamp cookie
-      response.cookies.set(USER_SYNC_COOKIE_NAME, now.toString(), {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: USER_SYNC_INTERVAL_MS / 1000, // Cookie expires when sync is needed again
-      });
-    } catch (error) {
-      console.error('Failed to sync user to database:', error);
-      // Continue anyway - the upsert may have partially succeeded or will retry on next interval
-    }
-  }
-
-  for (const [key, value] of authkitHeaders) {
-    if (key.toLowerCase() === 'set-cookie') {
-      response.headers.append(key, value);
-    } else {
-      response.headers.set(key, value);
-    }
-  }
-
+  applyAuthkitHeaders(response, authkitHeaders);
   return response;
 }
 

@@ -4,6 +4,7 @@ import { withAuth, signOut as workosSignOut } from "@workos-inc/authkit-nextjs";
 import { db, users, lists, userStats } from "@/db";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
+import { UnauthorizedError, ForbiddenError } from "./auth-errors";
 
 export interface AuthUser {
   id: string;
@@ -35,13 +36,13 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 
 /**
  * Require authentication for a server action.
- * Throws an error if not authenticated.
+ * Throws UnauthorizedError if not authenticated.
  */
 export async function requireAuth(): Promise<AuthUser> {
   const user = await getCurrentUser();
   
   if (!user) {
-    throw new Error("UNAUTHORIZED");
+    throw new UnauthorizedError();
   }
 
   return user;
@@ -81,15 +82,8 @@ export async function syncUser(workosUser: {
     })
     .returning();
 
-  // Check if user has any lists to determine if this is a new user
-  const existingLists = await db
-    .select({ id: lists.id })
-    .from(lists)
-    .where(eq(lists.userId, upsertedUser.id))
-    .limit(1);
-
-  // Initialize default data for new users (no existing lists)
-  if (existingLists.length === 0) {
+  // Initialize default data for new users (not yet initialized)
+  if (!upsertedUser.isInitialized) {
     await db.batch([
       db.insert(lists).values({
         userId: upsertedUser.id,
@@ -105,6 +99,9 @@ export async function syncUser(workosUser: {
         currentStreak: 0,
         longestStreak: 0,
       }),
+      db.update(users)
+        .set({ isInitialized: true })
+        .where(eq(users.id, upsertedUser.id)),
     ]);
   }
 
@@ -142,6 +139,7 @@ export async function checkResourceOwnership(
 
 /**
  * Verify resource ownership and throw if unauthorized.
+ * Throws ForbiddenError if the resource doesn't belong to the user.
  */
 export async function requireResourceOwnership(
   resourceUserId: string | null | undefined,
@@ -149,6 +147,6 @@ export async function requireResourceOwnership(
 ): Promise<void> {
   const isOwner = await checkResourceOwnership(resourceUserId, authenticatedUserId);
   if (!isOwner) {
-    throw new Error("FORBIDDEN");
+    throw new ForbiddenError();
   }
 }

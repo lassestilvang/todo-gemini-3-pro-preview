@@ -7,6 +7,7 @@ export const users = pgTable("users", {
     firstName: text("first_name"),
     lastName: text("last_name"),
     avatarUrl: text("avatar_url"),
+    isInitialized: boolean("is_initialized").notNull().default(false),
     createdAt: timestamp("created_at")
         .notNull()
         .defaultNow(),

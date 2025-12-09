@@ -125,10 +125,10 @@ BEGIN
     ) INTO pk_exists;
     
     IF NOT pk_exists THEN
+        -- Drop any existing primary key constraint with a different name
+        ALTER TABLE "user_stats" DROP CONSTRAINT IF EXISTS "user_stats_user_id_pk";
         ALTER TABLE "user_stats" ADD CONSTRAINT "user_stats_pkey" PRIMARY KEY("user_id");
     END IF;
-EXCEPTION WHEN others THEN
-    NULL;
 END $$;--> statement-breakpoint
 
 -- Step 8: Add foreign key constraints

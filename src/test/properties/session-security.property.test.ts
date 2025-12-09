@@ -23,6 +23,7 @@ import fc from "fast-check";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser, clearMockAuthUser } from "@/test/mocks";
 import { getCurrentUser, requireAuth } from "@/lib/auth";
+import { UnauthorizedError } from "@/lib/auth-errors";
 import { getTasks, getLists, getLabels } from "@/lib/actions";
 
 // Generator for valid WorkOS user IDs
@@ -186,7 +187,7 @@ describeOrSkip("Property Tests: Session Security", () => {
    * We test this by verifying that requireAuth throws UNAUTHORIZED for unauthenticated requests.
    */
   describe("Property 9: API Unauthorized Response", () => {
-    it("requireAuth throws UNAUTHORIZED when no session exists", async () => {
+    it("requireAuth throws UnauthorizedError when no session exists", async () => {
       await fc.assert(
         fc.asyncProperty(
           fc.constant(null), // No user
@@ -194,7 +195,7 @@ describeOrSkip("Property Tests: Session Security", () => {
             // Ensure no user is authenticated
             clearMockAuthUser();
             
-            // Property: requireAuth throws UNAUTHORIZED when not authenticated
+            // Property: requireAuth throws UnauthorizedError when not authenticated
             let thrownError: Error | null = null;
             
             try {
@@ -204,7 +205,8 @@ describeOrSkip("Property Tests: Session Security", () => {
             }
 
             expect(thrownError).not.toBeNull();
-            expect(thrownError?.message).toBe("UNAUTHORIZED");
+            expect(thrownError).toBeInstanceOf(UnauthorizedError);
+            expect((thrownError as UnauthorizedError).code).toBe("UNAUTHORIZED");
           }
         ),
         { numRuns: 100 }
