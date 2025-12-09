@@ -106,12 +106,24 @@ async function runMigrations() {
         }
         
         // Debug: show what's in the migrations table before running
-        const existingMigrations = await sql`SELECT hash, created_at FROM drizzle."__drizzle_migrations" ORDER BY id`;
-        console.log("   Existing migrations in DB:", existingMigrations.map(m => m.hash.substring(0, 16) + "..."));
+        const existingMigrations = await sql`SELECT hash, created_at FROM drizzle."__drizzle_migrations" ORDER BY created_at DESC LIMIT 1`;
+        console.log("   Last migration in DB:", existingMigrations[0]?.hash?.substring(0, 16) + "...", "created_at:", existingMigrations[0]?.created_at);
+        
+        // Read the journal to get migration timestamps
+        const journal = JSON.parse(readFileSync("./drizzle/meta/_journal.json", "utf8"));
+        console.log("   Journal entries:");
+        for (const entry of journal.entries) {
+            console.log(`     - ${entry.tag}: when=${entry.when}`);
+        }
         
         // Compute hash for migration 0001 to check
         const migration0001Hash = computeMigrationHash("./drizzle/0001_sloppy_mauler.sql");
         console.log(`   Migration 0001 hash: ${migration0001Hash.substring(0, 16)}...`);
+        
+        // Check: should migration 0001 run?
+        const lastCreatedAt = Number(existingMigrations[0]?.created_at || 0);
+        const migration0001When = journal.entries[1].when;
+        console.log(`   Comparison: lastCreatedAt(${lastCreatedAt}) < migration0001When(${migration0001When}) = ${lastCreatedAt < migration0001When}`);
         
         // Run all pending migrations
         // Drizzle automatically skips migrations that are already in __drizzle_migrations
