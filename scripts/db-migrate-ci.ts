@@ -105,13 +105,32 @@ async function runMigrations() {
             }
         }
         
-        // Debug: show what's in the migrations table
+        // Debug: show what's in the migrations table before running
         const existingMigrations = await sql`SELECT hash, created_at FROM drizzle."__drizzle_migrations" ORDER BY id`;
         console.log("   Existing migrations in DB:", existingMigrations.map(m => m.hash.substring(0, 16) + "..."));
         
+        // Compute hash for migration 0001 to check
+        const migration0001Hash = computeMigrationHash("./drizzle/0001_sloppy_mauler.sql");
+        console.log(`   Migration 0001 hash: ${migration0001Hash.substring(0, 16)}...`);
+        
         // Run all pending migrations
         // Drizzle automatically skips migrations that are already in __drizzle_migrations
+        console.log("   Running Drizzle migrate...");
         await migrate(db, { migrationsFolder: "./drizzle" });
+        
+        // Debug: show what's in the migrations table after running
+        const migrationsAfter = await sql`SELECT hash, created_at FROM drizzle."__drizzle_migrations" ORDER BY id`;
+        console.log("   Migrations after:", migrationsAfter.map(m => m.hash.substring(0, 16) + "..."));
+        
+        // Check if users table exists now
+        const usersCheck = await sql`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'users'
+            ) as has_users_table
+        `;
+        console.log("   Users table exists:", usersCheck[0].has_users_table);
         
         console.log("✅ Migrations completed successfully!");
     } catch (error) {
