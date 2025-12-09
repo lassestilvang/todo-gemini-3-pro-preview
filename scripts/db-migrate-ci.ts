@@ -53,6 +53,9 @@ async function runMigrations() {
         
         const { has_old_schema, has_migrations_table } = result[0];
         
+        // Compute the hash for migration 0000 (same way Drizzle does it)
+        const migration0000Hash = computeMigrationHash("./drizzle/0000_jittery_cloak.sql");
+        
         if (has_old_schema && !has_migrations_table) {
             console.log("⚠️  Detected existing database without migration tracking.");
             console.log("   Initializing migration tracking for existing schema...");
@@ -67,8 +70,6 @@ async function runMigrations() {
                 )
             `;
             
-            // Compute the hash for migration 0000 (same way Drizzle does it)
-            const migration0000Hash = computeMigrationHash("./drizzle/0000_jittery_cloak.sql");
             console.log(`   Migration 0000 hash: ${migration0000Hash}`);
             
             // Mark the first migration (0000_jittery_cloak) as already applied
@@ -76,10 +77,30 @@ async function runMigrations() {
             await sql`
                 INSERT INTO "__drizzle_migrations" (hash, created_at)
                 VALUES (${migration0000Hash}, ${Date.now()})
-                ON CONFLICT DO NOTHING
             `;
             
             console.log("   ✓ Migration tracking initialized");
+        } else if (has_old_schema && has_migrations_table) {
+            // Check if migration 0000 is properly recorded with correct hash
+            const migrationCheck = await sql`
+                SELECT EXISTS (
+                    SELECT FROM "__drizzle_migrations" 
+                    WHERE hash = ${migration0000Hash}
+                ) as has_migration_0000
+            `;
+            
+            if (!migrationCheck[0].has_migration_0000) {
+                console.log("⚠️  Migration tracking exists but migration 0000 not recorded.");
+                console.log(`   Adding migration 0000 hash: ${migration0000Hash}`);
+                
+                // Insert the correct hash for migration 0000
+                await sql`
+                    INSERT INTO "__drizzle_migrations" (hash, created_at)
+                    VALUES (${migration0000Hash}, ${Date.now()})
+                `;
+                
+                console.log("   ✓ Migration 0000 recorded");
+            }
         }
         
         // Run all pending migrations
