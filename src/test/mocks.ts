@@ -68,3 +68,13 @@ mock.module("@workos-inc/authkit-nextjs", () => ({
     withAuth: mock(async () => ({ user: getMockAuthUser() })),
     signOut: mock(() => Promise.resolve()),
 }));
+
+/**
+ * Reset all mock state to ensure test isolation.
+ * Call this in afterEach hooks to prevent state leakage between tests.
+ * 
+ * Requirements: 3.1, 3.2 - Test isolation and mock reset
+ */
+export function resetAllMocks() {
+    clearMockAuthUser();
+}

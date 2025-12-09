@@ -10,10 +10,16 @@ import {
 
 // Note: next/cache and smart-tags mocks are provided globally via src/test/mocks.ts
 
-// Configure fast-check
+// Configure fast-check for reproducibility in CI
+// Requirements: 3.5 - Property tests use fixed seed for reproducibility
+const FAST_CHECK_SEED = process.env.FAST_CHECK_SEED
+    ? parseInt(process.env.FAST_CHECK_SEED, 10)
+    : undefined;
+
 fc.configureGlobal({
     numRuns: 20,
     verbose: false,
+    seed: FAST_CHECK_SEED,
 });
 
 // Skip in CI due to parallel test execution issues with module mocking

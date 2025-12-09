@@ -26,6 +26,18 @@ import { getCurrentUser, requireAuth } from "@/lib/auth";
 import { UnauthorizedError } from "@/lib/auth-errors";
 import { getTasks, getLists, getLabels } from "@/lib/actions";
 
+// Configure fast-check for reproducibility in CI
+// Requirements: 3.5 - Property tests use fixed seed for reproducibility
+const FAST_CHECK_SEED = process.env.FAST_CHECK_SEED
+  ? parseInt(process.env.FAST_CHECK_SEED, 10)
+  : undefined;
+
+fc.configureGlobal({
+  numRuns: 100,
+  verbose: false,
+  seed: FAST_CHECK_SEED,
+});
+
 // Generator for valid WorkOS user IDs
 const workosUserIdArb = fc.string({ minLength: 10, maxLength: 30 })
   .filter(s => /^[a-zA-Z0-9_]+$/.test(s))

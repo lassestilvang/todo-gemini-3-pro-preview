@@ -4,6 +4,7 @@ import { withAuth, signOut as workosSignOut } from "@workos-inc/authkit-nextjs";
 import { db, users, lists, userStats } from "@/db";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { UnauthorizedError, ForbiddenError } from "./auth-errors";
 
 export interface AuthUser {
@@ -15,10 +16,48 @@ export interface AuthUser {
 }
 
 /**
+ * Get test user from test session cookie (E2E test mode only).
+ */
+async function getTestUser(): Promise<AuthUser | null> {
+  if (process.env.E2E_TEST_MODE !== 'true') {
+    return null;
+  }
+  
+  try {
+    const cookieStore = await cookies();
+    const testSession = cookieStore.get('wos-session-test');
+    
+    if (testSession) {
+      const session = JSON.parse(testSession.value);
+      if (session.user && session.expiresAt > Date.now()) {
+        return {
+          id: session.user.id,
+          email: session.user.email,
+          firstName: session.user.firstName ?? null,
+          lastName: session.user.lastName ?? null,
+          avatarUrl: session.user.profilePictureUrl ?? null,
+        };
+      }
+    }
+  } catch {
+    // Invalid session - return null
+  }
+  
+  return null;
+}
+
+/**
  * Get the current authenticated user from the session.
  * Returns null if not authenticated.
+ * 
+ * In E2E test mode, checks for test session cookie instead of WorkOS.
  */
 export async function getCurrentUser(): Promise<AuthUser | null> {
+  // In E2E test mode, only use test session (skip WorkOS entirely)
+  if (process.env.E2E_TEST_MODE === 'true') {
+    return getTestUser();
+  }
+  
   const { user } = await withAuth();
   
   if (!user) {

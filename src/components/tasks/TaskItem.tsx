@@ -133,6 +133,9 @@ export function TaskItem({ task, showListInfo = true, userId }: TaskItemProps) {
                     isCompleted && "opacity-60 bg-muted/30",
                     isBlocked && !isCompleted && "bg-orange-50/50 border-orange-100"
                 )}
+                data-testid="task-item"
+                data-task-id={task.id}
+                data-task-completed={isCompleted}
             >
                 {/* Expand/Collapse Button */}
                 {hasSubtasks ? (
@@ -164,6 +167,7 @@ export function TaskItem({ task, showListInfo = true, userId }: TaskItemProps) {
                         isBlocked && !isCompleted ? "opacity-50 cursor-not-allowed" : ""
                     )}
                     onClick={(e) => e.stopPropagation()}
+                    data-testid="task-checkbox"
                 />
 
                 <div className="flex-1 min-w-0">

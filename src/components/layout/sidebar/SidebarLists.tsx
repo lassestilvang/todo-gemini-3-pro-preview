@@ -33,14 +33,14 @@ export function SidebarLists({ lists, userId }: SidebarListsProps) {
     const [editingList, setEditingList] = useState<List | null>(null);
 
     return (
-        <div className="pl-3 pr-6 py-2">
+        <div className="pl-3 pr-6 py-2" data-testid="sidebar-lists">
             <div className="flex items-center justify-between px-4">
                 <h2 className="text-lg font-semibold tracking-tight">
                     Lists
                 </h2>
                 <ManageListDialog
                     trigger={
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" data-testid="add-list-button">
                             <Plus className="h-4 w-4" />
                             <span className="sr-only">Add List</span>
                         </Button>

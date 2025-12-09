@@ -1,9 +1,15 @@
 import Link from 'next/link';
 import { getSignInUrl, getSignUpUrl } from '@workos-inc/authkit-nextjs';
-import { CheckCircle2, Sparkles, Target, Zap } from 'lucide-react';
+import { CheckCircle2, Sparkles, Target, Zap, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export default async function LoginPage() {
+interface LoginPageProps {
+  searchParams: Promise<{ message?: string }>;
+}
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const params = await searchParams;
+  const message = params.message;
   let signInUrl: string;
   let signUpUrl: string;
 
@@ -48,6 +54,14 @@ export default async function LoginPage() {
           </p>
         </div>
 
+        {/* Session Expired Message */}
+        {message === 'session_expired' && (
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200">
+            <AlertCircle className="w-5 h-5 shrink-0" />
+            <p className="text-sm">Your session has expired. Please sign in again.</p>
+          </div>
+        )}
+
         {/* Features */}
         <div className="grid grid-cols-3 gap-4 py-6">
           <div className="flex flex-col items-center text-center space-y-2">
@@ -72,10 +86,10 @@ export default async function LoginPage() {
 
         {/* Auth Buttons */}
         <div className="space-y-3">
-          <Button asChild className="w-full h-11" size="lg">
+          <Button asChild className="w-full h-11" size="lg" data-testid="sign-in-button">
             <Link href={signInUrl}>Sign in</Link>
           </Button>
-          <Button asChild variant="outline" className="w-full h-11" size="lg">
+          <Button asChild variant="outline" className="w-full h-11" size="lg" data-testid="sign-up-button">
             <Link href={signUpUrl}>Create an account</Link>
           </Button>
         </div>

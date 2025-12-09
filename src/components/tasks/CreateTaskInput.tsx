@@ -102,6 +102,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId }: { listId?: n
                         onFocus={() => setIsExpanded(true)}
                         placeholder="Add a task... (try 'Buy milk tomorrow !high @errands')"
                         className="border-0 bg-transparent shadow-none focus-visible:ring-0 text-lg py-6"
+                        data-testid="task-input"
                     />
 
                     {/* Preview Badges */}
@@ -205,7 +206,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId }: { listId?: n
                                 <Button type="button" variant="ghost" size="sm" onClick={() => setIsExpanded(false)}>
                                     Cancel
                                 </Button>
-                                <Button type="submit" size="sm" disabled={!title.trim() || !userId}>
+                                <Button type="submit" size="sm" disabled={!title.trim() || !userId} data-testid="add-task-button">
                                     Add Task
                                 </Button>
                             </div>

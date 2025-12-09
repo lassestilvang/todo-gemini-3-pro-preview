@@ -6,6 +6,14 @@ import { revalidatePath } from "next/cache";
 import { startOfDay, endOfDay, addDays } from "date-fns";
 import { calculateLevel, calculateStreakUpdate } from "./gamification";
 import { suggestMetadata } from "./smart-tags";
+import {
+    type ActionResult,
+    success,
+    failure,
+    ValidationError,
+    AuthorizationError,
+    NotFoundError,
+} from "./action-result";
 
 // --- Lists ---
 
@@ -930,4 +938,715 @@ export async function saveViewSettings(userId: string, viewId: string, settings:
 export async function resetViewSettings(userId: string, viewId: string) {
     await db.delete(viewSettings).where(and(eq(viewSettings.userId, userId), eq(viewSettings.viewId, viewId)));
     revalidatePath("/");
+}
+
+// --- Task Actions with Error Handling ---
+
+/**
+ * Validates task input data and returns field-level errors
+ */
+function validateTaskInput(data: { title?: string; userId?: string }): Record<string, string> {
+    const errors: Record<string, string> = {};
+    
+    if (!data.title || data.title.trim().length === 0) {
+        errors.title = "Title is required";
+    } else if (data.title.length > 500) {
+        errors.title = "Title must be 500 characters or less";
+    }
+    
+    if (!data.userId || data.userId.trim().length === 0) {
+        errors.userId = "User ID is required";
+    }
+    
+    return errors;
+}
+
+/**
+ * Creates a task with error handling
+ * Returns ActionResult instead of throwing
+ * 
+ * @param data - Task data including optional labelIds
+ * @returns ActionResult with created task or error
+ */
+export async function createTaskSafe(
+    data: typeof tasks.$inferInsert & { labelIds?: number[] }
+): Promise<ActionResult<typeof tasks.$inferSelect>> {
+    try {
+        // Validate required fields
+        const validationErrors = validateTaskInput(data);
+        if (Object.keys(validationErrors).length > 0) {
+            throw new ValidationError("Invalid task data", validationErrors);
+        }
+
+        // Check authorization - userId must be provided
+        if (!data.userId) {
+            throw new AuthorizationError("User ID is required to create a task");
+        }
+
+        const task = await createTask(data);
+        return success(task);
+    } catch (error) {
+        if (error instanceof ValidationError) {
+            return failure({
+                code: "VALIDATION_ERROR",
+                message: error.message,
+                details: error.fieldErrors,
+            });
+        }
+        
+        if (error instanceof AuthorizationError) {
+            return failure({
+                code: "FORBIDDEN",
+                message: "You do not have permission to perform this action",
+            });
+        }
+        
+        // Check for database errors
+        if (error instanceof Error && (
+            error.message.includes("SQLITE") ||
+            error.message.includes("database") ||
+            error.message.includes("constraint")
+        )) {
+            console.error("[Database Error]", error.message);
+            return failure({
+                code: "DATABASE_ERROR",
+                message: "Unable to create task. Please try again.",
+            });
+        }
+        
+        console.error("[Server Action Error]", error);
+        return failure({
+            code: "UNKNOWN_ERROR",
+            message: "An unexpected error occurred. Please try again.",
+        });
+    }
+}
+
+/**
+ * Updates a task with error handling
+ * Returns ActionResult instead of throwing
+ * 
+ * @param id - Task ID
+ * @param userId - User ID for authorization
+ * @param data - Partial task data to update
+ * @returns ActionResult with void or error
+ */
+export async function updateTaskSafe(
+    id: number,
+    userId: string,
+    data: Partial<Omit<typeof tasks.$inferInsert, 'userId'>> & { labelIds?: number[] }
+): Promise<ActionResult<void>> {
+    try {
+        // Validate authorization
+        if (!userId || userId.trim().length === 0) {
+            throw new AuthorizationError("User ID is required");
+        }
+
+        // Check if task exists and belongs to user
+        const existingTask = await getTask(id, userId);
+        if (!existingTask) {
+            throw new NotFoundError(`Task with ID ${id} not found`);
+        }
+
+        // Validate title if provided
+        if (data.title !== undefined) {
+            if (data.title.trim().length === 0) {
+                throw new ValidationError("Invalid task data", { title: "Title cannot be empty" });
+            }
+            if (data.title.length > 500) {
+                throw new ValidationError("Invalid task data", { title: "Title must be 500 characters or less" });
+            }
+        }
+
+        await updateTask(id, userId, data);
+        return success(undefined);
+    } catch (error) {
+        if (error instanceof ValidationError) {
+            return failure({
+                code: "VALIDATION_ERROR",
+                message: error.message,
+                details: error.fieldErrors,
+            });
+        }
+        
+        if (error instanceof AuthorizationError) {
+            return failure({
+                code: "FORBIDDEN",
+                message: "You do not have permission to perform this action",
+            });
+        }
+        
+        if (error instanceof NotFoundError) {
+            return failure({
+                code: "NOT_FOUND",
+                message: error.message,
+            });
+        }
+        
+        // Check for database errors
+        if (error instanceof Error && (
+            error.message.includes("SQLITE") ||
+            error.message.includes("database") ||
+            error.message.includes("constraint")
+        )) {
+            console.error("[Database Error]", error.message);
+            return failure({
+                code: "DATABASE_ERROR",
+                message: "Unable to update task. Please try again.",
+            });
+        }
+        
+        console.error("[Server Action Error]", error);
+        return failure({
+            code: "UNKNOWN_ERROR",
+            message: "An unexpected error occurred. Please try again.",
+        });
+    }
+}
+
+/**
+ * Deletes a task with error handling
+ * Returns ActionResult instead of throwing
+ * 
+ * @param id - Task ID
+ * @param userId - User ID for authorization
+ * @returns ActionResult with void or error
+ */
+export async function deleteTaskSafe(
+    id: number,
+    userId: string
+): Promise<ActionResult<void>> {
+    try {
+        // Validate authorization
+        if (!userId || userId.trim().length === 0) {
+            throw new AuthorizationError("User ID is required");
+        }
+
+        // Check if task exists and belongs to user
+        const existingTask = await getTask(id, userId);
+        if (!existingTask) {
+            throw new NotFoundError(`Task with ID ${id} not found`);
+        }
+
+        await deleteTask(id, userId);
+        return success(undefined);
+    } catch (error) {
+        if (error instanceof AuthorizationError) {
+            return failure({
+                code: "FORBIDDEN",
+                message: "You do not have permission to perform this action",
+            });
+        }
+        
+        if (error instanceof NotFoundError) {
+            return failure({
+                code: "NOT_FOUND",
+                message: error.message,
+            });
+        }
+        
+        // Check for database errors
+        if (error instanceof Error && (
+            error.message.includes("SQLITE") ||
+            error.message.includes("database") ||
+            error.message.includes("constraint")
+        )) {
+            console.error("[Database Error]", error.message);
+            return failure({
+                code: "DATABASE_ERROR",
+                message: "Unable to delete task. Please try again.",
+            });
+        }
+        
+        console.error("[Server Action Error]", error);
+        return failure({
+            code: "UNKNOWN_ERROR",
+            message: "An unexpected error occurred. Please try again.",
+        });
+    }
+}
+
+/**
+ * Toggles task completion with error handling
+ * Returns ActionResult instead of throwing
+ * 
+ * @param id - Task ID
+ * @param userId - User ID for authorization
+ * @param isCompleted - New completion status
+ * @returns ActionResult with XP result or error
+ */
+export async function toggleTaskCompletionSafe(
+    id: number,
+    userId: string,
+    isCompleted: boolean
+): Promise<ActionResult<{ newXP: number; newLevel: number; leveledUp: boolean } | undefined>> {
+    try {
+        // Validate authorization
+        if (!userId || userId.trim().length === 0) {
+            throw new AuthorizationError("User ID is required");
+        }
+
+        // Check if task exists and belongs to user
+        const existingTask = await getTask(id, userId);
+        if (!existingTask) {
+            throw new NotFoundError(`Task with ID ${id} not found`);
+        }
+
+        const result = await toggleTaskCompletion(id, userId, isCompleted);
+        return success(result);
+    } catch (error) {
+        if (error instanceof AuthorizationError) {
+            return failure({
+                code: "FORBIDDEN",
+                message: "You do not have permission to perform this action",
+            });
+        }
+        
+        if (error instanceof NotFoundError) {
+            return failure({
+                code: "NOT_FOUND",
+                message: error.message,
+            });
+        }
+        
+        // Check for database errors
+        if (error instanceof Error && (
+            error.message.includes("SQLITE") ||
+            error.message.includes("database") ||
+            error.message.includes("constraint")
+        )) {
+            console.error("[Database Error]", error.message);
+            return failure({
+                code: "DATABASE_ERROR",
+                message: "Unable to update task completion. Please try again.",
+            });
+        }
+        
+        console.error("[Server Action Error]", error);
+        return failure({
+            code: "UNKNOWN_ERROR",
+            message: "An unexpected error occurred. Please try again.",
+        });
+    }
+}
+
+
+// --- List Actions with Error Handling ---
+
+/**
+ * Creates a list with error handling
+ * Returns ActionResult instead of throwing
+ * 
+ * @param data - List data
+ * @returns ActionResult with created list or error
+ */
+export async function createListSafe(
+    data: typeof lists.$inferInsert
+): Promise<ActionResult<typeof lists.$inferSelect>> {
+    try {
+        // Validate required fields
+        if (!data.name || data.name.trim().length === 0) {
+            throw new ValidationError("Invalid list data", { name: "Name is required" });
+        }
+        
+        if (data.name.length > 100) {
+            throw new ValidationError("Invalid list data", { name: "Name must be 100 characters or less" });
+        }
+
+        // Check authorization - userId must be provided
+        if (!data.userId || data.userId.trim().length === 0) {
+            throw new AuthorizationError("User ID is required to create a list");
+        }
+
+        const list = await createList(data);
+        return success(list);
+    } catch (error) {
+        if (error instanceof ValidationError) {
+            return failure({
+                code: "VALIDATION_ERROR",
+                message: error.message,
+                details: error.fieldErrors,
+            });
+        }
+        
+        if (error instanceof AuthorizationError) {
+            return failure({
+                code: "FORBIDDEN",
+                message: "You do not have permission to perform this action",
+            });
+        }
+        
+        // Check for database errors
+        if (error instanceof Error && (
+            error.message.includes("SQLITE") ||
+            error.message.includes("database") ||
+            error.message.includes("constraint")
+        )) {
+            console.error("[Database Error]", error.message);
+            return failure({
+                code: "DATABASE_ERROR",
+                message: "Unable to create list. Please try again.",
+            });
+        }
+        
+        console.error("[Server Action Error]", error);
+        return failure({
+            code: "UNKNOWN_ERROR",
+            message: "An unexpected error occurred. Please try again.",
+        });
+    }
+}
+
+/**
+ * Updates a list with error handling
+ * Returns ActionResult instead of throwing
+ * 
+ * @param id - List ID
+ * @param userId - User ID for authorization
+ * @param data - Partial list data to update
+ * @returns ActionResult with void or error
+ */
+export async function updateListSafe(
+    id: number,
+    userId: string,
+    data: Partial<Omit<typeof lists.$inferInsert, 'userId'>>
+): Promise<ActionResult<void>> {
+    try {
+        // Validate authorization
+        if (!userId || userId.trim().length === 0) {
+            throw new AuthorizationError("User ID is required");
+        }
+
+        // Check if list exists and belongs to user
+        const existingList = await getList(id, userId);
+        if (!existingList) {
+            throw new NotFoundError(`List with ID ${id} not found`);
+        }
+
+        // Validate name if provided
+        if (data.name !== undefined) {
+            if (data.name.trim().length === 0) {
+                throw new ValidationError("Invalid list data", { name: "Name cannot be empty" });
+            }
+            if (data.name.length > 100) {
+                throw new ValidationError("Invalid list data", { name: "Name must be 100 characters or less" });
+            }
+        }
+
+        await updateList(id, userId, data);
+        return success(undefined);
+    } catch (error) {
+        if (error instanceof ValidationError) {
+            return failure({
+                code: "VALIDATION_ERROR",
+                message: error.message,
+                details: error.fieldErrors,
+            });
+        }
+        
+        if (error instanceof AuthorizationError) {
+            return failure({
+                code: "FORBIDDEN",
+                message: "You do not have permission to perform this action",
+            });
+        }
+        
+        if (error instanceof NotFoundError) {
+            return failure({
+                code: "NOT_FOUND",
+                message: error.message,
+            });
+        }
+        
+        // Check for database errors
+        if (error instanceof Error && (
+            error.message.includes("SQLITE") ||
+            error.message.includes("database") ||
+            error.message.includes("constraint")
+        )) {
+            console.error("[Database Error]", error.message);
+            return failure({
+                code: "DATABASE_ERROR",
+                message: "Unable to update list. Please try again.",
+            });
+        }
+        
+        console.error("[Server Action Error]", error);
+        return failure({
+            code: "UNKNOWN_ERROR",
+            message: "An unexpected error occurred. Please try again.",
+        });
+    }
+}
+
+/**
+ * Deletes a list with error handling
+ * Returns ActionResult instead of throwing
+ * 
+ * @param id - List ID
+ * @param userId - User ID for authorization
+ * @returns ActionResult with void or error
+ */
+export async function deleteListSafe(
+    id: number,
+    userId: string
+): Promise<ActionResult<void>> {
+    try {
+        // Validate authorization
+        if (!userId || userId.trim().length === 0) {
+            throw new AuthorizationError("User ID is required");
+        }
+
+        // Check if list exists and belongs to user
+        const existingList = await getList(id, userId);
+        if (!existingList) {
+            throw new NotFoundError(`List with ID ${id} not found`);
+        }
+
+        await deleteList(id, userId);
+        return success(undefined);
+    } catch (error) {
+        if (error instanceof AuthorizationError) {
+            return failure({
+                code: "FORBIDDEN",
+                message: "You do not have permission to perform this action",
+            });
+        }
+        
+        if (error instanceof NotFoundError) {
+            return failure({
+                code: "NOT_FOUND",
+                message: error.message,
+            });
+        }
+        
+        // Check for database errors
+        if (error instanceof Error && (
+            error.message.includes("SQLITE") ||
+            error.message.includes("database") ||
+            error.message.includes("constraint")
+        )) {
+            console.error("[Database Error]", error.message);
+            return failure({
+                code: "DATABASE_ERROR",
+                message: "Unable to delete list. Please try again.",
+            });
+        }
+        
+        console.error("[Server Action Error]", error);
+        return failure({
+            code: "UNKNOWN_ERROR",
+            message: "An unexpected error occurred. Please try again.",
+        });
+    }
+}
+
+// --- Label Actions with Error Handling ---
+
+/**
+ * Creates a label with error handling
+ * Returns ActionResult instead of throwing
+ * 
+ * @param data - Label data
+ * @returns ActionResult with created label or error
+ */
+export async function createLabelSafe(
+    data: typeof labels.$inferInsert
+): Promise<ActionResult<typeof labels.$inferSelect>> {
+    try {
+        // Validate required fields
+        if (!data.name || data.name.trim().length === 0) {
+            throw new ValidationError("Invalid label data", { name: "Name is required" });
+        }
+        
+        if (data.name.length > 50) {
+            throw new ValidationError("Invalid label data", { name: "Name must be 50 characters or less" });
+        }
+
+        // Check authorization - userId must be provided
+        if (!data.userId || data.userId.trim().length === 0) {
+            throw new AuthorizationError("User ID is required to create a label");
+        }
+
+        const label = await createLabel(data);
+        return success(label);
+    } catch (error) {
+        if (error instanceof ValidationError) {
+            return failure({
+                code: "VALIDATION_ERROR",
+                message: error.message,
+                details: error.fieldErrors,
+            });
+        }
+        
+        if (error instanceof AuthorizationError) {
+            return failure({
+                code: "FORBIDDEN",
+                message: "You do not have permission to perform this action",
+            });
+        }
+        
+        // Check for database errors
+        if (error instanceof Error && (
+            error.message.includes("SQLITE") ||
+            error.message.includes("database") ||
+            error.message.includes("constraint")
+        )) {
+            console.error("[Database Error]", error.message);
+            return failure({
+                code: "DATABASE_ERROR",
+                message: "Unable to create label. Please try again.",
+            });
+        }
+        
+        console.error("[Server Action Error]", error);
+        return failure({
+            code: "UNKNOWN_ERROR",
+            message: "An unexpected error occurred. Please try again.",
+        });
+    }
+}
+
+/**
+ * Updates a label with error handling
+ * Returns ActionResult instead of throwing
+ * 
+ * @param id - Label ID
+ * @param userId - User ID for authorization
+ * @param data - Partial label data to update
+ * @returns ActionResult with void or error
+ */
+export async function updateLabelSafe(
+    id: number,
+    userId: string,
+    data: Partial<Omit<typeof labels.$inferInsert, 'userId'>>
+): Promise<ActionResult<void>> {
+    try {
+        // Validate authorization
+        if (!userId || userId.trim().length === 0) {
+            throw new AuthorizationError("User ID is required");
+        }
+
+        // Check if label exists and belongs to user
+        const existingLabel = await getLabel(id, userId);
+        if (!existingLabel) {
+            throw new NotFoundError(`Label with ID ${id} not found`);
+        }
+
+        // Validate name if provided
+        if (data.name !== undefined) {
+            if (data.name.trim().length === 0) {
+                throw new ValidationError("Invalid label data", { name: "Name cannot be empty" });
+            }
+            if (data.name.length > 50) {
+                throw new ValidationError("Invalid label data", { name: "Name must be 50 characters or less" });
+            }
+        }
+
+        await updateLabel(id, userId, data);
+        return success(undefined);
+    } catch (error) {
+        if (error instanceof ValidationError) {
+            return failure({
+                code: "VALIDATION_ERROR",
+                message: error.message,
+                details: error.fieldErrors,
+            });
+        }
+        
+        if (error instanceof AuthorizationError) {
+            return failure({
+                code: "FORBIDDEN",
+                message: "You do not have permission to perform this action",
+            });
+        }
+        
+        if (error instanceof NotFoundError) {
+            return failure({
+                code: "NOT_FOUND",
+                message: error.message,
+            });
+        }
+        
+        // Check for database errors
+        if (error instanceof Error && (
+            error.message.includes("SQLITE") ||
+            error.message.includes("database") ||
+            error.message.includes("constraint")
+        )) {
+            console.error("[Database Error]", error.message);
+            return failure({
+                code: "DATABASE_ERROR",
+                message: "Unable to update label. Please try again.",
+            });
+        }
+        
+        console.error("[Server Action Error]", error);
+        return failure({
+            code: "UNKNOWN_ERROR",
+            message: "An unexpected error occurred. Please try again.",
+        });
+    }
+}
+
+/**
+ * Deletes a label with error handling
+ * Returns ActionResult instead of throwing
+ * 
+ * @param id - Label ID
+ * @param userId - User ID for authorization
+ * @returns ActionResult with void or error
+ */
+export async function deleteLabelSafe(
+    id: number,
+    userId: string
+): Promise<ActionResult<void>> {
+    try {
+        // Validate authorization
+        if (!userId || userId.trim().length === 0) {
+            throw new AuthorizationError("User ID is required");
+        }
+
+        // Check if label exists and belongs to user
+        const existingLabel = await getLabel(id, userId);
+        if (!existingLabel) {
+            throw new NotFoundError(`Label with ID ${id} not found`);
+        }
+
+        await deleteLabel(id, userId);
+        return success(undefined);
+    } catch (error) {
+        if (error instanceof AuthorizationError) {
+            return failure({
+                code: "FORBIDDEN",
+                message: "You do not have permission to perform this action",
+            });
+        }
+        
+        if (error instanceof NotFoundError) {
+            return failure({
+                code: "NOT_FOUND",
+                message: error.message,
+            });
+        }
+        
+        // Check for database errors
+        if (error instanceof Error && (
+            error.message.includes("SQLITE") ||
+            error.message.includes("database") ||
+            error.message.includes("constraint")
+        )) {
+            console.error("[Database Error]", error.message);
+            return failure({
+                code: "DATABASE_ERROR",
+                message: "Unable to delete label. Please try again.",
+            });
+        }
+        
+        console.error("[Server Action Error]", error);
+        return failure({
+            code: "UNKNOWN_ERROR",
+            message: "An unexpected error occurred. Please try again.",
+        });
+    }
 }

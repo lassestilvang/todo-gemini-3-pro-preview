@@ -206,15 +206,40 @@ The `db:migrate:ci` script handles both fresh databases and existing ones that p
 
 ## 🧪 Running Tests
 
-We use `bun test` for running unit and integration tests.
+### Unit Tests
+
+We use `bun test` for running unit and integration tests with in-memory SQLite:
 
 ```bash
-# Run all tests
+# Run all unit tests
 bun test
 
 # Run specific test file
-bun test src/components/tasks/TaskDialog.test.tsx
+bun test src/lib/actions.test.ts
+
+# Run tests with coverage
+bun test --coverage
 ```
+
+### E2E Tests
+
+We use Playwright for end-to-end testing:
+
+```bash
+# Install Playwright browsers (first time only)
+bunx playwright install --with-deps chromium
+
+# Run all E2E tests
+bun run test:e2e
+
+# Run E2E tests with UI (interactive mode)
+bun run test:e2e:ui
+
+# Run E2E tests in headed mode (visible browser)
+bun run test:e2e:headed
+```
+
+E2E tests require `E2E_TEST_MODE=true` environment variable (automatically set by the test scripts).
 
 ## 📂 Project Structure
 
@@ -237,14 +262,6 @@ src/
 │   ├── hooks/            # Custom React hooks
 │   └── smart-scheduler.ts # AI task scheduling logic
 └── ...
-
-## 🧪 Running Tests
-
-Run the unit tests for server actions:
-
-```bash
-bun test
-```
 
 ## 📄 License
 

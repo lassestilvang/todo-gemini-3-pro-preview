@@ -1,6 +1,10 @@
 [test]
 preload = ["./src/test/mocks.ts", "./src/test/setup.ts"]
 concurrent = false
+# Coverage is enabled via --coverage flag
+# Target thresholds: 70% for src/lib, 60% for src/components
+# Exclude e2e tests - they run via Playwright
+root = "./src"
 
 [test.env]
 NODE_ENV = "test"

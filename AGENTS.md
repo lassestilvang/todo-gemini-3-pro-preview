@@ -39,18 +39,44 @@ bun run build
 
 ### CI Pipeline Replication
 
-The GitHub Actions CI runs three parallel jobs. To replicate locally:
+The GitHub Actions CI runs four jobs with dependencies. To replicate locally:
 
 ```bash
 # Lint job
-bun install && bun lint
+bun install --frozen-lockfile && bun lint
 
-# Test job (NODE_ENV=test uses in-memory SQLite automatically)
-bun install && bun test
+# Unit test job (NODE_ENV=test uses in-memory SQLite automatically)
+bun install --frozen-lockfile && bun test
 
 # Build job (requires DATABASE_URL environment variable)
-bun install && bun run db:push && bun run build
+bun install --frozen-lockfile && bun run db:migrate:ci && bun run build
+
+# E2E test job (requires DATABASE_URL and E2E_TEST_MODE)
+bun install --frozen-lockfile
+bunx playwright install --with-deps chromium
+E2E_TEST_MODE=true bunx playwright test
 ```
+
+### E2E Testing
+
+E2E tests use Playwright and run against a real database with test authentication bypass:
+
+```bash
+# Run all E2E tests
+bun run test:e2e
+
+# Run E2E tests with UI
+bun run test:e2e:ui
+
+# Run E2E tests in headed mode (visible browser)
+bun run test:e2e:headed
+```
+
+E2E tests are located in `e2e/` and cover:
+- Authentication flow (login, logout, protected routes)
+- Task creation and completion
+- List and label management
+- Gamification (XP, streaks)
 
 ### Command Notes
 
@@ -109,6 +135,7 @@ src/
 │   ├── layout.tsx          # Root layout with providers (QueryProvider, ThemeProvider)
 │   ├── page.tsx            # Redirects to /inbox
 │   ├── globals.css         # Global styles and Tailwind
+│   ├── api/                # API routes (test-auth for E2E testing)
 │   └── [route]/page.tsx    # Route pages (inbox, today, calendar, etc.)
 │
 ├── components/
@@ -125,9 +152,14 @@ src/
 │   ├── index.ts            # Database connection (Neon for prod, in-memory SQLite for tests)
 │   └── seed.ts             # Initial data seeding
 │
+├── hooks/                  # Custom React hooks
+│   └── useActionResult.ts  # Hook for handling server action results
+│
 ├── lib/
 │   ├── actions.ts          # Server Actions - ALL database operations
+│   ├── action-result.ts    # ActionResult type for consistent error handling
 │   ├── ai-actions.ts       # AI-powered features (Gemini)
+│   ├── auth.ts             # Authentication helpers (getCurrentUser, requireAuth)
 │   ├── gamification.ts     # XP/level calculations
 │   ├── smart-scheduler.ts  # AI task scheduling
 │   ├── smart-tags.ts       # Auto-tagging logic
@@ -135,7 +167,15 @@ src/
 │
 └── test/
     ├── setup.ts            # Test configuration, DB helpers, mocks
-    └── integration/        # Integration tests
+    ├── integration/        # Integration tests
+    └── properties/         # Property-based tests (fast-check)
+
+e2e/                        # Playwright E2E tests
+├── fixtures.ts             # Test utilities and authentication helpers
+├── authentication.spec.ts  # Auth flow tests
+├── task-creation.spec.ts   # Task creation tests
+├── task-completion.spec.ts # Task completion tests
+└── list-label-management.spec.ts  # List/label tests
 ```
 
 ## Key Conventions
@@ -210,6 +250,7 @@ mock.module("./smart-tags", () => ({
 | File | Purpose |
 |------|---------|
 | `drizzle.config.ts` | Drizzle ORM config for PostgreSQL (schema at `src/db/schema.ts`) |
+| `playwright.config.ts` | Playwright E2E test configuration |
 | `.env.local` | Local environment variables (DATABASE_URL for Neon) |
 | `.env.example` | Template for environment variables |
 | `components.json` | shadcn/ui configuration (new-york style) |
@@ -243,18 +284,26 @@ mock.module("./smart-tags", () => ({
 
 1. **Integration test skipped in CI**: `src/test/integration/task-flow.test.ts` is skipped in CI due to race conditions with parallel execution. Unit tests in `actions.test.ts` cover the same functionality.
 
-2. **Property tests skipped in CI**: Multi-user auth property tests (`src/test/properties/*.property.test.ts`) are skipped in CI due to parallel test execution issues with Bun's module mocking. These tests run successfully locally and verify authorization, data isolation, and session security properties.
+2. **Property tests skipped in CI**: The following property tests are skipped in CI due to parallel test execution issues with Bun's module mocking:
+   - `src/test/properties/authorization.property.test.ts` - Tests authorization denial (User B cannot access User A's resources)
+   - `src/test/properties/data-isolation.property.test.ts` - Tests data isolation between users
+   - `src/test/properties/session-security.property.test.ts` - Tests session cookie security and authentication
+   
+   These tests run successfully locally and verify critical security properties. The skip is controlled by `CI=true` environment variable.
 
-3. **Next.js workspace root warning**: Build may show a warning about multiple lockfiles. This is cosmetic and doesn't affect the build.
+3. **Property test reproducibility**: All property-based tests use `FAST_CHECK_SEED` environment variable for reproducibility. In CI, this is set to `12345` to ensure consistent test runs.
 
-4. **Dialog accessibility warnings**: Some dialogs show "Missing Description" warnings in tests. These are non-blocking.
+4. **Next.js workspace root warning**: Build may show a warning about multiple lockfiles. This is cosmetic and doesn't affect the build.
+
+5. **Dialog accessibility warnings**: Some dialogs show "Missing Description" warnings in tests. These are non-blocking.
 
 ## Validation Checklist
 
 Before submitting changes, ensure:
 
 - [ ] `bun lint` passes with no errors
-- [ ] `bun test` passes all tests
+- [ ] `bun test` passes all unit tests
+- [ ] `bun run test:e2e` passes all E2E tests (requires `E2E_TEST_MODE=true`)
 - [ ] `bun run build` completes successfully
 - [ ] New code follows existing patterns (Server Actions, component structure)
 - [ ] Tests added for new functionality

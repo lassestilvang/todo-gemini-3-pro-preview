@@ -8,6 +8,18 @@ import {
     transformNullableBoolean,
 } from "./migration-utils";
 
+// Configure fast-check for reproducibility in CI
+// Requirements: 3.5 - Property tests use fixed seed for reproducibility
+const FAST_CHECK_SEED = process.env.FAST_CHECK_SEED
+    ? parseInt(process.env.FAST_CHECK_SEED, 10)
+    : undefined;
+
+fc.configureGlobal({
+    numRuns: 100,
+    verbose: false,
+    seed: FAST_CHECK_SEED,
+});
+
 describe("Migration Utils", () => {
     describe("Timestamp Transformation", () => {
         /**

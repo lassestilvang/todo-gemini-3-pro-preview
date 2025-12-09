@@ -48,7 +48,7 @@ export function AppSidebar({ className, lists, labels, user }: { className?: str
     const [smartScheduleOpen, setSmartScheduleOpen] = useState(false);
 
     return (
-        <div className={cn("pb-12 w-64 border-r bg-sidebar h-screen overflow-y-auto sidebar", className)}>
+        <div className={cn("pb-12 w-64 border-r bg-sidebar h-screen overflow-y-auto sidebar", className)} data-testid="app-sidebar">
             <div className="space-y-4 py-4">
                 <div className="pl-3 pr-3 py-2">
                     <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">

@@ -32,14 +32,14 @@ export function SidebarLabels({ labels, userId }: SidebarLabelsProps) {
     const [editingLabel, setEditingLabel] = useState<Label | null>(null);
 
     return (
-        <div className="pl-3 pr-6 py-2">
+        <div className="pl-3 pr-6 py-2" data-testid="sidebar-labels">
             <div className="flex items-center justify-between px-4">
                 <h2 className="text-lg font-semibold tracking-tight">
                     Labels
                 </h2>
                 <ManageLabelDialog
                     trigger={
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" data-testid="add-label-button">
                             <Plus className="h-4 w-4" />
                             <span className="sr-only">Add Label</span>
                         </Button>

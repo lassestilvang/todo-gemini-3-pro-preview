@@ -48,7 +48,7 @@ export function UserProfile({ user }: UserProfileProps) {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="w-full justify-start gap-2 px-2">
+                <Button variant="ghost" className="w-full justify-start gap-2 px-2" data-testid="user-profile-button">
                     <Avatar className="h-8 w-8">
                         <AvatarImage src={user.avatarUrl || undefined} alt={displayName} />
                         <AvatarFallback className="bg-primary/10 text-primary text-xs">
@@ -82,7 +82,7 @@ export function UserProfile({ user }: UserProfileProps) {
                     Profile Settings
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+                <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive" data-testid="sign-out-button">
                     <LogOut className="mr-2 h-4 w-4" />
                     Sign Out
                 </DropdownMenuItem>

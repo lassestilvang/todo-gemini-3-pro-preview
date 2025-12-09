@@ -13,8 +13,8 @@ export async function MainLayout({ children }: { children: React.ReactNode }) {
     // If no user, show children without sidebar data (login page will handle redirect)
     if (!userId) {
         return (
-            <div className="flex h-screen overflow-hidden bg-background">
-                <main className="flex-1 overflow-y-auto">
+            <div className="flex h-screen overflow-hidden bg-background" data-testid="app-container">
+                <main className="flex-1 overflow-y-auto" data-testid="main-content">
                     {children}
                 </main>
             </div>
@@ -27,9 +27,9 @@ export async function MainLayout({ children }: { children: React.ReactNode }) {
     ]);
 
     return (
-        <div className="flex h-screen overflow-hidden bg-background">
+        <div className="flex h-screen overflow-hidden bg-background" data-testid="app-container">
             <AppSidebar lists={lists} labels={labels} user={user} />
-            <main className="flex-1 overflow-y-auto pl-10 pr-10">
+            <main className="flex-1 overflow-y-auto pl-10 pr-10" data-testid="main-content">
                 {children}
             </main>
             <Suspense fallback={null}>

@@ -8,7 +8,9 @@ import {
     addDependency, removeDependency, getBlockers, getBlockedTasks,
     createTemplate, getTemplates, deleteTemplate, instantiateTemplate,
     addXP, getUserStats, getUserAchievements,
-    searchTasks, toggleTaskCompletion
+    searchTasks, toggleTaskCompletion,
+    getActivityLog, deleteReminder,
+    getViewSettings, saveViewSettings, resetViewSettings
 } from "./actions";
 
 mock.module("next/cache", () => ({
@@ -367,6 +369,70 @@ describe("Server Actions", () => {
             const logs = await getTaskLogs(task.id);
             expect(logs.length).toBeGreaterThan(0);
             expect(logs[0].action).toBe("created");
+        });
+
+        it("should get activity log", async () => {
+            const task = await createTask({ userId: testUserId, title: "Activity Log Task" });
+            await toggleTaskCompletion(task.id, testUserId, true);
+            const activityLog = await getActivityLog(testUserId);
+            expect(activityLog.length).toBeGreaterThan(0);
+            // Should have both creation and completion logs
+            const actions = activityLog.map(l => l.action);
+            expect(actions).toContain("created");
+            expect(actions).toContain("completed");
+        });
+    });
+
+    describe("View Settings", () => {
+        it("should save and get view settings", async () => {
+            await saveViewSettings(testUserId, "inbox", {
+                layout: "board",
+                showCompleted: false,
+                groupBy: "priority",
+            });
+
+            const settings = await getViewSettings(testUserId, "inbox");
+            expect(settings).toBeDefined();
+            expect(settings?.layout).toBe("board");
+            expect(settings?.showCompleted).toBe(false);
+            expect(settings?.groupBy).toBe("priority");
+        });
+
+        it("should update existing view settings", async () => {
+            await saveViewSettings(testUserId, "today", { layout: "list" });
+            await saveViewSettings(testUserId, "today", { layout: "calendar" });
+
+            const settings = await getViewSettings(testUserId, "today");
+            expect(settings?.layout).toBe("calendar");
+        });
+
+        it("should reset view settings", async () => {
+            await saveViewSettings(testUserId, "upcoming", { layout: "board" });
+            await resetViewSettings(testUserId, "upcoming");
+
+            const settings = await getViewSettings(testUserId, "upcoming");
+            expect(settings).toBeNull();
+        });
+
+        it("should return null for non-existent view settings", async () => {
+            const settings = await getViewSettings(testUserId, "non-existent-view");
+            expect(settings).toBeNull();
+        });
+    });
+
+    describe("Reminders", () => {
+        it("should delete a reminder", async () => {
+            const task = await createTask({ userId: testUserId, title: "Reminder Delete Task" });
+            const remindAt = new Date();
+            await createReminder(testUserId, task.id, remindAt);
+
+            const remindersBefore = await getReminders(task.id);
+            expect(remindersBefore.length).toBe(1);
+
+            await deleteReminder(testUserId, remindersBefore[0].id);
+
+            const remindersAfter = await getReminders(task.id);
+            expect(remindersAfter.length).toBe(0);
         });
     });
 });

@@ -1,7 +1,8 @@
-import { expect } from "bun:test";
+import { expect, afterEach } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import * as matchers from "@testing-library/jest-dom/matchers";
 import { sqliteConnection } from "@/db";
+import { clearMockAuthUser } from "./mocks";
 
 // Register happy-dom for component testing
 GlobalRegistrator.register();
@@ -11,6 +12,17 @@ expect.extend(matchers);
 
 // Note: Global mocks for next/cache, next/navigation, and canvas-confetti
 // are defined in src/test/mocks.ts which is preloaded before this file.
+
+/**
+ * Global afterEach hook to ensure test isolation.
+ * This runs after every test to clean up shared state.
+ * 
+ * Requirements: 3.1, 3.2 - Test isolation and mock reset
+ */
+afterEach(() => {
+    // Clear mock auth user to prevent state leakage between tests
+    clearMockAuthUser();
+});
 
 /**
  * Sets up the test database with SQLite tables that mirror the PostgreSQL schema.

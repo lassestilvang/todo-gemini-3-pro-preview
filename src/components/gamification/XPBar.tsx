@@ -44,20 +44,20 @@ export function XPBar({ userId }: { userId?: string }) {
     const xpNeeded = nextLevelXP - currentLevelBaseXP;
 
     return (
-        <div className="px-4 py-2">
+        <div className="px-4 py-2" data-testid="xp-bar">
             <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-1.5">
                     <div className="bg-yellow-100 text-yellow-700 p-1 rounded-md">
                         <Trophy className="h-3 w-3" />
                     </div>
-                    <span className="text-xs font-bold text-foreground">Lvl {stats.level}</span>
+                    <span className="text-xs font-bold text-foreground" data-testid="user-level">Lvl {stats.level}</span>
                 </div>
                 <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                     <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
-                    <span>{xpInLevel} / {xpNeeded} XP</span>
+                    <span data-testid="xp-display">{xpInLevel} / {xpNeeded} XP</span>
                 </div>
             </div>
-            <Progress value={progress} className="h-1.5 bg-secondary" indicatorClassName="bg-gradient-to-r from-yellow-400 to-orange-500" />
+            <Progress value={progress} className="h-1.5 bg-secondary" indicatorClassName="bg-gradient-to-r from-yellow-400 to-orange-500" data-testid="xp-progress" />
         </div>
     );
 }

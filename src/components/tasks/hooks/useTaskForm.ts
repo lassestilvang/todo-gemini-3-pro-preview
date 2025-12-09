@@ -1,5 +1,8 @@
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { createTask, updateTask, deleteTask } from "@/lib/actions";
+import type { ActionResult, ActionError } from "@/lib/action-result";
 
 export type TaskType = {
     id: number;
@@ -27,6 +30,42 @@ interface UseTaskFormProps {
 }
 
 /**
+ * Helper to check if a result is an ActionResult
+ */
+function isActionResult<T>(result: unknown): result is ActionResult<T> {
+    return (
+        typeof result === "object" &&
+        result !== null &&
+        "success" in result &&
+        typeof (result as ActionResult<T>).success === "boolean"
+    );
+}
+
+/**
+ * Handle ActionResult or legacy error patterns
+ */
+function handleActionError(
+    error: ActionError,
+    router: ReturnType<typeof useRouter>,
+    setFieldErrors: (errors: Record<string, string>) => void
+): void {
+    // Handle field-level validation errors
+    if (error.code === "VALIDATION_ERROR" && error.details) {
+        setFieldErrors(error.details);
+    }
+
+    // Handle authentication errors - redirect to login
+    if (error.code === "UNAUTHORIZED") {
+        toast.error("Session expired. Please log in again.");
+        router.push("/login?message=session_expired");
+        return;
+    }
+
+    // Show error toast
+    toast.error(error.message);
+}
+
+/**
  * Hook to manage the form state for creating and editing tasks.
  * Handles form validation, submission, and state changes for all task fields.
  * 
@@ -37,6 +76,8 @@ interface UseTaskFormProps {
  * @param onClose - Callback to close the dialog after successful submission
  */
 export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId, onClose }: UseTaskFormProps) {
+    const router = useRouter();
+    
     const [title, setTitle] = useState(task?.title || "");
     const [description, setDescription] = useState(task?.description || "");
     const [priority, setPriority] = useState<"none" | "low" | "medium" | "high">(task?.priority || "none");
@@ -58,10 +99,45 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
     // Habit state
     const [isHabit, setIsHabit] = useState(task?.isHabit || false);
 
+    // Error handling state
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
     const isEdit = !!task;
+
+    // Clear field errors when user modifies input
+    const clearFieldError = useCallback((field: string) => {
+        setFieldErrors(prev => {
+            if (prev[field]) {
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const { [field]: _removed, ...rest } = prev;
+                return rest;
+            }
+            return prev;
+        });
+    }, []);
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
+        
+        // Clear previous errors
+        setFieldErrors({});
+        
+        // Client-side validation
+        if (!title.trim()) {
+            setFieldErrors({ title: "Title is required" });
+            toast.error("Please enter a task title");
+            return;
+        }
+
+        if (!userId) {
+            toast.error("Unable to save task. Please try logging in again.");
+            router.push("/login?message=session_expired");
+            return;
+        }
+
+        setIsSubmitting(true);
+
         try {
             const data = {
                 title,
@@ -78,19 +154,30 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
                 isHabit: isRecurring ? isHabit : false,
             };
 
-            if (!userId) {
-                console.error("Cannot submit task: userId is required");
-                alert("Unable to save task. Please try logging in again.");
-                return;
-            }
+            let result: unknown;
             if (isEdit && task) {
-                await updateTask(task.id, userId, data);
+                result = await updateTask(task.id, userId, data);
             } else {
-                await createTask({ ...data, userId });
+                result = await createTask({ ...data, userId });
             }
+
+            // Handle ActionResult pattern (when server actions are updated)
+            if (isActionResult(result)) {
+                if (!result.success) {
+                    handleActionError(result.error, router, setFieldErrors);
+                    setIsSubmitting(false);
+                    return;
+                }
+            }
+
+            // Success - close dialog
+            toast.success(isEdit ? "Task updated" : "Task created");
             onClose();
         } catch (error) {
             console.error("Failed to save task:", error);
+            toast.error("Failed to save task. Please try again.");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -105,22 +192,43 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
     const handleDelete = async () => {
         if (!isEdit || !task) return;
         if (!userId) {
-            console.error("Cannot delete task: userId is required");
-            alert("Unable to delete task. Please try logging in again.");
+            toast.error("Unable to delete task. Please try logging in again.");
+            router.push("/login?message=session_expired");
             return;
         }
         if (confirm("Are you sure you want to delete this task?")) {
+            setIsSubmitting(true);
             try {
-                await deleteTask(task.id, userId);
+                const result = await deleteTask(task.id, userId);
+
+                // Handle ActionResult pattern (when server actions are updated)
+                if (isActionResult(result)) {
+                    if (!result.success) {
+                        handleActionError(result.error, router, setFieldErrors);
+                        setIsSubmitting(false);
+                        return;
+                    }
+                }
+
+                toast.success("Task deleted");
                 onClose();
             } catch (error) {
                 console.error("Failed to delete task:", error);
+                toast.error("Failed to delete task. Please try again.");
+            } finally {
+                setIsSubmitting(false);
             }
         }
     };
 
+    // Wrap setters to clear field errors on change
+    const setTitleWithClear = useCallback((value: string) => {
+        setTitle(value);
+        clearFieldError("title");
+    }, [clearFieldError]);
+
     return {
-        title, setTitle,
+        title, setTitle: setTitleWithClear,
         description, setDescription,
         priority, setPriority,
         listId, setListId,
@@ -135,6 +243,10 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
         handleSubmit,
         handleDelete,
         toggleLabel,
-        isEdit
+        isEdit,
+        // Error handling state
+        isSubmitting,
+        fieldErrors,
+        clearFieldError,
     };
 }
