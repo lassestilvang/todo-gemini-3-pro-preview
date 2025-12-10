@@ -8,6 +8,7 @@ import {
     createTemplate, getTemplates,
     getUserStats, addXP
 } from "@/lib/actions";
+import { isSuccess } from "@/lib/action-result";
 
 // Note: next/cache and smart-tags mocks are provided globally via src/test/mocks.ts
 
@@ -68,14 +69,16 @@ describeOrSkip("Property Tests: Data Isolation", () => {
                         await resetTestDb();
                         await createTestUser(userId, `${userId}@test.com`);
 
-                        const list = await createList({
+                        const listResult = await createList({
                             userId,
                             name: listName,
                             slug: listName.toLowerCase().replace(/\s+/g, '-'),
                         });
 
                         // Property: created list has the correct userId
-                        expect(list.userId).toBe(userId);
+                        expect(isSuccess(listResult)).toBe(true);
+                        if (!isSuccess(listResult)) return;
+                        expect(listResult.data.userId).toBe(userId);
                     }
                 ),
                 { numRuns: 10 }
@@ -91,13 +94,15 @@ describeOrSkip("Property Tests: Data Isolation", () => {
                         await resetTestDb();
                         await createTestUser(userId, `${userId}@test.com`);
 
-                        const label = await createLabel({
+                        const labelResult = await createLabel({
                             userId,
                             name: labelName,
                         });
 
                         // Property: created label has the correct userId
-                        expect(label.userId).toBe(userId);
+                        expect(isSuccess(labelResult)).toBe(true);
+                        if (!isSuccess(labelResult)) return;
+                        expect(labelResult.data.userId).toBe(userId);
                     }
                 ),
                 { numRuns: 10 }

@@ -7,6 +7,7 @@ import {
     createLabel, getLabel, updateLabel, deleteLabel,
     createTemplate, getTemplates, deleteTemplate
 } from "@/lib/actions";
+import { isSuccess } from "@/lib/action-result";
 
 // Note: next/cache and smart-tags mocks are provided globally via src/test/mocks.ts
 
@@ -139,11 +140,14 @@ describeOrSkip("Property Tests: Authorization", () => {
                         await createTestUser(userBId, `${userBId}@test.com`);
 
                         // User A creates a list
-                        const listA = await createList({
+                        const listAResult = await createList({
                             userId: userAId,
                             name: "User A's list",
                             slug: "user-a-list",
                         });
+                        expect(isSuccess(listAResult)).toBe(true);
+                        if (!isSuccess(listAResult)) return;
+                        const listA = listAResult.data;
 
                         // User B tries to access User A's list by ID
                         const result = await getList(listA.id, userBId);
@@ -169,11 +173,14 @@ describeOrSkip("Property Tests: Authorization", () => {
                         await createTestUser(userBId, `${userBId}@test.com`);
 
                         // User A creates a list
-                        const listA = await createList({
+                        const listAResult = await createList({
                             userId: userAId,
                             name: "Original name",
                             slug: "original-name",
                         });
+                        expect(isSuccess(listAResult)).toBe(true);
+                        if (!isSuccess(listAResult)) return;
+                        const listA = listAResult.data;
 
                         // User B tries to update User A's list
                         await updateList(listA.id, userBId, { name: "Hacked by B" });
@@ -200,11 +207,14 @@ describeOrSkip("Property Tests: Authorization", () => {
                         await createTestUser(userBId, `${userBId}@test.com`);
 
                         // User A creates a list
-                        const listA = await createList({
+                        const listAResult = await createList({
                             userId: userAId,
                             name: "User A's list",
                             slug: "user-a-list",
                         });
+                        expect(isSuccess(listAResult)).toBe(true);
+                        if (!isSuccess(listAResult)) return;
+                        const listA = listAResult.data;
 
                         // User B tries to delete User A's list
                         await deleteList(listA.id, userBId);
@@ -232,10 +242,13 @@ describeOrSkip("Property Tests: Authorization", () => {
                         await createTestUser(userBId, `${userBId}@test.com`);
 
                         // User A creates a label
-                        const labelA = await createLabel({
+                        const labelAResult = await createLabel({
                             userId: userAId,
                             name: "User A's label",
                         });
+                        expect(isSuccess(labelAResult)).toBe(true);
+                        if (!isSuccess(labelAResult)) return;
+                        const labelA = labelAResult.data;
 
                         // User B tries to access User A's label by ID
                         const result = await getLabel(labelA.id, userBId);
@@ -261,10 +274,13 @@ describeOrSkip("Property Tests: Authorization", () => {
                         await createTestUser(userBId, `${userBId}@test.com`);
 
                         // User A creates a label
-                        const labelA = await createLabel({
+                        const labelAResult = await createLabel({
                             userId: userAId,
                             name: "Original label",
                         });
+                        expect(isSuccess(labelAResult)).toBe(true);
+                        if (!isSuccess(labelAResult)) return;
+                        const labelA = labelAResult.data;
 
                         // User B tries to update User A's label
                         await updateLabel(labelA.id, userBId, { name: "Hacked by B" });
@@ -291,10 +307,13 @@ describeOrSkip("Property Tests: Authorization", () => {
                         await createTestUser(userBId, `${userBId}@test.com`);
 
                         // User A creates a label
-                        const labelA = await createLabel({
+                        const labelAResult = await createLabel({
                             userId: userAId,
                             name: "User A's label",
                         });
+                        expect(isSuccess(labelAResult)).toBe(true);
+                        if (!isSuccess(labelAResult)) return;
+                        const labelA = labelAResult.data;
 
                         // User B tries to delete User A's label
                         await deleteLabel(labelA.id, userBId);

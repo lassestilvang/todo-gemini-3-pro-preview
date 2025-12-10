@@ -12,6 +12,7 @@ import {
     getActivityLog, deleteReminder,
     getViewSettings, saveViewSettings, resetViewSettings
 } from "./actions";
+import { isSuccess } from "./action-result";
 
 mock.module("next/cache", () => ({
     revalidatePath: () => { },
@@ -113,8 +114,13 @@ describe("Server Actions", () => {
 
     describe("Task Filters", () => {
         it("should filter tasks by list", async () => {
-            const list1 = await createList({ userId: testUserId, name: "List 1", slug: "l1" });
-            const list2 = await createList({ userId: testUserId, name: "List 2", slug: "l2" });
+            const list1Result = await createList({ userId: testUserId, name: "List 1", slug: "l1" });
+            const list2Result = await createList({ userId: testUserId, name: "List 2", slug: "l2" });
+            expect(isSuccess(list1Result)).toBe(true);
+            expect(isSuccess(list2Result)).toBe(true);
+            if (!isSuccess(list1Result) || !isSuccess(list2Result)) return;
+            const list1 = list1Result.data;
+            const list2 = list2Result.data;
             const task1 = await createTask({ userId: testUserId, title: "Task 1", listId: list1.id });
             await createTask({ userId: testUserId, title: "Task 2", listId: list2.id });
 
@@ -124,7 +130,10 @@ describe("Server Actions", () => {
         });
 
         it("should filter tasks by label", async () => {
-            const label = await createLabel({ userId: testUserId, name: "Label 1" });
+            const labelResult = await createLabel({ userId: testUserId, name: "Label 1" });
+            expect(isSuccess(labelResult)).toBe(true);
+            if (!isSuccess(labelResult)) return;
+            const label = labelResult.data;
             const task = await createTask({ userId: testUserId, title: "Task with Label", labelIds: [label.id] });
             await createTask({ userId: testUserId, title: "Task without Label" });
 
@@ -184,7 +193,10 @@ describe("Server Actions", () => {
 
     describe("Lists", () => {
         it("should create and get lists", async () => {
-            const list = await createList({ userId: testUserId, name: "My List", slug: "my-list" });
+            const listResult = await createList({ userId: testUserId, name: "My List", slug: "my-list" });
+            expect(isSuccess(listResult)).toBe(true);
+            if (!isSuccess(listResult)) return;
+            const list = listResult.data;
             expect(list).toBeDefined();
             expect(list.name).toBe("My List");
 
@@ -194,14 +206,20 @@ describe("Server Actions", () => {
         });
 
         it("should update a list", async () => {
-            const list = await createList({ userId: testUserId, name: "Old Name", slug: "old-name" });
+            const listResult = await createList({ userId: testUserId, name: "Old Name", slug: "old-name" });
+            expect(isSuccess(listResult)).toBe(true);
+            if (!isSuccess(listResult)) return;
+            const list = listResult.data;
             await updateList(list.id, testUserId, { name: "New Name" });
             const updated = await getList(list.id, testUserId);
             expect(updated.name).toBe("New Name");
         });
 
         it("should delete a list", async () => {
-            const list = await createList({ userId: testUserId, name: "To Delete", slug: "to-delete" });
+            const listResult = await createList({ userId: testUserId, name: "To Delete", slug: "to-delete" });
+            expect(isSuccess(listResult)).toBe(true);
+            if (!isSuccess(listResult)) return;
+            const list = listResult.data;
             await deleteList(list.id, testUserId);
             const deleted = await getList(list.id, testUserId);
             expect(deleted).toBeUndefined();
@@ -287,15 +305,26 @@ describe("Server Actions", () => {
             const task1 = await createTask({ userId: testUserId, title: "Task 1" });
             const task2 = await createTask({ userId: testUserId, title: "Task 2" });
 
-            await addDependency(testUserId, task1.id, task2.id);
+            const firstResult = await addDependency(testUserId, task1.id, task2.id);
+            expect(isSuccess(firstResult)).toBe(true);
 
             // Try to make Task 2 blocked by Task 1 (cycle)
-            expect(addDependency(testUserId, task2.id, task1.id)).rejects.toThrow("Circular dependency detected");
+            const result = await addDependency(testUserId, task2.id, task1.id);
+            expect(isSuccess(result)).toBe(false);
+            if (!isSuccess(result)) {
+                expect(result.error.code).toBe("VALIDATION_ERROR");
+                expect(result.error.details?.blockerId).toContain("circular");
+            }
         });
 
         it("should prevent self dependency", async () => {
             const task = await createTask({ userId: testUserId, title: "Task" });
-            expect(addDependency(testUserId, task.id, task.id)).rejects.toThrow("Task cannot block itself");
+            const result = await addDependency(testUserId, task.id, task.id);
+            expect(isSuccess(result)).toBe(false);
+            if (!isSuccess(result)) {
+                expect(result.error.code).toBe("VALIDATION_ERROR");
+                expect(result.error.details?.blockerId).toContain("own blocker");
+            }
         });
     });
 

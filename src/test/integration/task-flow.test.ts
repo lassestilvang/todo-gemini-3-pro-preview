@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { createList, createTask, toggleTaskCompletion, getTasks, deleteTask, deleteList } from "@/lib/actions";
+import { isSuccess } from "@/lib/action-result";
 
 // Skip in CI as this test has race condition issues with parallel execution
 // All functionality is already covered by unit tests in actions.test.ts
@@ -26,7 +27,7 @@ describeOrSkip("Integration: Task Flow", () => {
         const timestamp = Date.now();
 
         // 1. Create a list
-        const list = await createList({
+        const listResult = await createList({
             userId: testUserId,
             name: `Integration List ${timestamp}`,
             color: "#ff0000",
@@ -34,6 +35,9 @@ describeOrSkip("Integration: Task Flow", () => {
             slug: `integration-list-${timestamp}`
         });
 
+        expect(isSuccess(listResult)).toBe(true);
+        if (!isSuccess(listResult)) return;
+        const list = listResult.data;
         expect(list).toBeDefined();
         expect(list.id).toBeGreaterThan(0);
         expect(list.name).toBe(`Integration List ${timestamp}`);
