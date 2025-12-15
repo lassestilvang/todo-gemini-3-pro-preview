@@ -1,5 +1,10 @@
 import type { NextConfig } from "next";
 import withPWAInit from "@ducanh2912/next-pwa";
+import { startServer } from "@react-grab/opencode/server";
+
+if (process.env.NODE_ENV === "development") {
+  startServer();
+}
 
 const withPWA = withPWAInit({
   dest: "public",
