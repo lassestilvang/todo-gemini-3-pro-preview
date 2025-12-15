@@ -3,7 +3,7 @@ import withPWAInit from "@ducanh2912/next-pwa";
 import { startServer } from "@react-grab/opencode/server";
 
 if (process.env.NODE_ENV === "development") {
-  startServer();
+  //startServer();
 }
 
 const withPWA = withPWAInit({

@@ -4,16 +4,6 @@ import { Inter, Quicksand, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Toaster } from "sonner";
-import { createOpenCodeAgentProvider, attachAgent } from "@react-grab/opencode/client";
-
-const provider = createOpenCodeAgentProvider({
-  serverUrl: "http://localhost:6567", // Custom server URL
-  getOptions: () => ({
-    model: "big-pickle", // AI model to use
-    agent: "build", // Agent type: "build" or "plan"
-    directory: "/Users/lasse/Sites/todo-gemini-3-pro", // Project directory
-  }),
-});
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const quicksand = Quicksand({
@@ -59,7 +49,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  attachAgent();
   return (
     <html
       lang="en"
