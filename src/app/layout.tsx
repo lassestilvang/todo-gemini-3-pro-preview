@@ -4,7 +4,7 @@ import { Inter, Quicksand, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Toaster } from "sonner";
-import { createOpenCodeAgentProvider } from "@react-grab/opencode/client";
+import { createOpenCodeAgentProvider, attachAgent } from "@react-grab/opencode/client";
 
 const provider = createOpenCodeAgentProvider({
   serverUrl: "http://localhost:6567", // Custom server URL
@@ -59,6 +59,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  attachAgent();
   return (
     <html
       lang="en"
@@ -72,10 +73,6 @@ export default function RootLayout({
               src="//unpkg.com/react-grab/dist/index.global.js"
               crossOrigin="anonymous"
               strategy="beforeInteractive"
-            />
-            <Script
-              src="//unpkg.com/@react-grab/opencode/dist/client.global.js"
-              strategy="lazyOnload"
             />
           </>
         )}
