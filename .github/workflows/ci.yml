@@ -103,7 +103,7 @@ jobs:
 
       - name: Get Neon Branch URL (PR)
         if: github.event_name == 'pull_request'
-        uses: neondatabase/create-branch-action@v5
+        uses: neondatabase/create-branch-action@v6
         id: neon-branch
         with:
           project_id: ${{ secrets.NEON_PROJECT_ID }}
@@ -167,7 +167,7 @@ jobs:
 
       - name: Get Neon Branch URL (PR)
         if: github.event_name == 'pull_request'
-        uses: neondatabase/create-branch-action@v5
+        uses: neondatabase/create-branch-action@v6
         id: neon-branch
         with:
           project_id: ${{ secrets.NEON_PROJECT_ID }}
