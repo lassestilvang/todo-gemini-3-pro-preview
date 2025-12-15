@@ -359,7 +359,6 @@ describeOrSkip("Property Tests: Actions Refactoring", () => {
       });
     });
   });
-});
 
 
   /**
@@ -592,3 +591,4 @@ describeOrSkip("Property Tests: Actions Refactoring", () => {
       );
     });
   });
+});
