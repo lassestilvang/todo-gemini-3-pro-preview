@@ -104,6 +104,68 @@ export const deleteTemplate: (
 ) => Promise<ActionResult<void>> = withErrorHandling(deleteTemplateImpl);
 
 /**
+ * Internal implementation for updating a template.
+ *
+ * @param id - The template ID to update
+ * @param userId - The ID of the user who owns the template
+ * @param name - The new name of the template
+ * @param content - The new JSON content of the template
+ * @throws {ValidationError} When required fields are missing
+ * @throws {NotFoundError} When template is not found or user doesn't own it
+ */
+async function updateTemplateImpl(id: number, userId: string, name: string, content: string) {
+  if (!userId) {
+    throw new ValidationError("User ID is required", { userId: "User ID cannot be empty" });
+  }
+  if (!name || name.trim().length === 0) {
+    throw new ValidationError("Template name is required", { name: "Name cannot be empty" });
+  }
+  if (!content) {
+    throw new ValidationError("Template content is required", { content: "Content cannot be empty" });
+  }
+
+  // First verify the template exists and belongs to the user
+  const existing = await db
+    .select()
+    .from(templates)
+    .where(and(eq(templates.id, id), eq(templates.userId, userId)))
+    .limit(1);
+
+  if (existing.length === 0) {
+    throw new NotFoundError("Template not found");
+  }
+
+  await db
+    .update(templates)
+    .set({
+      name,
+      content,
+    })
+    .where(and(eq(templates.id, id), eq(templates.userId, userId)));
+
+  revalidatePath("/");
+}
+
+/**
+ * Updates an existing template.
+ *
+ * @param id - The template ID to update
+ * @param userId - The ID of the user who owns the template
+ * @param name - The new name of the template
+ * @param content - The new JSON content of the template
+ * @returns ActionResult with void on success or error
+ * @throws {VALIDATION_ERROR} When required fields are missing
+ * @throws {NOT_FOUND} When template is not found or user doesn't own it
+ * @throws {DATABASE_ERROR} When database operation fails
+ */
+export const updateTemplate: (
+  id: number,
+  userId: string,
+  name: string,
+  content: string
+) => Promise<ActionResult<void>> = withErrorHandling(updateTemplateImpl);
+
+/**
  * Helper to replace variables in strings.
  *
  * @param str - The string to process

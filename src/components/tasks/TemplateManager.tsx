@@ -5,18 +5,15 @@ import { Button } from "@/components/ui/button";
 import {
     Dialog,
     DialogContent,
-    DialogFooter,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { getTemplates, createTemplate, deleteTemplate, instantiateTemplate } from "@/lib/actions";
-import { Plus, Trash2, FileText, Play } from "lucide-react";
+import { getTemplates, deleteTemplate, instantiateTemplate } from "@/lib/actions";
+import { Plus, Trash2, FileText, Play, Pencil } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
+import { TemplateFormDialog } from "./TemplateFormDialog";
 
 type Template = {
     id: number;
@@ -32,9 +29,8 @@ interface TemplateManagerProps {
 export function TemplateManager({ userId }: TemplateManagerProps) {
     const [templates, setTemplates] = useState<Template[]>([]);
     const [isOpen, setIsOpen] = useState(false);
-    const [isCreateOpen, setIsCreateOpen] = useState(false);
-    const [newTemplateName, setNewTemplateName] = useState("");
-    const [newTemplateContent, setNewTemplateContent] = useState("");
+    const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
+    const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
 
     const loadTemplates = useCallback(async () => {
         if (!userId) return;
@@ -53,20 +49,18 @@ export function TemplateManager({ userId }: TemplateManagerProps) {
         }
     }, [isOpen, userId, loadTemplates]);
 
-    const handleCreate = async () => {
-        if (!newTemplateName || !newTemplateContent || !userId) return;
-        try {
-            // Validate JSON
-            JSON.parse(newTemplateContent);
-            await createTemplate(userId, newTemplateName, newTemplateContent);
-            setNewTemplateName("");
-            setNewTemplateContent("");
-            setIsCreateOpen(false);
-            loadTemplates();
-            toast.success("Template created");
-        } catch {
-            toast.error("Invalid JSON content");
-        }
+    const handleOpenCreateDialog = () => {
+        setEditingTemplate(null);
+        setIsFormDialogOpen(true);
+    };
+
+    const handleOpenEditDialog = (template: Template) => {
+        setEditingTemplate(template);
+        setIsFormDialogOpen(true);
+    };
+
+    const handleFormDialogSave = () => {
+        loadTemplates();
     };
 
     const handleDelete = async (id: number) => {
@@ -95,16 +89,6 @@ export function TemplateManager({ userId }: TemplateManagerProps) {
         }
     };
 
-    const exampleTemplate = {
-        title: "New Project",
-        description: "Setup for a new project",
-        priority: "high",
-        subtasks: [
-            { title: "Initialize repo" },
-            { title: "Setup CI/CD" }
-        ]
-    };
-
     return (
         <>
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -121,7 +105,7 @@ export function TemplateManager({ userId }: TemplateManagerProps) {
 
                     <div className="flex justify-between items-center mb-4">
                         <p className="text-sm text-muted-foreground">Manage and use your task templates.</p>
-                        <Button onClick={() => setIsCreateOpen(true)} size="sm">
+                        <Button onClick={handleOpenCreateDialog} size="sm" data-testid="new-template-button">
                             <Plus className="h-4 w-4 mr-2" />
                             New Template
                         </Button>
@@ -130,7 +114,7 @@ export function TemplateManager({ userId }: TemplateManagerProps) {
                     <ScrollArea className="h-[300px] pr-4">
                         <div className="space-y-3">
                             {templates.map(template => (
-                                <div key={template.id} className="flex items-center justify-between p-3 border rounded-lg bg-card hover:bg-accent/50 transition-colors">
+                                <div key={template.id} className="flex items-center justify-between p-3 border rounded-lg bg-card hover:bg-accent/50 transition-colors" data-testid={`template-item-${template.id}`}>
                                     <div className="flex items-center gap-3">
                                         <div className="h-8 w-8 rounded bg-primary/10 flex items-center justify-center text-primary">
                                             <FileText className="h-4 w-4" />
@@ -143,11 +127,14 @@ export function TemplateManager({ userId }: TemplateManagerProps) {
                                         </div>
                                     </div>
                                     <div className="flex gap-2">
-                                        <Button size="sm" variant="outline" onClick={() => handleInstantiate(template.id)}>
+                                        <Button size="sm" variant="outline" onClick={() => handleInstantiate(template.id)} data-testid={`use-template-${template.id}`}>
                                             <Play className="h-3 w-3 mr-1" />
                                             Use
                                         </Button>
-                                        <Button size="icon" variant="ghost" onClick={() => handleDelete(template.id)}>
+                                        <Button size="icon" variant="ghost" onClick={() => handleOpenEditDialog(template)} data-testid={`edit-template-${template.id}`}>
+                                            <Pencil className="h-4 w-4" />
+                                        </Button>
+                                        <Button size="icon" variant="ghost" onClick={() => handleDelete(template.id)} data-testid={`delete-template-${template.id}`}>
                                             <Trash2 className="h-4 w-4 text-destructive" />
                                         </Button>
                                     </div>
@@ -163,39 +150,15 @@ export function TemplateManager({ userId }: TemplateManagerProps) {
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Create Template</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label>Name</Label>
-                            <Input
-                                value={newTemplateName}
-                                onChange={e => setNewTemplateName(e.target.value)}
-                                placeholder="e.g., Weekly Report"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Content (JSON)</Label>
-                            <Textarea
-                                value={newTemplateContent}
-                                onChange={e => setNewTemplateContent(e.target.value)}
-                                placeholder={JSON.stringify(exampleTemplate, null, 2)}
-                                className="font-mono text-xs h-[200px]"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                                Enter the task structure in JSON format.
-                            </p>
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-                        <Button onClick={handleCreate}>Create</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {userId && (
+                <TemplateFormDialog
+                    open={isFormDialogOpen}
+                    onOpenChange={setIsFormDialogOpen}
+                    template={editingTemplate}
+                    userId={userId}
+                    onSave={handleFormDialogSave}
+                />
+            )}
         </>
     );
 }

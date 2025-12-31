@@ -6,7 +6,7 @@ import {
     createLabel, getLabels, updateLabel, deleteLabel, getLabel,
     createSubtask, getSubtasks, updateSubtask, deleteSubtask,
     addDependency, removeDependency, getBlockers, getBlockedTasks,
-    createTemplate, getTemplates, deleteTemplate, instantiateTemplate,
+    createTemplate, getTemplates, deleteTemplate, instantiateTemplate, updateTemplate,
     addXP, getUserStats, getUserAchievements,
     searchTasks, toggleTaskCompletion,
     getActivityLog, deleteReminder,
@@ -356,6 +356,59 @@ describe("Server Actions", () => {
             await deleteTemplate(templatesList[0].id, testUserId);
             const remaining = await getTemplates(testUserId);
             expect(remaining).toHaveLength(0);
+        });
+
+        it("should update template name and content", async () => {
+            const originalContent = JSON.stringify({ title: "Original Task" });
+            await createTemplate(testUserId, "Original Name", originalContent);
+            const templatesList = await getTemplates(testUserId);
+            const template = templatesList[0];
+
+            const newContent = JSON.stringify({ title: "Updated Task", priority: "high" });
+            const result = await updateTemplate(template.id, testUserId, "Updated Name", newContent);
+            expect(isSuccess(result)).toBe(true);
+
+            const updatedList = await getTemplates(testUserId);
+            expect(updatedList).toHaveLength(1);
+            expect(updatedList[0].name).toBe("Updated Name");
+            expect(updatedList[0].content).toBe(newContent);
+        });
+
+        it("should fail to update template with empty name", async () => {
+            await createTemplate(testUserId, "Test Template", "{}");
+            const templatesList = await getTemplates(testUserId);
+            const template = templatesList[0];
+
+            const result = await updateTemplate(template.id, testUserId, "", "{}");
+            expect(isSuccess(result)).toBe(false);
+            if (!isSuccess(result)) {
+                expect(result.error.code).toBe("VALIDATION_ERROR");
+            }
+        });
+
+        it("should fail to update non-existent template", async () => {
+            const result = await updateTemplate(99999, testUserId, "Name", "{}");
+            expect(isSuccess(result)).toBe(false);
+            if (!isSuccess(result)) {
+                expect(result.error.code).toBe("NOT_FOUND");
+            }
+        });
+
+        it("should not update template owned by another user", async () => {
+            await createTemplate(testUserId, "My Template", "{}");
+            const templatesList = await getTemplates(testUserId);
+            const template = templatesList[0];
+
+            // Try to update with a different user ID
+            const result = await updateTemplate(template.id, "other-user-id", "Hacked Name", "{}");
+            expect(isSuccess(result)).toBe(false);
+            if (!isSuccess(result)) {
+                expect(result.error.code).toBe("NOT_FOUND");
+            }
+
+            // Verify original template is unchanged
+            const unchanged = await getTemplates(testUserId);
+            expect(unchanged[0].name).toBe("My Template");
         });
     });
 

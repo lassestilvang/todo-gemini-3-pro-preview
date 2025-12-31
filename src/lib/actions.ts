@@ -49,6 +49,7 @@ export {
 export {
   getTemplates,
   createTemplate,
+  updateTemplate,
   deleteTemplate,
   instantiateTemplate,
 } from "./actions/templates";

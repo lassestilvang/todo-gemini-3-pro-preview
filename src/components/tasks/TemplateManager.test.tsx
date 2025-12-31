@@ -1,0 +1,233 @@
+import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
+import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
+import { TemplateManager } from "./TemplateManager";
+
+// Mock actions
+const mockGetTemplates = mock(() => Promise.resolve([]));
+const mockDeleteTemplate = mock(() => Promise.resolve({ success: true }));
+const mockInstantiateTemplate = mock(() => Promise.resolve({ success: true }));
+
+mock.module("@/lib/actions", () => ({
+  getTemplates: mockGetTemplates,
+  deleteTemplate: mockDeleteTemplate,
+  instantiateTemplate: mockInstantiateTemplate,
+  createTemplate: mock(() => Promise.resolve({ success: true })),
+  updateTemplate: mock(() => Promise.resolve({ success: true })),
+}));
+
+// Mock sonner toast
+mock.module("sonner", () => ({
+  toast: {
+    success: mock(() => {}),
+    error: mock(() => {}),
+  },
+}));
+
+// Mock window.confirm
+const originalConfirm = globalThis.confirm;
+
+describe("TemplateManager", () => {
+  const mockTemplates = [
+    {
+      id: 1,
+      name: "Weekly Report",
+      content: JSON.stringify({ title: "Weekly Report Task", priority: "high" }),
+      createdAt: new Date("2024-01-15"),
+    },
+    {
+      id: 2,
+      name: "Daily Standup",
+      content: JSON.stringify({ title: "Daily Standup Task", priority: "medium" }),
+      createdAt: new Date("2024-01-16"),
+    },
+  ];
+
+  beforeEach(() => {
+    mockGetTemplates.mockClear();
+    mockDeleteTemplate.mockClear();
+    mockInstantiateTemplate.mockClear();
+    mockGetTemplates.mockImplementation(() => Promise.resolve(mockTemplates));
+    globalThis.confirm = mock(() => true);
+  });
+
+  afterEach(() => {
+    cleanup();
+    document.body.innerHTML = "";
+    globalThis.confirm = originalConfirm;
+  });
+
+  describe("template list dialog", () => {
+    it("should render Templates button", () => {
+      render(<TemplateManager userId="test_user_123" />);
+      expect(screen.getByText("Templates")).toBeInTheDocument();
+    });
+
+    it("should open template list dialog when Templates button is clicked", async () => {
+      render(<TemplateManager userId="test_user_123" />);
+
+      fireEvent.click(screen.getByText("Templates"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Task Templates")).toBeInTheDocument();
+      });
+    });
+
+    it("should load and display templates when dialog opens", async () => {
+      render(<TemplateManager userId="test_user_123" />);
+
+      fireEvent.click(screen.getByText("Templates"));
+
+      await waitFor(() => {
+        expect(mockGetTemplates).toHaveBeenCalledWith("test_user_123");
+        expect(screen.getByText("Weekly Report")).toBeInTheDocument();
+        expect(screen.getByText("Daily Standup")).toBeInTheDocument();
+      });
+    });
+
+    it("should show empty state when no templates exist", async () => {
+      mockGetTemplates.mockImplementation(() => Promise.resolve([]));
+
+      render(<TemplateManager userId="test_user_123" />);
+
+      fireEvent.click(screen.getByText("Templates"));
+
+      await waitFor(() => {
+        expect(screen.getByText("No templates found. Create one to get started.")).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe("create dialog", () => {
+    it("should open create dialog when New Template button is clicked", async () => {
+      render(<TemplateManager userId="test_user_123" />);
+
+      // Open template list dialog
+      fireEvent.click(screen.getByText("Templates"));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("new-template-button")).toBeInTheDocument();
+      });
+
+      // Click New Template button
+      fireEvent.click(screen.getByTestId("new-template-button"));
+
+      await waitFor(() => {
+        // Should show the TemplateFormDialog in create mode
+        expect(screen.getByRole("heading", { name: "Create Template" })).toBeInTheDocument();
+        expect(screen.getByTestId("template-name-input")).toBeInTheDocument();
+      });
+    });
+
+    it("should show empty form fields in create mode", async () => {
+      render(<TemplateManager userId="test_user_123" />);
+
+      // Open template list dialog
+      fireEvent.click(screen.getByText("Templates"));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("new-template-button")).toBeInTheDocument();
+      });
+
+      // Click New Template button
+      fireEvent.click(screen.getByTestId("new-template-button"));
+
+      await waitFor(() => {
+        const nameInput = screen.getByTestId("template-name-input") as HTMLInputElement;
+        const titleInput = screen.getByTestId("task-title-input") as HTMLInputElement;
+        expect(nameInput.value).toBe("");
+        expect(titleInput.value).toBe("");
+      });
+    });
+  });
+
+  describe("edit dialog", () => {
+    it("should render edit button for each template", async () => {
+      render(<TemplateManager userId="test_user_123" />);
+
+      fireEvent.click(screen.getByText("Templates"));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("edit-template-1")).toBeInTheDocument();
+        expect(screen.getByTestId("edit-template-2")).toBeInTheDocument();
+      });
+    });
+
+    it("should open edit dialog with template data when edit button is clicked", async () => {
+      render(<TemplateManager userId="test_user_123" />);
+
+      // Open template list dialog
+      fireEvent.click(screen.getByText("Templates"));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("edit-template-1")).toBeInTheDocument();
+      });
+
+      // Click edit button for first template
+      fireEvent.click(screen.getByTestId("edit-template-1"));
+
+      await waitFor(() => {
+        // Should show the TemplateFormDialog in edit mode
+        expect(screen.getByRole("heading", { name: "Edit Template" })).toBeInTheDocument();
+        // Should pre-populate with template data
+        const nameInput = screen.getByTestId("template-name-input") as HTMLInputElement;
+        expect(nameInput.value).toBe("Weekly Report");
+      });
+    });
+
+    it("should pre-populate task title from template content", async () => {
+      render(<TemplateManager userId="test_user_123" />);
+
+      // Open template list dialog
+      fireEvent.click(screen.getByText("Templates"));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("edit-template-1")).toBeInTheDocument();
+      });
+
+      // Click edit button for first template
+      fireEvent.click(screen.getByTestId("edit-template-1"));
+
+      await waitFor(() => {
+        const titleInput = screen.getByTestId("task-title-input") as HTMLInputElement;
+        expect(titleInput.value).toBe("Weekly Report Task");
+      });
+    });
+  });
+
+  describe("template actions", () => {
+    it("should render Use button for each template", async () => {
+      render(<TemplateManager userId="test_user_123" />);
+
+      fireEvent.click(screen.getByText("Templates"));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("use-template-1")).toBeInTheDocument();
+        expect(screen.getByTestId("use-template-2")).toBeInTheDocument();
+      });
+    });
+
+    it("should render delete button for each template", async () => {
+      render(<TemplateManager userId="test_user_123" />);
+
+      fireEvent.click(screen.getByText("Templates"));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("delete-template-1")).toBeInTheDocument();
+        expect(screen.getByTestId("delete-template-2")).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe("without userId", () => {
+    it("should not load templates when userId is not provided", async () => {
+      render(<TemplateManager />);
+
+      fireEvent.click(screen.getByText("Templates"));
+
+      // Wait a bit to ensure no call is made
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      expect(mockGetTemplates).not.toHaveBeenCalled();
+    });
+  });
+});
