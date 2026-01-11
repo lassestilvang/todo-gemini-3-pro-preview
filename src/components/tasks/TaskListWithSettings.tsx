@@ -134,9 +134,11 @@ export function TaskListWithSettings({
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [settings, setSettings] = useState<ViewSettings>(defaultViewSettings);
+    const [mounted, setMounted] = useState(false);
 
     // Load initial settings
     useEffect(() => {
+        setMounted(true);
         async function loadSettings() {
             if (!userId) return;
             const savedSettings = await getViewSettings(userId, viewId);
@@ -175,6 +177,13 @@ export function TaskListWithSettings({
     const groupedTasks = useMemo(() => {
         return groupTasks(processedTasks, settings.groupBy);
     }, [processedTasks, settings.groupBy]);
+
+    if (!mounted) {
+        return <div className="space-y-4 animate-pulse">
+            <div className="h-10 bg-muted rounded-lg w-full" />
+            <div className="h-64 bg-muted rounded-lg w-full" />
+        </div>;
+    }
 
     return (
         <div className="space-y-4">

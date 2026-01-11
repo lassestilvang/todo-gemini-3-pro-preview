@@ -31,9 +31,11 @@ export function ViewOptionsPopover({ viewId, userId, onSettingsChange }: ViewOpt
     const [filterExpanded, setFilterExpanded] = useState(true);
     const [labels, setLabels] = useState<LabelOption[]>([]);
     const [isPending, startTransition] = useTransition();
+    const [mounted, setMounted] = useState(false);
 
     // Load settings and labels on mount
     useEffect(() => {
+        setMounted(true);
         async function loadData() {
             if (!userId) return;
             const [savedSettings, allLabels] = await Promise.all([
@@ -91,6 +93,15 @@ export function ViewOptionsPopover({ viewId, userId, onSettingsChange }: ViewOpt
             }
         });
     };
+
+    if (!mounted) {
+        return (
+            <Button variant="outline" size="sm" className="gap-2" disabled>
+                <Settings2 className="h-4 w-4" />
+                View
+            </Button>
+        );
+    }
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
