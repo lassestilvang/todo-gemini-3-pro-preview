@@ -46,7 +46,8 @@
   - *Issue*: Prompting in `ai-actions.ts` uses manual JSON cleaning.
   - *Action*: Use Gemini's structured output (`response_mime_type: 'application/json'`) and check if `gemini-2.5-flash` is a typo for `gemini-2.0-flash`.
 
-- [ ] **Error Boundary Coverage**:
+- [x] **Error Boundary Coverage**:
+  - *Status*: **RESOLVED** - Moved error handling from `RootLayout` (via `ErrorBoundary`) to granular `src/app/error.tsx`. This ensures that if a page crashes, the Sidebar remains visible. Refactored UI into reuseable `ErrorState` component.
   - *Finding*: There's an `ErrorBoundary` component wrapping the main content in `layout.tsx`, but individual routes may benefit from more granular error boundaries for better error isolation.
 
 ## Security & Production Readiness

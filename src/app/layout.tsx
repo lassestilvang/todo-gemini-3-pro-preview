@@ -42,7 +42,7 @@ import { PwaRegister } from "@/components/PwaRegister";
 import { LevelUpWatcher } from "@/components/gamification/LevelUpWatcher";
 import { ThemeProvider } from "@/components/theme-provider";
 import { QueryProvider } from "@/components/providers/QueryProvider";
-import { ErrorBoundary } from "@/components/error/ErrorBoundary";
+
 
 export default function RootLayout({
   children,
@@ -81,12 +81,10 @@ export default function RootLayout({
               "minimalist",
             ]}
           >
-            <ErrorBoundary>
-              <PwaRegister />
-              <LevelUpWatcher />
-              <MainLayout>{children}</MainLayout>
-              <Toaster />
-            </ErrorBoundary>
+            <PwaRegister />
+            <LevelUpWatcher />
+            <MainLayout>{children}</MainLayout>
+            <Toaster />
           </ThemeProvider>
         </QueryProvider>
       </body>
