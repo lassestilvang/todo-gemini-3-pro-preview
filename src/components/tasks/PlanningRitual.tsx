@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -55,6 +55,9 @@ export function PlanningRitual({ open, onOpenChange, type, userId }: PlanningRit
                             <Sunrise className="h-5 w-5 text-orange-500" />
                             Morning Planning Ritual
                         </DialogTitle>
+                        <DialogDescription className="sr-only">
+                            Plan your day to stay productive.
+                        </DialogDescription>
                     </DialogHeader>
 
                     <ScrollArea className="max-h-[500px] pr-4">
@@ -128,6 +131,9 @@ export function PlanningRitual({ open, onOpenChange, type, userId }: PlanningRit
                         <Sunset className="h-5 w-5 text-purple-500" />
                         Evening Review
                     </DialogTitle>
+                    <DialogDescription className="sr-only">
+                        Review your day and reflect on your progress.
+                    </DialogDescription>
                 </DialogHeader>
 
                 <ScrollArea className="max-h-[500px] pr-4">

@@ -12,7 +12,8 @@
   - *Root Cause*: Previous suspicion of latency due to debounce/caching was unfounded as long as task creation completes.
   - *Action*: Added regression test `e2e/search-latency.spec.ts`.
 
-- [ ] **Fix Dialog Accessibility Warnings**: Tests report "Missing `Description` or `aria-describedby`" for `DialogContent`.
+- [x] **Fix Dialog Accessibility Warnings**: Tests report "Missing `Description` or `aria-describedby`" for `DialogContent`.
+  - *Status*: **RESOLVED** - Added `<DialogDescription className="sr-only">` to `PlanningRitual.tsx` and `ManageLabelDialog.tsx`.
   - *Affected Files*: `PlanningRitual.tsx`, `ManageLabelDialog.tsx`.
   - *Action*: Add `<DialogDescription className="sr-only">` to provide context for screen readers in all dialogs.
 

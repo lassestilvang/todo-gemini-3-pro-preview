@@ -8,6 +8,7 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
+    DialogDescription,
     DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -60,6 +61,9 @@ export function ManageLabelDialog({ label, open, onOpenChange, trigger, userId }
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                     <DialogTitle>{isEdit ? "Edit Label" : "New Label"}</DialogTitle>
+                    <DialogDescription className="sr-only">
+                        {isEdit ? "Edit the details of your label." : "Create a new label to organize your tasks."}
+                    </DialogDescription>
                 </DialogHeader>
                 <LabelForm key={formKey} label={label} userId={userId} onClose={() => setEffectiveOpen(false)} />
             </DialogContent>
