@@ -2,7 +2,8 @@
 
 ## High Priority (Bugs & Core Issues)
 
-- [ ] **Fix Hydration Mismatch**: A hydration warning appears on initial load.
+- [x] **Fix Hydration Mismatch**: A hydration warning appears on initial load.
+  - *Status*: **RESOLVED** - Added `suppressHydrationWarning` to `<body>` in `src/app/layout.tsx`.
   - *Root Cause*: The `<body>` tag has different classes on server (`font-sans`) vs client (`font-sans antigravity-scroll-lock`). The `antigravity-scroll-lock` class is injected by the `react-grab` development tool script in `layout.tsx` (lines 59-67).
   - *Action*: Add `suppressHydrationWarning` to the `<body>` tag in `src/app/layout.tsx`.
 
