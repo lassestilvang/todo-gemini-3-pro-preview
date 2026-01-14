@@ -52,7 +52,8 @@
 
 ## Security & Production Readiness
 
-- [ ] **Security Headers**:
+- [x] **Security Headers**:
+  - *Status*: **RESOLVED** - Added `headers()` configuration to `next.config.ts` including HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, and a basic Content-Security-Policy.
   - *Action*: Review `next.config.ts` and add security headers (CSP, X-Frame-Options, etc.) for production deployment.
 
 - [ ] **Rate Limiting**:
