@@ -82,6 +82,10 @@
   - *Status*: **RESOLVED** - Implemented basic visual regression testing in `e2e/visual-regression.spec.ts`.
   - *Action*: Added Playwright snapshots for key pages and a mobile viewport test.
 
+- [x] **Multi-Theme Visual Regression**: Expand visual regression tests to cover all available themes (Light, Dark, Glassmorphism, Neubrutalism, Minimalist).
+  - *Status*: **RESOLVED** - Updated `e2e/visual-regression.spec.ts` to iterate through all themes and capture snapshots.
+  - *Action*: Created 16 visual snapshots covering core views across 5 themes plus a mobile neubrutalism snapshot.
+
 ## Performance Monitoring
 
 - [x] **Performance Metrics**:
