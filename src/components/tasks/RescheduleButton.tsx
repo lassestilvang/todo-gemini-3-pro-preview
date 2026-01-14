@@ -15,6 +15,12 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { format } from "date-fns";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function RescheduleButton() {
     const [isLoading, setIsLoading] = useState(false);
@@ -57,20 +63,29 @@ export function RescheduleButton() {
 
     return (
         <>
-            <Button
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start text-orange-500 hover:text-orange-600 hover:bg-orange-50"
-                onClick={handleCheck}
-                disabled={isLoading}
-            >
-                {isLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                    <CalendarClock className="mr-2 h-4 w-4" />
-                )}
-                I&apos;m Behind!
-            </Button>
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start text-orange-500 hover:text-orange-600 hover:bg-orange-50"
+                            onClick={handleCheck}
+                            disabled={isLoading}
+                        >
+                            {isLoading ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <CalendarClock className="mr-2 h-4 w-4" />
+                            )}
+                            I&apos;m Behind!
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Catch up on overdue tasks</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
 
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
                 <DialogContent>

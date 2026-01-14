@@ -27,7 +27,8 @@
   - *Issue*: Sidebar is fixed-width (256px) and does not hide/collapse on smaller screens, causing layout issues on mobile.
   - *Action*: Implemented `MobileNav` component and updated `MainLayout` to handle responsive states.
 
-- [ ] **"I'm Behind" Clarity**:
+- [x] **"I'm Behind" Clarity**:
+  - *Status*: **RESOLVED** - Added a Tooltip to the "I'm Behind!" button in `RescheduleButton.tsx`.
   - *Issue*: The sidebar button is useful but its purpose may not be obvious to new users.
   - *Action*: Add a tooltip explaining "Catch up on overdue tasks" when hovering.
 
