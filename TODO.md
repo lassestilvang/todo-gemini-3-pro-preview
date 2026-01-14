@@ -41,7 +41,8 @@
   - *Issue*: `TaskListWithSettings` fetches view settings in a `useEffect`, causing a flash of default layout and additional client-side roundtrip.
   - *Action*: Fetch view settings on the server in `Page` components and pass them as props to `TaskListWithSettings`.
 
-- [ ] **AI Best Practices & Efficiency**:
+- [x] **AI Best Practices & Efficiency**:
+  - *Status*: **RESOLVED** - Updated `ai-actions.ts` to use Gemini's `response_mime_type: 'application/json'` and removed manual regex cleaning. Confirmed `gemini-2.5-flash` is a valid model.
   - *Issue*: Prompting in `ai-actions.ts` uses manual JSON cleaning.
   - *Action*: Use Gemini's structured output (`response_mime_type: 'application/json'`) and check if `gemini-2.5-flash` is a typo for `gemini-2.0-flash`.
 

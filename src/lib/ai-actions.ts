@@ -25,7 +25,10 @@ export async function parseVoiceCommand(text: string): Promise<ParsedVoiceComman
     if (!client) return null;
 
     try {
-        const model = client.getGenerativeModel({ model: GEMINI_MODEL });
+        const model = client.getGenerativeModel({
+            model: GEMINI_MODEL,
+            generationConfig: { responseMimeType: "application/json" }
+        });
 
         const prompt = `
             Parse the following voice command into a structured task object: "${text}".
@@ -47,13 +50,11 @@ export async function parseVoiceCommand(text: string): Promise<ParsedVoiceComman
                 "dueTime": "17:00",
                 "priority": "high"
             }
-
-            Return ONLY raw JSON.
         `;
 
         const result = await model.generateContent(prompt);
         const response = result.response;
-        const textResponse = response.text().replace(/```json|```/g, "").trim();
+        const textResponse = response.text();
 
         return JSON.parse(textResponse);
     } catch (error) {
@@ -86,7 +87,10 @@ export async function rescheduleOverdueTasks(): Promise<RescheduleSuggestion[]> 
             originalDueDate: t.dueDate ? format(t.dueDate, "yyyy-MM-dd") : "unknown"
         }));
 
-        const model = client.getGenerativeModel({ model: GEMINI_MODEL });
+        const model = client.getGenerativeModel({
+            model: GEMINI_MODEL,
+            generationConfig: { responseMimeType: "application/json" }
+        });
 
         const prompt = `
             I have ${overdueTasks.length} overdue tasks. Help me reschedule them starting from tomorrow (${format(new Date(today.getTime() + 86400000), "yyyy-MM-dd")}).
@@ -103,13 +107,11 @@ export async function rescheduleOverdueTasks(): Promise<RescheduleSuggestion[]> 
             - "taskId": number
             - "suggestedDate": ISO 8601 date string (YYYY-MM-DD)
             - "reason": brief explanation
-            
-            Return ONLY raw JSON.
         `;
 
         const result = await model.generateContent(prompt);
         const response = result.response;
-        const textResponse = response.text().replace(/```json|```/g, "").trim();
+        const textResponse = response.text();
 
         return JSON.parse(textResponse);
 
