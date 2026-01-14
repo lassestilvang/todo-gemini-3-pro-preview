@@ -15,9 +15,9 @@
     "db:reset-dev": "neonctl branches reset dev --parent",
     "test": "bun test",
     "test:coverage": "bun test --coverage",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
-    "test:e2e:headed": "playwright test --headed"
+    "test:e2e": "bunx playwright test",
+    "test:e2e:ui": "bunx playwright test --ui",
+    "test:e2e:headed": "bunx playwright test --headed"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
