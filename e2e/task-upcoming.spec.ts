@@ -1,0 +1,66 @@
+import { test, expect, authenticateTestUser, waitForTask } from './fixtures';
+
+/**
+ * E2E tests for cross-view task verification.
+ * Verifies that tasks created with future dates appear in the "Upcoming" view.
+ * 
+ * Requirements:
+ * - Creates a task "Buy Milk" with a future date.
+ * - Navigates to "Upcoming".
+ * - Verifies "Buy Milk" is visible.
+ */
+test.describe('Task Upcoming View Verification', () => {
+    test('should create a task with a future date and show it in Upcoming view', async ({ authenticatedPage: page }) => {
+        // Navigate to today page to create the task
+        await page.goto('/today');
+        await page.waitForLoadState('networkidle');
+
+        // Find the task input
+        const taskInput = page.getByTestId('task-input');
+        await expect(taskInput).toBeVisible();
+
+        // Create a task with a future date (next month to be sure it's in Upcoming and not Today/Next 7 Days)
+        // Actually "in 2 weeks" is good for Upcoming.
+        const uniqueId = Date.now();
+        const taskTitle = `Buy Milk ${uniqueId} in 2 weeks`;
+        await taskInput.fill(taskTitle);
+        await taskInput.press('Enter');
+
+        // Wait for the task to be created and appear on the current page (if it does)
+        // Actually, on "Today" page, "in 2 weeks" tasks might NOT appear.
+        // So we just check if it was cleared.
+        await expect(taskInput).toHaveValue('', { timeout: 10000 });
+
+        // Now navigate to Upcoming
+        await page.goto('/upcoming');
+        await page.waitForLoadState('networkidle');
+
+        // Verify the task appears in the Upcoming list
+        const taskItem = page.getByTestId('task-item').filter({ hasText: `Buy Milk ${uniqueId}` });
+        await expect(taskItem.first()).toBeVisible({ timeout: 10000 });
+    });
+
+    test('should create a task for next week and show it in Next 7 Days view', async ({ authenticatedPage: page }) => {
+        // Navigate to today page to create the task
+        await page.goto('/today');
+        await page.waitForLoadState('networkidle');
+
+        // Find the task input
+        const taskInput = page.getByTestId('task-input');
+
+        const uniqueId = Date.now();
+        const taskTitle = `Weekly Review ${uniqueId} next friday`;
+        await taskInput.fill(taskTitle);
+        await taskInput.press('Enter');
+
+        await expect(taskInput).toHaveValue('', { timeout: 10000 });
+
+        // Now navigate to Next 7 Days
+        await page.goto('/next-7-days');
+        await page.waitForLoadState('networkidle');
+
+        // Verify the task appears
+        const taskItem = page.getByTestId('task-item').filter({ hasText: `Weekly Review ${uniqueId}` });
+        await expect(taskItem.first()).toBeVisible({ timeout: 10000 });
+    });
+});

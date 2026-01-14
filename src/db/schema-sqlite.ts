@@ -241,3 +241,11 @@ export const viewSettings = sqliteTable("view_settings", {
 }, (t) => ({
     pk: primaryKey({ columns: [t.userId, t.viewId] }),
 }));
+
+export const rateLimits = sqliteTable("rate_limits", {
+    key: text("key").primaryKey(),
+    count: integer("count").notNull().default(0),
+    lastRequest: integer("last_request", { mode: "timestamp" })
+        .notNull()
+        .default(sql`(strftime('%s', 'now'))`),
+});

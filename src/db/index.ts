@@ -20,10 +20,10 @@ if (process.env.NODE_ENV === "test") {
     // and avoid requiring a database connection during CI
     const { Database } = await import("bun:sqlite");
     const { drizzle } = await import("drizzle-orm/bun-sqlite");
-    
+
     // Create SQLite database
     sqliteConnection = new Database(":memory:");
-    
+
     // Use SQLite-specific schema that has compatible defaults (datetime('now') instead of NOW())
     // Cast to DbConnection for type compatibility - tests use SQLite but share the same interface
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -54,6 +54,7 @@ export const {
     achievements,
     userAchievements,
     viewSettings,
+    rateLimits,
 } = schema;
 
 export { db, sqliteConnection, schema };

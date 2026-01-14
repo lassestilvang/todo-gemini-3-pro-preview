@@ -4,6 +4,8 @@ import { getGeminiClient, GEMINI_MODEL } from "@/lib/gemini";
 import { db, tasks } from "@/db";
 import { and, eq, lt } from "drizzle-orm";
 import { startOfDay, format } from "date-fns";
+import { requireAuth } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
 
 export interface RescheduleSuggestion {
     taskId: number;
@@ -21,6 +23,15 @@ export interface ParsedVoiceCommand {
 }
 
 export async function parseVoiceCommand(text: string): Promise<ParsedVoiceCommand | null> {
+    const user = await requireAuth();
+
+    // Rate limit: 20 requests per hour
+    const limit = await rateLimit(`ai:voice-command:${user.id}`, 20, 3600);
+    if (!limit.success) {
+        console.warn(`Rate limit exceeded for user ${user.id} on parseVoiceCommand`);
+        throw new Error("Rate limit exceeded. Please try again later.");
+    }
+
     const client = getGeminiClient();
     if (!client) return null;
 
@@ -64,6 +75,15 @@ export async function parseVoiceCommand(text: string): Promise<ParsedVoiceComman
 }
 
 export async function rescheduleOverdueTasks(): Promise<RescheduleSuggestion[]> {
+    const user = await requireAuth();
+
+    // Rate limit: 5 requests per hour
+    const limit = await rateLimit(`ai:reschedule:${user.id}`, 5, 3600);
+    if (!limit.success) {
+        console.warn(`Rate limit exceeded for user ${user.id} on rescheduleOverdueTasks`);
+        throw new Error("Rate limit exceeded. Please try again later.");
+    }
+
     const client = getGeminiClient();
     if (!client) return [];
 

@@ -31,6 +31,7 @@ import {
   calculateStreakUpdate,
   suggestMetadata,
 } from "./shared";
+import { rateLimit } from "@/lib/rate-limit";
 
 // Import from other domain modules
 import { getLists, getList } from "./lists";
@@ -245,6 +246,12 @@ export async function getTask(id: number, userId: string) {
  * @returns The created task
  */
 export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: number[] }) {
+  // Rate limit: 100 tasks per hour
+  const limit = await rateLimit(`task:create:${data.userId}`, 100, 3600);
+  if (!limit.success) {
+    throw new Error("Rate limit exceeded. Please try again later.");
+  }
+
   const { labelIds, ...taskData } = data;
   let finalLabelIds = labelIds || [];
 
@@ -636,6 +643,12 @@ export async function deleteSubtask(id: number, userId: string) {
  */
 export async function searchTasks(userId: string, query: string) {
   if (!query || query.trim().length === 0) return [];
+
+  // Rate limit: 500 searches per hour
+  const limit = await rateLimit(`task:search:${userId}`, 500, 3600);
+  if (!limit.success) {
+    throw new Error("Rate limit exceeded. Please try again later.");
+  }
 
   const lowerQuery = `%${query.toLowerCase()}%`;
 

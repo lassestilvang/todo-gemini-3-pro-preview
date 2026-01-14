@@ -238,3 +238,9 @@ export const viewSettings = pgTable("view_settings", {
 }, (t) => ({
     pk: primaryKey({ columns: [t.userId, t.viewId] }),
 }));
+
+export const rateLimits = pgTable("rate_limits", {
+    key: text("key").primaryKey(), // IP or userId:action
+    count: integer("count").notNull().default(0),
+    lastRequest: timestamp("last_request").notNull().defaultNow(),
+});

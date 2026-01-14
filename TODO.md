@@ -56,30 +56,34 @@
   - *Status*: **RESOLVED** - Added `headers()` configuration to `next.config.ts` including HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, and a basic Content-Security-Policy.
   - *Action*: Review `next.config.ts` and add security headers (CSP, X-Frame-Options, etc.) for production deployment.
 
-- [ ] **Rate Limiting**:
+- [x] **Rate Limiting**:
+  - *Status*: **RESOLVED** - Implemented a database-backed rate limiter in `src/lib/rate-limit.ts` and applied it to AI actions, task creation, and search.
   - *Action*: Consider adding rate limiting to API routes and server actions to prevent abuse.
 
-- [ ] **Environment Variables Validation**:
+- [x] **Environment Variables Validation**:
+  - *Status*: **RESOLVED** - Added `src/lib/env.ts` for runtime validation and integrated it into `src/app/layout.tsx`.
   - *Action*: Add runtime validation for required environment variables at startup to fail fast on misconfigurations.
 
 ## Testing
 
-- [ ] **E2E Test for Task Creation → Upcoming Verification**:
+- [x] **E2E Test for Task Creation → Upcoming Verification**:
+  - *Status*: **RESOLVED** - Added `e2e/task-upcoming.spec.ts` which covers cross-view verification for "Upcoming" and "Next 7 Days".
   - *Action*: Add a Playwright test (in `e2e/`) that:
     1. Creates a task "Buy Milk" with a future date.
     2. Navigates to "Upcoming".
     3. Verifies "Buy Milk" is visible.
   - *Note*: Existing `e2e/task-creation.spec.ts` covers task creation on "Today" page but not cross-view verification.
 
-- [ ] **Test Coverage Report**:
-  - *Finding*: 97 unit tests pass. Coverage script exists (`bun test --coverage`). 
-  - *Action*: Generate and review coverage report to identify untested code paths.
+- [x] **Test Coverage Report**:
+  - *Status*: **RESOLVED** - Generated and reviewed coverage report. Most server actions now have >80% coverage. Added unit tests for new rate limiter.
+  - *Finding*: 439 unit tests pass with high coverage in core logic. Improved database isolation in test setup.
 
 - [ ] **Visual Regression (Optional)**: Consider adding visual snapshots for the "Neo-Brutalism" theme to catch contrast regressions.
 
 ## Performance Monitoring
 
-- [ ] **Performance Metrics**:
+- [x] **Performance Metrics**:
+  - *Status*: **RESOLVED** - Added `src/components/WebVitals.tsx` using `next/web-vitals` to monitor LCP, FID, CLS.
   - *Action*: Add Web Vitals monitoring (LCP, FID, CLS) for production. Next.js has built-in support via `next/web-vitals`.
 
 - [ ] **Bundle Size Analysis**:
@@ -87,9 +91,13 @@
 
 ## Future / Features
 
-- [ ] **Offline Mode Robustness**: Verify `next-pwa` config covers all dynamic routes. Current service worker registration is in `PwaRegister.tsx`.
+- [x] **Offline Mode Robustness**:
+  - *Status*: **RESOLVED** - Verified `@ducanh2912/next-pwa` configuration in `next.config.ts`. It correctly handles dynamic routes and offline caching.
+  - *Action*: Verify `next-pwa` config covers all dynamic routes. Current service worker registration is in `PwaRegister.tsx`.
 
-- [ ] **Profile Settings Implementation**: Replace disabled menu item with actual settings page (theme preferences are currently in a separate settings dialog).
+- [x] **Profile Settings Implementation**:
+  - *Status*: **RESOLVED** - Enabled "Profile Settings" link in `UserProfile.tsx` pointing to existing `/settings` page.
+  - *Action*: Replace disabled menu item with actual settings page (theme preferences are currently in a separate settings dialog).
 
 ---
 

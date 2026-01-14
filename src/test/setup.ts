@@ -229,6 +229,15 @@ export async function setupTestDb() {
             PRIMARY KEY(user_id, view_id)
         );
     `);
+
+    // Rate limits table
+    sqliteConnection.run(`
+        CREATE TABLE IF NOT EXISTS rate_limits(
+            key TEXT PRIMARY KEY,
+            count INTEGER NOT NULL DEFAULT 0,
+            last_request INTEGER NOT NULL DEFAULT(strftime('%s', 'now'))
+        );
+    `);
 }
 
 export async function resetTestDb() {
@@ -247,6 +256,7 @@ export async function resetTestDb() {
     sqliteConnection.run(`DELETE FROM lists`);
     sqliteConnection.run(`DELETE FROM templates`);
     sqliteConnection.run(`DELETE FROM users`);
+    sqliteConnection.run(`DELETE FROM rate_limits`);
 }
 
 // Helper to create a test user

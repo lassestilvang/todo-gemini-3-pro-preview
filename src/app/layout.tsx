@@ -42,7 +42,11 @@ import { PwaRegister } from "@/components/PwaRegister";
 import { LevelUpWatcher } from "@/components/gamification/LevelUpWatcher";
 import { ThemeProvider } from "@/components/theme-provider";
 import { QueryProvider } from "@/components/providers/QueryProvider";
+import { validateEnv } from "@/lib/env";
+import { WebVitals } from "@/components/WebVitals";
 
+// Validate env vars at startup
+validateEnv();
 
 export default function RootLayout({
   children,
@@ -82,6 +86,7 @@ export default function RootLayout({
             ]}
           >
             <PwaRegister />
+            <WebVitals />
             <LevelUpWatcher />
             <MainLayout>{children}</MainLayout>
             <Toaster />

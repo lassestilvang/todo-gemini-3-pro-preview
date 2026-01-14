@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LogOut, User } from "lucide-react";
 import { signOut } from "@/lib/auth";
+import Link from "next/link";
 
 interface UserProfileProps {
     user: {
@@ -77,9 +78,11 @@ export function UserProfile({ user }: UserProfileProps) {
                     </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem disabled>
-                    <User className="mr-2 h-4 w-4" />
-                    Profile Settings
+                <DropdownMenuItem asChild>
+                    <Link href="/settings" className="w-full flex items-center">
+                        <User className="mr-2 h-4 w-4" />
+                        Profile Settings
+                    </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive" data-testid="sign-out-button">
