@@ -78,7 +78,9 @@
   - *Status*: **RESOLVED** - Generated and reviewed coverage report. Most server actions now have >80% coverage. Added unit tests for new rate limiter.
   - *Finding*: 439 unit tests pass with high coverage in core logic. Improved database isolation in test setup.
 
-- [ ] **Visual Regression (Optional)**: Consider adding visual snapshots for the "Neo-Brutalism" theme to catch contrast regressions.
+- [x] **Visual Regression**: Added visual snapshots for the core views (Inbox, Today, Upcoming) and mobile view to catch UI/UX regressions.
+  - *Status*: **RESOLVED** - Implemented basic visual regression testing in `e2e/visual-regression.spec.ts`.
+  - *Action*: Added Playwright snapshots for key pages and a mobile viewport test.
 
 ## Performance Monitoring
 
@@ -86,8 +88,12 @@
   - *Status*: **RESOLVED** - Added `src/components/WebVitals.tsx` using `next/web-vitals` to monitor LCP, FID, CLS.
   - *Action*: Add Web Vitals monitoring (LCP, FID, CLS) for production. Next.js has built-in support via `next/web-vitals`.
 
-- [ ] **Bundle Size Analysis**:
-  - *Action*: Run `next build` and analyze the bundle to identify large dependencies that could be code-split or lazy-loaded.
+- [x] **Bundle Size Analysis**:
+  - *Status*: **RESOLVED** - Integrated `@next/bundle-analyzer` and optimized several components.
+  - *Action*:
+    1. Added `@next/bundle-analyzer` to the build process (`ANALYZE=true`).
+    2. Optimized `canvas-confetti` usage by switching to dynamic imports in `TaskItem`, `FocusMode`, `XPBar`, and `LevelUpModal`. This reduced the initial bundle size for all pages as confetti is now only loaded when needed.
+    3. Verified that `react-grab` is only loaded in development mode.
 
 ## Future / Features
 

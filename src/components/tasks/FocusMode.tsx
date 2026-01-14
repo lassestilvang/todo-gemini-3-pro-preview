@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { updateTask } from "@/lib/actions";
 import { toast } from "sonner";
-import confetti from "canvas-confetti";
 
 interface FocusModeProps {
     task: {
@@ -68,10 +67,12 @@ export function FocusMode({ task, userId, onClose }: FocusModeProps) {
         }
         try {
             await updateTask(task.id, userId, { isCompleted: true });
-            confetti({
-                particleCount: 100,
-                spread: 70,
-                origin: { y: 0.6 },
+            import("canvas-confetti").then((confetti) => {
+                confetti.default({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                });
             });
             toast.success("Task completed!");
             setTimeout(onClose, 2000);

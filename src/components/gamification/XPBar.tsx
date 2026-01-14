@@ -8,8 +8,6 @@ import { Trophy, Star } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 
-import confetti from "canvas-confetti";
-
 export function XPBar({ userId }: { userId?: string }) {
     const { data: stats } = useQuery({
         queryKey: ['userStats', userId],
@@ -24,10 +22,12 @@ export function XPBar({ userId }: { userId?: string }) {
 
     useEffect(() => {
         if (stats && prevLevel !== null && stats.level > prevLevel) {
-            confetti({
-                particleCount: 100,
-                spread: 70,
-                origin: { y: 0.6 }
+            import("canvas-confetti").then((confetti) => {
+                confetti.default({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
             });
         }
         if (stats) {
