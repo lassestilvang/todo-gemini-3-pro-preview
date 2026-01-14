@@ -36,7 +36,8 @@
 
 - [x] **Strict Type Checking**: TypeScript `strict: true` is enabled in `tsconfig.json`. ESLint passes with zero errors.
 
-- [ ] **Frontend Performance Optimization**:
+- [x] **Frontend Performance Optimization**:
+  - *Status*: **RESOLVED** - Updated `TaskListWithSettings` to accept `initialSettings`. Modified all page components (`today`, `upcoming`, `next-7-days`, `all`, `inbox`, `lists/[id]`, `labels/[id]`) to fetch view settings server-side and pass them props, eliminating the client-side fetch delay and layout flash.
   - *Issue*: `TaskListWithSettings` fetches view settings in a `useEffect`, causing a flash of default layout and additional client-side roundtrip.
   - *Action*: Fetch view settings on the server in `Page` components and pass them as props to `TaskListWithSettings`.
 

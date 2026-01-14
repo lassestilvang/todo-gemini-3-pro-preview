@@ -1,9 +1,10 @@
-import { getLabel, getTasks } from "@/lib/actions";
+import { getLabel, getTasks, getViewSettings } from "@/lib/actions";
 import { getCurrentUser } from "@/lib/auth";
 import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
 import { notFound, redirect } from "next/navigation";
 import { getLabelIcon } from "@/lib/icons";
 import { createElement } from "react";
+import { defaultViewSettings } from "@/lib/view-settings";
 
 interface LabelPageProps {
     params: Promise<{
@@ -21,12 +22,24 @@ export default async function LabelPage({ params }: LabelPageProps) {
     const labelId = parseInt(id);
     if (isNaN(labelId)) return notFound();
 
-    const [label, tasks] = await Promise.all([
+    const [label, tasks, savedSettings] = await Promise.all([
         getLabel(labelId, user.id),
-        getTasks(user.id, undefined, undefined, labelId)
+        getTasks(user.id, undefined, undefined, labelId),
+        getViewSettings(user.id, `label-${labelId}`)
     ]);
 
     if (!label) return notFound();
+
+    const initialSettings = savedSettings ? {
+        layout: savedSettings.layout || defaultViewSettings.layout,
+        showCompleted: savedSettings.showCompleted ?? defaultViewSettings.showCompleted,
+        groupBy: savedSettings.groupBy || defaultViewSettings.groupBy,
+        sortBy: savedSettings.sortBy || defaultViewSettings.sortBy,
+        sortOrder: savedSettings.sortOrder || defaultViewSettings.sortOrder,
+        filterDate: savedSettings.filterDate || defaultViewSettings.filterDate,
+        filterPriority: savedSettings.filterPriority,
+        filterLabelId: savedSettings.filterLabelId,
+    } : undefined;
 
     return (
         <div className="container max-w-4xl py-6 lg:py-10">
@@ -41,7 +54,13 @@ export default async function LabelPage({ params }: LabelPageProps) {
                     </h1>
                 </div>
 
-                <TaskListWithSettings tasks={tasks} labelId={labelId} viewId={`label-${labelId}`} userId={user.id} />
+                <TaskListWithSettings
+                    tasks={tasks}
+                    labelId={labelId}
+                    viewId={`label-${labelId}`}
+                    userId={user.id}
+                    initialSettings={initialSettings}
+                />
             </div>
         </div>
     );

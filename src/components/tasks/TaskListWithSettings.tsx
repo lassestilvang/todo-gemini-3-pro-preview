@@ -17,6 +17,7 @@ interface TaskListWithSettingsProps {
     defaultDueDate?: Date | string;
     viewId: string;
     userId?: string;
+    initialSettings?: ViewSettings;
 }
 
 /**
@@ -129,15 +130,22 @@ export function TaskListWithSettings({
     labelId,
     defaultDueDate,
     viewId,
-    userId
+    userId,
+    initialSettings
 }: TaskListWithSettingsProps) {
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [settings, setSettings] = useState<ViewSettings>(defaultViewSettings);
-    const [mounted, setMounted] = useState(false);
+    const [settings, setSettings] = useState<ViewSettings>(initialSettings ?? defaultViewSettings);
+    // If we have initialSettings, we don't need to wait for client-side fetch, so we are "mounted" (ready)
+    const [mounted, setMounted] = useState(!!initialSettings);
 
-    // Load initial settings
+    // Load initial settings only if not provided
     useEffect(() => {
+        if (initialSettings) {
+            setMounted(true);
+            return;
+        }
+
         setMounted(true);
         async function loadSettings() {
             if (!userId) return;
@@ -156,7 +164,7 @@ export function TaskListWithSettings({
             }
         }
         loadSettings();
-    }, [viewId, userId]);
+    }, [viewId, userId, initialSettings]);
 
     const handleEdit = (task: Task) => {
         setEditingTask(task);
