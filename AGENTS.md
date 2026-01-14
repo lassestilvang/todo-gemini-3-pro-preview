@@ -141,7 +141,7 @@ src/
 │
 ├── components/
 │   ├── ui/                 # shadcn/ui primitives (button, dialog, etc.)
-│   ├── layout/             # App shell (MainLayout, AppSidebar)
+│   ├── layout/             # App shell (MainLayout, AppSidebar, MobileNav)
 │   ├── tasks/              # Task components (TaskItem, TaskList, TaskDialog)
 │   ├── gamification/       # XP bar, achievements, level-up
 │   ├── settings/           # Settings dialog and theme switcher

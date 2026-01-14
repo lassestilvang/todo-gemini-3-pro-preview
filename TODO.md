@@ -22,9 +22,10 @@
 - [x] **Empty States**:
   - *Status*: **RESOLVED** - `TaskListWithSettings.tsx` (lines 205-209) already implements a consistent empty state with "No tasks found" message and "Create one?" action button.
 
-- [ ] **Navigation & Sidebar Responsiveness**:
+- [x] **Navigation & Sidebar Responsiveness**:
+  - *Status*: **RESOLVED** - Implemented mobile-first hamburger menu using `Sheet` component. The sidebar is now hidden on mobile and accessible via a top header.
   - *Issue*: Sidebar is fixed-width (256px) and does not hide/collapse on smaller screens, causing layout issues on mobile.
-  - *Action*: Implement a collapsible sidebar or a mobile-first hamburger menu.
+  - *Action*: Implemented `MobileNav` component and updated `MainLayout` to handle responsive states.
 
 - [ ] **"I'm Behind" Clarity**:
   - *Issue*: The sidebar button is useful but its purpose may not be obvious to new users.
