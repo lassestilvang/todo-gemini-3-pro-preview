@@ -77,6 +77,7 @@ E2E tests are located in `e2e/` and cover:
 - Task creation and completion
 - List and label management
 - Gamification (XP, streaks)
+- Search functionality (latency verification)
 
 ### Command Notes
 

@@ -7,9 +7,10 @@
   - *Root Cause*: The `<body>` tag has different classes on server (`font-sans`) vs client (`font-sans antigravity-scroll-lock`). The `antigravity-scroll-lock` class is injected by the `react-grab` development tool script in `layout.tsx` (lines 59-67).
   - *Action*: Add `suppressHydrationWarning` to the `<body>` tag in `src/app/layout.tsx`.
 
-- [ ] **Fix Search Indexing Latency**: New tasks do not immediately appear in the Command Palette (Cmd+K).
-  - *Root Cause*: `SearchDialog.tsx` calls `searchTasks()` server action with 300ms debounce. The server action queries the database directly (`src/lib/actions.ts`). New tasks should appear immediately since there's no client-side caching - verify if this is still an issue after task creation invalidates the query.
-  - *Action*: Add `revalidatePath` or manually test to confirm the issue persists. If so, consider adding an optimistic update.
+- [x] **Fix Search Indexing Latency**: New tasks do not immediately appear in the Command Palette (Cmd+K).
+  - *Status*: **RESOLVED** - Verified with E2E test (`e2e/search-latency.spec.ts`) that new tasks appear in search results immediately after creation.
+  - *Root Cause*: Previous suspicion of latency due to debounce/caching was unfounded as long as task creation completes.
+  - *Action*: Added regression test `e2e/search-latency.spec.ts`.
 
 - [ ] **Fix Dialog Accessibility Warnings**: Tests report "Missing `Description` or `aria-describedby`" for `DialogContent`.
   - *Affected Files*: `PlanningRitual.tsx`, `ManageLabelDialog.tsx`.
