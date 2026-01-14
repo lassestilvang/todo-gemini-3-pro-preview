@@ -1,6 +1,7 @@
 import { test, expect, waitForAppReady } from './fixtures';
+import { AVAILABLE_THEMES } from '../src/lib/themes';
 
-const THEMES = ['light', 'dark', 'glassmorphism', 'neubrutalism', 'minimalist'];
+const THEMES = [...AVAILABLE_THEMES];
 
 async function setTheme(page: any, theme: string) {
     await page.evaluate((t: string) => {

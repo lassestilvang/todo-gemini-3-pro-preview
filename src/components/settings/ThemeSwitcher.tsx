@@ -3,6 +3,7 @@
 import * as React from "react"
 import { useTheme } from "next-themes"
 import { Check } from "lucide-react"
+import { AVAILABLE_THEMES } from "@/lib/themes"
 
 import { cn } from "@/lib/utils"
 import {

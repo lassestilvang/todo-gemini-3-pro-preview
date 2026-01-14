@@ -44,6 +44,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { validateEnv } from "@/lib/env";
 import { WebVitals } from "@/components/WebVitals";
+import { AVAILABLE_THEMES } from "@/lib/themes";
 
 // Validate env vars at startup
 validateEnv();
@@ -77,13 +78,7 @@ export default function RootLayout({
             defaultTheme="system"
             enableSystem
             disableTransitionOnChange
-            themes={[
-              "light",
-              "dark",
-              "glassmorphism",
-              "neubrutalism",
-              "minimalist",
-            ]}
+            themes={[...AVAILABLE_THEMES]}
           >
             <PwaRegister />
             <WebVitals />
