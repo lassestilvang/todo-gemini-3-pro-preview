@@ -4,23 +4,24 @@
 
 - [ ] **Fix Hydration Mismatch**: A hydration warning appears on initial load.
   - *Root Cause*: The `<body>` tag has different classes on server (`font-sans`) vs client (`font-sans antigravity-scroll-lock`). The `antigravity-scroll-lock` class is injected by the `react-grab` development tool script in `layout.tsx` (lines 59-67).
-  - *Action*: Add `suppressHydrationWarning` to the `<body>` tag in `src/app/layout.tsx`, or conditionally load the react-grab script after hydration.
+  - *Action*: Add `suppressHydrationWarning` to the `<body>` tag in `src/app/layout.tsx`.
 
 - [ ] **Fix Search Indexing Latency**: New tasks do not immediately appear in the Command Palette (Cmd+K).
   - *Root Cause*: `SearchDialog.tsx` calls `searchTasks()` server action with 300ms debounce. The server action queries the database directly (`src/lib/actions.ts`). New tasks should appear immediately since there's no client-side caching - verify if this is still an issue after task creation invalidates the query.
   - *Action*: Add `revalidatePath` or manually test to confirm the issue persists. If so, consider adding an optimistic update.
 
-- [x] **Fix Dialog Accessibility Warnings**: ~~Tests report "Missing `Description` or `aria-describedby`" for `DialogContent`.~~
-  - *Status*: **RESOLVED** - All dialogs (`TaskDialog.tsx`, `TemplateFormDialog.tsx`) already have proper `<DialogDescription>` elements (TaskDialog uses `sr-only` class for screen readers).
+- [ ] **Fix Dialog Accessibility Warnings**: Tests report "Missing `Description` or `aria-describedby`" for `DialogContent`.
+  - *Affected Files*: `PlanningRitual.tsx`, `ManageLabelDialog.tsx`.
+  - *Action*: Add `<DialogDescription className="sr-only">` to provide context for screen readers in all dialogs.
 
 ## UI/UX Polish
 
 - [x] **Empty States**:
   - *Status*: **RESOLVED** - `TaskListWithSettings.tsx` (lines 205-209) already implements a consistent empty state with "No tasks found" message and "Create one?" action button.
 
-- [ ] **Navigation Performance**:
-  - *Issue*: Browser testing showed the dev server has slow chunk loading (2s+ for some requests), but this is expected in development mode.
-  - *Action*: Profile React renders in production build. Verify if `TaskListWithSettings` calculations block the main thread using React DevTools profiler.
+- [ ] **Navigation & Sidebar Responsiveness**:
+  - *Issue*: Sidebar is fixed-width (256px) and does not hide/collapse on smaller screens, causing layout issues on mobile.
+  - *Action*: Implement a collapsible sidebar or a mobile-first hamburger menu.
 
 - [ ] **"I'm Behind" Clarity**:
   - *Issue*: The sidebar button is useful but its purpose may not be obvious to new users.
@@ -30,14 +31,13 @@
 
 - [x] **Strict Type Checking**: TypeScript `strict: true` is enabled in `tsconfig.json`. ESLint passes with zero errors.
 
-- [x] **Component Optimization**:
-  - *Status*: **VERIFIED** - `TaskListWithSettings.tsx` properly uses `useMemo` for `processedTasks` (line 172-174) and `groupedTasks` (line 177-179) with correct minimal dependency arrays.
+- [ ] **Frontend Performance Optimization**:
+  - *Issue*: `TaskListWithSettings` fetches view settings in a `useEffect`, causing a flash of default layout and additional client-side roundtrip.
+  - *Action*: Fetch view settings on the server in `Page` components and pass them as props to `TaskListWithSettings`.
 
-- [ ] **Profile Settings UI**:
-  - *Issue*: The "Profile Settings" menu item in `UserProfile.tsx` (line 80) is marked as `disabled`. Consider either implementing the feature or removing the menu item to avoid user confusion.
-
-- [ ] **Console.log Cleanup**:
-  - *Finding*: `PwaRegister.tsx` has console.logs for service worker registration. Consider using a proper logging utility for production with log levels.
+- [ ] **AI Best Practices & Efficiency**:
+  - *Issue*: Prompting in `ai-actions.ts` uses manual JSON cleaning.
+  - *Action*: Use Gemini's structured output (`response_mime_type: 'application/json'`) and check if `gemini-2.5-flash` is a typo for `gemini-2.0-flash`.
 
 - [ ] **Error Boundary Coverage**:
   - *Finding*: There's an `ErrorBoundary` component wrapping the main content in `layout.tsx`, but individual routes may benefit from more granular error boundaries for better error isolation.
