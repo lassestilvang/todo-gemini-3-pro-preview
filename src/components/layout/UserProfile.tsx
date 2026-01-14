@@ -13,6 +13,7 @@ import {
 import { LogOut, User } from "lucide-react";
 import { signOut } from "@/lib/auth";
 import Link from "next/link";
+import { toast } from "sonner";
 
 interface UserProfileProps {
     user: {
@@ -42,7 +43,7 @@ export function UserProfile({ user }: UserProfileProps) {
             await signOut();
         } catch (error) {
             console.error("Sign out failed:", error);
-            // TODO: Show user-facing error notification
+            toast.error("Failed to sign out. Please try again.");
         }
     };
 

@@ -1,9 +1,10 @@
 import { test, expect, waitForAppReady } from './fixtures';
 import { AVAILABLE_THEMES } from '../src/lib/themes';
+import type { Page } from '@playwright/test';
 
 const THEMES = [...AVAILABLE_THEMES];
 
-async function setTheme(page: any, theme: string) {
+async function setTheme(page: Page, theme: string) {
     await page.evaluate((t: string) => {
         localStorage.setItem('theme', t);
         // Force a reload to ensure theme is applied from storage

@@ -109,6 +109,23 @@
   - *Status*: **RESOLVED** - Enabled "Profile Settings" link in `UserProfile.tsx` pointing to existing `/settings` page.
   - *Action*: Replace disabled menu item with actual settings page (theme preferences are currently in a separate settings dialog).
 
+## Cleanup & Refactoring
+
+- [x] **ThemeSwitcher: Use Shared Theme Constant**: The `ThemeSwitcher.tsx` imports `AVAILABLE_THEMES` but doesn't use it, instead defining a local `themes` array.
+  - *Status*: **RESOLVED** - Moved theme metadata to `src/lib/themes.ts` as `THEME_METADATA` record. Updated `ThemeSwitcher.tsx` to use both `AVAILABLE_THEMES` and `THEME_METADATA`.
+  - *Issue*: Duplication of theme definitions; adding a new theme requires changes in multiple places.
+  - *Action*: Refactor `ThemeSwitcher.tsx` to derive its `themes` array from `AVAILABLE_THEMES` for consistency.
+
+- [x] **UserProfile: Implement Sign-Out Error Notification**: The `handleSignOut` function in `UserProfile.tsx` has a TODO comment for showing a user-facing error notification.
+  - *Status*: **RESOLVED** - Added `toast.error()` call using sonner to display error message when sign-out fails.
+  - *Issue*: Sign-out errors are only logged to console, not shown to users.
+  - *Action*: Use the `toast` component from `sonner` to display an error message when sign-out fails.
+
+- [x] **Remove Unused Imports**: ESLint warns about unused imports in several files.
+  - *Status*: **RESOLVED** - Removed unused imports and fixed `any` type warning with proper `Page` type from Playwright.
+  - *Affected Files*: `e2e/task-upcoming.spec.ts`, `e2e/visual-regression.spec.ts`, `src/lib/rate-limit.ts`.
+  - *Action*: Remove unused imports to clean up warnings.
+
 ---
 
 ## Analysis Summary (2026-01-13)

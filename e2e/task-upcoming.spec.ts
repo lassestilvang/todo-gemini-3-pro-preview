@@ -1,4 +1,4 @@
-import { test, expect, authenticateTestUser, waitForTask } from './fixtures';
+import { test, expect } from './fixtures';
 
 /**
  * E2E tests for cross-view task verification.
