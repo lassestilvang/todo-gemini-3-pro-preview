@@ -22,6 +22,11 @@ test.describe('Task Completion Flow', () => {
     const taskItem = page.getByTestId('task-item').filter({ hasText: String(uniqueId) }).first();
     const checkbox = taskItem.getByTestId('task-checkbox');
     await checkbox.click();
+
+    // Wait for optimistic UI update
+    await expect(checkbox).toBeChecked();
+
+    // Wait for server to process
     await page.waitForTimeout(2000);
 
     await page.reload();
@@ -40,7 +45,11 @@ test.describe('Task Completion Flow', () => {
     });
 
     const taskItem = page.getByTestId('task-item').filter({ hasText: String(uniqueId) }).first();
-    await taskItem.getByTestId('task-checkbox').click();
+    const checkbox = taskItem.getByTestId('task-checkbox');
+    await checkbox.click();
+
+    // Wait for optimistic UI update
+    await expect(checkbox).toBeChecked();
     await page.waitForTimeout(2000);
 
     await page.reload();
@@ -59,37 +68,43 @@ test.describe('Task Completion Flow', () => {
     });
 
     const taskItem = page.getByTestId('task-item').filter({ hasText: String(uniqueId) }).first();
-    await taskItem.getByTestId('task-checkbox').click();
-    await page.waitForTimeout(2000);
+    const checkbox = taskItem.getByTestId('task-checkbox');
 
+    // STEP 1: Complete the task
+    await checkbox.click();
+
+    // Wait for optimistic UI update to "checked"
+    await expect(checkbox).toBeChecked();
+
+    // Wait for server to persist the "complete" action
+    await page.waitForTimeout(3000);
+
+    // Reload to verify completion persisted
     await page.reload();
     await page.waitForLoadState('load');
 
     const taskItemAfterComplete = page.getByTestId('task-item').filter({ hasText: String(uniqueId) }).first();
-    const checkbox = taskItemAfterComplete.getByTestId('task-checkbox');
-    await expect(checkbox).toBeChecked();
+    const checkboxAfterComplete = taskItemAfterComplete.getByTestId('task-checkbox');
+    await expect(checkboxAfterComplete).toBeChecked();
 
-    // Ensure the checkbox is ready to be clicked again
-    await expect(checkbox).toBeEnabled();
+    // STEP 2: Uncomplete the task
+    // Use a fresh reference after the reload
+    await expect(checkboxAfterComplete).toBeEnabled();
 
-    // Allow animations (confetti) to settle
+    // Allow any confetti animations to settle
     await page.waitForTimeout(1000);
 
-    // Context: Server Actions are POST requests. We wait for the request to complete to ensure DB is updated.
-    // We check for 'next-action' header to ensure it's a Server Action.
-    const uncompleteResponsePromise = page.waitForResponse(response =>
-      response.request().method() === 'POST' &&
-      (response.request().headers()['next-action'] !== undefined || (response.request().postData()?.includes('ACTION_ID') ?? false)) &&
-      response.status() === 200
-    );
+    // Click to uncomplete
+    await checkboxAfterComplete.click({ force: true });
 
-    // Click with force to ensure we hit it even if overlays exist
-    await checkbox.click({ force: true });
-    await uncompleteResponsePromise;
+    // CRITICAL: Wait for the optimistic UI to update to "unchecked"
+    // This confirms the click handler was actually triggered
+    await expect(checkboxAfterComplete).not.toBeChecked({ timeout: 5000 });
 
-    // Increased buffer for async DB commitment / read replica lag
+    // Wait for server to persist the "uncomplete" action
     await page.waitForTimeout(3000);
 
+    // Reload to verify uncomplete persisted
     await page.reload();
     await page.waitForLoadState('load');
 
@@ -99,7 +114,6 @@ test.describe('Task Completion Flow', () => {
     });
 
     const taskItemAfterUncomplete = page.getByTestId('task-item').filter({ hasText: String(uniqueId) }).first();
-    // Using a more robust check - allow for either attribute or property check
     await expect(taskItemAfterUncomplete.getByTestId('task-checkbox')).not.toBeChecked();
   });
 
@@ -127,19 +141,15 @@ test.describe('Task Completion Flow', () => {
     });
 
     const taskItem = page.getByTestId('task-item').filter({ hasText: String(uniqueId) }).first();
+    const checkbox = taskItem.getByTestId('task-checkbox');
 
-    // Wait for the specific server action response to ensure state is persisted
-    const completeResponsePromise = page.waitForResponse(response =>
-      response.request().method() === 'POST' &&
-      (response.request().headers()['next-action'] !== undefined || (response.request().postData()?.includes('ACTION_ID') ?? false)) &&
-      response.status() === 200
-    );
+    // Click to complete
+    await checkbox.click();
 
-    // Click and wait for response simultaneously
-    await taskItem.getByTestId('task-checkbox').click();
-    await completeResponsePromise;
+    // Wait for optimistic UI update
+    await expect(checkbox).toBeChecked();
 
-    // Increased buffer for async DB commitment
+    // Wait for server to persist
     await page.waitForTimeout(3000);
 
     await page.reload();
