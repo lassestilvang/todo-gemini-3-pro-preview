@@ -4,26 +4,22 @@ import type { Page } from '@playwright/test';
 
 const THEMES = [...AVAILABLE_THEMES];
 
-async function setTheme(page: Page, theme: string) {
-    await page.evaluate((t: string) => {
-        localStorage.setItem('theme', t);
-        // Force a reload to ensure theme is applied from storage
-        window.location.reload();
-    }, theme);
-    await waitForAppReady(page);
-    // Wait for transitions/animations
-    await page.waitForTimeout(1000);
-}
+
 
 test.describe('Multi-Theme Visual Regression', () => {
     for (const theme of THEMES) {
         test.describe(`Theme: ${theme}`, () => {
             test.beforeEach(async ({ authenticatedPage }) => {
-                await authenticatedPage.goto('/inbox');
-                await setTheme(authenticatedPage, theme);
+                // Inject theme into localStorage before page load to avoid reload
+                await authenticatedPage.addInitScript((t) => {
+                    window.localStorage.setItem('theme', t);
+                }, theme);
             });
 
             test(`Inbox page [${theme}]`, async ({ authenticatedPage }) => {
+                await authenticatedPage.goto('/inbox');
+                await waitForAppReady(authenticatedPage);
+                await authenticatedPage.waitForTimeout(1000); // Wait for animations
                 await expect(authenticatedPage).toHaveScreenshot(`inbox-${theme}.png`, {
                     fullPage: true,
                     mask: [authenticatedPage.locator('[data-testid="last-synced"]')],
@@ -33,6 +29,7 @@ test.describe('Multi-Theme Visual Regression', () => {
             test(`Today page [${theme}]`, async ({ authenticatedPage }) => {
                 await authenticatedPage.goto('/today');
                 await waitForAppReady(authenticatedPage);
+                await authenticatedPage.waitForTimeout(1000); // Wait for animations
                 await expect(authenticatedPage).toHaveScreenshot(`today-${theme}.png`, {
                     fullPage: true,
                 });
@@ -41,6 +38,7 @@ test.describe('Multi-Theme Visual Regression', () => {
             test(`Upcoming page [${theme}]`, async ({ authenticatedPage }) => {
                 await authenticatedPage.goto('/upcoming');
                 await waitForAppReady(authenticatedPage);
+                await authenticatedPage.waitForTimeout(1000); // Wait for animations
                 await expect(authenticatedPage).toHaveScreenshot(`upcoming-${theme}.png`, {
                     fullPage: true,
                 });
@@ -49,9 +47,13 @@ test.describe('Multi-Theme Visual Regression', () => {
     }
 
     test('Mobile view [neubrutalism]', async ({ authenticatedPage }) => {
-        await authenticatedPage.goto('/inbox');
-        await setTheme(authenticatedPage, 'neubrutalism');
+        await authenticatedPage.addInitScript(() => {
+            window.localStorage.setItem('theme', 'neubrutalism');
+        });
         await authenticatedPage.setViewportSize({ width: 375, height: 667 });
+        await authenticatedPage.goto('/inbox');
+        await waitForAppReady(authenticatedPage);
+        await authenticatedPage.waitForTimeout(1000); // Wait for animations
         await expect(authenticatedPage).toHaveScreenshot('mobile-inbox-neubrutalism.png');
     });
 });
