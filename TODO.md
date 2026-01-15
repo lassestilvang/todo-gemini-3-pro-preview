@@ -176,6 +176,15 @@
 
 ## Upcoming Improvements 🚀
 
+## Next Steps & Enhancements 🚀
+
+- [ ] **Performance Profiling in Browser**: Use Chrome DevTools Performance tab to identify bottlenecks, implement lazy loading, code-splitting, and memoization where needed.
+- [ ] **UI/UX Revamp with Glassmorphism Dark Mode**: Introduce a dark theme with glassmorphism cards, smooth transitions, and refined micro-interactions.
+- [ ] **Advanced Fuzzy Search**: Implement fuzzy matching and ranking for the command palette to improve search latency and relevance.
+- [ ] **Calendar View Feature**: Add a visual calendar component for task scheduling and overview.
+- [ ] **AI-Powered Task Suggestions**: Leverage Gemini to suggest next tasks based on user habits and patterns.
+
+
 ### Performance & Security
 - [x] **[Perf] Fix CSP for canvas-confetti**: Confetti animations work correctly.
 - [x] **[Perf] Optimize LCP**: Lazy load heavy components (Analytics, Calendar, Task Dialog).
@@ -194,3 +203,16 @@
 - [x] **[UX] Interactive Onboarding**: First-time user tour implemented with `OnboardingProvider` and `OnboardingTour`.
 - [x] **[UX] Advanced Task Filters**: Multi-filter support (Energy Level, Context) with Saved Views.
 - [x] **[UX] Task Micro-interactions**: Animated strike-through and checkbox hover effects.
+
+## Pending Enhancements & Future Work 🚀
+
+- [ ] **Full Accessibility Audit**: Run automated a11y audit (axe / Lighthouse), fix any remaining issues, and add a task to track audit results.
+- [ ] **Internationalization (i18n) Support**: Add language files, a locale‑switcher component, and configure Next.js i18n routing.
+- [ ] **Offline‑First Background Sync**: Implement a sync queue (e.g., using Workbox background sync or IndexedDB) to reliably sync task creation/completion when offline.
+- [ ] **Privacy‑Friendly Analytics Integration**: Connect `WebVitals` and page‑view events to an analytics provider (e.g., Plausible, PostHog) with opt‑out handling.
+- [ ] **CI/CD Workflow (GitHub Actions)**: Add a workflow that runs lint, type‑check, unit & e2e tests on every PR/merge.
+- [ ] **Documentation & Contributing Guide**: Create `CONTRIBUTING.md`, improve `README.md`, and add an architecture diagram (Mermaid) for new contributors.
+- [ ] **System‑Prefers‑Dark Mode Toggle Persistence**: Detect OS dark‑mode preference, store user choice, and expose a UI toggle to override.
+- [ ] **Real‑User Monitoring (RUM) Dashboard**: Send Web Vitals metrics to a dashboard (e.g., Vercel Analytics or custom Grafana) and optionally display admin view.
+- [ ] **Feature‑Flag System**: Introduce a simple flag mechanism (env‑vars or config) to toggle experimental features like the calendar view.
+- [ ] **Export / Import Functionality**: Add server‑side endpoints and UI for JSON/CSV export and import of tasks.
