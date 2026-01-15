@@ -71,8 +71,17 @@ test.describe('Task Completion Flow', () => {
 
     // Ensure the checkbox is ready to be clicked again
     await expect(checkbox).toBeEnabled();
-    await checkbox.click({ force: true }); // Force click to ensure it registers even if animations are playing
-    await page.waitForTimeout(2000);
+
+    // Context: Server Actions are POST requests. We wait for the request to complete to ensure DB is updated.
+    const uncompleteResponsePromise = page.waitForResponse(response =>
+      response.request().method() === 'POST' && response.status() === 200
+    );
+
+    await checkbox.click({ force: true });
+    await uncompleteResponsePromise;
+
+    // Small buffer for async DB commitment
+    await page.waitForTimeout(500);
 
     await page.reload();
     await page.waitForLoadState('load');
@@ -111,8 +120,18 @@ test.describe('Task Completion Flow', () => {
     });
 
     const taskItem = page.getByTestId('task-item').filter({ hasText: String(uniqueId) }).first();
+
+    // Wait for the specific server action response to ensure state is persisted
+    const completeResponsePromise = page.waitForResponse(response =>
+      response.request().method() === 'POST' && response.status() === 200
+    );
+
+    // Click and wait for response simultaneously
     await taskItem.getByTestId('task-checkbox').click();
-    await page.waitForTimeout(2000);
+    await completeResponsePromise;
+
+    // Tiny buffer for DB to settle
+    await page.waitForTimeout(500);
 
     await page.reload();
     await page.waitForLoadState('load');
