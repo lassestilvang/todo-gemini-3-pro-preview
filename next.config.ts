@@ -3,7 +3,7 @@ import withPWAInit from "@ducanh2912/next-pwa";
 import withBundleAnalyzer from "@next/bundle-analyzer";
 
 const withOutput = withBundleAnalyzer({
-  enabled: true,
+  enabled: process.env.ANALYZE === "true",
 });
 
 const withPWA = withPWAInit({
