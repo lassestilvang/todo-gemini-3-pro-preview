@@ -2,6 +2,18 @@
 
 ## High Priority (Bugs & Core Issues)
 
+- [ ] **[Bug] Fix Sidebar Duplication**: Remove duplicate "Smart Schedule" link in the sidebar.
+  - *Status*: **PENDING**
+  - *Priority*: **High**
+
+- [ ] **[Perf] Fix CSP blocking `react-grab`**: Resolve content security policy violation for drag-and-drop script to ensure functionality.
+  - *Status*: **PENDING**
+  - *Priority*: **High**
+
+- [ ] **[Perf] Optimize Initial Load**: Investigate and improve TTFB/FCP (currently ~2.5s) to make the app feel instant.
+  - *Status*: **PENDING**
+  - *Priority*: **High**
+
 - [x] **Fix Hydration Mismatch**: A hydration warning appears on initial load.
   - *Status*: **RESOLVED** - Added `suppressHydrationWarning` to `<body>` in `src/app/layout.tsx`.
   - *Root Cause*: The `<body>` tag has different classes on server (`font-sans`) vs client (`font-sans antigravity-scroll-lock`). The `antigravity-scroll-lock` class is injected by the `react-grab` development tool script in `layout.tsx` (lines 59-67).
@@ -18,6 +30,18 @@
   - *Action*: Add `<DialogDescription className="sr-only">` to provide context for screen readers in all dialogs.
 
 ## UI/UX Polish
+
+- [ ] **[UX] Sidebar Identity Section**: Add a detailed profile view in the sidebar footer (User avatar, name, email, logout).
+  - *Status*: **PENDING**
+
+- [ ] **[UX] Missing Navigation Links**: Add "Analytics" and "Settings" directly to the sidebar for better discoverability.
+  - *Status*: **PENDING**
+
+- [ ] **[UX] "World Class" Page Transitions**: Implement `framer-motion` for smooth, premium-feeling transitions between views.
+  - *Status*: **PENDING**
+
+- [ ] **[UX] Refine Design System**: Review and refine font weights, contrast, and spacing to achieve a "Premium" aesthetic.
+  - *Status*: **PENDING**
 
 - [x] **Empty States**:
   - *Status*: **RESOLVED** - `TaskListWithSettings.tsx` (lines 205-209) already implements a consistent empty state with "No tasks found" message and "Create one?" action button.
@@ -137,6 +161,12 @@
 - [x] **[Feature] Productivity Analytics Dashboard**:
   - *Status*: **RESOLVED** - Created enhanced `/analytics` page with Heatmap, Radar Chart for day-of-week productivity, and smart text insights.
   - *Goal*: Move beyond simple gamification to provided actionable productivity insights.
+
+- [ ] **[Feature] Voice Capture**: Implement Web Speech API for voice-to-text task creation (Mobile optimized).
+  - *Status*: **PENDING**
+
+- [ ] **[Feature] Quick Actions**: Add a floating action button (FAB) or header "+" button for instant task creation from anywhere.
+  - *Status*: **PENDING**
 
 - [x] **[UX] "Zen Mode" (Focus View)**:
   - *Status*: **RESOLVED** - Implemented `ZenModeProvider` and `ZenOverlay` component with glassmorphism design, keyboard shortcut (`Cmd/Ctrl+Z`), and sidebar toggle.
