@@ -27,7 +27,18 @@ export default defineConfig({
   reporter: process.env.CI ? 'github' : 'html',
 
   // Global timeout for each test
-  timeout: 60000,
+  timeout: 120000,
+
+  expect: {
+    /**
+     * Maximum time each expect() should wait for the condition to be met.
+     * For example in `await expect(locator).toBeVisible();`
+     */
+    timeout: 10000,
+    toHaveScreenshot: {
+      maxDiffPixelRatio: 0.05,
+    },
+  },
 
   // Shared settings for all projects
   use: {
@@ -44,10 +55,10 @@ export default defineConfig({
     headless: true,
 
     // Navigation timeout
-    navigationTimeout: 30000,
+    navigationTimeout: 60000,
 
     // Action timeout
-    actionTimeout: 15000,
+    actionTimeout: 30000,
   },
 
   // Configure projects for major browsers

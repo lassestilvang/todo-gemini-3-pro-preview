@@ -13,7 +13,7 @@ test.describe('Smoke Tests', () => {
     await page.goto('/');
     
     // Should redirect to login or inbox
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     
     // Check if we're on login page (unauthenticated) or inbox (authenticated)
     const url = page.url();
@@ -23,7 +23,7 @@ test.describe('Smoke Tests', () => {
   test('should display login page elements when not authenticated', async ({ page }) => {
     // Navigate directly to login
     await page.goto('/login');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     
     // Verify login page elements are present
     await expect(page.getByRole('heading', { name: 'Todo Gemini' })).toBeVisible();
@@ -40,7 +40,7 @@ test.describe('Smoke Tests', () => {
     
     // Try to access a protected route
     await page.goto('/inbox');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     
     // Should be redirected to login (either /login or WorkOS authkit)
     expect(await isOnLoginPage(page)).toBe(true);

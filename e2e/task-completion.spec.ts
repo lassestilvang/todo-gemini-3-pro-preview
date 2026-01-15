@@ -8,7 +8,7 @@ test.describe('Task Completion Flow', () => {
   test.beforeEach(async ({ page }) => {
     await authenticateTestUser(page);
     await page.goto('/today');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
   });
 
   test('should complete a task by clicking checkbox', async ({ page }) => {
@@ -25,7 +25,7 @@ test.describe('Task Completion Flow', () => {
     await page.waitForTimeout(2000);
     
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     
     const taskItemAfterReload = page.getByTestId('task-item').filter({ hasText: String(uniqueId) }).first();
     await expect(taskItemAfterReload.getByTestId('task-checkbox')).toBeChecked();
@@ -44,7 +44,7 @@ test.describe('Task Completion Flow', () => {
     await page.waitForTimeout(2000);
     
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     
     const taskItemAfterReload = page.getByTestId('task-item').filter({ hasText: String(uniqueId) }).first();
     await expect(taskItemAfterReload.getByTestId('task-checkbox')).toBeChecked();
@@ -63,7 +63,7 @@ test.describe('Task Completion Flow', () => {
     await page.waitForTimeout(2000);
     
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     
     const taskItemAfterComplete = page.getByTestId('task-item').filter({ hasText: String(uniqueId) }).first();
     await expect(taskItemAfterComplete.getByTestId('task-checkbox')).toBeChecked();
@@ -72,7 +72,7 @@ test.describe('Task Completion Flow', () => {
     await page.waitForTimeout(2000);
     
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     
     const taskItemAfterUncomplete = page.getByTestId('task-item').filter({ hasText: String(uniqueId) }).first();
     await expect(taskItemAfterUncomplete.getByTestId('task-checkbox')).not.toBeChecked();
@@ -106,7 +106,7 @@ test.describe('Task Completion Flow', () => {
     await page.waitForTimeout(2000);
     
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     
     const taskItemAfterReload = page.getByTestId('task-item').filter({ hasText: String(uniqueId) }).first();
     await expect(taskItemAfterReload.getByTestId('task-checkbox')).toBeChecked();

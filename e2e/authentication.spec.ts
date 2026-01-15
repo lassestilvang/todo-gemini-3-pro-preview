@@ -14,7 +14,7 @@ test.describe('Authentication Flow', () => {
   test.describe('Login Page', () => {
     test('should display login page with sign in options', async ({ page }) => {
       await page.goto('/login');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
       
       // Verify page title and description
       await expect(page.getByRole('heading', { name: 'Todo Gemini' })).toBeVisible();
@@ -34,7 +34,7 @@ test.describe('Authentication Flow', () => {
 
     test('should display feature highlights on login page', async ({ page }) => {
       await page.goto('/login');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
       
       // Verify feature highlights are shown (use exact text to avoid ambiguity)
       await expect(page.getByText('AI-Powered', { exact: true })).toBeVisible();
@@ -44,7 +44,7 @@ test.describe('Authentication Flow', () => {
 
     test('should display session expired message when redirected', async ({ page }) => {
       await page.goto('/login?message=session_expired');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
       
       // Verify session expired message is shown
       await expect(page.getByText('Your session has expired')).toBeVisible();
@@ -52,7 +52,7 @@ test.describe('Authentication Flow', () => {
 
     test('sign in button should have href attribute', async ({ page }) => {
       await page.goto('/login');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
       
       const signInButton = page.getByTestId('sign-in-button');
       const href = await signInButton.getAttribute('href');
@@ -68,7 +68,7 @@ test.describe('Authentication Flow', () => {
       await clearTestSession(page);
       
       await page.goto('/inbox');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
       
       // Should be redirected to login (either /login or WorkOS authkit)
       expect(await isOnLoginPage(page)).toBe(true);
@@ -78,7 +78,7 @@ test.describe('Authentication Flow', () => {
       await clearTestSession(page);
       
       await page.goto('/today');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
       
       expect(await isOnLoginPage(page)).toBe(true);
     });
@@ -87,7 +87,7 @@ test.describe('Authentication Flow', () => {
       await clearTestSession(page);
       
       await page.goto('/calendar');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
       
       expect(await isOnLoginPage(page)).toBe(true);
     });
@@ -96,7 +96,7 @@ test.describe('Authentication Flow', () => {
       await clearTestSession(page);
       
       await page.goto('/settings');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
       
       expect(await isOnLoginPage(page)).toBe(true);
     });
@@ -105,7 +105,7 @@ test.describe('Authentication Flow', () => {
       await clearTestSession(page);
       
       await page.goto('/analytics');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
       
       expect(await isOnLoginPage(page)).toBe(true);
     });
@@ -117,7 +117,7 @@ test.describe('Authentication Flow', () => {
       await authenticateTestUser(page);
       
       await page.goto('/inbox');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
       
       // Should NOT be on login page
       expect(await isOnLoginPage(page)).toBe(false);
@@ -130,7 +130,7 @@ test.describe('Authentication Flow', () => {
       await authenticateTestUser(page);
       
       await page.goto('/today');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
       
       expect(await isOnLoginPage(page)).toBe(false);
       await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible();
@@ -140,7 +140,7 @@ test.describe('Authentication Flow', () => {
       await authenticateTestUser(page);
       
       await page.goto('/inbox');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
       
       // User profile should be visible in sidebar
       // The test user name should appear
@@ -154,7 +154,7 @@ test.describe('Authentication Flow', () => {
       await authenticateTestUser(page);
       
       await page.goto('/inbox');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
       
       // Verify we're authenticated
       expect(await isOnLoginPage(page)).toBe(false);
@@ -164,7 +164,7 @@ test.describe('Authentication Flow', () => {
       
       // Try to access a protected route
       await page.goto('/inbox');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
       
       // Should be redirected to login
       expect(await isOnLoginPage(page)).toBe(true);

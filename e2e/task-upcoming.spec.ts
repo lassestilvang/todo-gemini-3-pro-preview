@@ -13,7 +13,7 @@ test.describe('Task Upcoming View Verification', () => {
     test('should create a task with a future date and show it in Upcoming view', async ({ authenticatedPage: page }) => {
         // Navigate to today page to create the task
         await page.goto('/today');
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('load');
 
         // Find the task input
         const taskInput = page.getByTestId('task-input');
@@ -33,7 +33,7 @@ test.describe('Task Upcoming View Verification', () => {
 
         // Now navigate to Upcoming
         await page.goto('/upcoming');
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('load');
 
         // Verify the task appears in the Upcoming list
         const taskItem = page.getByTestId('task-item').filter({ hasText: `Buy Milk ${uniqueId}` });
@@ -43,7 +43,7 @@ test.describe('Task Upcoming View Verification', () => {
     test('should create a task for next week and show it in Next 7 Days view', async ({ authenticatedPage: page }) => {
         // Navigate to today page to create the task
         await page.goto('/today');
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('load');
 
         // Find the task input
         const taskInput = page.getByTestId('task-input');
@@ -57,7 +57,7 @@ test.describe('Task Upcoming View Verification', () => {
 
         // Now navigate to Next 7 Days
         await page.goto('/next-7-days');
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('load');
 
         // Verify the task appears
         const taskItem = page.getByTestId('task-item').filter({ hasText: `Weekly Review ${uniqueId}` });

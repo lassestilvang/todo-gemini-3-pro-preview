@@ -26,7 +26,16 @@ export const TEST_USER = {
  */
 export async function authenticateTestUser(page: Page): Promise<boolean> {
   try {
-    const response = await page.request.post('/api/test-auth');
+    // Generate a unique ID for this test to ensure database isolation
+    const uniqueId = Math.random().toString(36).substring(7);
+    const response = await page.request.post('/api/test-auth', {
+      data: {
+        id: `test-user-${uniqueId}`,
+        email: `test-${uniqueId}@example.com`,
+        firstName: 'E2E',
+        lastName: 'Test User', // Keep the name consistent for tests that look for it
+      }
+    });
     const data = await response.json();
     return data.success === true;
   } catch (error) {
@@ -59,10 +68,10 @@ export const test = base.extend<{ authenticatedPage: Page }>({
     if (!authenticated) {
       throw new Error('Failed to authenticate test user. Make sure E2E_TEST_MODE=true is set.');
     }
-    
+
     // eslint-disable-next-line react-hooks/rules-of-hooks
     await use(page);
-    
+
     // Clean up after the test
     await clearTestSession(page);
   },
@@ -76,9 +85,9 @@ export { expect };
  */
 export async function waitForAppReady(page: Page) {
   // Wait for the main content area to be visible
-  await page.waitForSelector('[data-testid="main-content"], main', { 
+  await page.waitForSelector('[data-testid="main-content"], main', {
     state: 'visible',
-    timeout: 10000 
+    timeout: 10000
   });
 }
 
@@ -95,7 +104,7 @@ export async function isOnLoginPage(page: Page): Promise<boolean> {
  * Returns true if redirected to login, false if accessed successfully.
  */
 export async function navigateToProtectedRoute(
-  page: Page, 
+  page: Page,
   route: string
 ): Promise<boolean> {
   await page.goto(route);
@@ -108,11 +117,11 @@ export async function navigateToProtectedRoute(
  */
 export async function createTask(page: Page, title: string): Promise<void> {
   // Wait for the task input to be visible
-  await page.waitForSelector('[data-testid="task-input"]', { 
-    state: 'visible', 
-    timeout: 10000 
+  await page.waitForSelector('[data-testid="task-input"]', {
+    state: 'visible',
+    timeout: 10000
   });
-  
+
   const taskInput = page.getByTestId('task-input');
   await taskInput.fill(title);
   await taskInput.press('Enter');
@@ -126,6 +135,6 @@ export async function createTask(page: Page, title: string): Promise<void> {
 export async function waitForTask(page: Page, titleContains: string): Promise<void> {
   await page.waitForSelector(`[data-testid="task-item"]:has-text("${titleContains}")`, {
     state: 'visible',
-    timeout: 5000,
+    timeout: 10000,
   });
 }

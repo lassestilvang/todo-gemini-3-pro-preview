@@ -17,7 +17,7 @@ test.describe('Task Creation Flow', () => {
     
     // Navigate to today page (which has the CreateTaskInput)
     await page.goto('/today');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
   });
 
   test('should create a task with title', async ({ page }) => {

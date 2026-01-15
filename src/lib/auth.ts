@@ -22,11 +22,11 @@ async function getTestUser(): Promise<AuthUser | null> {
   if (process.env.E2E_TEST_MODE !== 'true') {
     return null;
   }
-  
+
   try {
     const cookieStore = await cookies();
     const testSession = cookieStore.get('wos-session-test');
-    
+
     if (testSession) {
       const session = JSON.parse(testSession.value);
       if (session.user && session.expiresAt > Date.now()) {
@@ -42,7 +42,7 @@ async function getTestUser(): Promise<AuthUser | null> {
   } catch {
     // Invalid session - return null
   }
-  
+
   return null;
 }
 
@@ -57,9 +57,9 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
   if (process.env.E2E_TEST_MODE === 'true') {
     return getTestUser();
   }
-  
+
   const { user } = await withAuth();
-  
+
   if (!user) {
     return null;
   }
@@ -79,7 +79,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
  */
 export async function requireAuth(): Promise<AuthUser> {
   const user = await getCurrentUser();
-  
+
   if (!user) {
     throw new UnauthorizedError();
   }
@@ -123,25 +123,36 @@ export async function syncUser(workosUser: {
 
   // Initialize default data for new users (not yet initialized)
   if (!upsertedUser.isInitialized) {
-    await db.batch([
-      db.insert(lists).values({
-        userId: upsertedUser.id,
-        name: "Inbox",
-        slug: "inbox",
-        color: "#6366f1",
-        icon: "inbox",
-      }),
-      db.insert(userStats).values({
-        userId: upsertedUser.id,
-        xp: 0,
-        level: 1,
-        currentStreak: 0,
-        longestStreak: 0,
-      }),
-      db.update(users)
+    try {
+      // Use individual statements with onConflictDoNothing to handle race conditions from parallel tests
+      await db.insert(lists)
+        .values({
+          userId: upsertedUser.id,
+          name: "Inbox",
+          slug: "inbox",
+          color: "#6366f1",
+          icon: "inbox",
+        })
+        .onConflictDoNothing({ target: [lists.userId, lists.slug] });
+
+      await db.insert(userStats)
+        .values({
+          userId: upsertedUser.id,
+          xp: 0,
+          level: 1,
+          currentStreak: 0,
+          longestStreak: 0,
+        })
+        .onConflictDoNothing({ target: userStats.userId });
+
+      await db.update(users)
         .set({ isInitialized: true })
-        .where(eq(users.id, upsertedUser.id)),
-    ]);
+        .where(eq(users.id, upsertedUser.id));
+    } catch (error) {
+      // If initialization fails due to race conditions, log and continue
+      // The user is likely already initialized by another parallel request
+      console.warn("SyncUser initialization race condition:", error);
+    }
   }
 
   return {

@@ -17,7 +17,7 @@ test.describe('List and Label Management', () => {
     
     // Navigate to inbox page
     await page.goto('/inbox');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
   });
 
   test.describe('List Management', () => {
@@ -74,7 +74,7 @@ test.describe('List and Label Management', () => {
       const inboxLink = page.getByRole('link', { name: /inbox/i }).first();
       await inboxLink.click();
       
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
       
       // Should be on the inbox page
       expect(page.url()).toContain('/inbox');
@@ -148,7 +148,7 @@ test.describe('List and Label Management', () => {
       
       // Reload to ensure the label appears in sidebar
       await page.reload();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
       
       // Wait for sidebar labels section to load
       await page.waitForSelector('[data-testid="sidebar-labels"]', { state: 'visible', timeout: 10000 });
@@ -163,7 +163,7 @@ test.describe('List and Label Management', () => {
       
       // Navigate using the href
       await page.goto(href!);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
       
       // Should be on a label filter page
       expect(page.url()).toContain('/labels/');
@@ -191,7 +191,7 @@ test.describe('List and Label Management', () => {
       
       // Reload to ensure the label appears in sidebar
       await page.reload();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
       
       // Wait for sidebar labels section to load
       await page.waitForSelector('[data-testid="sidebar-labels"]', { state: 'visible', timeout: 10000 });
@@ -206,7 +206,7 @@ test.describe('List and Label Management', () => {
       
       // Navigate using the href
       await page.goto(href!);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
       
       // Should be on a label filter page
       expect(page.url()).toContain('/labels/');

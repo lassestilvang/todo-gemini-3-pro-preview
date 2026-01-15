@@ -13,4 +13,4 @@ export const getGeminiClient = () => {
     return new GoogleGenerativeAI(apiKey);
 };
 
-export const GEMINI_MODEL = "gemini-2.5-flash"; // Using flash for speed and cost efficiency
+export const GEMINI_MODEL = "gemini-1.5-flash"; // Using flash for speed and cost efficiency

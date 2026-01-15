@@ -22,6 +22,11 @@ export async function suggestMetadata(
     availableLists: List[],
     availableLabels: Label[]
 ): Promise<SuggestionResult> {
+    // Skip AI suggestions in E2E test mode for speed and reliability
+    if (process.env.E2E_TEST_MODE === 'true') {
+        return { listId: null, labelIds: [] };
+    }
+
     const client = getGeminiClient();
     if (!client) return { listId: null, labelIds: [] };
 

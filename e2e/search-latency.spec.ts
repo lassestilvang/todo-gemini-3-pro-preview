@@ -4,7 +4,7 @@ test.describe('Search Task Latency', () => {
     test.beforeEach(async ({ page }) => {
         await authenticateTestUser(page);
         await page.goto('/today');
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('load');
     });
 
     test('newly created task should immediately appear in search results', async ({ page }) => {
