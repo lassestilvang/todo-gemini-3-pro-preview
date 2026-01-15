@@ -77,7 +77,7 @@ export default function RootLayout({
           </>
         )}
       </head>
-      <body className="font-sans" suppressHydrationWarning>
+      <body className="font-sans antialiased" suppressHydrationWarning>
         <QueryProvider>
           <ThemeProvider
             attribute="class"

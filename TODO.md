@@ -40,8 +40,8 @@
 - [x] **[UX] "World Class" Page Transitions**: Implement `framer-motion` for smooth, premium-feeling transitions between views.
   - *Status*: **RESOLVED** - Implemented refined `PageTransition` using `framer-motion` with custom bezier curves and scale effects. Verified smooth transitions between routes.
 
-- [ ] **[UX] Refine Design System**: Review and refine font weights, contrast, and spacing to achieve a "Premium" aesthetic.
-  - *Status*: **PENDING**
+- [x] **[UX] Refine Design System**: Review and refine font weights, contrast, and spacing to achieve a "Premium" aesthetic.
+  - *Status*: **RESOLVED** - Updated global CSS variables for a softer, premium palette (Light/Dark). Reduced default border radius to 0.5rem (8px). Added `antialiased` to body for sharper typography. Verified theme isolation for Glassmorphism.
 
 - [ ] **[UX] Sidebar Scroll**: The sidebar should be scrollable. On smaller screens the content gets cut off.
   - *Status*: **PENDING**
