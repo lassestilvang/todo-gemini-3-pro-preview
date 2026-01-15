@@ -87,8 +87,8 @@ test.describe('Task Completion Flow', () => {
     await checkbox.click({ force: true });
     await uncompleteResponsePromise;
 
-    // Small buffer for async DB commitment
-    await page.waitForTimeout(500);
+    // Increased buffer for async DB commitment / read replica lag
+    await page.waitForTimeout(3000);
 
     await page.reload();
     await page.waitForLoadState('load');
@@ -139,8 +139,8 @@ test.describe('Task Completion Flow', () => {
     await taskItem.getByTestId('task-checkbox').click();
     await completeResponsePromise;
 
-    // Tiny buffer for DB to settle
-    await page.waitForTimeout(500);
+    // Increased buffer for async DB commitment
+    await page.waitForTimeout(3000);
 
     await page.reload();
     await page.waitForLoadState('load');
