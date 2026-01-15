@@ -1,9 +1,10 @@
-import { getAchievements, getUserAchievements, getUserStats } from "@/lib/actions";
+import { getAchievements, getUserAchievements, getUserStats, getCompletionHistory } from "@/lib/actions";
 import { getCurrentUser } from "@/lib/auth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Trophy, Lock } from "lucide-react";
 import { redirect } from "next/navigation";
+import { CompletionHeatmap } from "@/components/analytics/CompletionHeatmap";
 
 import { calculateProgress, calculateXPForNextLevel } from "@/lib/gamification";
 
@@ -16,6 +17,7 @@ export default async function AchievementsPage() {
     const stats = await getUserStats(user.id);
     const allAchievements = await getAchievements();
     const userAchievements = await getUserAchievements(user.id);
+    const completionHistory = await getCompletionHistory(user.id);
 
     const unlockedIds = new Set(userAchievements.map(u => u.achievementId));
 
@@ -32,32 +34,39 @@ export default async function AchievementsPage() {
                 <p className="text-muted-foreground">Track your journey and earn rewards.</p>
             </div>
 
-            {/* Level Card */}
-            <Card className="mb-8 bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700 text-white">
-                <CardContent className="pt-6">
-                    <div className="flex items-center gap-4 mb-4">
-                        <div className="bg-yellow-500/20 p-3 rounded-full">
-                            <Trophy className="h-8 w-8 text-yellow-500" />
+            <div className="grid gap-6 md:grid-cols-3 mb-8">
+                {/* Level Card */}
+                <Card className="md:col-span-2 bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700 text-white">
+                    <CardContent className="pt-6">
+                        <div className="flex items-center gap-4 mb-4">
+                            <div className="bg-yellow-500/20 p-3 rounded-full">
+                                <Trophy className="h-8 w-8 text-yellow-500" />
+                            </div>
+                            <div>
+                                <div className="text-sm font-medium text-slate-300">Current Level</div>
+                                <div className="text-3xl font-bold">Level {stats.level}</div>
+                            </div>
+                            <div className="ml-auto text-right">
+                                <div className="text-sm font-medium text-slate-300">Total XP</div>
+                                <div className="text-2xl font-bold">{stats.xp}</div>
+                            </div>
                         </div>
-                        <div>
-                            <div className="text-sm font-medium text-slate-300">Current Level</div>
-                            <div className="text-3xl font-bold">Level {stats.level}</div>
-                        </div>
-                        <div className="ml-auto text-right">
-                            <div className="text-sm font-medium text-slate-300">Total XP</div>
-                            <div className="text-2xl font-bold">{stats.xp}</div>
-                        </div>
-                    </div>
 
-                    <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                            <span>Progress to Level {stats.level + 1}</span>
-                            <span>{xpInLevel} / {xpNeeded} XP</span>
+                        <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                                <span>Progress to Level {stats.level + 1}</span>
+                                <span>{xpInLevel} / {xpNeeded} XP</span>
+                            </div>
+                            <Progress value={progress} className="h-3 bg-slate-700" indicatorClassName="bg-yellow-500" />
                         </div>
-                        <Progress value={progress} className="h-3 bg-slate-700" indicatorClassName="bg-yellow-500" />
-                    </div>
-                </CardContent>
-            </Card>
+                    </CardContent>
+                </Card>
+
+                {/* Heatmap Card */}
+                <div className="md:col-span-1">
+                    <CompletionHeatmap data={completionHistory} />
+                </div>
+            </div>
 
             <div className="grid gap-6 md:grid-cols-2">
                 {/* Unlocked Achievements */}

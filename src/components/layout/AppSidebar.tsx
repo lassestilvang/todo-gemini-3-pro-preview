@@ -111,15 +111,13 @@ export function AppSidebar({ className, lists, labels, user, id }: AppSidebarPro
                 <SidebarLabels labels={labels} userId={user?.id} />
             </div>
 
-            {/* Smart Schedule Dialog (Triggered by the top button) */}
-            <Suspense fallback={null}>
-                <SmartScheduleDialog
-                    open={smartScheduleOpen}
-                    onOpenChange={setSmartScheduleOpen}
-                />
-            </Suspense>
-
-            <div className="p-4 border-t space-y-2 mt-auto bg-sidebar">
+            <div className="shrink-0 p-4 border-t space-y-2 bg-sidebar h-auto">
+                <Suspense fallback={null}>
+                    <SmartScheduleDialog
+                        open={smartScheduleOpen}
+                        onOpenChange={setSmartScheduleOpen}
+                    />
+                </Suspense>
                 {user && <UserProfile user={user} />}
                 <InstallPrompt />
                 <RescheduleButton />

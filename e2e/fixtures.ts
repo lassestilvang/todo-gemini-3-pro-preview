@@ -69,6 +69,11 @@ export const test = base.extend<{ authenticatedPage: Page }>({
       throw new Error('Failed to authenticate test user. Make sure E2E_TEST_MODE=true is set.');
     }
 
+    // Disable onboarding tour for tests
+    await page.addInitScript(() => {
+      window.localStorage.setItem('onboarding_completed', 'true');
+    });
+
     // eslint-disable-next-line react-hooks/rules-of-hooks
     await use(page);
 

@@ -8,11 +8,15 @@ import {
     CommandInput,
     CommandItem,
     CommandList,
+    CommandSeparator,
 } from "@/components/ui/command";
 import { searchTasks } from "@/lib/actions";
 import { useRouter } from "next/navigation";
-import { Search } from "lucide-react";
+import { Search, Sparkles, Zap, Moon, Sun, Palette, Layout, MousePointer2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTheme } from "next-themes";
+import { useZenMode } from "@/components/providers/ZenModeProvider";
+import { AVAILABLE_THEMES, THEME_METADATA } from "@/lib/themes";
 
 type SearchResult = {
     id: number;
@@ -25,6 +29,8 @@ export function SearchDialog({ userId }: { userId?: string }) {
     const [query, setQuery] = React.useState("");
     const [results, setResults] = React.useState<SearchResult[]>([]);
     const router = useRouter();
+    const { setTheme } = useTheme();
+    const { toggleZenMode } = useZenMode();
 
     React.useEffect(() => {
         const down = (e: KeyboardEvent) => {
@@ -64,6 +70,11 @@ export function SearchDialog({ userId }: { userId?: string }) {
         router.push(`?taskId=${taskId}`);
     };
 
+    const runCommand = (command: () => void) => {
+        command();
+        setOpen(false);
+    };
+
     return (
         <>
             <Button
@@ -86,43 +97,62 @@ export function SearchDialog({ userId }: { userId?: string }) {
                 />
                 <CommandList>
                     <CommandEmpty>No results found.</CommandEmpty>
-                    <CommandGroup heading="Commands">
-                        <CommandItem onSelect={() => {
-                            setOpen(false);
-                            router.push("/");
-                        }}>
-                            <div className="flex items-center gap-2">
-                                <span className="font-medium">Go to Inbox</span>
-                            </div>
+                    <CommandGroup heading="Suggestions">
+                        <CommandItem onSelect={() => runCommand(() => router.push("/"))}>
+                            <Layout className="mr-2 h-4 w-4" />
+                            <span>Go to Inbox</span>
                         </CommandItem>
-                        <CommandItem onSelect={() => {
-                            setOpen(false);
-                            router.push("?create=true");
-                        }}>
-                            <div className="flex items-center gap-2">
-                                <span className="font-medium">Create New Task</span>
-                            </div>
+                        <CommandItem onSelect={() => runCommand(() => router.push("?create=true"))}>
+                            <Zap className="mr-2 h-4 w-4 text-yellow-500" />
+                            <span>Create New Task</span>
+                        </CommandItem>
+                        <CommandItem onSelect={() => runCommand(() => toggleZenMode())}>
+                            <MousePointer2 className="mr-2 h-4 w-4 text-indigo-500" />
+                            <span>Toggle Zen Mode</span>
+                            <kbd className="ml-auto pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+                                <span className="text-xs">⌘</span>Z
+                            </kbd>
                         </CommandItem>
                     </CommandGroup>
+
+                    <CommandSeparator />
+
+                    <CommandGroup heading="Themes">
+                        {AVAILABLE_THEMES.map((theme) => (
+                            <CommandItem
+                                key={theme}
+                                onSelect={() => runCommand(() => setTheme(theme))}
+                            >
+                                {theme === 'dark' ? <Moon className="mr-2 h-4 w-4" /> :
+                                    theme === 'light' ? <Sun className="mr-2 h-4 w-4" /> :
+                                        <Palette className="mr-2 h-4 w-4" />}
+                                <span>{THEME_METADATA[theme].label} Theme</span>
+                            </CommandItem>
+                        ))}
+                    </CommandGroup>
+
                     {results.length > 0 && (
-                        <CommandGroup heading="Tasks">
-                            {results.map((task) => (
-                                <CommandItem
-                                    key={task.id}
-                                    value={`${task.title} ${task.description}`}
-                                    onSelect={() => handleSelect(task.id)}
-                                >
-                                    <div className="flex flex-col">
-                                        <span>{task.title}</span>
-                                        {task.description && (
-                                            <span className="text-xs text-muted-foreground truncate max-w-[300px]">
-                                                {task.description}
-                                            </span>
-                                        )}
-                                    </div>
-                                </CommandItem>
-                            ))}
-                        </CommandGroup>
+                        <>
+                            <CommandSeparator />
+                            <CommandGroup heading="Tasks">
+                                {results.map((task) => (
+                                    <CommandItem
+                                        key={task.id}
+                                        value={`${task.title} ${task.description}`}
+                                        onSelect={() => handleSelect(task.id)}
+                                    >
+                                        <div className="flex flex-col">
+                                            <span>{task.title}</span>
+                                            {task.description && (
+                                                <span className="text-xs text-muted-foreground truncate max-w-[300px]">
+                                                    {task.description}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </CommandItem>
+                                ))}
+                            </CommandGroup>
+                        </>
                     )}
                 </CommandList>
             </CommandDialog>

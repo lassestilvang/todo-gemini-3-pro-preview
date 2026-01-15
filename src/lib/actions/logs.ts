@@ -5,7 +5,7 @@
  */
 "use server";
 
-import { db, tasks, taskLogs, eq, desc, sql } from "./shared";
+import { db, tasks, taskLogs, eq, desc, sql, and, asc } from "./shared";
 
 /**
  * Retrieves all logs for a specific task.
@@ -42,4 +42,21 @@ export async function getActivityLog(userId: string) {
     .where(eq(taskLogs.userId, userId))
     .orderBy(desc(taskLogs.createdAt))
     .limit(50);
+}
+/**
+ * Retrieves recenet occupancy/completion history for the heatmap.
+ * 
+ * @param userId - The ID of the user whose completion history to retrieve
+ * @returns Array of completion counts grouped by date
+ */
+export async function getCompletionHistory(userId: string) {
+  return await db
+    .select({
+      date: sql<string>`DATE(${taskLogs.createdAt})`.as("date"),
+      count: sql<number>`CAST(COUNT(*) AS INT)`.as("count"),
+    })
+    .from(taskLogs)
+    .where(and(eq(taskLogs.userId, userId), eq(taskLogs.action, "completed")))
+    .groupBy(sql`DATE(${taskLogs.createdAt})`)
+    .orderBy(asc(sql`DATE(${taskLogs.createdAt})`));
 }

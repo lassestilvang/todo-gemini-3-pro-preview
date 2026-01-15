@@ -130,8 +130,8 @@
 
 ## Upcoming Features & Improvements 🚀
 
-- [ ] **[UX] Fix Sidebar Layout & "Sticky" Footer**:
-  - *Issue*: Sidebar footer (profile/settings) scrolls with content, becoming hard to reach on small screens with many lists.
+- [x] **[UX] Fix Sidebar Layout & "Sticky" Footer**:
+  - *Status*: **RESOLVED** - Refactored `AppSidebar.tsx` to use flexbox layout that pins the footer to the bottom.
   - *Action*: Convert `AppSidebar` to `flex flex-col h-screen` and ensure the footer stays pinned to the bottom.
 
 - [x] **[Feature] Productivity Analytics Dashboard**:
@@ -187,7 +187,10 @@
 - [x] **[Feature] Enhanced Keyboard Navigation**: Vim-style J/K navigation with visual focus + goto shortcuts.
 
 ### UI/UX
-- [ ] **[UX] Sidebar Sticky Footer**: Keep profile/settings pinned at bottom.
+- [x] **[UX] Sidebar Sticky Footer**: Keep profile/settings pinned at bottom.
+- [x] **[Feature] Pomodoro Timer**: Comprehensive focus timer integrated into Zen Mode with presets and visual countdown.
+- [x] **[Feature] Command Palette Enhancements**: Added theme switching and system commands to Cmd+K.
+- [x] **[UX] Completion Heatmap**: Visual contribution-style activity map on the Achievements page.
 - [x] **[UX] Interactive Onboarding**: First-time user tour implemented with `OnboardingProvider` and `OnboardingTour`.
 - [x] **[UX] Advanced Task Filters**: Multi-filter support (Energy Level, Context) with Saved Views.
 - [x] **[UX] Task Micro-interactions**: Animated strike-through and checkbox hover effects.

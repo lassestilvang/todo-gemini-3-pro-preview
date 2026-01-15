@@ -36,7 +36,7 @@ export {
 } from "./actions/dependencies";
 
 // Logs
-export { getTaskLogs, getActivityLog } from "./actions/logs";
+export { getTaskLogs, getActivityLog, getCompletionHistory } from "./actions/logs";
 
 // View Settings
 export {
