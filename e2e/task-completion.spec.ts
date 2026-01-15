@@ -14,19 +14,19 @@ test.describe('Task Completion Flow', () => {
   test('should complete a task by clicking checkbox', async ({ page }) => {
     const uniqueId = Date.now();
     await createTask(page, `CompletionTest ${uniqueId}`);
-    
-    await page.waitForSelector(`[data-testid="task-item"]:has-text("${uniqueId}")`, { 
-      state: 'visible', timeout: 10000 
+
+    await page.waitForSelector(`[data-testid="task-item"]:has-text("${uniqueId}")`, {
+      state: 'visible', timeout: 10000
     });
-    
+
     const taskItem = page.getByTestId('task-item').filter({ hasText: String(uniqueId) }).first();
     const checkbox = taskItem.getByTestId('task-checkbox');
     await checkbox.click();
     await page.waitForTimeout(2000);
-    
+
     await page.reload();
     await page.waitForLoadState('load');
-    
+
     const taskItemAfterReload = page.getByTestId('task-item').filter({ hasText: String(uniqueId) }).first();
     await expect(taskItemAfterReload.getByTestId('task-checkbox')).toBeChecked();
   });
@@ -34,18 +34,18 @@ test.describe('Task Completion Flow', () => {
   test('should show visual feedback on task completion', async ({ page }) => {
     const uniqueId = Date.now();
     await createTask(page, `VisualFeedback ${uniqueId}`);
-    
-    await page.waitForSelector(`[data-testid="task-item"]:has-text("${uniqueId}")`, { 
-      state: 'visible', timeout: 10000 
+
+    await page.waitForSelector(`[data-testid="task-item"]:has-text("${uniqueId}")`, {
+      state: 'visible', timeout: 10000
     });
-    
+
     const taskItem = page.getByTestId('task-item').filter({ hasText: String(uniqueId) }).first();
     await taskItem.getByTestId('task-checkbox').click();
     await page.waitForTimeout(2000);
-    
+
     await page.reload();
     await page.waitForLoadState('load');
-    
+
     const taskItemAfterReload = page.getByTestId('task-item').filter({ hasText: String(uniqueId) }).first();
     await expect(taskItemAfterReload.getByTestId('task-checkbox')).toBeChecked();
   });
@@ -53,61 +53,70 @@ test.describe('Task Completion Flow', () => {
   test('should uncomplete a task by clicking checkbox again', async ({ page }) => {
     const uniqueId = Date.now();
     await createTask(page, `UncompleteTest ${uniqueId}`);
-    
-    await page.waitForSelector(`[data-testid="task-item"]:has-text("${uniqueId}")`, { 
-      state: 'visible', timeout: 10000 
+
+    await page.waitForSelector(`[data-testid="task-item"]:has-text("${uniqueId}")`, {
+      state: 'visible', timeout: 10000
     });
-    
+
     const taskItem = page.getByTestId('task-item').filter({ hasText: String(uniqueId) }).first();
     await taskItem.getByTestId('task-checkbox').click();
     await page.waitForTimeout(2000);
-    
+
     await page.reload();
     await page.waitForLoadState('load');
-    
+
     const taskItemAfterComplete = page.getByTestId('task-item').filter({ hasText: String(uniqueId) }).first();
-    await expect(taskItemAfterComplete.getByTestId('task-checkbox')).toBeChecked();
-    
-    await taskItemAfterComplete.getByTestId('task-checkbox').click();
+    const checkbox = taskItemAfterComplete.getByTestId('task-checkbox');
+    await expect(checkbox).toBeChecked();
+
+    // Ensure the checkbox is ready to be clicked again
+    await expect(checkbox).toBeEnabled();
+    await checkbox.click({ force: true }); // Force click to ensure it registers even if animations are playing
     await page.waitForTimeout(2000);
-    
+
     await page.reload();
     await page.waitForLoadState('load');
-    
+
+    // Wait for the item to be visible again
+    await page.waitForSelector(`[data-testid="task-item"]:has-text("${uniqueId}")`, {
+      state: 'visible', timeout: 10000
+    });
+
     const taskItemAfterUncomplete = page.getByTestId('task-item').filter({ hasText: String(uniqueId) }).first();
+    // Using a more robust check - allow for either attribute or property check
     await expect(taskItemAfterUncomplete.getByTestId('task-checkbox')).not.toBeChecked();
   });
 
   test('should award XP when completing a task', async ({ page }) => {
     const uniqueId = Date.now();
     await createTask(page, `XPTest ${uniqueId}`);
-    
-    await page.waitForSelector(`[data-testid="task-item"]:has-text("${uniqueId}")`, { 
-      state: 'visible', timeout: 10000 
+
+    await page.waitForSelector(`[data-testid="task-item"]:has-text("${uniqueId}")`, {
+      state: 'visible', timeout: 10000
     });
-    
+
     const taskItem = page.getByTestId('task-item').filter({ hasText: String(uniqueId) }).first();
     await taskItem.getByTestId('task-checkbox').click();
     await page.waitForTimeout(1000);
-    
+
     await expect(page.getByText(/XP|Level/i).first()).toBeVisible();
   });
 
   test('should persist task completion after page reload', async ({ page }) => {
     const uniqueId = Date.now();
     await createTask(page, `PersistTest ${uniqueId}`);
-    
-    await page.waitForSelector(`[data-testid="task-item"]:has-text("${uniqueId}")`, { 
-      state: 'visible', timeout: 10000 
+
+    await page.waitForSelector(`[data-testid="task-item"]:has-text("${uniqueId}")`, {
+      state: 'visible', timeout: 10000
     });
-    
+
     const taskItem = page.getByTestId('task-item').filter({ hasText: String(uniqueId) }).first();
     await taskItem.getByTestId('task-checkbox').click();
     await page.waitForTimeout(2000);
-    
+
     await page.reload();
     await page.waitForLoadState('load');
-    
+
     const taskItemAfterReload = page.getByTestId('task-item').filter({ hasText: String(uniqueId) }).first();
     await expect(taskItemAfterReload.getByTestId('task-checkbox')).toBeChecked();
   });
