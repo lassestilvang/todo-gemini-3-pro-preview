@@ -49,6 +49,9 @@ jobs:
       - name: Lint
         run: bun run lint
 
+      - name: Check Database Schema
+        run: bunx drizzle-kit check
+
   test:
     name: Unit Tests
     runs-on: ubuntu-latest
