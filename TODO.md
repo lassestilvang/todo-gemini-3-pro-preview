@@ -128,6 +128,29 @@
 
 ---
 
+## Upcoming Features & Improvements 🚀
+
+- [ ] **[UX] Fix Sidebar Layout & "Sticky" Footer**:
+  - *Issue*: Sidebar footer (profile/settings) scrolls with content, becoming hard to reach on small screens with many lists.
+  - *Action*: Convert `AppSidebar` to `flex flex-col h-screen` and ensure the footer stays pinned to the bottom.
+
+- [ ] **[Feature] Productivity Analytics Dashboard**:
+  - *Goal*: Move beyond simple gamification to provided actionable productivity insights.
+  - *Action*: Create `/analytics` page using `recharts` to show:
+    - Daily task completion trends (Bar Chart)
+    - Focus time distribution (Pie Chart)
+    - "Most Productive Day" insights
+
+- [ ] **[UX] "Zen Mode" (Focus View)**:
+  - *Goal*: Reduce distractions during deep work sessions.
+  - *Action*: Add a "Focus" toggle in sidebar that collapses navigation and hides non-essential UI, showing only the active task/list.
+
+- [ ] **[UX] Visual Keyboard Shortcuts Guide**:
+  - *Goal*: Improve discoverability of power-user features.
+  - *Action*: Create a beautiful keyboard shortcuts dialog (triggered by `?` or `Cmd+/`) displaying a grid of available commands.
+
+---
+
 ## Analysis Summary (2026-01-13)
 
 ### What's Working Well ✅
