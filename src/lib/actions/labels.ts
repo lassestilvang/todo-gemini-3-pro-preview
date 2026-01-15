@@ -22,9 +22,17 @@ import {
  * @param userId - The ID of the user whose labels to retrieve
  * @returns Array of labels
  */
-export async function getLabels(userId: string) {
+import { cache } from "react";
+
+/**
+ * Retrieves all labels for a specific user.
+ *
+ * @param userId - The ID of the user whose labels to retrieve
+ * @returns Array of labels
+ */
+export const getLabels = cache(async function getLabels(userId: string) {
   return await db.select().from(labels).where(eq(labels.userId, userId));
-}
+});
 
 /**
  * Retrieves a single label by ID for a specific user.

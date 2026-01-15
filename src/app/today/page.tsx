@@ -11,8 +11,10 @@ export default async function TodayPage() {
         redirect("/login");
     }
 
-    const tasks = await getTasks(user.id, undefined, "today");
-    const savedSettings = await getViewSettings(user.id, "today");
+    const [tasks, savedSettings] = await Promise.all([
+        getTasks(user.id, undefined, "today"),
+        getViewSettings(user.id, "today")
+    ]);
 
     const initialSettings = savedSettings ? {
         layout: savedSettings.layout || defaultViewSettings.layout,

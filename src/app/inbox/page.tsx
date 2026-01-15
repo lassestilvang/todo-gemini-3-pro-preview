@@ -10,8 +10,10 @@ export default async function InboxPage() {
         redirect("/login");
     }
 
-    const tasks = await getTasks(user.id, null, "all"); // Filter by inbox (no list)
-    const savedSettings = await getViewSettings(user.id, "inbox");
+    const [tasks, savedSettings] = await Promise.all([
+        getTasks(user.id, null, "all"),
+        getViewSettings(user.id, "inbox")
+    ]);
 
     const initialSettings = savedSettings ? {
         layout: savedSettings.layout || defaultViewSettings.layout,

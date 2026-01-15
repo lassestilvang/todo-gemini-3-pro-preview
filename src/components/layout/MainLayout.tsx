@@ -6,8 +6,7 @@ import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";
 import { ZenOverlay } from "@/components/tasks/ZenOverlay";
 import { QuickCapture } from "@/components/tasks/QuickCapture";
 import { OnboardingTour } from "@/components/layout/OnboardingTour";
-
-import { getLists, getLabels } from "@/lib/actions";
+import { SidebarDataLoader } from "./SidebarDataLoader";
 import { getCurrentUser } from "@/lib/auth";
 
 export async function MainLayout({ children }: { children: React.ReactNode }) {
@@ -15,7 +14,7 @@ export async function MainLayout({ children }: { children: React.ReactNode }) {
     const userId = user?.id;
 
     // If no user, show children without sidebar data (login page will handle redirect)
-    if (!userId) {
+    if (!userId || !user) {
         return (
             <div className="flex h-screen overflow-hidden bg-background" data-testid="app-container">
                 <main className="flex-1 overflow-y-auto" data-testid="main-content">
@@ -25,26 +24,30 @@ export async function MainLayout({ children }: { children: React.ReactNode }) {
         );
     }
 
-    const [lists, labels] = await Promise.all([
-        getLists(userId),
-        getLabels(userId)
-    ]);
+    const SidebarFallback = () => (
+        <div className="hidden md:block w-64 h-full border-r bg-card/50 backdrop-blur-xl shrink-0">
+            <div className="h-full w-full animate-pulse bg-muted/10" />
+        </div>
+    );
 
     return (
         <div className="flex h-screen overflow-hidden bg-background" data-testid="app-container">
             {/* Desktop Sidebar - Hidden on mobile */}
-            <AppSidebar
-                id="app-sidebar"
-                lists={lists}
-                labels={labels}
-                user={user}
-                className="hidden md:block"
-            />
+            <Suspense fallback={<SidebarFallback />}>
+                <SidebarDataLoader
+                    user={user}
+                    className="hidden md:block"
+                />
+            </Suspense>
 
             <div className="flex-1 flex flex-col h-full overflow-hidden">
                 {/* Mobile Header - Visible only on mobile */}
                 <header className="md:hidden p-4 border-b flex items-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10 shrink-0">
-                    <MobileNav lists={lists} labels={labels} user={user} />
+                    <MobileNav>
+                        <Suspense fallback={<div className="w-full h-full bg-sidebar animate-pulse" />}>
+                            <SidebarDataLoader user={user} className="w-full h-full border-none shadow-none" />
+                        </Suspense>
+                    </MobileNav>
                     <div className="ml-4 font-semibold text-lg">Todo Gemini</div>
                 </header>
 

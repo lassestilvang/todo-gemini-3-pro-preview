@@ -10,8 +10,8 @@
   - *Status*: **RESOLVED** - Updated `src/app/layout.tsx` to load `react-grab` via HTTPS (`https://unpkg.com`) instead of protocol-relative URL to align with CSP.
   - *Priority*: **High**
 
-- [ ] **[Perf] Optimize Initial Load**: Investigate and improve TTFB/FCP (currently ~2.5s) to make the app feel instant.
-  - *Status*: **PENDING**
+- [x] **[Perf] Optimize Initial Load**: Investigate and improve TTFB/FCP (currently ~2.5s) to make the app feel instant.
+  - *Status*: **RESOLVED** - Refactored `MainLayout` to use streaming (Suspense) for sidebar and mobile nav, unblocking initial render. Implemented `React.cache` for `getCurrentUser`, `getLists`, and `getLabels` to deduplicate requests. Parallelized data fetching in `Inbox`, `Today`, and `Upcoming` pages using `Promise.all`.
   - *Priority*: **High**
 
 - [x] **Fix Hydration Mismatch**: A hydration warning appears on initial load.

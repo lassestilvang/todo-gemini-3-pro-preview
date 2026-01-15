@@ -22,13 +22,21 @@ import {
  * @param userId - The ID of the user whose lists to retrieve
  * @returns Array of lists ordered by creation date
  */
-export async function getLists(userId: string) {
+import { cache } from "react";
+
+/**
+ * Retrieves all lists for a specific user.
+ *
+ * @param userId - The ID of the user whose lists to retrieve
+ * @returns Array of lists ordered by creation date
+ */
+export const getLists = cache(async function getLists(userId: string) {
   return await db
     .select()
     .from(lists)
     .where(eq(lists.userId, userId))
     .orderBy(lists.createdAt);
-}
+});
 
 /**
  * Retrieves a single list by ID for a specific user.

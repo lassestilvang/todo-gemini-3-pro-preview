@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { UnauthorizedError, ForbiddenError } from "./auth-errors";
+import { cache } from "react";
 
 export interface AuthUser {
   id: string;
@@ -52,7 +53,7 @@ async function getTestUser(): Promise<AuthUser | null> {
  * 
  * In E2E test mode, checks for test session cookie instead of WorkOS.
  */
-export async function getCurrentUser(): Promise<AuthUser | null> {
+export const getCurrentUser = cache(async function getCurrentUser(): Promise<AuthUser | null> {
   // In E2E test mode, only use test session (skip WorkOS entirely)
   if (process.env.E2E_TEST_MODE === 'true') {
     return getTestUser();
@@ -71,7 +72,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     lastName: user.lastName ?? null,
     avatarUrl: user.profilePictureUrl ?? null,
   };
-}
+});
 
 /**
  * Require authentication for a server action.
