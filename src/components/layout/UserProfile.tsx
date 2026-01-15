@@ -10,7 +10,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, ChevronsUpDown } from "lucide-react";
 import { signOut } from "@/lib/auth";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -50,26 +50,29 @@ export function UserProfile({ user }: UserProfileProps) {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="w-full justify-start gap-2 px-2" data-testid="user-profile-button">
-                    <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.avatarUrl || undefined} alt={displayName} />
-                        <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                            {initials}
-                        </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col items-start text-left overflow-hidden">
-                        <span className="text-sm font-medium truncate max-w-[140px]">
-                            {displayName}
-                        </span>
-                        {user.firstName && (
-                            <span className="text-xs text-muted-foreground truncate max-w-[140px]">
-                                {user.email}
+                <Button variant="ghost" className="w-full h-14 justify-between px-3 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground" data-testid="user-profile-button">
+                    <div className="flex items-center gap-3 overflow-hidden">
+                        <Avatar className="h-9 w-9 border border-border">
+                            <AvatarImage src={user.avatarUrl || undefined} alt={displayName} />
+                            <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                                {initials}
+                            </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col items-start text-left overflow-hidden min-w-0">
+                            <span className="text-sm font-semibold truncate w-full">
+                                {displayName}
                             </span>
-                        )}
+                            {user.email && (
+                                <span className="text-xs text-muted-foreground truncate w-full opacity-80">
+                                    {user.email}
+                                </span>
+                            )}
+                        </div>
                     </div>
+                    <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuContent align="end" side="right" className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg" sideOffset={4}>
                 <DropdownMenuLabel>
                     <div className="flex flex-col space-y-1">
                         <p className="text-sm font-medium">{displayName}</p>

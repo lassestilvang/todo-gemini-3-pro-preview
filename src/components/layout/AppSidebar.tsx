@@ -12,7 +12,6 @@ import { InstallPrompt } from "@/components/InstallPrompt";
 import dynamic from "next/dynamic";
 const SearchDialog = dynamic(() => import("@/components/tasks/SearchDialog").then(mod => mod.SearchDialog), { ssr: false });
 const TemplateManager = dynamic(() => import("@/components/tasks/TemplateManager").then(mod => mod.TemplateManager), { ssr: false });
-const SettingsDialog = dynamic(() => import("@/components/settings/SettingsDialog").then(mod => mod.SettingsDialog), { ssr: false });
 
 
 import { UserProfile } from "./UserProfile";
@@ -103,14 +102,10 @@ export function AppSidebar({ className, lists, labels, user, id }: AppSidebarPro
                 <SidebarLabels labels={labels} userId={user?.id} />
             </div>
 
-            <div className="shrink-0 p-4 border-t space-y-2 bg-sidebar h-auto">
-
-                {user && <UserProfile user={user} />}
+            <div className="shrink-0 p-2 border-t space-y-2 bg-sidebar h-auto">
                 <InstallPrompt />
                 <RescheduleButton />
-                <Suspense fallback={<div className="h-10 bg-muted/20 animate-pulse rounded-md mt-2" />}>
-                    <SettingsDialog />
-                </Suspense>
+                {user && <UserProfile user={user} />}
             </div>
         </aside>
     );

@@ -31,8 +31,8 @@
 
 ## UI/UX Polish
 
-- [ ] **[UX] Sidebar Identity Section**: Add a detailed profile view in the sidebar footer (User avatar, name, email, logout).
-  - *Status*: **PENDING**
+- [x] **[UX] Sidebar Identity Section**: Add a detailed profile view in the sidebar footer (User avatar, name, email, logout).
+  - *Status*: **RESOLVED** (Pending Verification) - Implemented detailed profile view in `UserProfile.tsx` with avatar, name, email, and proper dropdown menu. Removed redundant Settings button from `AppSidebar.tsx`.
 
 - [ ] **[UX] Missing Navigation Links**: Add "Analytics" and "Settings" directly to the sidebar for better discoverability.
   - *Status*: **PENDING**
