@@ -11,7 +11,9 @@ import {
     CalendarIcon,
     Trophy,
     CalendarDays,
-    ListTodo
+    ListTodo,
+    BarChart2,
+    Settings
 } from "lucide-react";
 
 export const mainNav = [
@@ -21,6 +23,8 @@ export const mainNav = [
     { name: "Calendar", href: "/calendar", icon: CalendarIcon, color: "text-indigo-500" },
     { name: "Achievements", href: "/achievements", icon: Trophy, color: "text-yellow-500" },
     { name: "Upcoming", href: "/upcoming", icon: CalendarDays, color: "text-pink-500" },
+    { name: "Analytics", href: "/analytics", icon: BarChart2, color: "text-green-500" },
+    { name: "Settings", href: "/settings", icon: Settings, color: "text-gray-500" },
     { name: "All Tasks", href: "/all", icon: ListTodo, color: "text-gray-500" },
 ];
 
