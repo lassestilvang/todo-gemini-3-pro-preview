@@ -30,6 +30,7 @@ import {
   revalidatePath,
   calculateStreakUpdate,
   suggestMetadata,
+  NotFoundError,
 } from "./shared";
 import { rateLimit } from "@/lib/rate-limit";
 
@@ -431,7 +432,9 @@ export async function deleteTask(id: number, userId: string) {
  */
 export async function toggleTaskCompletion(id: number, userId: string, isCompleted: boolean) {
   const task = await getTask(id, userId);
-  if (!task) return;
+  if (!task) {
+    throw new NotFoundError("Task not found or access denied");
+  }
 
   if (isCompleted && task.isRecurring && task.recurringRule) {
     const { RRule } = await import("rrule");

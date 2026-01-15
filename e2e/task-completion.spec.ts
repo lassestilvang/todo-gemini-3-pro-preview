@@ -72,11 +72,18 @@ test.describe('Task Completion Flow', () => {
     // Ensure the checkbox is ready to be clicked again
     await expect(checkbox).toBeEnabled();
 
+    // Allow animations (confetti) to settle
+    await page.waitForTimeout(1000);
+
     // Context: Server Actions are POST requests. We wait for the request to complete to ensure DB is updated.
+    // We check for 'next-action' header to ensure it's a Server Action.
     const uncompleteResponsePromise = page.waitForResponse(response =>
-      response.request().method() === 'POST' && response.status() === 200
+      response.request().method() === 'POST' &&
+      (response.request().headers()['next-action'] !== undefined || (response.request().postData()?.includes('ACTION_ID') ?? false)) &&
+      response.status() === 200
     );
 
+    // Click with force to ensure we hit it even if overlays exist
     await checkbox.click({ force: true });
     await uncompleteResponsePromise;
 
@@ -123,7 +130,9 @@ test.describe('Task Completion Flow', () => {
 
     // Wait for the specific server action response to ensure state is persisted
     const completeResponsePromise = page.waitForResponse(response =>
-      response.request().method() === 'POST' && response.status() === 200
+      response.request().method() === 'POST' &&
+      (response.request().headers()['next-action'] !== undefined || (response.request().postData()?.includes('ACTION_ID') ?? false)) &&
+      response.status() === 200
     );
 
     // Click and wait for response simultaneously
