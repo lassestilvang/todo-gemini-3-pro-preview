@@ -3,6 +3,9 @@ import { AppSidebar } from "./AppSidebar";
 import { MobileNav } from "./MobileNav";
 import { TaskEditModalWrapper } from "@/components/tasks/TaskEditModalWrapper";
 import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";
+import { ZenOverlay } from "@/components/tasks/ZenOverlay";
+import { QuickCapture } from "@/components/tasks/QuickCapture";
+import { OnboardingTour } from "@/components/layout/OnboardingTour";
 
 import { getLists, getLabels } from "@/lib/actions";
 import { getCurrentUser } from "@/lib/auth";
@@ -31,6 +34,7 @@ export async function MainLayout({ children }: { children: React.ReactNode }) {
         <div className="flex h-screen overflow-hidden bg-background" data-testid="app-container">
             {/* Desktop Sidebar - Hidden on mobile */}
             <AppSidebar
+                id="app-sidebar"
                 lists={lists}
                 labels={labels}
                 user={user}
@@ -50,8 +54,11 @@ export async function MainLayout({ children }: { children: React.ReactNode }) {
             </div>
 
             <Suspense fallback={null}>
+                <ZenOverlay>{children}</ZenOverlay>
                 <TaskEditModalWrapper userId={userId} />
                 <KeyboardShortcuts />
+                <OnboardingTour />
+                <QuickCapture userId={userId} />
             </Suspense>
         </div>
     );

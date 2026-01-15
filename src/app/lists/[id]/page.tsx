@@ -39,6 +39,8 @@ export default async function ListPage({ params }: ListPageProps) {
         filterDate: savedSettings.filterDate || defaultViewSettings.filterDate,
         filterPriority: savedSettings.filterPriority,
         filterLabelId: savedSettings.filterLabelId,
+        filterEnergyLevel: savedSettings.filterEnergyLevel ?? defaultViewSettings.filterEnergyLevel,
+        filterContext: savedSettings.filterContext ?? defaultViewSettings.filterContext,
     } : undefined;
 
     return (

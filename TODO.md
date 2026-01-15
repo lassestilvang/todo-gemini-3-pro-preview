@@ -134,20 +134,17 @@
   - *Issue*: Sidebar footer (profile/settings) scrolls with content, becoming hard to reach on small screens with many lists.
   - *Action*: Convert `AppSidebar` to `flex flex-col h-screen` and ensure the footer stays pinned to the bottom.
 
-- [ ] **[Feature] Productivity Analytics Dashboard**:
+- [x] **[Feature] Productivity Analytics Dashboard**:
+  - *Status*: **RESOLVED** - Created enhanced `/analytics` page with Heatmap, Radar Chart for day-of-week productivity, and smart text insights.
   - *Goal*: Move beyond simple gamification to provided actionable productivity insights.
-  - *Action*: Create `/analytics` page using `recharts` to show:
-    - Daily task completion trends (Bar Chart)
-    - Focus time distribution (Pie Chart)
-    - "Most Productive Day" insights
 
-- [ ] **[UX] "Zen Mode" (Focus View)**:
+- [x] **[UX] "Zen Mode" (Focus View)**:
+  - *Status*: **RESOLVED** - Implemented `ZenModeProvider` and `ZenOverlay` component with glassmorphism design, keyboard shortcut (`Cmd/Ctrl+Z`), and sidebar toggle.
   - *Goal*: Reduce distractions during deep work sessions.
-  - *Action*: Add a "Focus" toggle in sidebar that collapses navigation and hides non-essential UI, showing only the active task/list.
 
-- [ ] **[UX] Visual Keyboard Shortcuts Guide**:
+- [x] **[UX] Visual Keyboard Shortcuts Guide**:
+  - *Status*: **RESOLVED** - Implemented Vim-style J/K navigation with visual focus states and Enter-to-edit. Zen Mode activated via `Cmd/Ctrl+Z`.
   - *Goal*: Improve discoverability of power-user features.
-  - *Action*: Create a beautiful keyboard shortcuts dialog (triggered by `?` or `Cmd+/`) displaying a grid of available commands.
 
 ---
 
@@ -174,3 +171,23 @@
 - Confetti animation on task completion is polished
 - Calendar view renders correctly
 - No major accessibility issues detected
+
+---
+
+## Upcoming Improvements 🚀
+
+### Performance & Security
+- [x] **[Perf] Fix CSP for canvas-confetti**: Confetti animations work correctly.
+- [x] **[Perf] Optimize LCP**: Lazy load heavy components (Analytics, Calendar, Task Dialog).
+
+### Features
+- [x] **[Feature] Zen Mode / Focus Mode**: Distraction-free task view with glassmorphism overlay.
+- [x] **[Feature] Quick Capture FAB**: Floating action button for fast task entry implemented in `QuickCapture.tsx`.
+- [x] **[Feature] Daily Streaks**: Gamification with streak freezes displayed in XP bar.
+- [x] **[Feature] Enhanced Keyboard Navigation**: Vim-style J/K navigation with visual focus + goto shortcuts.
+
+### UI/UX
+- [ ] **[UX] Sidebar Sticky Footer**: Keep profile/settings pinned at bottom.
+- [x] **[UX] Interactive Onboarding**: First-time user tour implemented with `OnboardingProvider` and `OnboardingTour`.
+- [x] **[UX] Advanced Task Filters**: Multi-filter support (Energy Level, Context) with Saved Views.
+- [x] **[UX] Task Micro-interactions**: Animated strike-through and checkbox hover effects.

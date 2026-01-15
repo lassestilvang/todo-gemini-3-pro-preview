@@ -157,22 +157,36 @@ export function TaskItem({ task, showListInfo = true, userId }: TaskItemProps) {
                     <div className="w-5 h-5 -ml-1" /> // Spacer for alignment
                 )}
 
-                <Checkbox
-                    checked={isCompleted}
-                    onCheckedChange={handleToggle}
-                    disabled={isBlocked && !isCompleted}
-                    className={cn(
-                        "rounded-full h-5 w-5 transition-all",
-                        isCompleted ? "data-[state=checked]:bg-muted-foreground data-[state=checked]:border-muted-foreground" : "",
-                        isBlocked && !isCompleted ? "opacity-50 cursor-not-allowed" : ""
-                    )}
-                    onClick={(e) => e.stopPropagation()}
-                    data-testid="task-checkbox"
-                />
+                <motion.div
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                >
+                    <Checkbox
+                        checked={isCompleted}
+                        onCheckedChange={handleToggle}
+                        disabled={isBlocked && !isCompleted}
+                        className={cn(
+                            "rounded-full h-5 w-5 transition-all border-2",
+                            isCompleted ? "data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" : "border-muted-foreground/30",
+                            isBlocked && !isCompleted ? "opacity-30 cursor-not-allowed" : ""
+                        )}
+                        onClick={(e) => e.stopPropagation()}
+                        data-testid="task-checkbox"
+                    />
+                </motion.div>
 
                 <div className="flex-1 min-w-0">
-                    <div className={cn("font-medium truncate text-sm transition-all flex items-center gap-2", isCompleted && "line-through text-muted-foreground")}>
-                        {task.title}
+                    <div className={cn("font-medium truncate text-sm transition-all flex items-center gap-2", isCompleted && "text-muted-foreground")}>
+                        <div className="relative inline-flex items-center gap-2 max-w-full">
+                            <span className="truncate">{task.title}</span>
+                            {isCompleted && (
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: "100%" }}
+                                    className="absolute left-0 top-1/2 h-[1.5px] bg-muted-foreground/50"
+                                />
+                            )}
+                        </div>
                         {isBlocked && !isCompleted && (
                             <Lock className="h-3 w-3 text-orange-500" />
                         )}

@@ -1,7 +1,12 @@
 import { getAnalytics } from "@/lib/analytics";
 import { getCurrentUser } from "@/lib/auth";
-import { AnalyticsCharts } from "@/components/analytics/AnalyticsCharts";
-import { WeeklyReview } from "@/components/analytics/WeeklyReview";
+import dynamic from "next/dynamic";
+const AnalyticsCharts = dynamic(() => import("@/components/analytics/AnalyticsCharts").then(mod => mod.AnalyticsCharts), {
+    loading: () => <div className="h-96 w-full animate-pulse bg-muted rounded-lg" />,
+});
+const WeeklyReview = dynamic(() => import("@/components/analytics/WeeklyReview").then(mod => mod.WeeklyReview), {
+    loading: () => <div className="h-48 w-full animate-pulse bg-muted rounded-lg" />,
+});
 import { redirect } from "next/navigation";
 
 export default async function AnalyticsPage() {

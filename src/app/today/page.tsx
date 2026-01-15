@@ -23,6 +23,8 @@ export default async function TodayPage() {
         filterDate: savedSettings.filterDate || defaultViewSettings.filterDate,
         filterPriority: savedSettings.filterPriority,
         filterLabelId: savedSettings.filterLabelId,
+        filterEnergyLevel: savedSettings.filterEnergyLevel ?? defaultViewSettings.filterEnergyLevel,
+        filterContext: savedSettings.filterContext ?? defaultViewSettings.filterContext,
     } : undefined;
 
     return (

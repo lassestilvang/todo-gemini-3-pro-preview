@@ -530,7 +530,11 @@ export async function toggleTaskCompletion(id: number, userId: string, isComplet
  */
 export async function updateStreak(userId: string) {
   const stats = await getUserStats(userId);
-  const { newStreak, shouldUpdate } = calculateStreakUpdate(stats.currentStreak, stats.lastLogin);
+  const { newStreak, shouldUpdate, usedFreeze } = calculateStreakUpdate(
+    stats.currentStreak,
+    stats.lastLogin,
+    stats.streakFreezes
+  );
 
   if (shouldUpdate) {
     await db
@@ -538,11 +542,19 @@ export async function updateStreak(userId: string) {
       .set({
         currentStreak: newStreak,
         longestStreak: Math.max(stats.longestStreak, newStreak),
-        lastLogin: new Date(), // Using lastLogin as "last activity" for simplicity
+        streakFreezes: usedFreeze ? stats.streakFreezes - 1 : stats.streakFreezes,
+        lastLogin: new Date(),
       })
       .where(eq(userStats.userId, userId));
 
-    if (newStreak > stats.currentStreak) {
+    if (usedFreeze) {
+      await db.insert(taskLogs).values({
+        userId,
+        taskId: null,
+        action: "streak_frozen",
+        details: "Streak freeze used! ❄️ Your streak is safe.",
+      });
+    } else if (newStreak > stats.currentStreak) {
       await db.insert(taskLogs).values({
         userId,
         taskId: null,

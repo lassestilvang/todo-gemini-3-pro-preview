@@ -13,6 +13,8 @@ export interface ViewSettings {
     filterDate: "all" | "hasDate" | "noDate";
     filterPriority: string | null;
     filterLabelId: number | null;
+    filterEnergyLevel: "high" | "medium" | "low" | null;
+    filterContext: "computer" | "phone" | "errands" | "meeting" | "home" | "anywhere" | null;
 }
 
 export const defaultViewSettings: ViewSettings = {
@@ -24,6 +26,8 @@ export const defaultViewSettings: ViewSettings = {
     filterDate: "all",
     filterPriority: null,
     filterLabelId: null,
+    filterEnergyLevel: null,
+    filterContext: null,
 };
 
 /**

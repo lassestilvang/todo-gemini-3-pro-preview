@@ -1,6 +1,9 @@
 import { getTasks } from "@/lib/actions";
 import { getCurrentUser } from "@/lib/auth";
-import { CalendarView } from "@/components/calendar/CalendarView";
+import dynamic from "next/dynamic";
+const CalendarView = dynamic(() => import("@/components/calendar/CalendarView").then(mod => mod.CalendarView), {
+    loading: () => <div className="flex-1 min-h-0 w-full animate-pulse bg-muted rounded-lg" />,
+});
 import { redirect } from "next/navigation";
 
 export default async function CalendarPage() {

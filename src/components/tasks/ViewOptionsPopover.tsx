@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { ChevronDown, ChevronUp, Settings2, List, LayoutGrid, Calendar, RotateCcw } from "lucide-react";
 import { ViewSettings, defaultViewSettings } from "@/lib/view-settings";
-import { getViewSettings, saveViewSettings, resetViewSettings, getLabels } from "@/lib/actions";
+import { getViewSettings, saveViewSettings, resetViewSettings, getLabels, createSavedView } from "@/lib/actions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -32,6 +32,8 @@ export function ViewOptionsPopover({ viewId, userId, onSettingsChange }: ViewOpt
     const [labels, setLabels] = useState<LabelOption[]>([]);
     const [isPending, startTransition] = useTransition();
     const [mounted, setMounted] = useState(false);
+    const [viewName, setViewName] = useState("");
+    const [isSaving, setIsSaving] = useState(false);
 
     // Load settings and labels on mount
     useEffect(() => {
@@ -53,6 +55,8 @@ export function ViewOptionsPopover({ viewId, userId, onSettingsChange }: ViewOpt
                     filterDate: savedSettings.filterDate || defaultViewSettings.filterDate,
                     filterPriority: savedSettings.filterPriority,
                     filterLabelId: savedSettings.filterLabelId,
+                    filterEnergyLevel: savedSettings.filterEnergyLevel as any,
+                    filterContext: savedSettings.filterContext as any,
                 });
             }
 
@@ -92,6 +96,30 @@ export function ViewOptionsPopover({ viewId, userId, onSettingsChange }: ViewOpt
                 onSettingsChange?.(defaultViewSettings);
             }
         });
+    };
+
+    const handleSaveAsView = async () => {
+        if (!userId || !viewName.trim()) return;
+        setIsSaving(true);
+        try {
+            const result = await createSavedView({
+                userId,
+                name: viewName.trim(),
+                settings: JSON.stringify(settings),
+            });
+
+            if (result.success) {
+                toast.success(`View "${viewName}" saved!`);
+                setViewName("");
+                setOpen(false);
+            } else {
+                toast.error("Failed to save view");
+            }
+        } catch (error) {
+            toast.error("An error occurred while saving view");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     if (!mounted) {
@@ -292,8 +320,69 @@ export function ViewOptionsPopover({ viewId, userId, onSettingsChange }: ViewOpt
                                         </SelectContent>
                                     </Select>
                                 </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm text-muted-foreground">Energy</span>
+                                    <Select
+                                        value={settings.filterEnergyLevel || "all"}
+                                        onValueChange={(value) => updateSetting("filterEnergyLevel", value === "all" ? null : value as any)}
+                                    >
+                                        <SelectTrigger className="w-[140px]" size="sm">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All</SelectItem>
+                                            <SelectItem value="high">High 🔋</SelectItem>
+                                            <SelectItem value="medium">Medium 🔌</SelectItem>
+                                            <SelectItem value="low">Low 🪫</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm text-muted-foreground">Context</span>
+                                    <Select
+                                        value={settings.filterContext || "all"}
+                                        onValueChange={(value) => updateSetting("filterContext", value === "all" ? null : value as any)}
+                                    >
+                                        <SelectTrigger className="w-[140px]" size="sm">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All</SelectItem>
+                                            <SelectItem value="computer">Computer 💻</SelectItem>
+                                            <SelectItem value="phone">Phone 📱</SelectItem>
+                                            <SelectItem value="errands">Errands 🏃</SelectItem>
+                                            <SelectItem value="meeting">Meeting 👥</SelectItem>
+                                            <SelectItem value="home">Home 🏠</SelectItem>
+                                            <SelectItem value="anywhere">Anywhere 🌍</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
                         )}
+                    </div>
+
+                    <Separator />
+
+                    {/* Save as View Section */}
+                    <div className="space-y-3">
+                        <div className="text-sm font-medium">Save as new view</div>
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                placeholder="View name..."
+                                value={viewName}
+                                onChange={(e) => setViewName(e.target.value)}
+                                className="flex-1 px-2 py-1 text-xs border rounded bg-background"
+                            />
+                            <Button
+                                size="sm"
+                                className="h-8 px-3 text-xs"
+                                onClick={handleSaveAsView}
+                                disabled={!viewName.trim() || isSaving}
+                            >
+                                {isSaving ? "Saving..." : "Save"}
+                            </Button>
+                        </div>
                     </div>
 
                     <Separator />

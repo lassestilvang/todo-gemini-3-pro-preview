@@ -195,6 +195,7 @@ export const userStats = sqliteTable("user_stats", {
     lastLogin: integer("last_login", { mode: "timestamp" }),
     currentStreak: integer("current_streak").notNull().default(0),
     longestStreak: integer("longest_streak").notNull().default(0),
+    streakFreezes: integer("streak_freezes").notNull().default(0),
 });
 
 // Achievements are global (not per-user)
@@ -237,6 +238,8 @@ export const viewSettings = sqliteTable("view_settings", {
     filterDate: text("filter_date", { enum: ["all", "hasDate", "noDate"] }).default("all"),
     filterPriority: text("filter_priority"),
     filterLabelId: integer("filter_label_id"),
+    filterEnergyLevel: text("filter_energy_level", { enum: ["high", "medium", "low"] }),
+    filterContext: text("filter_context", { enum: ["computer", "phone", "errands", "meeting", "home", "anywhere"] }),
     updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
 }, (t) => ({
     pk: primaryKey({ columns: [t.userId, t.viewId] }),
@@ -249,3 +252,18 @@ export const rateLimits = sqliteTable("rate_limits", {
         .notNull()
         .default(sql`(strftime('%s', 'now'))`),
 });
+
+export const savedViews = sqliteTable("saved_views", {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    icon: text("icon"),
+    settings: text("settings").notNull(), // JSON string of ViewSettings
+    createdAt: integer("created_at", { mode: "timestamp" })
+        .notNull()
+        .default(sql`(strftime('%s', 'now'))`),
+}, (t) => ({
+    userIdIdx: index("saved_views_user_id_idx").on(t.userId),
+}));

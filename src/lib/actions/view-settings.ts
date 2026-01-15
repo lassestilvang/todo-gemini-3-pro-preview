@@ -28,6 +28,8 @@ export type ViewSettingsConfig = {
   filterDate?: "all" | "hasDate" | "noDate";
   filterPriority?: string | null;
   filterLabelId?: number | null;
+  filterEnergyLevel?: "high" | "medium" | "low" | null;
+  filterContext?: "computer" | "phone" | "errands" | "meeting" | "home" | "anywhere" | null;
 };
 
 /**

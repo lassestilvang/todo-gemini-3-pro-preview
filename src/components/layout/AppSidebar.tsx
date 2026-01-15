@@ -1,5 +1,7 @@
 "use client";
 
+import { Suspense } from "react";
+
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { XPBar } from "@/components/gamification/XPBar";
@@ -7,18 +9,21 @@ import { Separator } from "@/components/ui/separator";
 
 import { RescheduleButton } from "@/components/tasks/RescheduleButton";
 import { InstallPrompt } from "@/components/InstallPrompt";
-import { SearchDialog } from "@/components/tasks/SearchDialog";
-import { TemplateManager } from "@/components/tasks/TemplateManager";
-import { SettingsDialog } from "@/components/settings/SettingsDialog";
+import dynamic from "next/dynamic";
+const SearchDialog = dynamic(() => import("@/components/tasks/SearchDialog").then(mod => mod.SearchDialog), { ssr: false });
+const TemplateManager = dynamic(() => import("@/components/tasks/TemplateManager").then(mod => mod.TemplateManager), { ssr: false });
+const SettingsDialog = dynamic(() => import("@/components/settings/SettingsDialog").then(mod => mod.SettingsDialog), { ssr: false });
+const SmartScheduleDialog = dynamic(() => import("@/components/tasks/SmartScheduleDialog").then(mod => mod.SmartScheduleDialog), { ssr: false });
+
 import { UserProfile } from "./UserProfile";
 import { Sparkles } from "lucide-react";
 import { useState } from "react";
-import { SmartScheduleDialog } from "@/components/tasks/SmartScheduleDialog";
 
 import { SidebarNavigation } from "./sidebar/SidebarNavigation";
 import { SidebarLists } from "./sidebar/SidebarLists";
 import { SidebarLabels } from "./sidebar/SidebarLabels";
 import { SidebarRituals } from "./sidebar/SidebarRituals";
+import { SidebarSavedViews } from "./sidebar/SidebarSavedViews";
 
 // Types matching those in sub-components
 type List = {
@@ -44,19 +49,36 @@ type User = {
     avatarUrl?: string | null;
 } | null;
 
-export function AppSidebar({ className, lists, labels, user }: { className?: string; lists: List[]; labels: Label[]; user?: User }) {
+interface AppSidebarProps {
+    className?: string;
+    lists: List[];
+    labels: Label[];
+    user?: User;
+    id?: string;
+}
+
+export function AppSidebar({ className, lists, labels, user, id }: AppSidebarProps) {
     const [smartScheduleOpen, setSmartScheduleOpen] = useState(false);
 
     return (
-        <div className={cn("pb-12 w-64 border-r bg-sidebar h-screen overflow-y-auto sidebar", className)} data-testid="app-sidebar">
-            <div className="space-y-4 py-4">
+        <aside
+            id={id}
+            className={cn(
+                "flex flex-col h-full border-r bg-card/50 backdrop-blur-xl w-64 shrink-0 transition-all duration-300",
+                className
+            )}
+            data-testid="app-sidebar"
+        >
+            <div className="flex-1 overflow-y-auto overflow-x-hidden pt-4 custom-scrollbar">
                 <div className="pl-3 pr-3 py-2">
                     <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
                         Planner
                     </h2>
                     <XPBar userId={user?.id} />
                     <div className="mb-4">
-                        <SearchDialog userId={user?.id} />
+                        <Suspense fallback={<div className="h-10 bg-muted/20 animate-pulse rounded-md mt-2" />}>
+                            <SearchDialog userId={user?.id} />
+                        </Suspense>
                     </div>
                     <div className="py-2">
                         <Button
@@ -69,7 +91,9 @@ export function AppSidebar({ className, lists, labels, user }: { className?: str
                             Smart Schedule
                         </Button>
                         <div className="mt-2">
-                            <TemplateManager userId={user?.id} />
+                            <Suspense fallback={<div className="h-10 bg-muted/20 animate-pulse rounded-md mt-2" />}>
+                                <TemplateManager userId={user?.id} />
+                            </Suspense>
                         </div>
                     </div>
 
@@ -81,21 +105,28 @@ export function AppSidebar({ className, lists, labels, user }: { className?: str
                 <SidebarLists lists={lists} userId={user?.id} />
 
                 <Separator />
+                <SidebarSavedViews userId={user?.id} />
+
+                <Separator />
                 <SidebarLabels labels={labels} userId={user?.id} />
             </div>
 
             {/* Smart Schedule Dialog (Triggered by the top button) */}
-            <SmartScheduleDialog
-                open={smartScheduleOpen}
-                onOpenChange={setSmartScheduleOpen}
-            />
+            <Suspense fallback={null}>
+                <SmartScheduleDialog
+                    open={smartScheduleOpen}
+                    onOpenChange={setSmartScheduleOpen}
+                />
+            </Suspense>
 
-            <div className="p-4 mt-auto border-t space-y-2">
+            <div className="p-4 border-t space-y-2 mt-auto bg-sidebar">
                 {user && <UserProfile user={user} />}
                 <InstallPrompt />
                 <RescheduleButton />
-                <SettingsDialog />
+                <Suspense fallback={<div className="h-10 bg-muted/20 animate-pulse rounded-md mt-2" />}>
+                    <SettingsDialog />
+                </Suspense>
             </div>
-        </div>
+        </aside>
     );
 }

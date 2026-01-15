@@ -192,6 +192,7 @@ export const userStats = pgTable("user_stats", {
     lastLogin: timestamp("last_login"),
     currentStreak: integer("current_streak").notNull().default(0),
     longestStreak: integer("longest_streak").notNull().default(0),
+    streakFreezes: integer("streak_freezes").notNull().default(0),
 });
 
 // Achievements are global (not per-user)
@@ -234,6 +235,8 @@ export const viewSettings = pgTable("view_settings", {
     filterDate: text("filter_date", { enum: ["all", "hasDate", "noDate"] }).default("all"),
     filterPriority: text("filter_priority"), // null = all, or "high", "medium", "low", "none"
     filterLabelId: integer("filter_label_id"), // null = all
+    filterEnergyLevel: text("filter_energy_level", { enum: ["high", "medium", "low"] }),
+    filterContext: text("filter_context", { enum: ["computer", "phone", "errands", "meeting", "home", "anywhere"] }),
     updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
 }, (t) => ({
     pk: primaryKey({ columns: [t.userId, t.viewId] }),
@@ -244,3 +247,18 @@ export const rateLimits = pgTable("rate_limits", {
     count: integer("count").notNull().default(0),
     lastRequest: timestamp("last_request").notNull().defaultNow(),
 });
+
+export const savedViews = pgTable("saved_views", {
+    id: serial("id").primaryKey(),
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    icon: text("icon"),
+    settings: text("settings").notNull(), // JSON string of ViewSettings
+    createdAt: timestamp("created_at")
+        .notNull()
+        .defaultNow(),
+}, (t) => ({
+    userIdIdx: index("saved_views_user_id_idx").on(t.userId),
+}));

@@ -42,9 +42,11 @@ import { PwaRegister } from "@/components/PwaRegister";
 import { LevelUpWatcher } from "@/components/gamification/LevelUpWatcher";
 import { ThemeProvider } from "@/components/theme-provider";
 import { QueryProvider } from "@/components/providers/QueryProvider";
+import { OnboardingProvider } from "@/components/providers/OnboardingProvider";
 import { validateEnv } from "@/lib/env";
 import { WebVitals } from "@/components/WebVitals";
 import { AVAILABLE_THEMES } from "@/lib/themes";
+import { ZenModeProvider } from "@/components/providers/ZenModeProvider";
 
 // Validate env vars at startup
 validateEnv();
@@ -80,11 +82,15 @@ export default function RootLayout({
             disableTransitionOnChange
             themes={[...AVAILABLE_THEMES]}
           >
-            <PwaRegister />
-            <WebVitals />
-            <LevelUpWatcher />
-            <MainLayout>{children}</MainLayout>
-            <Toaster />
+            <ZenModeProvider>
+              <OnboardingProvider>
+                <PwaRegister />
+                <WebVitals />
+                <LevelUpWatcher />
+                <MainLayout>{children}</MainLayout>
+                <Toaster />
+              </OnboardingProvider>
+            </ZenModeProvider>
           </ThemeProvider>
         </QueryProvider>
       </body>

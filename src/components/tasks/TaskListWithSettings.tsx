@@ -1,13 +1,18 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { TaskItem, Task } from "./TaskItem";
-import { TaskDialog } from "./TaskDialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { ViewOptionsPopover } from "./ViewOptionsPopover";
 import { ViewSettings, defaultViewSettings } from "@/lib/view-settings";
 import { getViewSettings } from "@/lib/actions";
+import { cn } from "@/lib/utils";
+import dynamic from "next/dynamic";
+
+const TaskDialog = dynamic(() => import("./TaskDialog").then(mod => mod.TaskDialog), {
+    ssr: false,
+});
 
 interface TaskListWithSettingsProps {
     tasks: Task[];
@@ -48,6 +53,16 @@ function applyViewSettings(tasks: Task[], settings: ViewSettings): Task[] {
         result = result.filter(task =>
             task.labels?.some(label => label.id === settings.filterLabelId)
         );
+    }
+
+    // Filter: energyLevel
+    if (settings.filterEnergyLevel) {
+        result = result.filter(task => task.energyLevel === settings.filterEnergyLevel);
+    }
+
+    // Filter: context
+    if (settings.filterContext) {
+        result = result.filter(task => task.context === settings.filterContext);
     }
 
     // Sort
@@ -138,6 +153,7 @@ export function TaskListWithSettings({
     const [settings, setSettings] = useState<ViewSettings>(initialSettings ?? defaultViewSettings);
     // If we have initialSettings, we don't need to wait for client-side fetch, so we are "mounted" (ready)
     const [mounted, setMounted] = useState(!!initialSettings);
+    const [focusedIndex, setFocusedIndex] = useState(-1);
 
     // Load initial settings only if not provided
     useEffect(() => {
@@ -160,6 +176,8 @@ export function TaskListWithSettings({
                     filterDate: savedSettings.filterDate || defaultViewSettings.filterDate,
                     filterPriority: savedSettings.filterPriority,
                     filterLabelId: savedSettings.filterLabelId,
+                    filterEnergyLevel: savedSettings.filterEnergyLevel as any,
+                    filterContext: savedSettings.filterContext as any,
                 });
             }
         }
@@ -176,10 +194,34 @@ export function TaskListWithSettings({
         setIsDialogOpen(true);
     };
 
-    // Apply filtering and sorting
     const processedTasks = useMemo(() => {
         return applyViewSettings(tasks, settings);
     }, [tasks, settings]);
+
+    // Handle J/K Navigation
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            const target = e.target as HTMLElement;
+            if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) {
+                return;
+            }
+
+            if (processedTasks.length === 0) return;
+
+            if (e.key === "j") {
+                setFocusedIndex(prev => Math.min(processedTasks.length - 1, prev + 1));
+            } else if (e.key === "k") {
+                setFocusedIndex(prev => Math.max(0, prev - 1));
+            } else if (e.key === "Enter" && focusedIndex >= 0) {
+                handleEdit(processedTasks[focusedIndex]);
+            } else if (e.key === "x" && focusedIndex >= 0) {
+                // Future: Toggle completion directly if possible, or leave for now
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [processedTasks, focusedIndex, userId]);
 
     // Group tasks
     const groupedTasks = useMemo(() => {
@@ -217,8 +259,15 @@ export function TaskListWithSettings({
                 </div>
             ) : settings.groupBy === "none" ? (
                 <div className="space-y-2">
-                    {processedTasks.map((task) => (
-                        <div key={task.id} onClick={() => handleEdit(task)} className="cursor-pointer">
+                    {processedTasks.map((task, index) => (
+                        <div
+                            key={task.id}
+                            onClick={() => handleEdit(task)}
+                            className={cn(
+                                "cursor-pointer rounded-lg transition-all",
+                                focusedIndex === index && "ring-2 ring-indigo-500 ring-offset-2 ring-offset-background"
+                            )}
+                        >
                             <TaskItem task={task} showListInfo={!listId} userId={userId} />
                         </div>
                     ))}
@@ -230,28 +279,40 @@ export function TaskListWithSettings({
                             <h3 className="text-sm font-medium text-muted-foreground border-b pb-2">
                                 {groupName} ({groupTasks.length})
                             </h3>
-                            {groupTasks.map((task) => (
-                                <div key={task.id} onClick={() => handleEdit(task)} className="cursor-pointer">
-                                    <TaskItem task={task} showListInfo={!listId} userId={userId} />
-                                </div>
-                            ))}
+                            {groupTasks.map((task) => {
+                                const globalIndex = processedTasks.findIndex(t => t.id === task.id);
+                                return (
+                                    <div
+                                        key={task.id}
+                                        onClick={() => handleEdit(task)}
+                                        className={cn(
+                                            "cursor-pointer rounded-lg transition-all",
+                                            focusedIndex === globalIndex && "ring-2 ring-indigo-500 ring-offset-2 ring-offset-background"
+                                        )}
+                                    >
+                                        <TaskItem task={task} showListInfo={!listId} userId={userId} />
+                                    </div>
+                                );
+                            })}
                         </div>
                     ))}
                 </div>
             )}
 
-            <TaskDialog
-                task={editingTask ?? undefined}
-                defaultListId={listId}
-                defaultLabelIds={labelId ? [labelId] : undefined}
-                defaultDueDate={defaultDueDate}
-                open={isDialogOpen}
-                onOpenChange={(open) => {
-                    setIsDialogOpen(open);
-                    if (!open) setEditingTask(null);
-                }}
-                userId={userId}
-            />
+            <Suspense fallback={null}>
+                <TaskDialog
+                    task={editingTask ?? undefined}
+                    defaultListId={listId}
+                    defaultLabelIds={labelId ? [labelId] : undefined}
+                    defaultDueDate={defaultDueDate}
+                    open={isDialogOpen}
+                    onOpenChange={(open) => {
+                        setIsDialogOpen(open);
+                        if (!open) setEditingTask(null);
+                    }}
+                    userId={userId}
+                />
+            </Suspense>
         </div>
     );
 }

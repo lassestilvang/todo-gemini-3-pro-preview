@@ -86,6 +86,8 @@ export { deleteList as deleteListSafe } from "./actions/lists";
 export { createLabel as createLabelSafe } from "./actions/labels";
 export { updateLabel as updateLabelSafe } from "./actions/labels";
 export { deleteLabel as deleteLabelSafe } from "./actions/labels";
+export * from "./actions/views";
+export * from "./action-result";
 
 // Task Safe functions with custom validation (re-exported from task-safe module)
 export {

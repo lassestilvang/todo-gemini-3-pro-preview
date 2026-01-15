@@ -43,6 +43,13 @@
       "when": 1768493257233,
       "tag": "0005_lovely_thunderbolts",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1768502660051,
+      "tag": "0006_tricky_katie_power",
+      "breakpoints": true
     }
   ]
 }

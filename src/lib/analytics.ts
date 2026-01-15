@@ -19,6 +19,8 @@ export async function getAnalytics(userId: string) {
             priorityDist: { high: 0, medium: 0, low: 0, none: 0 },
             energyStats: { high: 0, medium: 0, low: 0 },
             energyCompleted: { high: 0, medium: 0, low: 0 },
+            productivityByDay: [0, 0, 0, 0, 0, 0, 0],
+            heatmapData: [],
         };
     }
 
@@ -64,6 +66,43 @@ export async function getAnalytics(userId: string) {
         });
     }
 
+    // Productivity by day of week (0 = Sunday, 6 = Saturday)
+    const productivityByDay = [0, 0, 0, 0, 0, 0, 0];
+    const dayCounts = [0, 0, 0, 0, 0, 0, 0];
+
+    allTasks.filter(t => t.isCompleted && t.completedAt).forEach(t => {
+        const day = new Date(t.completedAt!).getDay();
+        productivityByDay[day]++;
+    });
+
+    // Heatmap data (last 90 days)
+    const heatmapData: { date: string; count: number; level: number }[] = [];
+    for (let i = 89; i >= 0; i--) {
+        const day = subDays(now, i);
+        const dayStart = startOfDay(day);
+        const dayEnd = new Date(dayStart);
+        dayEnd.setHours(23, 59, 59, 999);
+
+        const count = allTasks.filter(t => {
+            if (!t.completedAt) return false;
+            const completedAt = new Date(t.completedAt);
+            return completedAt >= dayStart && completedAt <= dayEnd;
+        }).length;
+
+        // Level 0-4 based on count
+        let level = 0;
+        if (count > 0) level = 1;
+        if (count > 3) level = 2;
+        if (count > 6) level = 3;
+        if (count > 10) level = 4;
+
+        heatmapData.push({
+            date: format(day, "yyyy-MM-dd"),
+            count,
+            level,
+        });
+    }
+
     // Time tracking stats
     const tasksWithTime = allTasks.filter(t => t.estimateMinutes && t.actualMinutes);
     const avgEstimate = tasksWithTime.length > 0
@@ -98,5 +137,7 @@ export async function getAnalytics(userId: string) {
         priorityDist,
         energyStats,
         energyCompleted,
+        productivityByDay,
+        heatmapData,
     };
 }

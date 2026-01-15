@@ -27,13 +27,14 @@ export function calculateProgress(xp: number, level: number): number {
 
 export function calculateStreakUpdate(
     currentStreak: number,
-    lastActivityDate: Date | null
-): { newStreak: number; shouldUpdate: boolean } {
+    lastActivityDate: Date | null,
+    streakFreezes: number = 0
+): { newStreak: number; shouldUpdate: boolean; usedFreeze: boolean } {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
     if (!lastActivityDate) {
-        return { newStreak: 1, shouldUpdate: true };
+        return { newStreak: 1, shouldUpdate: true, usedFreeze: false };
     }
 
     const last = new Date(lastActivityDate.getFullYear(), lastActivityDate.getMonth(), lastActivityDate.getDate());
@@ -41,13 +42,16 @@ export function calculateStreakUpdate(
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffDays === 0) {
-        // Already active today, no change unless streak is 0
-        return { newStreak: Math.max(1, currentStreak), shouldUpdate: currentStreak === 0 };
+        // Already active today, no change
+        return { newStreak: currentStreak, shouldUpdate: false, usedFreeze: false };
     } else if (diffDays === 1) {
         // Active yesterday, increment streak
-        return { newStreak: currentStreak + 1, shouldUpdate: true };
+        return { newStreak: currentStreak + 1, shouldUpdate: true, usedFreeze: false };
+    } else if (diffDays > 1 && streakFreezes > 0) {
+        // Missed a day but has a freeze
+        return { newStreak: currentStreak, shouldUpdate: true, usedFreeze: true };
     } else {
-        // Missed a day (or more), reset to 1
-        return { newStreak: 1, shouldUpdate: true };
+        // Missed a day and no freezes, reset to 1
+        return { newStreak: 1, shouldUpdate: true, usedFreeze: false };
     }
 }
