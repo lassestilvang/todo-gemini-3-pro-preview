@@ -11,6 +11,7 @@ export const AVAILABLE_THEMES = [
     "glassmorphism",
     "neubrutalism",
     "minimalist",
+    "synthwave",
 ] as const;
 
 export type AppTheme = (typeof AVAILABLE_THEMES)[number];
@@ -48,5 +49,10 @@ export const THEME_METADATA: Record<AppTheme, {
         label: "Minimalist",
         description: "Clean, focused, zen",
         previewColor: "bg-[#fafafa] border-gray-100",
+    },
+    synthwave: {
+        label: "Synthwave",
+        description: "Neon-soaked retro future",
+        previewColor: "bg-slate-950 border-purple-500 shadow-[0_0_10px_#a855f7]",
     },
 };

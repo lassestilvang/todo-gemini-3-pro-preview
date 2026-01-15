@@ -24,7 +24,7 @@ export default defineConfig({
   workers: process.env.CI ? 2 : undefined,
 
   // Reporter to use
-  reporter: process.env.CI ? [['blob'], ['github']] : 'html',
+  reporter: process.env.CI ? [['blob'], ['github']] : [['html', { open: 'never' }]],
 
   // Global timeout for each test
   timeout: 120000,
@@ -76,7 +76,7 @@ export default defineConfig({
   // Run local dev server before starting the tests with E2E test mode enabled
   webServer: {
     command: 'E2E_TEST_MODE=true bun run dev',
-    url: 'http://localhost:3000',
+    url: process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
     env: {

@@ -236,6 +236,68 @@ html.minimalist body {
   font-family: var(--font-inter), sans-serif !important;
 }
 
+/* Synthwave Theme */
+.synthwave {
+  --font-sans: var(--font-space);
+  --background: oklch(0.1 0.05 260);
+  /* Deep void purple */
+  --foreground: oklch(0.9 0.05 300);
+  /* Neon white/pink tint */
+
+  --card: oklch(0.15 0.1 270 / 0.7);
+  /* Translucent dark purple */
+  --card-foreground: oklch(0.9 0.05 300);
+
+  --popover: oklch(0.1 0.1 270 / 0.9);
+  --popover-foreground: oklch(0.9 0.05 300);
+
+  --primary: oklch(0.6 0.2 310);
+  /* Neon Pink */
+  --primary-foreground: oklch(1 0 0);
+
+  --secondary: oklch(0.7 0.2 190);
+  /* Cyan */
+  --secondary-foreground: oklch(0.1 0 0);
+
+  --muted: oklch(0.2 0.1 270);
+  --muted-foreground: oklch(0.7 0.1 300);
+
+  --accent: oklch(0.6 0.2 310 / 0.2);
+  --accent-foreground: oklch(0.9 0.05 300);
+
+  --destructive: oklch(0.6 0.25 20);
+
+  --border: oklch(0.6 0.2 310 / 0.5);
+  /* Glowing pink border */
+  --input: oklch(0.2 0.1 270);
+  --ring: oklch(0.6 0.2 310);
+
+  --sidebar: oklch(0.1 0.05 260 / 0.9);
+  --sidebar-foreground: oklch(0.9 0.05 300);
+  --sidebar-primary: oklch(0.6 0.2 310);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.6 0.2 310 / 0.2);
+  --sidebar-accent-foreground: oklch(0.9 0.05 300);
+  --sidebar-border: oklch(0.6 0.2 310 / 0.3);
+  --sidebar-ring: oklch(0.6 0.2 310);
+
+  --radius: 0.5rem;
+}
+
+html.synthwave body {
+  font-family: var(--font-space), sans-serif !important;
+  background: radial-gradient(circle at 50% 0%, #2e1065 0%, #000000 100%);
+}
+
+html.synthwave h1,
+html.synthwave h2,
+html.synthwave h3,
+html.synthwave h4 {
+  font-family: var(--font-orbitron), sans-serif !important;
+  text-shadow: 0 0 10px rgba(216, 180, 254, 0.5);
+  letter-spacing: 0.05em;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -324,4 +386,37 @@ html.minimalist .sidebar {
 
 html.minimalist svg {
   stroke-width: 1.5px !important;
+}
+
+/* Synthwave Overrides */
+html.synthwave .card,
+html.synthwave .popover,
+html.synthwave .sidebar {
+  border: 1px solid rgba(232, 121, 249, 0.3);
+  box-shadow: 0 0 15px rgba(192, 38, 211, 0.15), inset 0 0 20px rgba(192, 38, 211, 0.05);
+  backdrop-filter: blur(8px);
+}
+
+html.synthwave button:not(.ghost),
+html.synthwave .btn-primary {
+  box-shadow: 0 0 10px rgba(232, 121, 249, 0.4);
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+html.synthwave button:hover:not(.ghost) {
+  box-shadow: 0 0 20px rgba(232, 121, 249, 0.6);
+}
+
+html.synthwave input,
+html.synthwave textarea {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(232, 121, 249, 0.3);
+  color: #e9d5ff;
+}
+
+html.synthwave input:focus,
+html.synthwave textarea:focus {
+  box-shadow: 0 0 15px rgba(232, 121, 249, 0.4);
+  border-color: #e879f9;
 }

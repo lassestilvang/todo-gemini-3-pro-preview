@@ -46,6 +46,9 @@
 - [ ] **[UX] Sidebar Scroll**: The sidebar should be scrollable. On smaller screens the content gets cut off.
   - *Status*: **PENDING**
 
+- [x] **[UX] Implement 'Synthwave' Theme**: Create a stunning neon-inspired dark theme with `Orbitron` font and glowing effects.
+  - *Status*: **RESOLVED** - Implementation complete with Orbitron font and neon glow effects. Verified via visual regression tests.
+
 - [x] **Empty States**:
   - *Status*: **RESOLVED** - `TaskListWithSettings.tsx` (lines 205-209) already implements a consistent empty state with "No tasks found" message and "Create one?" action button.
 

@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
-import { Inter, Quicksand, Space_Grotesk } from "next/font/google";
+import { Inter, Quicksand, Space_Grotesk, Orbitron } from "next/font/google";
 import "./globals.css";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Toaster } from "sonner";
@@ -13,6 +13,10 @@ const quicksand = Quicksand({
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   variable: "--font-space",
+});
+const orbitron = Orbitron({
+  subsets: ["latin"],
+  variable: "--font-orbitron",
 });
 
 export const metadata: Metadata = {
@@ -60,7 +64,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${inter.variable} ${quicksand.variable} ${spaceGrotesk.variable}`}
+      className={`${inter.variable} ${quicksand.variable} ${spaceGrotesk.variable} ${orbitron.variable}`}
     >
       <head>
         {process.env.NODE_ENV === "development" && (
