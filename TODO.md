@@ -6,8 +6,8 @@
   - *Status*: **RESOLVED** - Removed redundant "Smart Schedule" button and state from `AppSidebar.tsx`. The functionality is now correctly handled by `SidebarRituals.tsx`.
   - *Priority*: **High**
 
-- [ ] **[Perf] Fix CSP blocking `react-grab`**: Resolve content security policy violation for drag-and-drop script to ensure functionality.
-  - *Status*: **PENDING**
+- [x] **[Perf] Fix CSP blocking `react-grab`**: Resolve content security policy violation for drag-and-drop script to ensure functionality.
+  - *Status*: **RESOLVED** - Updated `src/app/layout.tsx` to load `react-grab` via HTTPS (`https://unpkg.com`) instead of protocol-relative URL to align with CSP.
   - *Priority*: **High**
 
 - [ ] **[Perf] Optimize Initial Load**: Investigate and improve TTFB/FCP (currently ~2.5s) to make the app feel instant.
