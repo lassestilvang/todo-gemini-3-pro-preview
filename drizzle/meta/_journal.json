@@ -36,6 +36,13 @@
       "when": 1765267564185,
       "tag": "0004_nasty_thor",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1768493257233,
+      "tag": "0005_lovely_thunderbolts",
+      "breakpoints": true
     }
   ]
 }
