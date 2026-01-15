@@ -61,7 +61,7 @@ async function createListImpl(data: typeof lists.$inferInsert) {
   }
 
   const result = await db.insert(lists).values(data).returning();
-  revalidatePath("/");
+  revalidatePath("/", "layout");
   return result[0];
 }
 
@@ -97,7 +97,7 @@ async function updateListImpl(
     .update(lists)
     .set(data)
     .where(and(eq(lists.id, id), eq(lists.userId, userId)));
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 /**
@@ -124,7 +124,7 @@ export const updateList: (
  */
 async function deleteListImpl(id: number, userId: string) {
   await db.delete(lists).where(and(eq(lists.id, id), eq(lists.userId, userId)));
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 /**

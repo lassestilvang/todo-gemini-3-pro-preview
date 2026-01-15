@@ -57,7 +57,7 @@ async function createLabelImpl(data: typeof labels.$inferInsert) {
   }
 
   const result = await db.insert(labels).values(data).returning();
-  revalidatePath("/");
+  revalidatePath("/", "layout");
   return result[0];
 }
 
@@ -93,7 +93,7 @@ async function updateLabelImpl(
     .update(labels)
     .set(data)
     .where(and(eq(labels.id, id), eq(labels.userId, userId)));
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 /**
@@ -120,7 +120,7 @@ export const updateLabel: (
  */
 async function deleteLabelImpl(id: number, userId: string) {
   await db.delete(labels).where(and(eq(labels.id, id), eq(labels.userId, userId)));
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 /**

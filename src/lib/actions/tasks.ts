@@ -286,7 +286,7 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
     details: "Task created",
   });
 
-  revalidatePath("/");
+  revalidatePath("/", "layout");
   return task;
 }
 
@@ -407,7 +407,7 @@ export async function updateTask(
     });
   }
 
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 /**
@@ -418,7 +418,7 @@ export async function updateTask(
  */
 export async function deleteTask(id: number, userId: string) {
   await db.delete(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 /**
@@ -601,7 +601,7 @@ export async function createSubtask(
     details: `Subtask created: ${title}`,
   });
 
-  revalidatePath("/");
+  revalidatePath("/", "layout");
   return subtask;
 }
 
@@ -620,7 +620,7 @@ export async function updateSubtask(id: number, userId: string, isCompleted: boo
       completedAt: isCompleted ? new Date() : null,
     })
     .where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 /**
@@ -631,7 +631,7 @@ export async function updateSubtask(id: number, userId: string, isCompleted: boo
  */
 export async function deleteSubtask(id: number, userId: string) {
   await db.delete(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 /**
