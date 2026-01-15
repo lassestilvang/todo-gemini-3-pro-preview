@@ -13,7 +13,7 @@ import dynamic from "next/dynamic";
 const SearchDialog = dynamic(() => import("@/components/tasks/SearchDialog").then(mod => mod.SearchDialog), { ssr: false });
 const TemplateManager = dynamic(() => import("@/components/tasks/TemplateManager").then(mod => mod.TemplateManager), { ssr: false });
 const SettingsDialog = dynamic(() => import("@/components/settings/SettingsDialog").then(mod => mod.SettingsDialog), { ssr: false });
-const SmartScheduleDialog = dynamic(() => import("@/components/tasks/SmartScheduleDialog").then(mod => mod.SmartScheduleDialog), { ssr: false });
+
 
 import { UserProfile } from "./UserProfile";
 import { Sparkles } from "lucide-react";
@@ -58,7 +58,7 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ className, lists, labels, user, id }: AppSidebarProps) {
-    const [smartScheduleOpen, setSmartScheduleOpen] = useState(false);
+
 
     return (
         <aside
@@ -81,15 +81,7 @@ export function AppSidebar({ className, lists, labels, user, id }: AppSidebarPro
                         </Suspense>
                     </div>
                     <div className="py-2">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="w-full justify-start"
-                            onClick={() => setSmartScheduleOpen(true)}
-                        >
-                            <Sparkles className="mr-2 h-4 w-4 text-indigo-500" />
-                            Smart Schedule
-                        </Button>
+
                         <div className="mt-2">
                             <Suspense fallback={<div className="h-10 bg-muted/20 animate-pulse rounded-md mt-2" />}>
                                 <TemplateManager userId={user?.id} />
@@ -112,12 +104,7 @@ export function AppSidebar({ className, lists, labels, user, id }: AppSidebarPro
             </div>
 
             <div className="shrink-0 p-4 border-t space-y-2 bg-sidebar h-auto">
-                <Suspense fallback={null}>
-                    <SmartScheduleDialog
-                        open={smartScheduleOpen}
-                        onOpenChange={setSmartScheduleOpen}
-                    />
-                </Suspense>
+
                 {user && <UserProfile user={user} />}
                 <InstallPrompt />
                 <RescheduleButton />

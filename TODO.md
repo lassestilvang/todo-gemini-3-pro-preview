@@ -2,8 +2,8 @@
 
 ## High Priority (Bugs & Core Issues)
 
-- [ ] **[Bug] Fix Sidebar Duplication**: Remove duplicate "Smart Schedule" link in the sidebar.
-  - *Status*: **PENDING**
+- [x] **[Bug] Fix Sidebar Duplication**: Remove duplicate "Smart Schedule" link in the sidebar.
+  - *Status*: **RESOLVED** - Removed redundant "Smart Schedule" button and state from `AppSidebar.tsx`. The functionality is now correctly handled by `SidebarRituals.tsx`.
   - *Priority*: **High**
 
 - [ ] **[Perf] Fix CSP blocking `react-grab`**: Resolve content security policy violation for drag-and-drop script to ensure functionality.
@@ -41,6 +41,9 @@
   - *Status*: **PENDING**
 
 - [ ] **[UX] Refine Design System**: Review and refine font weights, contrast, and spacing to achieve a "Premium" aesthetic.
+  - *Status*: **PENDING**
+
+- [ ] **[UX] Sidebar Scroll**: The sidebar should be scrollable. On smaller screens the content gets cut off.
   - *Status*: **PENDING**
 
 - [x] **Empty States**:
