@@ -28,6 +28,18 @@ mock.module("@/components/KeyboardShortcuts", () => ({
     KeyboardShortcuts: () => null
 }));
 
+mock.module("@/components/tasks/ZenOverlay", () => ({
+    ZenOverlay: ({ children }: { children: React.ReactNode }) => <div data-testid="zen-overlay">{children}</div>
+}));
+
+mock.module("@/components/layout/OnboardingTour", () => ({
+    OnboardingTour: () => null
+}));
+
+mock.module("@/components/tasks/QuickCapture", () => ({
+    QuickCapture: () => <div data-testid="quick-capture">Quick Capture</div>
+}));
+
 // Mock AppSidebar to avoid next/navigation dependency
 mock.module("./AppSidebar", () => ({
     AppSidebar: ({ lists, labels }: { lists: unknown[]; labels: unknown[] }) => (
@@ -58,7 +70,7 @@ describe("MainLayout", () => {
         render(Component);
 
         expect(screen.getByText("Inbox")).toBeInTheDocument(); // From mocked AppSidebar
-        expect(screen.getByTestId("child")).toBeInTheDocument();
+        expect(screen.getAllByTestId("child").length).toBeGreaterThan(0);
         expect(screen.getByTestId("task-edit-modal")).toBeInTheDocument();
 
         expect(mockGetLists).toHaveBeenCalled();

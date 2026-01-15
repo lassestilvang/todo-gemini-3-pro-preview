@@ -185,7 +185,8 @@ export async function setupTestDb() {
             level INTEGER NOT NULL DEFAULT 1,
             last_login INTEGER,
             current_streak INTEGER NOT NULL DEFAULT 0,
-            longest_streak INTEGER NOT NULL DEFAULT 0
+            longest_streak INTEGER NOT NULL DEFAULT 0,
+            streak_freezes INTEGER NOT NULL DEFAULT 0
         );
     `);
 
@@ -225,10 +226,25 @@ export async function setupTestDb() {
             filter_date TEXT DEFAULT 'all',
             filter_priority TEXT,
             filter_label_id INTEGER,
+            filter_energy_level TEXT,
+            filter_context TEXT,
             updated_at INTEGER DEFAULT(strftime('%s', 'now')),
             PRIMARY KEY(user_id, view_id)
         );
     `);
+
+    // Saved views table
+    sqliteConnection.run(`
+        CREATE TABLE IF NOT EXISTS saved_views(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            name TEXT NOT NULL,
+            icon TEXT,
+            settings TEXT NOT NULL,
+            created_at INTEGER DEFAULT(strftime('%s', 'now'))
+        );
+    `);
+    sqliteConnection.run(`CREATE INDEX IF NOT EXISTS saved_views_user_id_idx ON saved_views(user_id);`);
 
     // Rate limits table
     sqliteConnection.run(`
@@ -242,6 +258,7 @@ export async function setupTestDb() {
 
 export async function resetTestDb() {
     // Delete in order respecting foreign key constraints
+    sqliteConnection.run(`DELETE FROM saved_views`);
     sqliteConnection.run(`DELETE FROM user_achievements`);
     sqliteConnection.run(`DELETE FROM achievements`);
     sqliteConnection.run(`DELETE FROM view_settings`);
