@@ -1,22 +1,15 @@
 "use client";
 
-import { Suspense } from "react";
-
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { XPBar } from "@/components/gamification/XPBar";
 import { Separator } from "@/components/ui/separator";
 
 import { RescheduleButton } from "@/components/tasks/RescheduleButton";
 import { InstallPrompt } from "@/components/InstallPrompt";
-import dynamic from "next/dynamic";
-const SearchDialog = dynamic(() => import("@/components/tasks/SearchDialog").then(mod => mod.SearchDialog), { ssr: false });
-const TemplateManager = dynamic(() => import("@/components/tasks/TemplateManager").then(mod => mod.TemplateManager), { ssr: false });
-
+import { SearchDialog } from "@/components/tasks/SearchDialog";
+import { TemplateManager } from "@/components/tasks/TemplateManager";
 
 import { UserProfile } from "./UserProfile";
-import { Sparkles } from "lucide-react";
-import { useState } from "react";
 
 import { SidebarNavigation } from "./sidebar/SidebarNavigation";
 import { SidebarLists } from "./sidebar/SidebarLists";
@@ -75,16 +68,11 @@ export function AppSidebar({ className, lists, labels, user, id }: AppSidebarPro
                     </h2>
                     <XPBar userId={user?.id} />
                     <div className="mb-4">
-                        <Suspense fallback={<div className="h-10 bg-muted/20 animate-pulse rounded-md mt-2" />}>
-                            <SearchDialog userId={user?.id} />
-                        </Suspense>
+                        <SearchDialog userId={user?.id} />
                     </div>
                     <div className="py-2">
-
                         <div className="mt-2">
-                            <Suspense fallback={<div className="h-10 bg-muted/20 animate-pulse rounded-md mt-2" />}>
-                                <TemplateManager userId={user?.id} />
-                            </Suspense>
+                            <TemplateManager userId={user?.id} />
                         </div>
                     </div>
 

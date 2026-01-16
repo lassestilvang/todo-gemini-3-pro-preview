@@ -36,7 +36,30 @@ export function XPBar({ userId }: { userId?: string }) {
         }
     }, [stats?.level]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    if (!stats) return null;
+    // Skeleton loading state - matches the exact height of the rendered XPBar
+    if (!stats) {
+        return (
+            <div className="px-4 py-2" id="xp-bar" data-testid="xp-bar">
+                {/* Level & XP row skeleton */}
+                <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-1.5">
+                        <div className="bg-muted/30 p-1 rounded-md w-5 h-5 animate-pulse" />
+                        <div className="h-3 w-12 bg-muted/30 rounded animate-pulse" />
+                    </div>
+                    <div className="h-3 w-16 bg-muted/30 rounded animate-pulse" />
+                </div>
+                {/* Streak row skeleton */}
+                <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-1.5">
+                        <div className="bg-muted/30 p-1 rounded-md w-5 h-5 animate-pulse" />
+                        <div className="h-3 w-20 bg-muted/30 rounded animate-pulse" />
+                    </div>
+                </div>
+                {/* Progress bar skeleton */}
+                <div className="h-1.5 bg-muted/30 rounded-full animate-pulse" />
+            </div>
+        );
+    }
 
     const progress = calculateProgress(stats.xp, stats.level);
     const nextLevelXP = calculateXPForNextLevel(stats.level);

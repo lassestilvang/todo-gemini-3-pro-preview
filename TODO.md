@@ -46,8 +46,11 @@
 - [x] **[UX] Sidebar Scroll**: The sidebar should be scrollable. On smaller screens the content gets cut off.
   - *Status*: **RESOLVED** - Fixed `md:block` → `md:flex` in `MainLayout.tsx`. The `md:block` class was overriding the sidebar's `flex` display, breaking the flexbox scroll layout. Also added `.custom-scrollbar` styles to `globals.css` for a subtle scrollbar appearance.
 
-- [ ] **[UX] Sidebar Pop-in**: When loading the page, the top elements in the sidebar are slower to load and pops in after a while to cause the whole sidebar to shift down.
-  - *Status*: **PENDING** 
+- [x] **[UX] Sidebar Pop-in**: When loading the page, the top elements in the sidebar are slower to load and pops in after a while to cause the whole sidebar to shift down.
+  - *Status*: **RESOLVED** - Fixed by:
+    1. `XPBar.tsx` - Added skeleton loading state matching exact height for level, XP, streak display
+    2. `AppSidebar.tsx` - Removed unnecessary `dynamic()` imports with `{ ssr: false }` for `SearchDialog` and `TemplateManager`. These components render static buttons initially (dynamic content only loads on click), so dynamic imports caused unnecessary loading delay.
+  - Result: All sidebar elements now render instantly with no layout shift. 
 
 - [x] **[UX] Implement 'Synthwave' Theme**: Create a stunning neon-inspired dark theme with `Orbitron` font and glowing effects.
   - *Status*: **RESOLVED** - Implementation complete with Orbitron font and neon glow effects. Verified via visual regression tests.
