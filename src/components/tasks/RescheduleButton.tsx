@@ -69,7 +69,7 @@ export function RescheduleButton() {
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="w-full justify-start text-orange-500 hover:text-orange-600 hover:bg-orange-50"
+                            className="w-full justify-start text-orange-700 hover:text-orange-800 hover:bg-orange-50"
                             onClick={handleCheck}
                             disabled={isLoading}
                         >

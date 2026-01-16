@@ -87,7 +87,7 @@ export function XPBar({ userId }: { userId?: string }) {
                 <div className="flex items-center gap-1.5 group cursor-help" title="Daily Streak">
                     <div className={cn(
                         "p-1 rounded-md transition-all duration-300",
-                        stats.currentStreak > 0 ? "bg-orange-100 text-orange-600 animate-pulse" : "bg-muted text-muted-foreground"
+                        stats.currentStreak > 0 ? "bg-orange-100 text-orange-700 animate-pulse" : "bg-muted text-muted-foreground"
                     )}>
                         <Flame className={cn("h-3 w-3", stats.currentStreak > 5 && "animate-bounce")} />
                     </div>
@@ -103,7 +103,7 @@ export function XPBar({ userId }: { userId?: string }) {
                 )}
             </div>
 
-            <Progress value={progress} className="h-1.5 bg-secondary" indicatorClassName="bg-gradient-to-r from-yellow-400 to-orange-500" data-testid="xp-progress" />
+            <Progress value={progress} className="h-1.5 bg-secondary" indicatorClassName="bg-gradient-to-r from-yellow-400 to-orange-500" data-testid="xp-progress" aria-label="XP Progress" />
         </div>
     );
 }

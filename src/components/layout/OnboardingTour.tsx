@@ -76,10 +76,13 @@ export function OnboardingTour() {
                     ...tooltipStyles,
                     transform: step.position === 'top' || step.position === 'bottom' ? 'translateX(-50%)' : 'translateY(-50%)',
                 }}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="tour-step-title"
             >
                 <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-bold text-lg">{step.title}</h3>
-                    <button onClick={endTour} className="p-1 hover:bg-muted rounded-full transition-colors">
+                    <h2 id="tour-step-title" className="font-bold text-lg">{step.title}</h2>
+                    <button onClick={endTour} className="p-1 hover:bg-muted rounded-full transition-colors" aria-label="Close tour">
                         <X className="h-4 w-4" />
                     </button>
                 </div>

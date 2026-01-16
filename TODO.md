@@ -252,7 +252,8 @@
 
 ## Pending Enhancements & Future Work 🚀
 
-- [ ] **Full Accessibility Audit**: Run automated a11y audit (axe / Lighthouse), fix any remaining issues, and add a task to track audit results.
+- [x] **Full Accessibility Audit**: Run automated a11y audit (axe / Lighthouse), fix any remaining issues, and add a task to track audit results.
+  - *Status*: **RESOLVED** - Installed `@axe-core/playwright` and created `e2e/a11y.spec.ts`. Fixed critical issues including `meta-viewport` zooming, missing ARIA labels on buttons/progress bars, color contrast (RescheduleButton, XPBar), and heading order (OnboardingTour). Verified fixes with automated tests.
 - [ ] **Internationalization (i18n) Support**: Add language files, a locale‑switcher component, and configure Next.js i18n routing.
 - [ ] **Offline‑First Background Sync**: Implement a sync queue (e.g., using Workbox background sync or IndexedDB) to reliably sync task creation/completion when offline.
 - [ ] **Privacy‑Friendly Analytics Integration**: Connect `WebVitals` and page‑view events to an analytics provider (e.g., Plausible, PostHog) with opt‑out handling.
