@@ -257,9 +257,9 @@
 - [ ] **Internationalization (i18n) Support**: Add language files, a locale‑switcher component, and configure Next.js i18n routing.
 - [ ] **Offline‑First Background Sync**: Implement a sync queue (e.g., using Workbox background sync or IndexedDB) to reliably sync task creation/completion when offline.
 - [ ] **Privacy‑Friendly Analytics Integration**: Connect `WebVitals` and page‑view events to an analytics provider (e.g., Plausible, PostHog) with opt‑out handling.
-- [ ] **CI/CD Workflow (GitHub Actions)**: Add a workflow that runs lint, type‑check, unit & e2e tests on every PR/merge.
-- [ ] **Documentation & Contributing Guide**: Create `CONTRIBUTING.md`, improve `README.md`, and add an architecture diagram (Mermaid) for new contributors.
-- [ ] **System‑Prefers‑Dark Mode Toggle Persistence**: Detect OS dark‑mode preference, store user choice, and expose a UI toggle to override.
+- [x] **CI/CD Workflow (GitHub Actions)**: Add a workflow that runs lint, type‑check, unit & e2e tests on every PR/merge.
+- [x] **Documentation & Contributing Guide**: Create `CONTRIBUTING.md`, improve `README.md`, and add an architecture diagram (Mermaid) for new contributors.
+- [x] **System‑Prefers‑Dark Mode Toggle Persistence**: Detect OS dark‑mode preference, store user choice, and expose a UI toggle to override.
 - [ ] **Real‑User Monitoring (RUM) Dashboard**: Send Web Vitals metrics to a dashboard (e.g., Vercel Analytics or custom Grafana) and optionally display admin view.
 - [ ] **Feature‑Flag System**: Introduce a simple flag mechanism (env‑vars or config) to toggle experimental features like the calendar view.
 - [ ] **Export / Import Functionality**: Add server‑side endpoints and UI for JSON/CSV export and import of tasks.

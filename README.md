@@ -30,6 +30,23 @@ A modern, professional daily task planner built with **Next.js 16**, **Bun**, an
 - **UI Components**: [shadcn/ui](https://ui.shadcn.com/)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 
+## 🏗️ Architecture
+
+```mermaid
+graph TD
+    User[User / Browser] <-->|HTTPS| Next[Next.js App Router]
+    
+    subgraph "Server-Side"
+        Next <-->|Auth| WorkOS[WorkOS AuthKit]
+        Next <-->|ORM| Drizzle[Drizzle ORM]
+        Drizzle <-->|SQL| Neon[Neon PostgreSQL]
+    end
+    
+    subgraph "Data Layer"
+        Neon
+    end
+```
+
 ## 🚀 Getting Started
 
 ### Prerequisites
