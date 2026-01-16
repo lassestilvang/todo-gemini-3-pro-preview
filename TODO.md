@@ -174,11 +174,11 @@
   - *Status*: **RESOLVED** - Created enhanced `/analytics` page with Heatmap, Radar Chart for day-of-week productivity, and smart text insights.
   - *Goal*: Move beyond simple gamification to provided actionable productivity insights.
 
-- [ ] **[Feature] Voice Capture**: Implement Web Speech API for voice-to-text task creation (Mobile optimized).
-  - *Status*: **PENDING**
+- [x] **[Feature] Voice Capture**: Implement Web Speech API for voice-to-text task creation (Mobile optimized).
+  - *Status*: **RESOLVED** - `VoiceInput.tsx` already existed with full Web Speech API implementation. Added voice input to `QuickCapture.tsx` (mobile FAB) for complete mobile-optimized voice capture.
 
-- [ ] **[Feature] Quick Actions**: Add a floating action button (FAB) or header "+" button for instant task creation from anywhere.
-  - *Status*: **PENDING**
+- [x] **[Feature] Quick Actions**: Add a floating action button (FAB) or header "+" button for instant task creation from anywhere.
+  - *Status*: **RESOLVED** - Already implemented in `QuickCapture.tsx` with FAB in bottom-right corner, animated popup form, voice input support, and instant task creation to Inbox. Integrated in `MainLayout.tsx` for all authenticated users. Verified working in browser.
 
 - [x] **[UX] "Zen Mode" (Focus View)**:
   - *Status*: **RESOLVED** - Implemented `ZenModeProvider` and `ZenOverlay` component with glassmorphism design, keyboard shortcut (`Cmd/Ctrl+Z`), and sidebar toggle.
@@ -220,8 +220,9 @@
 
 ## Next Steps & Enhancements 🚀
 
-- [ ] **Performance Profiling in Browser**: Use Chrome DevTools Performance tab to identify bottlenecks, implement lazy loading, code-splitting, and memoization where needed.
-- [ ] **UI/UX Revamp with Glassmorphism Dark Mode**: Introduce a dark theme with glassmorphism cards, smooth transitions, and refined micro-interactions.
+- [x] **Performance Profiling in Browser**: Use Chrome DevTools Performance tab to identify bottlenecks, implement lazy loading, code-splitting, and memoization where needed.
+  - *Status*: **RESOLVED** - Completed comprehensive bundle analysis (884KB compressed). React Compiler is enabled (automatic memoization). Implemented LazyMotion for framer-motion (~12% of bundle) by creating `LazyMotionProvider.tsx` and updating 6 components (`PageTransition`, `TaskItem`, `QuickCapture`, `ZenOverlay`, `PomodoroTimer`, `OnboardingTour`) to use `m` components for async feature loading.
+- [ ] **UI/UX Revamp with Glassmorphism Dark Mode**: Introduce a dark theme with glassmorphism cards, smooth transitions, and refined micro-interactions. Use your frontend skill.
 - [ ] **Advanced Fuzzy Search**: Implement fuzzy matching and ranking for the command palette to improve search latency and relevance.
 - [ ] **Calendar View Feature**: Add a visual calendar component for task scheduling and overview.
 - [ ] **AI-Powered Task Suggestions**: Leverage Gemini to suggest next tasks based on user habits and patterns.

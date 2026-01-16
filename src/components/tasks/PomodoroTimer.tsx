@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, RotateCcw, Coffee, Brain, Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 
 type TimerMode = "pomodoro" | "shortBreak" | "longBreak";
 
@@ -88,7 +88,7 @@ export function PomodoroTimer() {
                         fill="transparent"
                         className="text-muted/20"
                     />
-                    <motion.circle
+                    <m.circle
                         cx="128"
                         cy="128"
                         r="120"

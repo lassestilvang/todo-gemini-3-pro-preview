@@ -4,10 +4,11 @@ import { useState, useRef, useEffect } from "react";
 import { Plus, Zap, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 import { createTask } from "@/lib/actions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { VoiceInput } from "./VoiceInput";
 
 export function QuickCapture({ userId }: { userId: string }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -46,7 +47,7 @@ export function QuickCapture({ userId }: { userId: string }) {
         <div className="fixed bottom-6 right-6 z-40">
             <AnimatePresence>
                 {isOpen && (
-                    <motion.div
+                    <m.div
                         initial={{ opacity: 0, y: 20, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -71,6 +72,9 @@ export function QuickCapture({ userId }: { userId: string }) {
                                 disabled={isSubmitting}
                             />
                             <div className="flex justify-end gap-2">
+                                <VoiceInput
+                                    onTranscript={(text) => setTitle(prev => prev ? `${prev} ${text}` : text)}
+                                />
                                 <Button
                                     type="submit"
                                     size="sm"
@@ -81,7 +85,7 @@ export function QuickCapture({ userId }: { userId: string }) {
                                 </Button>
                             </div>
                         </form>
-                    </motion.div>
+                    </m.div>
                 )}
             </AnimatePresence>
 

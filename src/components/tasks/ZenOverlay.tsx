@@ -1,7 +1,7 @@
 "use client";
 
 import { useZenMode } from "../providers/ZenModeProvider";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { X, Timer, ChevronRight, ChevronLeft } from "lucide-react";
 import { useState } from "react";
@@ -15,7 +15,7 @@ export function ZenOverlay({ children }: { children: React.ReactNode }) {
     return (
         <AnimatePresence>
             {isZenMode && (
-                <motion.div
+                <m.div
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 1.02 }}
@@ -67,7 +67,7 @@ export function ZenOverlay({ children }: { children: React.ReactNode }) {
                         {/* Pomodoro Timer Panel */}
                         <AnimatePresence>
                             {timerOpen && (
-                                <motion.div
+                                <m.div
                                     initial={{ opacity: 0, x: 20, width: 0 }}
                                     animate={{ opacity: 1, x: 0, width: "320px" }}
                                     exit={{ opacity: 0, x: 20, width: 0 }}
@@ -85,7 +85,7 @@ export function ZenOverlay({ children }: { children: React.ReactNode }) {
                                     <div className="flex-1 overflow-y-auto">
                                         <PomodoroTimer />
                                     </div>
-                                </motion.div>
+                                </m.div>
                             )}
                         </AnimatePresence>
                     </div>
@@ -93,7 +93,7 @@ export function ZenOverlay({ children }: { children: React.ReactNode }) {
                     {/* Mobile Timer Overlay */}
                     <AnimatePresence>
                         {timerOpen && (
-                            <motion.div
+                            <m.div
                                 initial={{ opacity: 0, y: 100 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: 100 }}
@@ -104,7 +104,7 @@ export function ZenOverlay({ children }: { children: React.ReactNode }) {
                                     <Button variant="ghost" size="sm" onClick={() => setTimerOpen(false)}>Close</Button>
                                 </div>
                                 <PomodoroTimer />
-                            </motion.div>
+                            </m.div>
                         )}
                     </AnimatePresence>
 
@@ -112,7 +112,7 @@ export function ZenOverlay({ children }: { children: React.ReactNode }) {
                     <div className="fixed bottom-8 inset-x-0 text-xs text-muted-foreground text-center animate-in fade-in slide-in-from-bottom-2 duration-1000">
                         Press <kbd className="font-mono bg-muted px-1.5 rounded">Esc</kbd> or <kbd className="font-mono bg-muted px-1.5 rounded">⌘ Z</kbd> to exit
                     </div>
-                </motion.div>
+                </m.div>
             )}
         </AnimatePresence>
     );
