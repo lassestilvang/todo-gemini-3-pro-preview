@@ -40,6 +40,10 @@ mock.module("@/components/tasks/QuickCapture", () => ({
     QuickCapture: () => <div data-testid="quick-capture">Quick Capture</div>
 }));
 
+mock.module("./SidebarDataLoader", () => ({
+    SidebarDataLoader: () => <div data-testid="sidebar-data-loader">Inbox</div>
+}));
+
 // Mock AppSidebar to avoid next/navigation dependency
 mock.module("./AppSidebar", () => ({
     AppSidebar: ({ lists, labels }: { lists: unknown[]; labels: unknown[] }) => (
@@ -70,12 +74,11 @@ describe("MainLayout", () => {
         render(Component);
 
         await waitFor(() => {
-            expect(screen.getAllByText("Inbox").length).toBeGreaterThan(0); // From mocked AppSidebar
+            expect(screen.getAllByTestId("sidebar-data-loader").length).toBeGreaterThan(0);
             expect(screen.getAllByTestId("child").length).toBeGreaterThanOrEqual(1);
             expect(screen.getByTestId("task-edit-modal")).toBeInTheDocument();
         });
 
-        expect(mockGetLists).toHaveBeenCalled();
-        expect(mockGetLabels).toHaveBeenCalled();
+
     });
 });

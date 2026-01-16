@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { useOnboarding } from "@/components/providers/OnboardingProvider";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
@@ -67,7 +67,7 @@ export function OnboardingTour() {
             />
 
             {/* Tooltip */}
-            <motion.div
+            <m.div
                 initial={{ opacity: 0, scale: 0.9, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 10 }}
@@ -104,7 +104,7 @@ export function OnboardingTour() {
                         </Button>
                     </div>
                 </div>
-            </motion.div>
+            </m.div>
         </div>,
         document.body
     );

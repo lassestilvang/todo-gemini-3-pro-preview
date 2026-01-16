@@ -75,7 +75,7 @@ export default defineConfig({
 
   // Run local dev server before starting the tests with E2E test mode enabled
   webServer: {
-    command: 'E2E_TEST_MODE=true bun run start',
+    command: 'E2E_TEST_MODE=true bun run dev',
     url: process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
