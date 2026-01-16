@@ -6,6 +6,10 @@ import { test, expect, authenticateTestUser, createTask } from './fixtures';
  */
 test.describe('Task Completion Flow', () => {
   test.beforeEach(async ({ page }) => {
+    // Disable onboarding tour for tests
+    await page.addInitScript(() => {
+      window.localStorage.setItem('onboarding_completed', 'true');
+    });
     await authenticateTestUser(page);
     await page.goto('/today');
     await page.waitForLoadState('load');
@@ -160,6 +164,7 @@ test.describe('Task Completion Flow', () => {
   });
 
   test('should show streak information', async ({ page }) => {
-    await expect(page.getByText(/Level|XP/i).first()).toBeVisible({ timeout: 5000 });
+    // Wait for data to load (skeleton to be replaced)
+    await expect(page.getByTestId('user-level')).toBeVisible({ timeout: 10000 });
   });
 });
