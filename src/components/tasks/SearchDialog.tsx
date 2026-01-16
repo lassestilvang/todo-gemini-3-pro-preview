@@ -10,13 +10,14 @@ import {
     CommandList,
     CommandSeparator,
 } from "@/components/ui/command";
-import { searchTasks } from "@/lib/actions";
+import { getTasksForSearch } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 import { Search, Sparkles, Zap, Moon, Sun, Palette, Layout, MousePointer2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import { useZenMode } from "@/components/providers/ZenModeProvider";
 import { AVAILABLE_THEMES, THEME_METADATA } from "@/lib/themes";
+import Fuse from "fuse.js";
 
 type SearchResult = {
     id: number;
@@ -25,12 +26,36 @@ type SearchResult = {
 };
 
 export function SearchDialog({ userId }: { userId?: string }) {
+    const [fuse, setFuse] = React.useState<Fuse<SearchResult> | null>(null);
     const [open, setOpen] = React.useState(false);
     const [query, setQuery] = React.useState("");
     const [results, setResults] = React.useState<SearchResult[]>([]);
     const router = useRouter();
     const { setTheme } = useTheme();
     const { toggleZenMode } = useZenMode();
+
+    // Initialize Fuse.js with data
+    React.useEffect(() => {
+        if (!userId) return;
+
+        const initSearch = async () => {
+            try {
+                const tasks = await getTasksForSearch(userId);
+                const fuseInstance = new Fuse(tasks, {
+                    keys: ['title', 'description'],
+                    threshold: 0.4,
+                    shouldSort: true,
+                });
+                setFuse(fuseInstance);
+            } catch (error) {
+                console.error("Failed to initialize search index:", error);
+            }
+        };
+
+        if (open && !fuse) {
+            initSearch();
+        }
+    }, [userId, open, fuse]);
 
     React.useEffect(() => {
         const down = (e: KeyboardEvent) => {
@@ -53,17 +78,17 @@ export function SearchDialog({ userId }: { userId?: string }) {
     }, [open]);
 
     React.useEffect(() => {
-        const search = async () => {
-            if (query.trim().length > 0 && userId) {
-                const data = await searchTasks(userId, query);
-                setResults(data);
-            } else {
-                setResults([]);
-            }
-        };
-        const debounce = setTimeout(search, 300);
-        return () => clearTimeout(debounce);
-    }, [query, userId]);
+        if (!fuse) return;
+
+        if (query.trim().length > 0) {
+            console.time('search');
+            const searchResults = fuse.search(query).map(result => result.item);
+            console.timeEnd('search');
+            setResults(searchResults.slice(0, 10)); // Limit to 10 results
+        } else {
+            setResults([]);
+        }
+    }, [query, fuse]);
 
     const handleSelect = (taskId: number) => {
         setOpen(false);

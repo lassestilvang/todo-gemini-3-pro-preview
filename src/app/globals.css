@@ -165,6 +165,147 @@ html.glassmorphism body {
   font-family: var(--font-quicksand), sans-serif !important;
 }
 
+/* Glassmorphism Dark Theme - Premium Frosted Glass on Deep Dark */
+/* Aesthetic: Luxury tech-forward with atmospheric depth */
+.glassmorphism-dark {
+  --radius: 0.875rem;
+  --font-sans: var(--font-sora);
+
+  /* Deep void background with cool undertones */
+  --background: oklch(0.07 0.025 260);
+  --foreground: oklch(0.96 0.008 220);
+
+  /* Glass-effect cards with transparency */
+  --card: oklch(1 0 0 / 4%);
+  --card-foreground: oklch(0.96 0.008 220);
+
+  --popover: oklch(0.1 0.03 260 / 92%);
+  --popover-foreground: oklch(0.96 0.008 220);
+
+  /* Vibrant cyan-teal primary accent */
+  --primary: oklch(0.78 0.14 185);
+  --primary-foreground: oklch(0.08 0.02 260);
+
+  /* Secondary lavender accent */
+  --secondary: oklch(0.65 0.12 290);
+  --secondary-foreground: oklch(0.96 0.008 220);
+
+  --muted: oklch(1 0 0 / 4%);
+  --muted-foreground: oklch(0.62 0.02 230);
+
+  --accent: oklch(0.78 0.14 185 / 12%);
+  --accent-foreground: oklch(0.96 0.008 220);
+
+  --destructive: oklch(0.62 0.24 20);
+
+  /* Luminous borders */
+  --border: oklch(0.78 0.08 185 / 12%);
+  --input: oklch(1 0 0 / 6%);
+  --ring: oklch(0.78 0.14 185 / 50%);
+
+  /* Chart colors - neon spectrum */
+  --chart-1: oklch(0.78 0.16 185);
+  --chart-2: oklch(0.72 0.16 290);
+  --chart-3: oklch(0.78 0.16 145);
+  --chart-4: oklch(0.82 0.14 55);
+  --chart-5: oklch(0.72 0.18 345);
+
+  /* Sidebar with deep glass */
+  --sidebar: oklch(0.05 0.02 260 / 85%);
+  --sidebar-foreground: oklch(0.96 0.008 220);
+  --sidebar-primary: oklch(0.78 0.14 185);
+  --sidebar-primary-foreground: oklch(0.08 0.02 260);
+  --sidebar-accent: oklch(0.78 0.14 185 / 12%);
+  --sidebar-accent-foreground: oklch(0.96 0.008 220);
+  --sidebar-border: oklch(0.78 0.08 185 / 8%);
+  --sidebar-ring: oklch(0.78 0.14 185 / 50%);
+}
+
+html.glassmorphism-dark body {
+  font-family: var(--font-sora), sans-serif !important;
+  background:
+    /* Noise texture for depth */
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E"),
+    /* Top glow */
+    radial-gradient(ellipse 100% 60% at 50% -30%, oklch(0.35 0.12 185 / 25%) 0%, transparent 55%),
+    /* Bottom-right accent */
+    radial-gradient(ellipse 50% 50% at 95% 95%, oklch(0.25 0.1 290 / 18%) 0%, transparent 45%),
+    /* Bottom-left subtle */
+    radial-gradient(ellipse 40% 40% at 5% 90%, oklch(0.2 0.08 200 / 12%) 0%, transparent 40%),
+    /* Base */
+    oklch(0.07 0.025 260);
+  background-attachment: fixed;
+}
+
+/* Glassmorphism Dark Overrides - Enhanced */
+html.glassmorphism-dark .sidebar,
+html.glassmorphism-dark [role="dialog"],
+html.glassmorphism-dark .popover,
+html.glassmorphism-dark .card {
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.04) 0%,
+      rgba(255, 255, 255, 0.02) 100%);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  border: 1px solid rgba(120, 220, 255, 0.06);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.45),
+    0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html.glassmorphism-dark .card:hover {
+  border-color: rgba(120, 220, 255, 0.14);
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.55),
+    0 0 40px rgba(100, 210, 255, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transform: translateY(-2px);
+}
+
+html.glassmorphism-dark button:not([role="switch"]):not(.ghost) {
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(120, 220, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  border-radius: 9999px;
+  transition: all 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html.glassmorphism-dark button:not([role="switch"]):not(.ghost):hover {
+  border-color: rgba(120, 220, 255, 0.22);
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.35),
+    0 0 24px rgba(100, 210, 255, 0.12);
+  transform: translateY(-2px);
+}
+
+html.glassmorphism-dark input,
+html.glassmorphism-dark textarea {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(120, 220, 255, 0.08);
+  backdrop-filter: blur(10px);
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html.glassmorphism-dark input:focus,
+html.glassmorphism-dark textarea:focus {
+  border-color: oklch(0.78 0.14 185);
+  box-shadow: 0 0 0 3px oklch(0.78 0.14 185 / 12%), 0 0 20px oklch(0.78 0.14 185 / 8%);
+}
+
+html.glassmorphism-dark svg {
+  filter: drop-shadow(0 0 3px rgba(100, 210, 255, 0.25));
+}
+
+/* Enhanced heading styles for glassmorphism-dark */
+html.glassmorphism-dark h1,
+html.glassmorphism-dark h2,
+html.glassmorphism-dark h3 {
+  letter-spacing: -0.02em;
+  text-shadow: 0 0 30px rgba(100, 210, 255, 0.08);
+}
+
 /* Neubrutalism Theme */
 .neubrutalism {
   --font-sans: var(--font-space);

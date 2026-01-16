@@ -686,3 +686,32 @@ export async function searchTasks(userId: string, query: string) {
 
   return result;
 }
+
+/**
+ * Retrieves all tasks for client-side search indexing.
+ *
+ * @param userId - The ID of the user
+ * @returns Array of tasks optimized for search (id, title, description, status)
+ */
+export async function getTasksForSearch(userId: string) {
+  // Rate limit: 200 index fetches per hour
+  const limit = await rateLimit(`task:index:${userId}`, 200, 3600);
+  if (!limit.success) {
+    throw new Error("Rate limit exceeded. Please try again later.");
+  }
+
+  const result = await db
+    .select({
+      id: tasks.id,
+      title: tasks.title,
+      description: tasks.description,
+      isCompleted: tasks.isCompleted,
+      listId: tasks.listId,
+    })
+    .from(tasks)
+    .where(eq(tasks.userId, userId))
+    .orderBy(desc(tasks.createdAt))
+    .limit(2000); // Reasonable limit for client-side index
+
+  return result;
+}

@@ -77,6 +77,7 @@ export {
   updateSubtask,
   deleteSubtask,
   searchTasks,
+  getTasksForSearch,
 } from "./actions/tasks";
 
 // Safe aliases for backward compatibility

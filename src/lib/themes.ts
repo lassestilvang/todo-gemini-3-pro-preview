@@ -9,6 +9,7 @@ export const AVAILABLE_THEMES = [
     "light",
     "dark",
     "glassmorphism",
+    "glassmorphism-dark",
     "neubrutalism",
     "minimalist",
     "synthwave",
@@ -39,6 +40,11 @@ export const THEME_METADATA: Record<AppTheme, {
         label: "Glassmorphism",
         description: "Dreamy, frosted glass effect",
         previewColor: "bg-purple-900/50 border-white/20 backdrop-blur-md",
+    },
+    "glassmorphism-dark": {
+        label: "Glassmorphism Dark",
+        description: "Sleek frosted glass on deep dark",
+        previewColor: "bg-slate-950/80 border-cyan-400/30 backdrop-blur-md",
     },
     neubrutalism: {
         label: "Neubrutalism",

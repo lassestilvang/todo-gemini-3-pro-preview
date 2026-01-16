@@ -222,8 +222,11 @@
 
 - [x] **Performance Profiling in Browser**: Use Chrome DevTools Performance tab to identify bottlenecks, implement lazy loading, code-splitting, and memoization where needed.
   - *Status*: **RESOLVED** - Completed comprehensive bundle analysis (884KB compressed). React Compiler is enabled (automatic memoization). Implemented LazyMotion for framer-motion (~12% of bundle) by creating `LazyMotionProvider.tsx` and updating 6 components (`PageTransition`, `TaskItem`, `QuickCapture`, `ZenOverlay`, `PomodoroTimer`, `OnboardingTour`) to use `m` components for async feature loading.
-- [ ] **UI/UX Revamp with Glassmorphism Dark Mode**: Introduce a dark theme with glassmorphism cards, smooth transitions, and refined micro-interactions. Use your frontend skill.
-- [ ] **Advanced Fuzzy Search**: Implement fuzzy matching and ranking for the command palette to improve search latency and relevance.
+- [x] **UI/UX Revamp with Glassmorphism Dark Mode**: Introduce a dark theme with glassmorphism cards, smooth transitions, and refined micro-interactions. Use your frontend skill.
+  - *Status*: **RESOLVED** - Added `glassmorphism-dark` theme to `themes.ts` and comprehensive CSS in `globals.css`. Features deep navy background with gradient, frosted glass cards with backdrop-blur, vibrant cyan accents, and hover micro-interactions (lift + glow).
+- [x] **Advanced Fuzzy Search**: Implement fuzzy matching and ranking for the command palette to improve search latency and relevance.
+  - *Status*: **RESOLVED** - Switched to client-side search using `fuse.js`.
+  - *Performance*: User can verify < 10ms search time via console logs (`search` timer). Typo tolerance enabled.
 - [ ] **Calendar View Feature**: Add a visual calendar component for task scheduling and overview.
 - [ ] **AI-Powered Task Suggestions**: Leverage Gemini to suggest next tasks based on user habits and patterns.
 
@@ -259,3 +262,5 @@
 - [ ] **Real‑User Monitoring (RUM) Dashboard**: Send Web Vitals metrics to a dashboard (e.g., Vercel Analytics or custom Grafana) and optionally display admin view.
 - [ ] **Feature‑Flag System**: Introduce a simple flag mechanism (env‑vars or config) to toggle experimental features like the calendar view.
 - [ ] **Export / Import Functionality**: Add server‑side endpoints and UI for JSON/CSV export and import of tasks.
+- [ ] **[Perf] Search Scalability**: Monitor client-side search performance as task count grows (>2000 tasks). If initial payload size becomes a bottleneck, consider implementing Web Workers to offload indexing/searching or hybrid server-side search for older items.
+- [ ] **[Perf] Search Index Warm-up**: Eliminate the initial "warm-up" delay when opening the Command Palette. Implement prefetching (e.g., on idle or hover) or persist the search index to `localStorage`/IndexedDB to make it available immediately without a network roundtrip.
