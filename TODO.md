@@ -43,8 +43,11 @@
 - [x] **[UX] Refine Design System**: Review and refine font weights, contrast, and spacing to achieve a "Premium" aesthetic.
   - *Status*: **RESOLVED** - Updated global CSS variables for a softer, premium palette (Light/Dark). Reduced default border radius to 0.5rem (8px). Added `antialiased` to body for sharper typography. Verified theme isolation for Glassmorphism.
 
-- [ ] **[UX] Sidebar Scroll**: The sidebar should be scrollable. On smaller screens the content gets cut off.
-  - *Status*: **PENDING**
+- [x] **[UX] Sidebar Scroll**: The sidebar should be scrollable. On smaller screens the content gets cut off.
+  - *Status*: **RESOLVED** - Fixed `md:block` → `md:flex` in `MainLayout.tsx`. The `md:block` class was overriding the sidebar's `flex` display, breaking the flexbox scroll layout. Also added `.custom-scrollbar` styles to `globals.css` for a subtle scrollbar appearance.
+
+- [ ] **[UX] Sidebar Pop-in**: When loading the page, the top elements in the sidebar are slower to load and pops in after a while to cause the whole sidebar to shift down.
+  - *Status*: **PENDING** 
 
 - [x] **[UX] Implement 'Synthwave' Theme**: Create a stunning neon-inspired dark theme with `Orbitron` font and glowing effects.
   - *Status*: **RESOLVED** - Implementation complete with Orbitron font and neon glow effects. Verified via visual regression tests.

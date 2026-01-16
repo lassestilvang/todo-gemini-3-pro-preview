@@ -20,7 +20,7 @@ export function MobileNav({ children }: MobileNavProps) {
                     <span className="sr-only">Toggle menu</span>
                 </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="p-0 bg-sidebar w-72 text-sidebar-foreground border-r">
+            <SheetContent side="left" className="p-0 bg-sidebar w-72 h-full text-sidebar-foreground border-r">
                 {children}
             </SheetContent>
         </Sheet>

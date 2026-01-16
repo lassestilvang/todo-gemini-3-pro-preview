@@ -25,7 +25,7 @@ export async function MainLayout({ children }: { children: React.ReactNode }) {
     }
 
     const SidebarFallback = () => (
-        <div className="hidden md:block w-64 h-full border-r bg-card/50 backdrop-blur-xl shrink-0">
+        <div className="hidden md:flex flex-col w-64 h-full border-r bg-card/50 backdrop-blur-xl shrink-0">
             <div className="h-full w-full animate-pulse bg-muted/10" />
         </div>
     );
@@ -36,7 +36,7 @@ export async function MainLayout({ children }: { children: React.ReactNode }) {
             <Suspense fallback={<SidebarFallback />}>
                 <SidebarDataLoader
                     user={user}
-                    className="hidden md:block"
+                    className="hidden md:flex"
                 />
             </Suspense>
 

@@ -63,12 +63,12 @@ export function AppSidebar({ className, lists, labels, user, id }: AppSidebarPro
         <aside
             id={id}
             className={cn(
-                "flex flex-col h-full border-r bg-card/50 backdrop-blur-xl w-64 shrink-0 transition-all duration-300",
+                "flex flex-col h-full overflow-hidden border-r bg-card/50 backdrop-blur-xl w-64 shrink-0 transition-all duration-300",
                 className
             )}
             data-testid="app-sidebar"
         >
-            <div className="flex-1 overflow-y-auto overflow-x-hidden pt-4 custom-scrollbar">
+            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pt-4 custom-scrollbar">
                 <div className="pl-3 pr-3 py-2">
                     <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
                         Planner
