@@ -1,9 +1,9 @@
 "use client";
 
-import { m, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useOnboarding } from "@/components/providers/OnboardingProvider";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
@@ -58,16 +58,16 @@ export function OnboardingTour() {
                 className="absolute inset-0 bg-black/50 pointer-events-auto"
                 style={{
                     clipPath: `polygon(
-                        0% 0%, 0% 100%, ${targetRect.left}px 100%, ${targetRect.left}px ${targetRect.top}px, 
-                        ${targetRect.right}px ${targetRect.top}px, ${targetRect.right}px ${targetRect.bottom}px, 
-                        ${targetRect.left}px ${targetRect.bottom}px, ${targetRect.left}px 100%, 100% 100%, 100% 0%
+    0% 0%, 0% 100%, ${targetRect.left}px 100%, ${targetRect.left}px ${targetRect.top}px,
+    ${targetRect.right}px ${targetRect.top}px, ${targetRect.right}px ${targetRect.bottom}px,
+    ${targetRect.left}px ${targetRect.bottom}px, ${targetRect.left}px 100%, 100% 100%, 100% 0%
                     )`
                 }}
                 onClick={endTour}
             />
 
             {/* Tooltip */}
-            <m.div
+            <motion.div
                 initial={{ opacity: 0, scale: 0.9, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 10 }}
@@ -104,7 +104,7 @@ export function OnboardingTour() {
                         </Button>
                     </div>
                 </div>
-            </m.div>
+            </motion.div>
         </div>,
         document.body
     );

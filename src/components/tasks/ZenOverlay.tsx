@@ -3,7 +3,7 @@
 import { useZenMode } from "../providers/ZenModeProvider";
 import { m, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { X, Timer, ChevronRight, ChevronLeft } from "lucide-react";
+import { X, Timer, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { PomodoroTimer } from "./PomodoroTimer";
 import { cn } from "@/lib/utils";

@@ -1,5 +1,6 @@
 
-import { test, expect, authenticateTestUser } from './fixtures';
+import { expect, test } from "@playwright/test";
+import { authenticateTestUser } from './fixtures';
 import AxeBuilder from '@axe-core/playwright';
 
 test.describe('Accessibility', () => {
@@ -53,7 +54,7 @@ test.describe('Accessibility', () => {
     });
 
     // Test Settings Dialog/Page if possible, strictly following typical user flow
-    test.skip('should not have any automatically detectable accessibility issues on settings', async ({ page }) => {
+    test.skip('should not have any automatically detectable accessibility issues on settings', async () => {
         // TODO: Implement navigation to settings and check A11y
     });
 });

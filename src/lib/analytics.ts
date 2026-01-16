@@ -68,7 +68,6 @@ export async function getAnalytics(userId: string) {
 
     // Productivity by day of week (0 = Sunday, 6 = Saturday)
     const productivityByDay = [0, 0, 0, 0, 0, 0, 0];
-    const dayCounts = [0, 0, 0, 0, 0, 0, 0];
 
     allTasks.filter(t => t.isCompleted && t.completedAt).forEach(t => {
         const day = new Date(t.completedAt!).getDay();

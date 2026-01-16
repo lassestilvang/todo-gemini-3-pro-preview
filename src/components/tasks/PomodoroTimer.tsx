@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, RotateCcw, Coffee, Brain, Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { m, AnimatePresence } from "framer-motion";
+import { m } from "framer-motion";
 
 type TimerMode = "pomodoro" | "shortBreak" | "longBreak";
 

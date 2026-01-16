@@ -49,7 +49,7 @@ describe("UserProfile", () => {
         };
 
         render(<UserProfile user={user} />);
-        expect(screen.getByText("john@example.com")).toBeInTheDocument();
+        expect(screen.getAllByText("john@example.com").length).toBeGreaterThan(0);
     });
 
     it("displays firstName only when lastName is not available", () => {

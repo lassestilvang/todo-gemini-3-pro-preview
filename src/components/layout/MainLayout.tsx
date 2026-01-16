@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import { AppSidebar } from "./AppSidebar";
 import { MobileNav } from "./MobileNav";
 import { TaskEditModalWrapper } from "@/components/tasks/TaskEditModalWrapper";
 import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";
@@ -8,6 +7,12 @@ import { QuickCapture } from "@/components/tasks/QuickCapture";
 import { OnboardingTour } from "@/components/layout/OnboardingTour";
 import { SidebarDataLoader } from "./SidebarDataLoader";
 import { getCurrentUser } from "@/lib/auth";
+
+const SidebarFallback = () => (
+    <div className="hidden md:flex flex-col w-64 h-full border-r bg-card/50 backdrop-blur-xl shrink-0">
+        <div className="h-full w-full animate-pulse bg-muted/10" />
+    </div>
+);
 
 export async function MainLayout({ children }: { children: React.ReactNode }) {
     const user = await getCurrentUser();
@@ -24,11 +29,7 @@ export async function MainLayout({ children }: { children: React.ReactNode }) {
         );
     }
 
-    const SidebarFallback = () => (
-        <div className="hidden md:flex flex-col w-64 h-full border-r bg-card/50 backdrop-blur-xl shrink-0">
-            <div className="h-full w-full animate-pulse bg-muted/10" />
-        </div>
-    );
+
 
     return (
         <div className="flex h-screen overflow-hidden bg-background" data-testid="app-container">

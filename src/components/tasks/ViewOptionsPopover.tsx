@@ -55,8 +55,8 @@ export function ViewOptionsPopover({ viewId, userId, onSettingsChange }: ViewOpt
                     filterDate: savedSettings.filterDate || defaultViewSettings.filterDate,
                     filterPriority: savedSettings.filterPriority,
                     filterLabelId: savedSettings.filterLabelId,
-                    filterEnergyLevel: savedSettings.filterEnergyLevel as any,
-                    filterContext: savedSettings.filterContext as any,
+                    filterEnergyLevel: savedSettings.filterEnergyLevel as ViewSettings["filterEnergyLevel"],
+                    filterContext: savedSettings.filterContext as ViewSettings["filterContext"],
                 });
             }
 
@@ -87,8 +87,8 @@ export function ViewOptionsPopover({ viewId, userId, onSettingsChange }: ViewOpt
                 try {
                     await resetViewSettings(userId, viewId);
                     onSettingsChange?.(defaultViewSettings);
-                } catch (error) {
-                    console.error("Failed to reset view settings:", error);
+                } catch {
+                    // Fail silently
                     setSettings(previousSettings);
                     toast.error("Failed to reset view settings");
                 }
@@ -115,7 +115,7 @@ export function ViewOptionsPopover({ viewId, userId, onSettingsChange }: ViewOpt
             } else {
                 toast.error("Failed to save view");
             }
-        } catch (error) {
+        } catch {
             toast.error("An error occurred while saving view");
         } finally {
             setIsSaving(false);
@@ -324,7 +324,7 @@ export function ViewOptionsPopover({ viewId, userId, onSettingsChange }: ViewOpt
                                     <span className="text-sm text-muted-foreground">Energy</span>
                                     <Select
                                         value={settings.filterEnergyLevel || "all"}
-                                        onValueChange={(value) => updateSetting("filterEnergyLevel", value === "all" ? null : value as any)}
+                                        onValueChange={(value) => updateSetting("filterEnergyLevel", value === "all" ? null : value as ViewSettings["filterEnergyLevel"])}
                                     >
                                         <SelectTrigger className="w-[140px]" size="sm">
                                             <SelectValue />
@@ -341,7 +341,7 @@ export function ViewOptionsPopover({ viewId, userId, onSettingsChange }: ViewOpt
                                     <span className="text-sm text-muted-foreground">Context</span>
                                     <Select
                                         value={settings.filterContext || "all"}
-                                        onValueChange={(value) => updateSetting("filterContext", value === "all" ? null : value as any)}
+                                        onValueChange={(value) => updateSetting("filterContext", value === "all" ? null : value as ViewSettings["filterContext"])}
                                     >
                                         <SelectTrigger className="w-[140px]" size="sm">
                                             <SelectValue />

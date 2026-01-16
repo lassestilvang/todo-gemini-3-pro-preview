@@ -1,6 +1,5 @@
 import { test, expect, waitForAppReady } from './fixtures';
 import { AVAILABLE_THEMES } from '../src/lib/themes';
-import type { Page } from '@playwright/test';
 
 const THEMES = [...AVAILABLE_THEMES];
 

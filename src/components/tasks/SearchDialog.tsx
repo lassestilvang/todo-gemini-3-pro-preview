@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/command";
 import { getTasksForSearch } from "@/lib/actions";
 import { useRouter } from "next/navigation";
-import { Search, Sparkles, Zap, Moon, Sun, Palette, Layout, MousePointer2 } from "lucide-react";
+import { Search, Zap, Moon, Sun, Palette, Layout, MousePointer2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import { useZenMode } from "@/components/providers/ZenModeProvider";

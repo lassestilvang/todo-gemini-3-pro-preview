@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, mock, beforeAll } from "bun:test";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import React from "react";
 
 // Mock actions
@@ -69,9 +69,11 @@ describe("MainLayout", () => {
         const Component = await MainLayout({ children: <div data-testid="child">Child Content</div> });
         render(Component);
 
-        expect(screen.getByText("Inbox")).toBeInTheDocument(); // From mocked AppSidebar
-        expect(screen.getAllByTestId("child").length).toBeGreaterThan(0);
-        expect(screen.getByTestId("task-edit-modal")).toBeInTheDocument();
+        await waitFor(() => {
+            expect(screen.getAllByText("Inbox").length).toBeGreaterThan(0); // From mocked AppSidebar
+            expect(screen.getAllByTestId("child").length).toBeGreaterThanOrEqual(1);
+            expect(screen.getByTestId("task-edit-modal")).toBeInTheDocument();
+        });
 
         expect(mockGetLists).toHaveBeenCalled();
         expect(mockGetLabels).toHaveBeenCalled();

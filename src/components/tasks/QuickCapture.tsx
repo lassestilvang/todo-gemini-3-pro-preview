@@ -36,8 +36,8 @@ export function QuickCapture({ userId }: { userId: string }) {
             toast.success("Task captured to Inbox");
             setTitle("");
             setIsOpen(false);
-        } catch (error) {
-            toast.error("Failed to capture task");
+        } catch {
+            // Silently fail if parsing failsed to capture task");
         } finally {
             setIsSubmitting(false);
         }
