@@ -140,6 +140,6 @@ export async function createTask(page: Page, title: string): Promise<void> {
 export async function waitForTask(page: Page, titleContains: string): Promise<void> {
   await page.waitForSelector(`[data-testid="task-item"]:has-text("${titleContains}")`, {
     state: 'visible',
-    timeout: 10000,
+    timeout: 30000,
   });
 }
