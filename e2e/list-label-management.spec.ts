@@ -11,22 +11,14 @@ import { test, expect, authenticateTestUser } from './fixtures';
  * These tests use E2E_TEST_MODE for authentication.
  */
 test.describe('List and Label Management', () => {
-  test.beforeEach(async ({ page }) => {
-    // Disable onboarding tour for tests
-    await page.addInitScript(() => {
-      window.localStorage.setItem('onboarding_completed', 'true');
-    });
-
-    // Authenticate before each test
-    await authenticateTestUser(page);
-
-    // Navigate to inbox page
-    await page.goto('/inbox');
-    await page.waitForLoadState('load');
+  test.beforeEach(async ({ authenticatedPage }) => {
+    // Navigate to inbox page (auth and onboarding disable handled by fixture)
+    await authenticatedPage.goto('/inbox');
+    await authenticatedPage.waitForLoadState('load');
   });
 
   test.describe('List Management', () => {
-    test('should display lists section in sidebar', async ({ page }) => {
+    test('should display lists section in sidebar', async ({ authenticatedPage: page }) => {
       // The sidebar should have a lists section
       await expect(page.getByText('Lists').first()).toBeVisible();
 
@@ -34,13 +26,13 @@ test.describe('List and Label Management', () => {
       await expect(page.getByTestId('sidebar-lists').getByText('Inbox')).toBeVisible();
     });
 
-    test('should show add list button', async ({ page }) => {
+    test('should show add list button', async ({ authenticatedPage: page }) => {
       // There should be a way to add a new list
       const addListButton = page.getByTestId('add-list-button');
       await expect(addListButton).toBeVisible();
     });
 
-    test('should open create list dialog when clicking add button', async ({ page }) => {
+    test('should open create list dialog when clicking add button', async ({ authenticatedPage: page }) => {
       const addListButton = page.getByTestId('add-list-button');
       await addListButton.click();
 
@@ -51,7 +43,7 @@ test.describe('List and Label Management', () => {
       await expect(page.getByPlaceholder(/list name|name/i)).toBeVisible();
     });
 
-    test('should create a new list', async ({ page }) => {
+    test('should create a new list', async ({ authenticatedPage: page }) => {
       const addListButton = page.getByTestId('add-list-button');
       await addListButton.click();
 
@@ -74,7 +66,7 @@ test.describe('List and Label Management', () => {
       await expect(page.getByText(listName)).toBeVisible({ timeout: 10000 });
     });
 
-    test('should navigate to list page when clicking list', async ({ page }) => {
+    test('should navigate to list page when clicking list', async ({ authenticatedPage: page }) => {
       // Click on Inbox list
       const inboxLink = page.getByRole('link', { name: /inbox/i }).first();
       await inboxLink.click();
@@ -87,18 +79,18 @@ test.describe('List and Label Management', () => {
   });
 
   test.describe('Label Management', () => {
-    test('should display labels section in sidebar', async ({ page }) => {
+    test('should display labels section in sidebar', async ({ authenticatedPage: page }) => {
       // The sidebar should have a labels section
       await expect(page.getByText('Labels')).toBeVisible();
     });
 
-    test('should show add label button', async ({ page }) => {
+    test('should show add label button', async ({ authenticatedPage: page }) => {
       // There should be a way to add a new label
       const addLabelButton = page.getByTestId('add-label-button');
       await expect(addLabelButton).toBeVisible();
     });
 
-    test('should open create label dialog when clicking add button', async ({ page }) => {
+    test('should open create label dialog when clicking add button', async ({ authenticatedPage: page }) => {
       const addLabelButton = page.getByTestId('add-label-button');
       await addLabelButton.click();
 
@@ -109,7 +101,7 @@ test.describe('List and Label Management', () => {
       await expect(page.getByPlaceholder(/label name|name/i)).toBeVisible();
     });
 
-    test('should create a new label', async ({ page }) => {
+    test('should create a new label', async ({ authenticatedPage: page }) => {
       const addLabelButton = page.getByTestId('add-label-button');
       await addLabelButton.click();
 
@@ -132,7 +124,7 @@ test.describe('List and Label Management', () => {
       await expect(page.getByText(labelName)).toBeVisible({ timeout: 10000 });
     });
 
-    test('should navigate to label filter page when clicking label', async ({ page }) => {
+    test('should navigate to label filter page when clicking label', async ({ authenticatedPage: page }) => {
       // First create a label
       const addLabelButton = page.getByTestId('add-label-button');
       await addLabelButton.click();
@@ -175,7 +167,7 @@ test.describe('List and Label Management', () => {
   });
 
   test.describe('Label Filtering', () => {
-    test('should filter tasks by label', async ({ page }) => {
+    test('should filter tasks by label', async ({ authenticatedPage: page }) => {
       // First create a label to ensure we have one
       const addLabelButton = page.getByTestId('add-label-button');
       await addLabelButton.click();

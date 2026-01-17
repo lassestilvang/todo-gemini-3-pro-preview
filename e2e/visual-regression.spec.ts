@@ -21,7 +21,7 @@ test.describe('Multi-Theme Visual Regression', () => {
             test(`Inbox page [${theme}]`, async ({ authenticatedPage }) => {
                 await authenticatedPage.goto('/inbox');
                 await waitForAppReady(authenticatedPage);
-                await authenticatedPage.waitForTimeout(1000); // Wait for animations
+                await authenticatedPage.waitForLoadState('networkidle'); // Wait for content and animations
                 await expect(authenticatedPage).toHaveScreenshot(`inbox-${theme}.png`, {
                     fullPage: true,
                     mask: [authenticatedPage.locator('[data-testid="last-synced"]')],
@@ -31,7 +31,7 @@ test.describe('Multi-Theme Visual Regression', () => {
             test(`Today page [${theme}]`, async ({ authenticatedPage }) => {
                 await authenticatedPage.goto('/today');
                 await waitForAppReady(authenticatedPage);
-                await authenticatedPage.waitForTimeout(1000); // Wait for animations
+                await authenticatedPage.waitForLoadState('networkidle'); // Wait for content and animations
                 await expect(authenticatedPage).toHaveScreenshot(`today-${theme}.png`, {
                     fullPage: true,
                 });
@@ -40,7 +40,7 @@ test.describe('Multi-Theme Visual Regression', () => {
             test(`Upcoming page [${theme}]`, async ({ authenticatedPage }) => {
                 await authenticatedPage.goto('/upcoming');
                 await waitForAppReady(authenticatedPage);
-                await authenticatedPage.waitForTimeout(1000); // Wait for animations
+                await authenticatedPage.waitForLoadState('networkidle'); // Wait for content and animations
                 await expect(authenticatedPage).toHaveScreenshot(`upcoming-${theme}.png`, {
                     fullPage: true,
                 });

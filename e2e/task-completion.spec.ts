@@ -5,17 +5,13 @@ import { test, expect, authenticateTestUser, createTask } from './fixtures';
  * Requirements: 5.3
  */
 test.describe('Task Completion Flow', () => {
-  test.beforeEach(async ({ page }) => {
-    // Disable onboarding tour for tests
-    await page.addInitScript(() => {
-      window.localStorage.setItem('onboarding_completed', 'true');
-    });
-    await authenticateTestUser(page);
-    await page.goto('/today');
-    await page.waitForLoadState('load');
+  test.beforeEach(async ({ authenticatedPage }) => {
+    // Navigate to today page (auth and onboarding disable handled by fixture)
+    await authenticatedPage.goto('/today');
+    await authenticatedPage.waitForLoadState('load');
   });
 
-  test('should complete a task by clicking checkbox', async ({ page }) => {
+  test('should complete a task by clicking checkbox', async ({ authenticatedPage: page }) => {
     const uniqueId = Date.now();
     await createTask(page, `CompletionTest ${uniqueId}`);
 
@@ -40,7 +36,7 @@ test.describe('Task Completion Flow', () => {
     await expect(taskItemAfterReload.getByTestId('task-checkbox')).toBeChecked();
   });
 
-  test('should show visual feedback on task completion', async ({ page }) => {
+  test('should show visual feedback on task completion', async ({ authenticatedPage: page }) => {
     const uniqueId = Date.now();
     await createTask(page, `VisualFeedback ${uniqueId}`);
 
@@ -63,7 +59,7 @@ test.describe('Task Completion Flow', () => {
     await expect(taskItemAfterReload.getByTestId('task-checkbox')).toBeChecked();
   });
 
-  test('should uncomplete a task by clicking checkbox again', async ({ page }) => {
+  test('should uncomplete a task by clicking checkbox again', async ({ authenticatedPage: page }) => {
     const uniqueId = Date.now();
     await createTask(page, `UncompleteTest ${uniqueId}`);
 
@@ -121,7 +117,7 @@ test.describe('Task Completion Flow', () => {
     await expect(taskItemAfterUncomplete.getByTestId('task-checkbox')).not.toBeChecked();
   });
 
-  test('should award XP when completing a task', async ({ page }) => {
+  test('should award XP when completing a task', async ({ authenticatedPage: page }) => {
     const uniqueId = Date.now();
     await createTask(page, `XPTest ${uniqueId}`);
 
@@ -136,7 +132,7 @@ test.describe('Task Completion Flow', () => {
     await expect(page.getByText(/XP|Level/i).first()).toBeVisible();
   });
 
-  test('should persist task completion after page reload', async ({ page }) => {
+  test('should persist task completion after page reload', async ({ authenticatedPage: page }) => {
     const uniqueId = Date.now();
     await createTask(page, `PersistTest ${uniqueId}`);
 
@@ -163,7 +159,7 @@ test.describe('Task Completion Flow', () => {
     await expect(taskItemAfterReload.getByTestId('task-checkbox')).toBeChecked();
   });
 
-  test('should show streak information', async ({ page }) => {
+  test('should show streak information', async ({ authenticatedPage: page }) => {
     // Wait for data to load (skeleton to be replaced)
     await expect(page.getByTestId('user-level')).toBeVisible({ timeout: 10000 });
   });
