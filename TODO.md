@@ -264,5 +264,28 @@
 - [ ] **Feature‑Flag System**: Introduce a simple flag mechanism (env‑vars or config) to toggle experimental features like the calendar view.
 - [x] **Export / Import Functionality**: Add server‑side endpoints and UI for JSON/CSV export and import of tasks.
   - *Status*: **RESOLVED** - Implemented full JSON Backup export/import with `DataExportImport` component in settings. Support transactional import with ID mapping to preserve relationships (lists, labels, tasks). Verified via E2E tests and manual script inspection.
+
+---
+
+## Improvements Identified (Audit 2026-01-19) 🔍
+
+- [ ] **[Improvement] WebVitals Analytics Integration**: Connect WebVitals metrics to an analytics provider (Vercel Analytics, GA, or custom endpoint) instead of just console logging.
+  - *Current State*: `WebVitals.tsx` has example code commented out for sending metrics via `sendBeacon`.
+  - *Priority*: Low
+
+- [ ] **[Improvement] Settings Page A11y Test**: Complete the skipped accessibility test for the settings page in `e2e/a11y.spec.ts`.
+  - *Current State*: Test is marked as `test.skip` with TODO comment.
+  - *Priority*: Low
+
+- [ ] **[Improvement] Visual Regression CI baselines**: Add Linux-based snapshots to enable visual regression tests in CI (currently skipped due to OS differences).
+  - *Current State*: Tests skip in CI with message "Skipping visual regression in CI due to OS mismatch for snapshots".
+  - *Priority*: Medium
+
+- [ ] **[Improvement] LazyMotion domMax**: Consider upgrading from `domAnimation` to `domMax` in `LazyMotionProvider.tsx` if using layout animations or drag gestures.
+  - *Current State*: Uses `domAnimation` which covers most use cases but excludes some advanced features.
+  - *Priority*: Low
+
+---
+
 - [ ] **[Perf] Search Scalability**: Monitor client-side search performance as task count grows (>2000 tasks). If initial payload size becomes a bottleneck, consider implementing Web Workers to offload indexing/searching or hybrid server-side search for older items.
 - [ ] **[Perf] Search Index Warm-up**: Eliminate the initial "warm-up" delay when opening the Command Palette. Implement prefetching (e.g., on idle or hover) or persist the search index to `localStorage`/IndexedDB to make it available immediately without a network roundtrip.
