@@ -71,8 +71,11 @@ test.describe('Data Persistence (Export/Import)', () => {
         await expect(page.getByText('Import successful')).toBeVisible({ timeout: 10000 });
 
         // 4. Verify Import
-        // Navigate to home/sidebar to see new list
-        await page.goto('/');
+        // Wait for server to stabilize
+        await page.waitForTimeout(2000);
+
+        // Reload to update sidebar (simulating refresh)
+        await page.reload();
 
         // We should now see TWO lists with the same name? 
         // Or at least we should find the list again.

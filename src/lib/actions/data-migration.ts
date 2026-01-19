@@ -131,145 +131,125 @@ export async function importUserData(jsonData: unknown) {
     const labelMap = new Map<number, number>()
     const taskMap = new Map<number, number>()
 
-    // 1. Import Lists
-    console.log('[Import] Starting import...');
-    for (const list of data.lists) {
-        const [newList] = await db.insert(lists).values({
-            ...list,
-            id: undefined, // Let DB generate new ID
-            userId: userId, // Ensure it belongs to current user
-            slug: `${list.slug}-imported-${Date.now()}`, // Avoid slug collision
-            createdAt: new Date(list.createdAt),
-            updatedAt: new Date(),
-        }).returning({ id: lists.id })
+    try {
+        // 1. Import Lists
+        console.log('[Import] Starting import...');
+        for (const list of data.lists) {
+            const [newList] = await db.insert(lists).values({
+                ...list,
+                id: undefined, // Let DB generate new ID
+                userId: userId, // Ensure it belongs to current user
+                slug: `${list.slug}-imported-${Date.now()}`, // Avoid slug collision
+                createdAt: new Date(list.createdAt),
+                updatedAt: new Date(),
+            }).returning({ id: lists.id })
 
-        listMap.set(list.id, newList.id)
-    }
+            listMap.set(list.id, newList.id)
+        }
 
-    // 2. Import Labels
-    for (const label of data.labels) {
-        const [newLabel] = await db.insert(labels).values({
-            ...label,
-            id: undefined,
-            userId: userId,
-        }).returning({ id: labels.id })
+        // 2. Import Labels
+        for (const label of data.labels) {
+            const [newLabel] = await db.insert(labels).values({
+                ...label,
+                id: undefined,
+                userId: userId,
+            }).returning({ id: labels.id })
 
-        labelMap.set(label.id, newLabel.id)
-    }
+            labelMap.set(label.id, newLabel.id)
+        }
 
-    // 3. Import Tasks (First pass: create tasks without parentId)
-    // We separate tasks into those with parents and those without to handle dependencies,
-    // OR we just insert all and map, but we must handle parentId.
-    // Simplest strategy: Sort by ID? No. 
-    // If we process parents first, children can reference them.
-    // Topological sort is ideal, but for now let's just do two passes if needed or relying on the fact that parents likely created before children?
-    // Actually, parent references must exist.
-    // Let's collect all tasks.
+        // 3. Import Tasks
+        for (const task of data.tasks) {
+            const newListId = task.listId ? listMap.get(task.listId) : null
 
-    // Strategy: Insert all tasks setting parentId to NULL initially.
-    // Then update parentIds?
-    // OR: simpler -> Insert tasks. references to lists must be mapped.
-    // References to parents must be mapped. 
-    // If a task references a parent that hasn't been inserted yet, it will fail FK if we use strict FKs.
-    // Drizzle schema defines: `parentId: integer("parent_id")` (self reference).
+            const [newTask] = await db.insert(tasks).values({
+                ...task,
+                id: undefined,
+                userId: userId,
+                listId: newListId,
+                parentId: null, // Set null initially to avoid FK errors
+                dueDate: task.dueDate ? new Date(task.dueDate) : null,
+                createdAt: new Date(task.createdAt),
+                updatedAt: new Date(),
+                completedAt: task.completedAt ? new Date(task.completedAt) : null,
+                deadline: task.deadline ? new Date(task.deadline) : null,
+            }).returning({ id: tasks.id })
 
-    // We will insert keys first.
-    // Let's do a map of OldTask -> NewTaskPromise?
-    // Iterate tasks. If parent exists and not in map, wait?
-    // Cycle detection?
+            taskMap.set(task.id, newTask.id)
+        }
 
-    // Better approach:
-    // 1. Insert all tasks setting parentId to NULL initially.
-    // 2. Map IDs.
-    // 3. Update tasks with correct parentId using the map.
+        // 3b. Update Parent IDs
+        for (const task of data.tasks) {
+            if (task.parentId) {
+                const newParentId = taskMap.get(task.parentId)
+                const newTaskId = taskMap.get(task.id)
 
-    for (const task of data.tasks) {
-        const newListId = task.listId ? listMap.get(task.listId) : null
-
-        const [newTask] = await db.insert(tasks).values({
-            ...task,
-            id: undefined,
-            userId: userId,
-            listId: newListId,
-            parentId: null, // Set null initially to avoid FK errors
-            dueDate: task.dueDate ? new Date(task.dueDate) : null,
-            createdAt: new Date(task.createdAt),
-            updatedAt: new Date(),
-            completedAt: task.completedAt ? new Date(task.completedAt) : null,
-            deadline: task.deadline ? new Date(task.deadline) : null,
-        }).returning({ id: tasks.id })
-
-        taskMap.set(task.id, newTask.id)
-    }
-
-    // 3b. Update Parent IDs
-    for (const task of data.tasks) {
-        if (task.parentId) {
-            const newParentId = taskMap.get(task.parentId)
-            const newTaskId = taskMap.get(task.id)
-
-            if (newParentId && newTaskId) {
-                await db.update(tasks)
-                    .set({ parentId: newParentId })
-                    .where(eq(tasks.id, newTaskId))
+                if (newParentId && newTaskId) {
+                    await db.update(tasks)
+                        .set({ parentId: newParentId })
+                        .where(eq(tasks.id, newTaskId))
+                }
             }
         }
-    }
 
-    // 4. Import Task Labels
-    for (const tl of data.taskLabels) {
-        const newTaskId = taskMap.get(tl.taskId)
-        const newLabelId = labelMap.get(tl.labelId)
+        // 4. Import Task Labels
+        for (const tl of data.taskLabels) {
+            const newTaskId = taskMap.get(tl.taskId)
+            const newLabelId = labelMap.get(tl.labelId)
 
-        if (newTaskId && newLabelId) {
-            await db.insert(taskLabels).values({
-                taskId: newTaskId,
-                labelId: newLabelId
-            }).onConflictDoNothing()
+            if (newTaskId && newLabelId) {
+                await db.insert(taskLabels).values({
+                    taskId: newTaskId,
+                    labelId: newLabelId
+                }).onConflictDoNothing()
+            }
         }
-    }
 
-    // 5. Import Reminders
-    for (const r of data.reminders) {
-        const newTaskId = taskMap.get(r.taskId)
-        if (newTaskId) {
-            await db.insert(reminders).values({
-                ...r,
+        // 5. Import Reminders
+        for (const r of data.reminders) {
+            const newTaskId = taskMap.get(r.taskId)
+            if (newTaskId) {
+                await db.insert(reminders).values({
+                    ...r,
+                    id: undefined,
+                    taskId: newTaskId,
+                    remindAt: new Date(r.remindAt),
+                    createdAt: new Date(r.createdAt)
+                })
+            }
+        }
+
+        // 6. Import Templates
+        for (const t of data.templates) {
+            await db.insert(templates).values({
+                ...t,
                 id: undefined,
-                taskId: newTaskId,
-                remindAt: new Date(r.remindAt),
-                createdAt: new Date(r.createdAt)
+                userId: userId,
+                createdAt: new Date(t.createdAt),
+                updatedAt: new Date()
             })
         }
-    }
 
-    // 6. Import Templates
-    for (const t of data.templates) {
-        await db.insert(templates).values({
-            ...t,
-            id: undefined,
-            userId: userId,
-            createdAt: new Date(t.createdAt),
-            updatedAt: new Date()
-        })
-    }
-
-    // 7. Import Saved Views
-    for (const sv of data.savedViews) {
-        await db.insert(savedViews).values({
-            ...sv,
-            id: undefined,
-            userId: userId,
-            createdAt: new Date(sv.createdAt)
-        })
-    }
-
-    revalidatePath("/")
-    return {
-        success: true, counts: {
-            lists: listMap.size,
-            tasks: taskMap.size,
-            labels: labelMap.size
+        // 7. Import Saved Views
+        for (const sv of data.savedViews) {
+            await db.insert(savedViews).values({
+                ...sv,
+                id: undefined,
+                userId: userId,
+                createdAt: new Date(sv.createdAt)
+            })
         }
+
+        revalidatePath("/")
+        return {
+            success: true, counts: {
+                lists: listMap.size,
+                tasks: taskMap.size,
+                labels: labelMap.size
+            }
+        }
+    } catch (error) {
+        console.error('[Import] Failed:', error);
+        return { success: false, error: 'Import failed' };
     }
 }
