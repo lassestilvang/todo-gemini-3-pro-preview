@@ -31,6 +31,7 @@ interface SidebarListsProps {
 export function SidebarLists({ lists, userId }: SidebarListsProps) {
     const pathname = usePathname();
     const [editingList, setEditingList] = useState<List | null>(null);
+    console.log('[Sidebar] Rendering lists:', lists.length);
 
     return (
         <div className="pl-3 pr-6 py-2" data-testid="sidebar-lists">

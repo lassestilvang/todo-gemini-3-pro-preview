@@ -262,6 +262,7 @@
 - [x] **System‑Prefers‑Dark Mode Toggle Persistence**: Detect OS dark‑mode preference, store user choice, and expose a UI toggle to override.
 - [ ] **Real‑User Monitoring (RUM) Dashboard**: Send Web Vitals metrics to a dashboard (e.g., Vercel Analytics or custom Grafana) and optionally display admin view.
 - [ ] **Feature‑Flag System**: Introduce a simple flag mechanism (env‑vars or config) to toggle experimental features like the calendar view.
-- [ ] **Export / Import Functionality**: Add server‑side endpoints and UI for JSON/CSV export and import of tasks.
+- [x] **Export / Import Functionality**: Add server‑side endpoints and UI for JSON/CSV export and import of tasks.
+  - *Status*: **RESOLVED** - Implemented full JSON Backup export/import with `DataExportImport` component in settings. Support transactional import with ID mapping to preserve relationships (lists, labels, tasks). Verified via E2E tests and manual script inspection.
 - [ ] **[Perf] Search Scalability**: Monitor client-side search performance as task count grows (>2000 tasks). If initial payload size becomes a bottleneck, consider implementing Web Workers to offload indexing/searching or hybrid server-side search for older items.
 - [ ] **[Perf] Search Index Warm-up**: Eliminate the initial "warm-up" delay when opening the Command Palette. Implement prefetching (e.g., on idle or hover) or persist the search index to `localStorage`/IndexedDB to make it available immediately without a network roundtrip.

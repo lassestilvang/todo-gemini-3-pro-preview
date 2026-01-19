@@ -1,6 +1,7 @@
 import { getList, getTasks, getViewSettings } from "@/lib/actions";
 import { getCurrentUser } from "@/lib/auth";
 import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
+import { CreateTaskInput } from "@/components/tasks/CreateTaskInput";
 import { notFound, redirect } from "next/navigation";
 import { getListIcon } from "@/lib/icons";
 import { createElement } from "react";
@@ -55,6 +56,8 @@ export default async function ListPage({ params }: ListPageProps) {
                         {list.name}
                     </h1>
                 </div>
+
+                <CreateTaskInput listId={listId} userId={user.id} />
 
                 <TaskListWithSettings
                     tasks={tasks}

@@ -1,5 +1,6 @@
 import { Metadata } from "next"
 import { ThemeSwitcher } from "@/components/settings/ThemeSwitcher"
+import { DataExportImport } from "@/components/settings/DataExportImport"
 
 export const metadata: Metadata = {
     title: "Settings - Todo Gemini",
@@ -27,6 +28,9 @@ export default function SettingsPage() {
                         Select a theme that suits your style.
                     </p>
                     <ThemeSwitcher />
+                </section>
+                <section>
+                    <DataExportImport />
                 </section>
             </div>
         </div>
