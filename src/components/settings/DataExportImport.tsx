@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -10,6 +11,7 @@ import { Download, Upload, Loader2, AlertCircle } from "lucide-react"
 import { exportUserData, importUserData } from "@/lib/actions/data-migration"
 
 export function DataExportImport() {
+    const router = useRouter()
     const [isExporting, setIsExporting] = useState(false)
     const [isImporting, setIsImporting] = useState(false)
 
@@ -56,6 +58,7 @@ export function DataExportImport() {
 
             if (result.success) {
                 toast.success(`Import successful: ${result.counts?.tasks ?? 0} tasks, ${result.counts?.lists ?? 0} lists imported.`)
+                router.refresh()
                 e.target.value = "" // Reset input
             }
         } catch (error) {

@@ -240,7 +240,7 @@ export async function importUserData(jsonData: unknown) {
             })
         }
 
-        revalidatePath("/")
+        // revalidatePath("/")
         return {
             success: true, counts: {
                 lists: listMap.size,
