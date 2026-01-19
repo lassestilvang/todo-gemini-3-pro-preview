@@ -55,7 +55,7 @@ export function DataExportImport() {
             const result = await importUserData(json)
 
             if (result.success) {
-                toast.success(`Import successful: ${result.counts.tasks} tasks, ${result.counts.lists} lists imported.`)
+                toast.success(`Import successful: ${result.counts?.tasks ?? 0} tasks, ${result.counts?.lists ?? 0} lists imported.`)
                 e.target.value = "" // Reset input
             }
         } catch (error) {
