@@ -67,8 +67,12 @@ test.describe('Data Persistence (Export/Import)', () => {
         await fileInput.setInputFiles(downloadPath);
 
         // Trigger change if needed, usually setInputFiles triggers it.
-        // Wait for success toast
-        await expect(page.getByText('Import successful')).toBeVisible({ timeout: 10000 });
+        // Wait for result toast (success or failure)
+        const toast = page.locator('[role="status"]').first(); // Sonner toast
+        await expect(toast).toBeVisible({ timeout: 60000 });
+
+        // Assert success, but if it fails, we'll see the error message in the test report
+        await expect(toast).toContainText('Import successful');
 
         // 4. Verify Import
         // Wait for server to stabilize

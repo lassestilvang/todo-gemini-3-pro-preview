@@ -60,6 +60,9 @@ export function DataExportImport() {
                 toast.success(`Import successful: ${result.counts?.tasks ?? 0} tasks, ${result.counts?.lists ?? 0} lists imported.`)
                 router.refresh()
                 e.target.value = "" // Reset input
+            } else {
+                toast.error(result.error || "Import failed")
+                console.error("Import failed:", result.error)
             }
         } catch (error) {
             console.error(error)
