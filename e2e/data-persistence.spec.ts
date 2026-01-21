@@ -30,11 +30,14 @@ test.describe('Data Persistence (Export/Import)', () => {
 
         // Create Task in that list
         await page.getByTestId('task-input').fill(taskName);
-        await page.keyboard.press('Enter');
-        // await page.waitForTimeout(1000); // Removed arbitrary wait
-        await expect(page.getByText(taskName)).toBeVisible(); // Wait for actual creation
+        await expect(page.getByTestId('add-task-button')).toBeVisible(); // Ensure valid state
+        await page.getByTestId('add-task-button').click();
 
-        // 2. Export Data
+        // Wait for input to be cleared (signals efficient submission)
+        await expect(page.getByTestId('task-input')).toHaveValue('');
+
+        // Wait for actual creation in list
+        await expect(page.getByText(taskName)).toBeVisible();
         await page.goto('/settings');
 
         // Handle download
@@ -69,11 +72,7 @@ test.describe('Data Persistence (Export/Import)', () => {
 
         // Trigger change if needed, usually setInputFiles triggers it.
         // Wait for result toast (success or failure)
-        const toast = page.locator('[role="status"]').first(); // Sonner toast
-        await expect(toast).toBeVisible({ timeout: 60000 });
-
-        // Assert success, but if it fails, we'll see the error message in the test report
-        await expect(toast).toContainText('Import successful');
+        await expect(page.getByText('Import successful')).toBeVisible({ timeout: 60000 });
 
         // 4. Verify Import
         // Wait for server to stabilize

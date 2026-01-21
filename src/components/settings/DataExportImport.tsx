@@ -58,7 +58,10 @@ export function DataExportImport() {
 
             if (result.success) {
                 toast.success(`Import successful: ${result.counts?.tasks ?? 0} tasks, ${result.counts?.lists ?? 0} lists imported.`)
-                router.refresh()
+                // Delay refresh slightly to ensure toast is visible and animation starts
+                setTimeout(() => {
+                    router.refresh()
+                }, 500)
                 e.target.value = "" // Reset input
             } else {
                 toast.error(result.error || "Import failed")
