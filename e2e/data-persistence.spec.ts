@@ -31,7 +31,8 @@ test.describe('Data Persistence (Export/Import)', () => {
         // Create Task in that list
         await page.getByTestId('task-input').fill(taskName);
         await page.keyboard.press('Enter');
-        await page.waitForTimeout(1000); // Wait for creation
+        // await page.waitForTimeout(1000); // Removed arbitrary wait
+        await expect(page.getByText(taskName)).toBeVisible(); // Wait for actual creation
 
         // 2. Export Data
         await page.goto('/settings');
