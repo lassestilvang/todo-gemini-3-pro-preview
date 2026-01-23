@@ -93,6 +93,9 @@ test.describe('Data Persistence (Export/Import)', () => {
         // Click the second one (likely the imported one)
         await lists.nth(1).click();
 
+        // Wait for navigation
+        await page.waitForURL(/\/lists\/\d+/);
+
         // Check for task
         await expect(page.getByText(taskName)).toBeVisible();
 
