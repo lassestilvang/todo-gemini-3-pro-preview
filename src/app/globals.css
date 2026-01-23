@@ -306,6 +306,16 @@ html.glassmorphism-dark h3 {
   text-shadow: 0 0 30px rgba(100, 210, 255, 0.08);
 }
 
+html.glassmorphism-dark [data-slot="dialog-overlay"] {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(120, 220, 255, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 80% 20%, rgba(100, 180, 220, 0.06) 0%, transparent 35%),
+    rgba(7, 10, 20, 0.85);
+  backdrop-filter: blur(28px) saturate(1.4);
+  -webkit-backdrop-filter: blur(28px) saturate(1.4);
+}
+
+
 /* Neubrutalism Theme */
 .neubrutalism {
   --font-sans: var(--font-space);
@@ -496,6 +506,13 @@ html.glassmorphism svg {
   filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5));
   stroke-width: 2px !important;
 }
+
+html.glassmorphism [data-slot="dialog-overlay"] {
+  background: radial-gradient(circle at 50% 50%, rgba(76, 29, 149, 0.6) 0%, rgba(30, 27, 75, 0.7) 100%);
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+}
+
 
 /* Neubrutalism Overrides */
 html.neubrutalism .btn,
