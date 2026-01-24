@@ -46,7 +46,7 @@ export function TaskDialog({ task, open, onOpenChange, trigger, defaultListId, d
     return (
         <Dialog open={effectiveOpen} onOpenChange={setEffectiveOpen}>
             {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-            <DialogContent className="sm:max-w-[600px] p-0 gap-0 overflow-hidden top-[10%] translate-y-0">
+            <DialogContent className="sm:max-w-[600px] p-0 gap-0 overflow-hidden top-[50%] translate-y-[-50%] sm:top-[10%] sm:translate-y-0 max-h-[90vh]">
                 <TaskForm
                     key={formKey}
                     task={task}

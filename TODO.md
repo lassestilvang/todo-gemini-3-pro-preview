@@ -36,7 +36,7 @@
 
 ## 🎨 UI/UX Polish
 
-- [ ] **[UX] Modal sizes**: Make modals responsive and adjust sizes based on screen size. On smaller screens it is not possible to see the whole modal. Verify this on mobile devices and tablets, as well as on desktop in various screen resolutions/windows sizes.
+- [x] **[UX] Modal sizes**: Make modals responsive and adjust sizes based on screen size. On smaller screens it is not possible to see the whole modal. Verify this on mobile devices and tablets, as well as on desktop in various screen resolutions/windows sizes.
 - [x] **[UX] Sidebar Identity Section**: Detailed profile view in sidebar footer.
 - [x] **[UX] Missing Navigation Links**: Added "Analytics" and "Settings" to sidebar.
 - [x] **[UX] "World Class" Page Transitions**: `framer-motion` transitions with custom bezier curves.
