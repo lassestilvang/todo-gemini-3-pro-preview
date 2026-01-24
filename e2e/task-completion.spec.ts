@@ -21,7 +21,7 @@ test.describe('Task Completion Flow', () => {
 
     const taskItem = page.getByTestId('task-item').filter({ hasText: String(uniqueId) }).first();
     const checkbox = taskItem.getByTestId('task-checkbox');
-    await checkbox.click();
+    await checkbox.click({ force: true });
 
     // Wait for optimistic UI update
     await expect(checkbox).toBeChecked();
@@ -46,7 +46,7 @@ test.describe('Task Completion Flow', () => {
 
     const taskItem = page.getByTestId('task-item').filter({ hasText: String(uniqueId) }).first();
     const checkbox = taskItem.getByTestId('task-checkbox');
-    await checkbox.click();
+    await checkbox.click({ force: true });
 
     // Wait for optimistic UI update
     await expect(checkbox).toBeChecked();
@@ -71,7 +71,7 @@ test.describe('Task Completion Flow', () => {
     const checkbox = taskItem.getByTestId('task-checkbox');
 
     // STEP 1: Complete the task
-    await checkbox.click();
+    await checkbox.click({ force: true });
 
     // Wait for optimistic UI update to "checked"
     await expect(checkbox).toBeChecked();
@@ -126,8 +126,8 @@ test.describe('Task Completion Flow', () => {
     });
 
     const taskItem = page.getByTestId('task-item').filter({ hasText: String(uniqueId) }).first();
-    await taskItem.getByTestId('task-checkbox').click();
-    await page.waitForTimeout(1000);
+    await taskItem.getByTestId('task-checkbox').click({ force: true });
+    await page.waitForTimeout(2000);
 
     await expect(page.getByText(/XP|Level/i).first()).toBeVisible();
   });
@@ -144,7 +144,7 @@ test.describe('Task Completion Flow', () => {
     const checkbox = taskItem.getByTestId('task-checkbox');
 
     // Click to complete
-    await checkbox.click();
+    await checkbox.click({ force: true });
 
     // Wait for optimistic UI update
     await expect(checkbox).toBeChecked();

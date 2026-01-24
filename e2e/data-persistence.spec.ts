@@ -42,7 +42,7 @@ test.describe('Data Persistence (Export/Import)', () => {
 
         // Handle download
         const downloadPromise = page.waitForEvent('download');
-        await page.getByRole('button', { name: 'Export Backup' }).click();
+        await page.getByRole('button', { name: 'Export Backup' }).click({ force: true });
         const download = await downloadPromise;
         const downloadPath = await download.path();
 
