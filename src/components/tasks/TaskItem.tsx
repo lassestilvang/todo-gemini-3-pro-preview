@@ -38,6 +38,7 @@ export interface Task {
     deadline: Date | null;
     isCompleted: boolean | null;
     estimateMinutes: number | null;
+    actualMinutes: number | null;
     isRecurring: boolean | null;
     listId: number | null;
     listName?: string | null;
@@ -58,6 +59,16 @@ interface TaskItemProps {
     task: Task;
     showListInfo?: boolean;
     userId?: string;
+}
+
+// Format minutes to human-readable duration
+function formatDuration(minutes: number): string {
+    if (minutes < 60) {
+        return `${minutes}m`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 }
 
 export function TaskItem({ task, showListInfo = true, userId }: TaskItemProps) {
@@ -241,10 +252,29 @@ export function TaskItem({ task, showListInfo = true, userId }: TaskItemProps) {
                                 <span className="capitalize">{task.priority}</span>
                             </div>
                         )}
-                        {task.estimateMinutes && (
-                            <div className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {task.estimateMinutes}m
+                        {(task.estimateMinutes || task.actualMinutes) && (
+                            <div className={cn(
+                                "flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-all",
+                                task.actualMinutes && task.estimateMinutes && task.actualMinutes > task.estimateMinutes
+                                    ? "bg-gradient-to-r from-red-500/10 to-orange-500/10 text-red-600 dark:text-red-400 ring-1 ring-red-200 dark:ring-red-800/50"
+                                    : task.actualMinutes && task.estimateMinutes
+                                        ? "bg-gradient-to-r from-emerald-500/10 to-teal-500/10 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-200 dark:ring-emerald-800/50"
+                                        : "bg-muted/80 text-muted-foreground ring-1 ring-border/50"
+                            )}>
+                                <Clock className="h-3.5 w-3.5" />
+                                {task.actualMinutes ? (
+                                    <div className="flex items-center gap-1">
+                                        <span className="font-semibold">{formatDuration(task.actualMinutes)}</span>
+                                        {task.estimateMinutes && (
+                                            <>
+                                                <span className="text-muted-foreground/60">/</span>
+                                                <span className="opacity-70">{formatDuration(task.estimateMinutes)}</span>
+                                            </>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <span className="font-semibold">{formatDuration(task.estimateMinutes!)}</span>
+                                )}
                             </div>
                         )}
                         {task.isRecurring && (

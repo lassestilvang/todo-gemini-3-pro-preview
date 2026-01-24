@@ -1,7 +1,7 @@
 "use server";
 
-import { db, tasks } from "@/db";
-import { eq } from "drizzle-orm";
+import { db, tasks, timeEntries } from "@/db";
+import { eq, and, gte, desc } from "drizzle-orm";
 import { subDays, format, startOfDay } from "date-fns";
 
 export async function getAnalytics(userId: string) {
@@ -21,6 +21,13 @@ export async function getAnalytics(userId: string) {
             energyCompleted: { high: 0, medium: 0, low: 0 },
             productivityByDay: [0, 0, 0, 0, 0, 0, 0],
             heatmapData: [],
+            timeTracking: {
+                totalTrackedMinutes: 0,
+                totalEstimatedMinutes: 0,
+                accuracyPercent: 0,
+                entriesCount: 0,
+                dailyTracked: [],
+            },
         };
     }
 
@@ -124,6 +131,75 @@ export async function getAnalytics(userId: string) {
         low: allTasks.filter(t => t.energyLevel === "low" && t.isCompleted).length,
     };
 
+    // Time tracking from timeEntries (last 30 days) - wrapped in try-catch for graceful degradation
+    let timeTracking = {
+        totalTrackedMinutes: 0,
+        totalEstimatedMinutes: 0,
+        accuracyPercent: 0,
+        entriesCount: 0,
+        dailyTracked: [] as { date: string; minutes: number; formatted: string }[],
+    };
+
+    try {
+        const thirtyDaysAgo = subDays(now, 30);
+        const allTimeEntries = await db
+            .select()
+            .from(timeEntries)
+            .where(
+                and(
+                    eq(timeEntries.userId, userId),
+                    gte(timeEntries.startedAt, thirtyDaysAgo)
+                )
+            )
+            .orderBy(desc(timeEntries.startedAt));
+
+        const totalTrackedMinutes = allTimeEntries.reduce((sum, e) => sum + (e.durationMinutes || 0), 0);
+        const totalEstimatedMinutes = allTasks
+            .filter(t => t.estimateMinutes)
+            .reduce((sum, t) => sum + (t.estimateMinutes || 0), 0);
+
+        const accuracyPercent = totalEstimatedMinutes > 0
+            ? Math.round((totalTrackedMinutes / totalEstimatedMinutes) * 100)
+            : 0;
+
+        // Daily tracked time (last 7 days)
+        const dailyTracked: { date: string; minutes: number; formatted: string }[] = [];
+        for (let i = 6; i >= 0; i--) {
+            const day = subDays(now, i);
+            const dayStart = startOfDay(day);
+            const dayEnd = new Date(dayStart);
+            dayEnd.setHours(23, 59, 59, 999);
+
+            const minutes = allTimeEntries
+                .filter(e => {
+                    const startedAt = new Date(e.startedAt);
+                    return startedAt >= dayStart && startedAt <= dayEnd;
+                })
+                .reduce((sum, e) => sum + (e.durationMinutes || 0), 0);
+
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            const formatted = minutes > 0 ? (hours > 0 ? `${hours}h ${mins}m` : `${mins}m`) : "0m";
+
+            dailyTracked.push({
+                date: format(day, "EEE"),
+                minutes,
+                formatted,
+            });
+        }
+
+        timeTracking = {
+            totalTrackedMinutes,
+            totalEstimatedMinutes,
+            accuracyPercent,
+            entriesCount: allTimeEntries.length,
+            dailyTracked,
+        };
+    } catch (error) {
+        // timeEntries table may not exist yet - graceful degradation
+        console.warn("Time tracking data unavailable:", error);
+    }
+
     return {
         summary: {
             totalTasks,
@@ -138,5 +214,6 @@ export async function getAnalytics(userId: string) {
         energyCompleted,
         productivityByDay,
         heatmapData,
+        timeTracking,
     };
 }

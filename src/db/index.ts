@@ -56,6 +56,7 @@ export const {
     viewSettings,
     rateLimits,
     savedViews,
+    timeEntries,
 } = schema;
 
 export { db, sqliteConnection, schema };

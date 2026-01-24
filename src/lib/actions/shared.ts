@@ -20,6 +20,7 @@ export {
   userAchievements,
   viewSettings,
   savedViews,
+  timeEntries,
 } from "@/db";
 
 // Drizzle ORM operators

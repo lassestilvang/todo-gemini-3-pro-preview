@@ -35,6 +35,13 @@ interface AnalyticsData {
     energyCompleted: { high: number; medium: number; low: number };
     productivityByDay: number[];
     heatmapData: Array<{ date: string; count: number; level: number }>;
+    timeTracking?: {
+        totalTrackedMinutes: number;
+        totalEstimatedMinutes: number;
+        accuracyPercent: number;
+        entriesCount: number;
+        dailyTracked: Array<{ date: string; minutes: number; formatted: string }>;
+    };
 }
 
 export function AnalyticsCharts({ data }: { data: AnalyticsData }) {
@@ -224,6 +231,62 @@ export function AnalyticsCharts({ data }: { data: AnalyticsData }) {
                     )}
                 </div>
             </div>
+
+            {/* Time Tracking Chart */}
+            {data.timeTracking && data.timeTracking.entriesCount > 0 && (
+                <div className="border rounded-lg p-4 bg-card shadow-sm">
+                    <h3 className="text-lg font-semibold mb-4">⏱️ Time Tracking</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <div className="text-center p-3 rounded-lg bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-200 dark:border-blue-800">
+                            <p className="text-2xl font-bold text-blue-600">
+                                {Math.floor(data.timeTracking.totalTrackedMinutes / 60)}h {data.timeTracking.totalTrackedMinutes % 60}m
+                            </p>
+                            <p className="text-xs text-muted-foreground">Total Tracked</p>
+                        </div>
+                        <div className="text-center p-3 rounded-lg bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-200 dark:border-purple-800">
+                            <p className="text-2xl font-bold text-purple-600">
+                                {Math.floor(data.timeTracking.totalEstimatedMinutes / 60)}h {data.timeTracking.totalEstimatedMinutes % 60}m
+                            </p>
+                            <p className="text-xs text-muted-foreground">Total Estimated</p>
+                        </div>
+                        <div className="text-center p-3 rounded-lg bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-200 dark:border-emerald-800">
+                            <p className={cn(
+                                "text-2xl font-bold",
+                                data.timeTracking.accuracyPercent > 100 ? "text-red-600" : "text-emerald-600"
+                            )}>
+                                {data.timeTracking.accuracyPercent}%
+                            </p>
+                            <p className="text-xs text-muted-foreground">Time Accuracy</p>
+                        </div>
+                        <div className="text-center p-3 rounded-lg bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-200 dark:border-amber-800">
+                            <p className="text-2xl font-bold text-amber-600">{data.timeTracking.entriesCount}</p>
+                            <p className="text-xs text-muted-foreground">Sessions</p>
+                        </div>
+                    </div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-2">Daily Time Tracked (Last 7 Days)</h4>
+                    <div className="h-48">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={data.timeTracking.dailyTracked}>
+                                <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                                <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${Math.floor(v / 60)}h`} />
+                                <Tooltip
+                                    formatter={(value: number) => [
+                                        `${Math.floor(value / 60)}h ${value % 60}m`,
+                                        "Time Tracked"
+                                    ]}
+                                />
+                                <Bar dataKey="minutes" fill="url(#timeGradient)" radius={[4, 4, 0, 0]} />
+                                <defs>
+                                    <linearGradient id="timeGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#3b82f6" />
+                                        <stop offset="100%" stopColor="#8b5cf6" />
+                                    </linearGradient>
+                                </defs>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

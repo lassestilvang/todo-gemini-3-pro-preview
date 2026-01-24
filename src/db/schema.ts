@@ -262,3 +262,25 @@ export const savedViews = pgTable("saved_views", {
 }, (t) => ({
     userIdIdx: index("saved_views_user_id_idx").on(t.userId),
 }));
+
+// Time entries for tracking work sessions
+export const timeEntries = pgTable("time_entries", {
+    id: serial("id").primaryKey(),
+    taskId: integer("task_id")
+        .notNull()
+        .references(() => tasks.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    startedAt: timestamp("started_at").notNull(),
+    endedAt: timestamp("ended_at"),
+    durationMinutes: integer("duration_minutes"), // Computed on stop
+    notes: text("notes"),
+    isManual: boolean("is_manual").default(false), // Manual entry vs tracked
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow().$onUpdate(() => new Date()),
+}, (table) => ({
+    taskIdIdx: index("time_entries_task_id_idx").on(table.taskId),
+    userIdIdx: index("time_entries_user_id_idx").on(table.userId),
+    startedAtIdx: index("time_entries_started_at_idx").on(table.startedAt),
+}));

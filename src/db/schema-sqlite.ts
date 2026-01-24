@@ -267,3 +267,29 @@ export const savedViews = sqliteTable("saved_views", {
 }, (t) => ({
     userIdIdx: index("saved_views_user_id_idx").on(t.userId),
 }));
+
+// Time entries for tracking work sessions
+export const timeEntries = sqliteTable("time_entries", {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    taskId: integer("task_id")
+        .notNull()
+        .references(() => tasks.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    startedAt: integer("started_at", { mode: "timestamp" }).notNull(),
+    endedAt: integer("ended_at", { mode: "timestamp" }),
+    durationMinutes: integer("duration_minutes"),
+    notes: text("notes"),
+    isManual: integer("is_manual", { mode: "boolean" }).default(false),
+    createdAt: integer("created_at", { mode: "timestamp" })
+        .notNull()
+        .default(sql`(strftime('%s', 'now'))`),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+        .notNull()
+        .default(sql`(strftime('%s', 'now'))`),
+}, (table) => ({
+    taskIdIdx: index("time_entries_task_id_idx").on(table.taskId),
+    userIdIdx: index("time_entries_user_id_idx").on(table.userId),
+    startedAtIdx: index("time_entries_started_at_idx").on(table.startedAt),
+}));

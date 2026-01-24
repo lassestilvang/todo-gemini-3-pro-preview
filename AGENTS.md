@@ -157,13 +157,16 @@ src/
 │   └── useActionResult.ts  # Hook for handling server action results
 │
 ├── lib/
-│   ├── actions.ts          # Server Actions - ALL database operations
+│   ├── actions.ts          # Server Actions - entry point (re-exports from actions/)
+│   ├── actions/            # Server Action modules (tasks, time-tracking, etc.)
 │   ├── action-result.ts    # ActionResult type for consistent error handling
 │   ├── ai-actions.ts       # AI-powered features (Gemini)
+│   ├── analytics.ts        # Analytics data fetching and calculation
 │   ├── auth.ts             # Authentication helpers (getCurrentUser, requireAuth)
 │   ├── gamification.ts     # XP/level calculations
 │   ├── smart-scheduler.ts  # AI task scheduling
 │   ├── smart-tags.ts       # Auto-tagging logic
+│   ├── time-export.ts      # Time tracking export functionality
 │   └── utils.ts            # Utility functions (cn helper)
 │
 └── test/
@@ -212,6 +215,7 @@ Schema defined in `src/db/schema.ts` using Drizzle ORM with PostgreSQL types. Ke
 - `lists` - Task lists (Inbox is default)
 - `labels` - Task labels/tags
 - `taskLabels` - Many-to-many junction table
+- `timeEntries` - Time tracking logs (manual & timer)
 - `userStats` - XP, level, streaks (singleton row)
 - `achievements` / `userAchievements` - Gamification
 

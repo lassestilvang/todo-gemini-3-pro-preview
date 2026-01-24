@@ -2,6 +2,7 @@
 
 ## 🚨 High Priority (Bugs & Core Issues)
 
+- [x] **Verify AGENTS.md** - Make sure the AGENTS.md file is up to date and accurate. Do a thorough review of the file and project and make sure it is accurate. If not, update it.
 - [x] **[Bug] Fix Sidebar Duplication**: Remove duplicate "Smart Schedule" link in the sidebar.
   - *Status*: **RESOLVED** - Removed redundant "Smart Schedule" button and state from `AppSidebar.tsx`.
 - [x] **[Perf] Fix CSP blocking `react-grab`**: Resolve content security policy violation.
@@ -17,6 +18,7 @@
 
 ## 🚀 Features & Enhancements
 
+- [x] **Task Estimates**: Add estimated time for tasks. Add presets for quickly selecting time (e.g. 15m, 30m, 1h, 2h, 3h, 4h, 8h) but let users set custom times as well. Add time tracking. Display time spent on tasks. Add time tracking history. Add time tracking chart. Add time tracking export. Display time estimated/spent on tasks in the task list. Use your frontend-skill to design this feature so it will be user-friendly and look great.
 - [ ] **Calendar View Feature**: Add a visual calendar component for task scheduling and overview.
 - [ ] **AI-Powered Task Suggestions**: Leverage Gemini to suggest next tasks based on user habits and patterns.
 - [ ] **Internationalization (i18n) Support**: Add language files, locale-switcher, and Next.js i18n routing.
@@ -34,6 +36,7 @@
 
 ## 🎨 UI/UX Polish
 
+- [ ] **[UX] Modal sizes**: Make modals responsive and adjust sizes based on screen size. On smaller screens it is not possible to see the whole modal. Verify this on mobile devices and tablets, as well as on desktop in various screen resolutions/windows sizes.
 - [x] **[UX] Sidebar Identity Section**: Detailed profile view in sidebar footer.
 - [x] **[UX] Missing Navigation Links**: Added "Analytics" and "Settings" to sidebar.
 - [x] **[UX] "World Class" Page Transitions**: `framer-motion` transitions with custom bezier curves.

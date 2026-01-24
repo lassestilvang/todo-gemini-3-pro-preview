@@ -25,6 +25,7 @@ import { ParsedSubtask } from "@/lib/smart-scheduler";
 
 import { createElement } from "react";
 import { getListIcon, getLabelIcon } from "@/lib/icons";
+import { TimeEstimateInput } from "../TimeEstimateInput";
 
 // Types
 type ListType = { id: number; name: string; color: string | null; icon: string | null; };
@@ -75,6 +76,9 @@ interface TaskDetailsTabProps {
     setNewReminderDate: (v: Date | undefined) => void;
     handleAddReminder: () => void;
     handleDeleteReminder: (id: number) => void;
+    // Time Estimate
+    estimateMinutes: number | null;
+    setEstimateMinutes: (v: number | null) => void;
     // Form submission
     handleSubmit: (e: React.FormEvent) => void;
 }
@@ -95,6 +99,7 @@ export function TaskDetailsTab({
     subtasks, newSubtask, setNewSubtask, handleAddSubtask, handleToggleSubtask, handleDeleteSubtask, onAiConfirm,
     labels, selectedLabelIds, toggleLabel,
     reminders, newReminderDate, setNewReminderDate, handleAddReminder, handleDeleteReminder,
+    estimateMinutes, setEstimateMinutes,
     handleSubmit
 }: TaskDetailsTabProps) {
     const [aiBreakdownOpen, setAiBreakdownOpen] = useState(false);
@@ -223,6 +228,15 @@ export function TaskDetailsTab({
                     </div>
                 </div>
 
+                {/* Time Estimate Section */}
+                <div className="space-y-2">
+                    <Label>Time Estimate</Label>
+                    <TimeEstimateInput
+                        value={estimateMinutes}
+                        onChange={setEstimateMinutes}
+                    />
+                </div>
+
                 <div className="space-y-4">
                     <div className="space-y-2">
                         <Label>Due Date</Label>
@@ -233,7 +247,7 @@ export function TaskDetailsTab({
                                     const existingHours = dueDate?.getHours();
                                     const existingMinutes = dueDate?.getMinutes();
                                     // Only preserve time if it's not midnight (indicating time was set)
-                                    if (existingHours !== undefined && existingMinutes !== undefined && 
+                                    if (existingHours !== undefined && existingMinutes !== undefined &&
                                         !(existingHours === 0 && existingMinutes === 0)) {
                                         d.setHours(existingHours, existingMinutes, 0, 0);
                                     }
@@ -241,8 +255,8 @@ export function TaskDetailsTab({
                                 setDueDate(d);
                             }} />
                             <TimePicker
-                                time={dueDate && (dueDate.getHours() !== 0 || dueDate.getMinutes() !== 0) 
-                                    ? `${dueDate.getHours().toString().padStart(2, "0")}:${dueDate.getMinutes().toString().padStart(2, "0")}` 
+                                time={dueDate && (dueDate.getHours() !== 0 || dueDate.getMinutes() !== 0)
+                                    ? `${dueDate.getHours().toString().padStart(2, "0")}:${dueDate.getMinutes().toString().padStart(2, "0")}`
                                     : undefined}
                                 setTime={(t) => {
                                     if (t && dueDate) {
@@ -271,7 +285,7 @@ export function TaskDetailsTab({
                                     const existingHours = deadline?.getHours();
                                     const existingMinutes = deadline?.getMinutes();
                                     // Only preserve time if it's not midnight (indicating time was set)
-                                    if (existingHours !== undefined && existingMinutes !== undefined && 
+                                    if (existingHours !== undefined && existingMinutes !== undefined &&
                                         !(existingHours === 0 && existingMinutes === 0)) {
                                         d.setHours(existingHours, existingMinutes, 0, 0);
                                     }
@@ -279,8 +293,8 @@ export function TaskDetailsTab({
                                 setDeadline(d);
                             }} />
                             <TimePicker
-                                time={deadline && (deadline.getHours() !== 0 || deadline.getMinutes() !== 0) 
-                                    ? `${deadline.getHours().toString().padStart(2, "0")}:${deadline.getMinutes().toString().padStart(2, "0")}` 
+                                time={deadline && (deadline.getHours() !== 0 || deadline.getMinutes() !== 0)
+                                    ? `${deadline.getHours().toString().padStart(2, "0")}:${deadline.getMinutes().toString().padStart(2, "0")}`
                                     : undefined}
                                 setTime={(t) => {
                                     if (t && deadline) {

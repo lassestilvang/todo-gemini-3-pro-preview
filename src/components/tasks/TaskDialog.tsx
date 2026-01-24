@@ -76,6 +76,7 @@ function TaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId
         isRecurring, setIsRecurring,
         recurringRule, setRecurringRule,
         isHabit, setIsHabit,
+        estimateMinutes, setEstimateMinutes,
         handleSubmit,
         handleDelete,
         toggleLabel,
@@ -125,6 +126,7 @@ function TaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId
                         isRecurring={isRecurring} setIsRecurring={setIsRecurring}
                         recurringRule={recurringRule} setRecurringRule={setRecurringRule}
                         isHabit={isHabit} setIsHabit={setIsHabit}
+                        estimateMinutes={estimateMinutes} setEstimateMinutes={setEstimateMinutes}
                         subtasks={subtasks} newSubtask={newSubtask} setNewSubtask={setNewSubtask}
                         handleAddSubtask={handleAddSubtask} handleToggleSubtask={handleToggleSubtask} handleDeleteSubtask={handleDeleteSubtask}
                         onAiConfirm={handleOnAiConfirm}

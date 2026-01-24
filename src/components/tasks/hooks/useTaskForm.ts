@@ -17,6 +17,7 @@ export type TaskType = {
     energyLevel: "high" | "medium" | "low" | null;
     context: "computer" | "phone" | "errands" | "meeting" | "home" | "anywhere" | null;
     isHabit: boolean | null;
+    estimateMinutes?: number | null;
     labels?: Array<{ id: number; name: string; color: string | null }>;
 };
 
@@ -77,7 +78,7 @@ function handleActionError(
  */
 export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId, onClose }: UseTaskFormProps) {
     const router = useRouter();
-    
+
     const [title, setTitle] = useState(task?.title || "");
     const [description, setDescription] = useState(task?.description || "");
     const [priority, setPriority] = useState<"none" | "low" | "medium" | "high">(task?.priority || "none");
@@ -99,6 +100,9 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
     // Habit state
     const [isHabit, setIsHabit] = useState(task?.isHabit || false);
 
+    // Time estimate state
+    const [estimateMinutes, setEstimateMinutes] = useState<number | null>(task?.estimateMinutes || null);
+
     // Error handling state
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -119,10 +123,10 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
-        
+
         // Clear previous errors
         setFieldErrors({});
-        
+
         // Client-side validation
         if (!title.trim()) {
             setFieldErrors({ title: "Title is required" });
@@ -152,6 +156,7 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
                 energyLevel: energyLevel === "none" ? null : energyLevel,
                 context: context === "none" ? null : context,
                 isHabit: isRecurring ? isHabit : false,
+                estimateMinutes,
             };
 
             let result: unknown;
@@ -240,6 +245,7 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
         isRecurring, setIsRecurring,
         recurringRule, setRecurringRule,
         isHabit, setIsHabit,
+        estimateMinutes, setEstimateMinutes,
         handleSubmit,
         handleDelete,
         toggleLabel,
