@@ -4,7 +4,6 @@
  * This module centralizes common dependencies to reduce duplication across domain modules.
  */
 
-// Database and schema exports
 export {
   db,
   lists,
@@ -21,6 +20,7 @@ export {
   viewSettings,
   savedViews,
   timeEntries,
+  users,
 } from "@/db";
 
 // Drizzle ORM operators
@@ -34,6 +34,8 @@ export {
   inArray,
   sql,
   isNull,
+  or,
+  type SQL,
 } from "drizzle-orm";
 
 // Next.js cache utilities

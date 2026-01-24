@@ -1,37 +1,45 @@
 import { getActivityLog } from "@/lib/actions";
 import { getCurrentUser } from "@/lib/auth";
-import { format } from "date-fns";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { redirect } from "next/navigation";
+import { ActivityLogContent } from "@/components/activity/ActivityLogContent";
+import { startOfDay, endOfDay, parseISO } from "date-fns";
 
-export default async function ActivityLogPage() {
+interface PageProps {
+    searchParams: Promise<{
+        query?: string;
+        type?: "task" | "list" | "label" | "all";
+        from?: string;
+        to?: string;
+    }>;
+}
+
+export default async function ActivityLogPage({ searchParams }: PageProps) {
     const user = await getCurrentUser();
     if (!user) {
         redirect("/login");
     }
 
-    const logs = await getActivityLog(user.id);
+    const { query, type, from, to } = await searchParams;
+
+    // Parse dates properly - from should be start of day, to should be end of day
+    const fromDate = from ? startOfDay(parseISO(from)) : undefined;
+    const toDate = to ? endOfDay(parseISO(to)) : undefined;
+
+    const logs = await getActivityLog(user.id, {
+        query,
+        type,
+        from: fromDate,
+        to: toDate,
+    });
 
     return (
-        <div className="flex flex-col h-full p-8">
-            <h1 className="text-3xl font-bold mb-6">Activity Log</h1>
-            <ScrollArea className="flex-1 border rounded-md p-4">
-                <div className="space-y-4">
-                    {logs.map((log) => (
-                        <div key={log.id} className="flex flex-col border-b pb-2 last:border-0">
-                            <div className="flex justify-between items-start">
-                                <span className="font-medium capitalize">{log.action.replace(/_/g, ' ')}</span>
-                                <span className="text-sm text-muted-foreground">{format(log.createdAt, "PPP p")}</span>
-                            </div>
-                            <div className="text-sm text-muted-foreground mt-1">
-                                Task: <span className="font-medium text-foreground">{log.taskTitle}</span>
-                            </div>
-                            {log.details && <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{log.details}</p>}
-                        </div>
-                    ))}
-                    {logs.length === 0 && <p className="text-muted-foreground">No activity recorded.</p>}
-                </div>
-            </ScrollArea>
+        <div className="flex flex-col h-full p-8 overflow-hidden bg-background">
+            <ActivityLogContent
+                initialLogs={logs as any}
+                userId={user.id}
+                use24h={user.use24HourClock}
+            />
         </div>
     );
 }
+

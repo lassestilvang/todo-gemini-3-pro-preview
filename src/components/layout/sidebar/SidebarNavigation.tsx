@@ -12,6 +12,7 @@ import {
     CalendarDays,
     ListTodo,
     BarChart2,
+    History,
 } from "lucide-react";
 
 export const mainNav = [
@@ -22,6 +23,7 @@ export const mainNav = [
     { name: "Calendar", href: "/calendar", icon: CalendarDays, color: "text-indigo-500" },
     { name: "Achievements", href: "/achievements", icon: Trophy, color: "text-yellow-500" },
     { name: "Analytics", href: "/analytics", icon: BarChart2, color: "text-green-500" },
+    { name: "Activity Log", href: "/activity", icon: History, color: "text-orange-500" },
 ];
 
 export function SidebarNavigation() {

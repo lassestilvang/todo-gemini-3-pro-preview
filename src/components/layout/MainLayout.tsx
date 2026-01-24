@@ -14,6 +14,8 @@ const SidebarFallback = () => (
     </div>
 );
 
+import { UserProvider } from "@/components/providers/UserProvider";
+
 export async function MainLayout({ children }: { children: React.ReactNode }) {
     const user = await getCurrentUser();
     const userId = user?.id;
@@ -29,41 +31,41 @@ export async function MainLayout({ children }: { children: React.ReactNode }) {
         );
     }
 
-
-
     return (
-        <div className="flex h-screen overflow-hidden bg-background" data-testid="app-container">
-            {/* Desktop Sidebar - Hidden on mobile */}
-            <Suspense fallback={<SidebarFallback />}>
-                <SidebarDataLoader
-                    user={user}
-                    className="hidden md:flex"
-                />
-            </Suspense>
+        <UserProvider userId={userId} use24HourClock={user.use24HourClock ?? null}>
+            <div className="flex h-screen overflow-hidden bg-background" data-testid="app-container">
+                {/* Desktop Sidebar - Hidden on mobile */}
+                <Suspense fallback={<SidebarFallback />}>
+                    <SidebarDataLoader
+                        user={user}
+                        className="hidden md:flex"
+                    />
+                </Suspense>
 
-            <div className="flex-1 flex flex-col h-full overflow-hidden">
-                {/* Mobile Header - Visible only on mobile */}
-                <header className="md:hidden p-4 border-b flex items-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10 shrink-0">
-                    <MobileNav>
-                        <Suspense fallback={<div className="w-full h-full bg-sidebar animate-pulse" />}>
-                            <SidebarDataLoader user={user} className="w-full h-full border-none shadow-none" />
-                        </Suspense>
-                    </MobileNav>
-                    <div className="ml-4 font-semibold text-lg">Todo Gemini</div>
-                </header>
+                <div className="flex-1 flex flex-col h-full overflow-hidden">
+                    {/* Mobile Header - Visible only on mobile */}
+                    <header className="md:hidden p-4 border-b flex items-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10 shrink-0">
+                        <MobileNav>
+                            <Suspense fallback={<div className="w-full h-full bg-sidebar animate-pulse" />}>
+                                <SidebarDataLoader user={user} className="w-full h-full border-none shadow-none" />
+                            </Suspense>
+                        </MobileNav>
+                        <div className="ml-4 font-semibold text-lg">Todo Gemini</div>
+                    </header>
 
-                <main className="flex-1 overflow-y-auto p-4 md:pl-10 md:pr-10" data-testid="main-content">
-                    {children}
-                </main>
+                    <main className="flex-1 overflow-y-auto p-4 md:pl-10 md:pr-10" data-testid="main-content">
+                        {children}
+                    </main>
+                </div>
+
+                <Suspense fallback={null}>
+                    <ZenOverlay>{children}</ZenOverlay>
+                    <TaskEditModalWrapper userId={userId} />
+                    <KeyboardShortcuts />
+                    <OnboardingTour />
+                    <QuickCapture userId={userId} />
+                </Suspense>
             </div>
-
-            <Suspense fallback={null}>
-                <ZenOverlay>{children}</ZenOverlay>
-                <TaskEditModalWrapper userId={userId} />
-                <KeyboardShortcuts />
-                <OnboardingTour />
-                <QuickCapture userId={userId} />
-            </Suspense>
-        </div>
+        </UserProvider>
     );
 }

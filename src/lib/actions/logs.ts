@@ -5,7 +5,7 @@
  */
 "use server";
 
-import { db, tasks, taskLogs, eq, desc, sql, and, asc } from "./shared";
+import { db, tasks, lists, labels, taskLogs, eq, desc, sql, and, asc, gte, lte, or, type SQL } from "./shared";
 
 /**
  * Retrieves all logs for a specific task.
@@ -22,26 +22,68 @@ export async function getTaskLogs(taskId: number) {
 }
 
 /**
- * Retrieves recent activity log for a user across all tasks.
+ * Retrieves recent activity log for a user with optional filtering.
  *
  * @param userId - The ID of the user whose activity to retrieve
- * @returns Array of activity log entries with task titles, limited to 50 most recent
+ * @param filters - Optional filters: type, search, date range
+ * @returns Array of activity log entries
  */
-export async function getActivityLog(userId: string) {
+export async function getActivityLog(
+  userId: string,
+  filters?: {
+    type?: "task" | "list" | "label" | "all";
+    query?: string;
+    from?: Date;
+    to?: Date;
+    limit?: number;
+    offset?: number;
+  }
+) {
+  const whereConditions: SQL[] = [eq(taskLogs.userId, userId)];
+
+  if (filters?.type && filters.type !== "all") {
+    if (filters.type === "task") whereConditions.push(sql`${taskLogs.taskId} IS NOT NULL`);
+    if (filters.type === "list") whereConditions.push(sql`${taskLogs.listId} IS NOT NULL`);
+    if (filters.type === "label") whereConditions.push(sql`${taskLogs.labelId} IS NOT NULL`);
+  }
+
+  if (filters?.from) whereConditions.push(gte(taskLogs.createdAt, filters.from));
+  if (filters?.to) whereConditions.push(lte(taskLogs.createdAt, filters.to));
+
+  if (filters?.query) {
+    const searchTerm = `%${filters.query}%`;
+    whereConditions.push(
+      or(
+        sql`${tasks.title} ILIKE ${searchTerm}`,
+        sql`${lists.name} ILIKE ${searchTerm}`,
+        sql`${labels.name} ILIKE ${searchTerm}`,
+        sql`${taskLogs.details} ILIKE ${searchTerm}`
+      ) as SQL
+    );
+  }
+
   return await db
     .select({
       id: taskLogs.id,
       taskId: taskLogs.taskId,
-      taskTitle: sql<string>`COALESCE(${tasks.title}, 'Unknown Task')`.as("task_title"),
+      taskTitle: tasks.title,
+      listId: taskLogs.listId,
+      listName: lists.name,
+      listSlug: lists.slug,
+      labelId: taskLogs.labelId,
+      labelName: labels.name,
       action: taskLogs.action,
       details: taskLogs.details,
       createdAt: taskLogs.createdAt,
     })
     .from(taskLogs)
     .leftJoin(tasks, eq(taskLogs.taskId, tasks.id))
-    .where(eq(taskLogs.userId, userId))
+    .leftJoin(lists, eq(taskLogs.listId, lists.id))
+    .leftJoin(labels, eq(taskLogs.labelId, labels.id))
+    .where(and(...whereConditions))
     .orderBy(desc(taskLogs.createdAt))
-    .limit(50);
+    .limit(filters?.limit ?? 100)
+    .offset(filters?.offset ?? 0);
 }
 /**
  * Retrieves recenet occupancy/completion history for the heatmap.
@@ -59,4 +101,26 @@ export async function getCompletionHistory(userId: string) {
     .where(and(eq(taskLogs.userId, userId), eq(taskLogs.action, "completed")))
     .groupBy(sql`DATE(${taskLogs.createdAt})`)
     .orderBy(asc(sql`DATE(${taskLogs.createdAt})`));
+}
+/**
+ * Log an activity to the task_logs table.
+ * 
+ * @param params - Activity log details
+ */
+export async function logActivity(params: {
+  userId: string;
+  action: string;
+  taskId?: number;
+  listId?: number;
+  labelId?: number;
+  details?: string;
+}) {
+  await db.insert(taskLogs).values({
+    userId: params.userId,
+    action: params.action,
+    taskId: params.taskId,
+    listId: params.listId,
+    labelId: params.labelId,
+    details: params.details,
+  });
 }

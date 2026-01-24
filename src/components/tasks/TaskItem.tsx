@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { FocusMode } from "./FocusMode";
 import { Target } from "lucide-react";
 import { playSuccessSound } from "@/lib/audio";
+import { useUser } from "@/components/providers/UserProvider";
+import { formatTimePreference } from "@/lib/time-utils";
 
 
 import { createElement } from "react";
@@ -129,6 +131,7 @@ export function TaskItem({ task, showListInfo = true, userId }: TaskItemProps) {
     const isDeadlineExceeded = task.deadline && new Date(task.deadline) < new Date() && !isCompleted;
     const isBlocked = (task.blockedByCount || 0) > 0;
     const [showFocusMode, setShowFocusMode] = useState(false);
+    const { use24HourClock } = useUser();
 
     return (
         <m.div
@@ -230,7 +233,7 @@ export function TaskItem({ task, showListInfo = true, userId }: TaskItemProps) {
                                 {format(task.dueDate, "MMM d")}
                                 {(task.dueDate.getHours() !== 0 || task.dueDate.getMinutes() !== 0) && (
                                     <span className="text-muted-foreground">
-                                        {format(task.dueDate, "HH:mm")}
+                                        {formatTimePreference(task.dueDate, use24HourClock)}
                                     </span>
                                 )}
                             </div>
@@ -241,7 +244,7 @@ export function TaskItem({ task, showListInfo = true, userId }: TaskItemProps) {
                                 {format(task.deadline, "MMM d")}
                                 {(task.deadline.getHours() !== 0 || task.deadline.getMinutes() !== 0) && (
                                     <span>
-                                        {format(task.deadline, "HH:mm")}
+                                        {formatTimePreference(task.deadline, use24HourClock)}
                                     </span>
                                 )}
                             </div>

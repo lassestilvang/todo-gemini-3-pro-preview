@@ -8,6 +8,7 @@ export const users = pgTable("users", {
     lastName: text("last_name"),
     avatarUrl: text("avatar_url"),
     isInitialized: boolean("is_initialized").notNull().default(false),
+    use24HourClock: boolean("use_24h_clock"), // true = 24h, false = 12h, null = auto
     createdAt: timestamp("created_at")
         .notNull()
         .defaultNow(),
@@ -131,7 +132,11 @@ export const taskLogs = pgTable("task_logs", {
         .references(() => users.id, { onDelete: "cascade" }),
     taskId: integer("task_id")
         .references(() => tasks.id, { onDelete: "cascade" }),
-    action: text("action").notNull(), // e.g., "created", "updated", "completed"
+    listId: integer("list_id")
+        .references(() => lists.id, { onDelete: "cascade" }),
+    labelId: integer("label_id")
+        .references(() => labels.id, { onDelete: "cascade" }),
+    action: text("action").notNull(), // e.g., "created", "updated", "completed", "list_created", etc.
     details: text("details"), // JSON string or text description of change
     createdAt: timestamp("created_at")
         .notNull()
@@ -139,6 +144,8 @@ export const taskLogs = pgTable("task_logs", {
 }, (t) => ({
     userIdIdx: index("task_logs_user_id_idx").on(t.userId),
     taskIdIdx: index("task_logs_task_id_idx").on(t.taskId),
+    listIdIdx: index("task_logs_list_id_idx").on(t.listId),
+    labelIdIdx: index("task_logs_label_id_idx").on(t.labelId),
 }));
 
 export const habitCompletions = pgTable("habit_completions", {

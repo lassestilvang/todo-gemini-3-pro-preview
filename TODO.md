@@ -15,7 +15,6 @@
   - *Status*: **RESOLVED** - Verified with E2E test `e2e/search-latency.spec.ts`.
 - [x] **Fix Dialog Accessibility Warnings**: Missing `Description` or `aria-describedby`.
   - *Status*: **RESOLVED** - Added `<DialogDescription className="sr-only">` to all dialogs.
-- [ ] **[Bug] Debug "System" Theme**: Dark mode is not triggered properly when "System" is selected. It only kicks in when DevTools is opened. Investigate theme detection logic and CSS media query listeners.
 
 
 ## 🚀 Features & Enhancements
@@ -33,16 +32,26 @@
   - **Logic**: When view sorting is set to "manual", allow users to drag-and-drop tasks to change their order.
   - **Schema**: Ensure tasks have a `position` or `sort_order` field.
   - **Consistency**: Sorting should keep todo and completed tasks separated (sorting within their respective groups).
-- [ ] **Activity Log System**: Implement a detailed activity log page and sidebar entry.
+- [x] **Activity Log System**: Implement a detailed activity log page and sidebar entry.
   - **Tracking**: Log all actions including task completion, list renames, manual sorting, deletions, and metadata changes.
   - **Page**: Dedicated `/activity` page with a searchable/filterable audit trail.
   - **Sidebar**: Add "Activity Log" to the main navigation.
+  - *Status*: **RESOLVED** - Extended `taskLogs` schema with `listId`/`labelId`, added logging to list/label actions, built `ActivityLogContent.tsx` with search, filters, date grouping, action icons, and deep links.
 - [ ] **Sidebar Reordering**: Allow users to manually reorder Lists and Labels in the sidebar (drag-and-drop).
 - [ ] **Inline Task Creation Refinement**:
   - **Inbox Support**: Add the `CreateTaskInput` component (inline adder) to the Inbox view.
   - **Details Toggle**: When the inline adder is active, add an option ("Full Details" button) to open the task in the full `TaskDialog` for advanced editing.
   - **UI Consolidation**: Remove the legacy "+ Add Task" button from all headers/views once the inline adder is ubiquitous to avoid duplication.
 - [ ] **Offline-First Background Sync**: Implement a sync queue (e.g., Workbox or IndexedDB) for offline reliability.
+- [x] **24-Hour Time Preference**: Detect user/system preference for 24-hour clock automatically, and provide a manual toggle in the Settings to override it.
+  - **Logic**: Use `Intl.DateTimeFormat` for auto-detection and persist the manual override in user settings/local storage.
+  - **UI**: Update all time-related displays (task due times, analytics, logs) to respect this setting.
+  - *Status*: **RESOLVED** - Added `use24HourClock` to users schema, created `TimeSettings.tsx` toggle in Settings, built `UserProvider` context and `formatTimePreference()` utility.
+- [x] **"Upcoming" view refinement**: Group tasks by date with sticky headers for better readability.
+  - **Logic**: Tasks in the /upcoming view should be grouped by their due date (e.g., Today, Tomorrow, Monday, etc.).
+  - **UI**: Use sticky headers for each date group so users can easily see which day they are looking at while scrolling.
+  - *Status*: **RESOLVED** - Updated `TaskListWithSettings.tsx` with default date grouping for "upcoming" view, sticky headers, and friendly date formatting (Today, Tomorrow, weekday).
+
 
 - [ ] **Privacy-Friendly Analytics**: Connect WebVitals/page-events to a provider (Plausible/PostHog) with opt-out.
 - [ ] **Real-User Monitoring (RUM) Dashboard**: Dashboard for Web Vitals metrics.
@@ -67,7 +76,7 @@
 - [x] **[UX] Implement 'Synthwave' Theme**: Neon-inspired dark theme with Orbitron font.
 - [x] **[UX] Glassmorphism Themes**: Added `glassmorphism` and `glassmorphism-dark` with blur effects.
 - [x] **[UX] Onboarding Flow**: Fixed viewport overflow issues for tour tooltips.
-- [ ] **[UX] Sidebar Structure**: Move "Templates" nav item below "Smart Schedule" in the sidebar.
+- [x] **[UX] Sidebar Structure**: Move "Templates" nav item below "Smart Schedule" in the sidebar.
 
 
 ## 🛠 Engineering & Quality

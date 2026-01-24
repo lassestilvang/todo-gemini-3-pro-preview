@@ -3,7 +3,8 @@
 import { useState, useEffect, useMemo, Suspense } from "react";
 import { TaskItem, Task } from "./TaskItem";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, ChevronDown } from "lucide-react";
+import { format, isToday, isTomorrow, isThisYear } from "date-fns";
 import { ViewOptionsPopover } from "./ViewOptionsPopover";
 import { ViewSettings, defaultViewSettings } from "@/lib/view-settings";
 import { getViewSettings } from "@/lib/actions";
@@ -112,7 +113,8 @@ function groupTasks(tasks: Task[], groupBy: ViewSettings["groupBy"]): Map<string
             case "dueDate":
                 if (task.dueDate) {
                     const date = new Date(task.dueDate);
-                    key = date.toLocaleDateString();
+                    // Use ISO date as key for sorting groups later, but we'll format it for display
+                    key = format(date, "yyyy-MM-dd");
                 } else {
                     key = "No Date";
                 }
@@ -150,7 +152,17 @@ export function TaskListWithSettings({
 }: TaskListWithSettingsProps) {
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [settings, setSettings] = useState<ViewSettings>(initialSettings ?? defaultViewSettings);
+
+    // Default to dueDate grouping for upcoming view if not set
+    const effectiveInitialSettings = useMemo(() => {
+        const s = initialSettings ?? defaultViewSettings;
+        if (viewId === "upcoming" && s.groupBy === "none") {
+            return { ...s, groupBy: "dueDate" as const };
+        }
+        return s;
+    }, [initialSettings, viewId]);
+
+    const [settings, setSettings] = useState<ViewSettings>(effectiveInitialSettings);
     // If we have initialSettings, we don't need to wait for client-side fetch, so we are "mounted" (ready)
     const [mounted, setMounted] = useState(!!initialSettings);
     const [focusedIndex, setFocusedIndex] = useState(-1);
@@ -225,8 +237,27 @@ export function TaskListWithSettings({
 
     // Group tasks
     const groupedTasks = useMemo(() => {
-        return groupTasks(processedTasks, settings.groupBy);
+        const groups = groupTasks(processedTasks, settings.groupBy);
+
+        // Sort groups by date if grouping by dueDate
+        if (settings.groupBy === "dueDate") {
+            return new Map(Array.from(groups.entries()).sort((a, b) => {
+                if (a[0] === "No Date") return 1;
+                if (b[0] === "No Date") return -1;
+                return a[0].localeCompare(b[0]);
+            }));
+        }
+
+        return groups;
     }, [processedTasks, settings.groupBy]);
+
+    const formatGroupName = (name: string, type: ViewSettings["groupBy"]) => {
+        if (type !== "dueDate" || name === "No Date") return name;
+        const date = new Date(name);
+        if (isToday(date)) return "Today";
+        if (isTomorrow(date)) return "Tomorrow";
+        return format(date, isThisYear(date) ? "EEEE, MMM do" : "EEEE, MMM do, yyyy");
+    };
 
     if (!mounted) {
         return <div className="space-y-4 animate-pulse">
@@ -276,8 +307,9 @@ export function TaskListWithSettings({
                 <div className="space-y-6">
                     {Array.from(groupedTasks.entries()).map(([groupName, groupTasks]) => (
                         <div key={groupName} className="space-y-2">
-                            <h3 className="text-sm font-medium text-muted-foreground border-b pb-2">
-                                {groupName} ({groupTasks.length})
+                            <h3 className="text-sm font-semibold text-muted-foreground bg-background/95 backdrop-blur-md sticky top-0 py-2 z-10 border-b flex items-center justify-between px-2 -mx-2">
+                                <span>{formatGroupName(groupName, settings.groupBy)}</span>
+                                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{groupTasks.length}</span>
                             </h3>
                             {groupTasks.map((task) => {
                                 const globalIndex = processedTasks.findIndex(t => t.id === task.id);

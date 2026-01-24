@@ -14,6 +14,7 @@ export interface AuthUser {
   firstName: string | null;
   lastName: string | null;
   avatarUrl: string | null;
+  use24HourClock: boolean | null;
 }
 
 /**
@@ -37,6 +38,7 @@ async function getTestUser(): Promise<AuthUser | null> {
           firstName: session.user.firstName ?? null,
           lastName: session.user.lastName ?? null,
           avatarUrl: session.user.profilePictureUrl ?? null,
+          use24HourClock: session.user.use24HourClock ?? null,
         };
       }
     }
@@ -65,12 +67,19 @@ export const getCurrentUser = cache(async function getCurrentUser(): Promise<Aut
     return null;
   }
 
+  const [dbUser] = await db
+    .select({ use24HourClock: users.use24HourClock })
+    .from(users)
+    .where(eq(users.id, user.id))
+    .limit(1);
+
   return {
     id: user.id,
     email: user.email,
     firstName: user.firstName ?? null,
     lastName: user.lastName ?? null,
     avatarUrl: user.profilePictureUrl ?? null,
+    use24HourClock: dbUser?.use24HourClock ?? null,
   };
 });
 
@@ -162,6 +171,7 @@ export async function syncUser(workosUser: {
     firstName: upsertedUser.firstName,
     lastName: upsertedUser.lastName,
     avatarUrl: upsertedUser.avatarUrl,
+    use24HourClock: upsertedUser.use24HourClock ?? null,
   };
 }
 

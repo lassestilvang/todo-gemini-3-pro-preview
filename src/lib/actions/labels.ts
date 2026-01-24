@@ -15,6 +15,7 @@ import {
   withErrorHandling,
   ValidationError,
 } from "./shared";
+import { logActivity } from "./logs";
 
 /**
  * Retrieves all labels for a specific user.
@@ -65,6 +66,14 @@ async function createLabelImpl(data: typeof labels.$inferInsert) {
   }
 
   const result = await db.insert(labels).values(data).returning();
+
+  await logActivity({
+    userId: data.userId,
+    action: "label_created",
+    labelId: result[0].id,
+    details: `Created label: ${result[0].name}`,
+  });
+
   revalidatePath("/", "layout");
   return result[0];
 }
@@ -97,10 +106,22 @@ async function updateLabelImpl(
     throw new ValidationError("Label name cannot be empty", { name: "Name cannot be empty" });
   }
 
+  const currentLabel = await getLabel(id, userId);
+
   await db
     .update(labels)
     .set(data)
     .where(and(eq(labels.id, id), eq(labels.userId, userId)));
+
+  if (currentLabel) {
+    await logActivity({
+      userId,
+      action: "label_updated",
+      labelId: id,
+      details: `Updated label: ${currentLabel.name}${data.name && data.name !== currentLabel.name ? ` to ${data.name}` : ""}`,
+    });
+  }
+
   revalidatePath("/", "layout");
 }
 
@@ -127,7 +148,18 @@ export const updateLabel: (
  * @param userId - The ID of the user who owns the label
  */
 async function deleteLabelImpl(id: number, userId: string) {
+  const currentLabel = await getLabel(id, userId);
+
   await db.delete(labels).where(and(eq(labels.id, id), eq(labels.userId, userId)));
+
+  if (currentLabel) {
+    await logActivity({
+      userId,
+      action: "label_deleted",
+      details: `Deleted label: ${currentLabel.name}`,
+    });
+  }
+
   revalidatePath("/", "layout");
 }
 

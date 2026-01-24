@@ -1,8 +1,9 @@
 "use client";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { format } from "date-fns";
 import { TabsContent } from "@/components/ui/tabs";
+import { useUser } from "@/components/providers/UserProvider";
+import { formatTimePreference } from "@/lib/time-utils";
 
 type LogType = {
     id: number;
@@ -16,6 +17,8 @@ interface TaskActivityTabProps {
 }
 
 export function TaskActivityTab({ logs }: TaskActivityTabProps) {
+    const { use24HourClock } = useUser();
+
     return (
         <TabsContent value="activity" className="space-y-6">
             <div className="space-y-4">
@@ -26,7 +29,7 @@ export function TaskActivityTab({ logs }: TaskActivityTabProps) {
                             <div key={log.id} className="text-sm">
                                 <div className="flex justify-between items-start mb-1">
                                     <span className="font-medium capitalize">{log.action.replace(/_/g, ' ')}</span>
-                                    <span className="text-xs text-muted-foreground">{format(log.createdAt, "Pp")}</span>
+                                    <span className="text-xs text-muted-foreground">{formatTimePreference(new Date(log.createdAt), use24HourClock, "datetime")}</span>
                                 </div>
                                 <p className="text-muted-foreground text-xs whitespace-pre-wrap">{log.details}</p>
                             </div>

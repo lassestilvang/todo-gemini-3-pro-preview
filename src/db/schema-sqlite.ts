@@ -19,6 +19,7 @@ export const users = sqliteTable("users", {
     lastName: text("last_name"),
     avatarUrl: text("avatar_url"),
     isInitialized: integer("is_initialized", { mode: "boolean" }).notNull().default(false),
+    use24HourClock: integer("use_24h_clock", { mode: "boolean" }),
     createdAt: integer("created_at", { mode: "timestamp" })
         .notNull()
         .default(sql`(strftime('%s', 'now'))`),
@@ -135,6 +136,10 @@ export const taskLogs = sqliteTable("task_logs", {
         .references(() => users.id, { onDelete: "cascade" }),
     taskId: integer("task_id")
         .references(() => tasks.id, { onDelete: "cascade" }),
+    listId: integer("list_id")
+        .references(() => lists.id, { onDelete: "cascade" }),
+    labelId: integer("label_id")
+        .references(() => labels.id, { onDelete: "cascade" }),
     action: text("action").notNull(),
     details: text("details"),
     createdAt: integer("created_at", { mode: "timestamp" })
@@ -143,6 +148,8 @@ export const taskLogs = sqliteTable("task_logs", {
 }, (t) => ({
     userIdIdx: index("task_logs_user_id_idx").on(t.userId),
     taskIdIdx: index("task_logs_task_id_idx").on(t.taskId),
+    listIdIdx: index("task_logs_list_id_idx").on(t.listId),
+    labelIdIdx: index("task_logs_label_id_idx").on(t.labelId),
 }));
 
 export const habitCompletions = sqliteTable("habit_completions", {

@@ -15,6 +15,7 @@ import {
   withErrorHandling,
   ValidationError,
 } from "./shared";
+import { logActivity } from "./logs";
 
 /**
  * Retrieves all lists for a specific user.
@@ -69,6 +70,14 @@ async function createListImpl(data: typeof lists.$inferInsert) {
   }
 
   const result = await db.insert(lists).values(data).returning();
+
+  await logActivity({
+    userId: data.userId,
+    action: "list_created",
+    listId: result[0].id,
+    details: `Created list: ${result[0].name}`,
+  });
+
   revalidatePath("/", "layout");
   return result[0];
 }
@@ -101,10 +110,23 @@ async function updateListImpl(
     throw new ValidationError("List name cannot be empty", { name: "Name cannot be empty" });
   }
 
+  // Get current list state for logging
+  const currentList = await getList(id, userId);
+
   await db
     .update(lists)
     .set(data)
     .where(and(eq(lists.id, id), eq(lists.userId, userId)));
+
+  if (currentList) {
+    await logActivity({
+      userId,
+      action: "list_updated",
+      listId: id,
+      details: `Updated list: ${currentList.name}${data.name && data.name !== currentList.name ? ` to ${data.name}` : ""}`,
+    });
+  }
+
   revalidatePath("/", "layout");
 }
 
@@ -131,7 +153,18 @@ export const updateList: (
  * @param userId - The ID of the user who owns the list
  */
 async function deleteListImpl(id: number, userId: string) {
+  const currentList = await getList(id, userId);
+
   await db.delete(lists).where(and(eq(lists.id, id), eq(lists.userId, userId)));
+
+  if (currentList) {
+    await logActivity({
+      userId,
+      action: "list_deleted",
+      details: `Deleted list: ${currentList.name}`,
+    });
+  }
+
   revalidatePath("/", "layout");
 }
 

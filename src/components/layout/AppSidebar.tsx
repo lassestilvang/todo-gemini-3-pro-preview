@@ -70,14 +70,11 @@ export function AppSidebar({ className, lists, labels, user, id }: AppSidebarPro
                     <div className="mb-4">
                         <SearchDialog userId={user?.id} />
                     </div>
-                    <div className="py-2">
-                        <div className="mt-2">
-                            <TemplateManager userId={user?.id} />
-                        </div>
-                    </div>
-
                     <SidebarNavigation />
                     <SidebarRituals />
+                    <div className="mt-1">
+                        <TemplateManager userId={user?.id} />
+                    </div>
                 </div>
 
                 <Separator />

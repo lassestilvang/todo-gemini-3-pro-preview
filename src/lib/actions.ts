@@ -98,6 +98,9 @@ export {
   toggleTaskCompletionSafe,
 } from "./actions/task-safe";
 
+// User Preferences
+export { updateUserPreferences } from "./actions/user";
+
 // Time Tracking
 export {
   startTimeEntry,

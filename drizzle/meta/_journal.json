@@ -50,6 +50,13 @@
       "when": 1768502660051,
       "tag": "0006_tricky_katie_power",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1769279181838,
+      "tag": "0007_furry_magus",
+      "breakpoints": true
     }
   ]
 }
