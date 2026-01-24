@@ -5,16 +5,15 @@ import { useEffect } from "react";
 export function PwaRegister() {
     useEffect(() => {
         if ("serviceWorker" in navigator) {
-            window.addEventListener("load", function () {
-                navigator.serviceWorker.register("/sw.js").then(
-                    function (registration) {
-                        console.log("Service Worker registration successful with scope: ", registration.scope);
-                    },
-                    function (err) {
-                        console.log("Service Worker registration failed: ", err);
+            if (process.env.NODE_ENV === "development") {
+                navigator.serviceWorker.getRegistrations().then((registrations) => {
+                    for (const registration of registrations) {
+                        registration.unregister();
+                        console.log("Unregistered service worker in dev mode");
                     }
-                );
-            });
+                });
+            }
+            // In production, next-pwa handles registration automatically via 'register: true' in next.config.ts
         }
     }, []);
 
