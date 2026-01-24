@@ -15,14 +15,35 @@
   - *Status*: **RESOLVED** - Verified with E2E test `e2e/search-latency.spec.ts`.
 - [x] **Fix Dialog Accessibility Warnings**: Missing `Description` or `aria-describedby`.
   - *Status*: **RESOLVED** - Added `<DialogDescription className="sr-only">` to all dialogs.
+- [ ] **[Bug] Debug "System" Theme**: Dark mode is not triggered properly when "System" is selected. It only kicks in when DevTools is opened. Investigate theme detection logic and CSS media query listeners.
+
 
 ## 🚀 Features & Enhancements
 
 - [x] **Task Estimates**: Add estimated time for tasks. Add presets for quickly selecting time (e.g. 15m, 30m, 1h, 2h, 3h, 4h, 8h) but let users set custom times as well. Add time tracking. Display time spent on tasks. Add time tracking history. Add time tracking chart. Add time tracking export. Display time estimated/spent on tasks in the task list. Use your frontend-skill to design this feature so it will be user-friendly and look great.
 - [ ] **Calendar View Feature**: Add a visual calendar component for task scheduling and overview.
+- [ ] **Implement Board/Calendar view on lists**: Enable different layouts for task lists, selectable via the "View" settings modal.
+  - **Board View**: A Trello-style Kanban board grouping tasks by status (To Do, In Progress, Done) or priority.
+  - **Calendar View**: A grid-based month/week view showing tasks on their due dates with drag-and-drop rescheduling.
+  - **State Management**: Persist view preference per list/view using the existing `ViewSettings` system.
+  - **Responsive Design**: Ensure Board and Calendar views are usable on mobile with horizontal scrolling or simplified layouts.
 - [ ] **AI-Powered Task Suggestions**: Leverage Gemini to suggest next tasks based on user habits and patterns.
 - [ ] **Internationalization (i18n) Support**: Add language files, locale-switcher, and Next.js i18n routing.
+- [ ] **Manual Task Sorting**: Implement manual task reordering within lists.
+  - **Logic**: When view sorting is set to "manual", allow users to drag-and-drop tasks to change their order.
+  - **Schema**: Ensure tasks have a `position` or `sort_order` field.
+  - **Consistency**: Sorting should keep todo and completed tasks separated (sorting within their respective groups).
+- [ ] **Activity Log System**: Implement a detailed activity log page and sidebar entry.
+  - **Tracking**: Log all actions including task completion, list renames, manual sorting, deletions, and metadata changes.
+  - **Page**: Dedicated `/activity` page with a searchable/filterable audit trail.
+  - **Sidebar**: Add "Activity Log" to the main navigation.
+- [ ] **Sidebar Reordering**: Allow users to manually reorder Lists and Labels in the sidebar (drag-and-drop).
+- [ ] **Inline Task Creation Refinement**:
+  - **Inbox Support**: Add the `CreateTaskInput` component (inline adder) to the Inbox view.
+  - **Details Toggle**: When the inline adder is active, add an option ("Full Details" button) to open the task in the full `TaskDialog` for advanced editing.
+  - **UI Consolidation**: Remove the legacy "+ Add Task" button from all headers/views once the inline adder is ubiquitous to avoid duplication.
 - [ ] **Offline-First Background Sync**: Implement a sync queue (e.g., Workbox or IndexedDB) for offline reliability.
+
 - [ ] **Privacy-Friendly Analytics**: Connect WebVitals/page-events to a provider (Plausible/PostHog) with opt-out.
 - [ ] **Real-User Monitoring (RUM) Dashboard**: Dashboard for Web Vitals metrics.
 - [ ] **Feature-Flag System**: Simple flag mechanism to toggle experimental features.
@@ -46,6 +67,8 @@
 - [x] **[UX] Implement 'Synthwave' Theme**: Neon-inspired dark theme with Orbitron font.
 - [x] **[UX] Glassmorphism Themes**: Added `glassmorphism` and `glassmorphism-dark` with blur effects.
 - [x] **[UX] Onboarding Flow**: Fixed viewport overflow issues for tour tooltips.
+- [ ] **[UX] Sidebar Structure**: Move "Templates" nav item below "Smart Schedule" in the sidebar.
+
 
 ## 🛠 Engineering & Quality
 

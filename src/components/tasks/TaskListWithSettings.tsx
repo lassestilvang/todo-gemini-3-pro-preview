@@ -239,16 +239,16 @@ export function TaskListWithSettings({
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 {title && <h2 className="text-xl font-semibold">{title}</h2>}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 ml-auto">
+                    <Button onClick={handleAdd} size="sm">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Task
+                    </Button>
                     <ViewOptionsPopover
                         viewId={viewId}
                         userId={userId}
                         onSettingsChange={setSettings}
                     />
-                    <Button onClick={handleAdd} size="sm">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Task
-                    </Button>
                 </div>
             </div>
 
