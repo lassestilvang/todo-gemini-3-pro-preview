@@ -88,7 +88,7 @@ export default function RootLayout({
             defaultTheme="system"
             enableSystem
             disableTransitionOnChange
-            themes={[...AVAILABLE_THEMES]}
+            themes={[...AVAILABLE_THEMES].filter(t => t !== "system")}
           >
             <ZenModeProvider>
               <LazyMotionProvider>
