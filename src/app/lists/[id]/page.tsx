@@ -65,6 +65,7 @@ export default async function ListPage({ params }: ListPageProps) {
                     viewId={`list-${listId}`}
                     userId={user.id}
                     initialSettings={initialSettings}
+                    hideAddButton={true}
                 />
             </div>
         </div>

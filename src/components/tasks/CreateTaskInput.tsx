@@ -15,6 +15,7 @@ import { extractDeadline } from "@/lib/smart-scheduler";
 import { Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { VoiceInput } from "./VoiceInput";
+import { TaskDialog } from "./TaskDialog";
 
 
 export function CreateTaskInput({ listId, defaultDueDate, userId }: { listId?: number, defaultDueDate?: Date | string, userId: string }) {
@@ -27,6 +28,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId }: { listId?: n
     const [context, setContext] = useState<"computer" | "phone" | "errands" | "meeting" | "home" | "anywhere" | undefined>(undefined);
     const [isExpanded, setIsExpanded] = useState(false);
     const [isAiLoading, setIsAiLoading] = useState(false);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     // Parse natural language input - intentionally only depends on title
     useEffect(() => {
@@ -85,6 +87,11 @@ export function CreateTaskInput({ listId, defaultDueDate, userId }: { listId?: n
         setEnergyLevel(undefined);
         setContext(undefined);
         setIsExpanded(false);
+    };
+
+    const handleFullDetails = () => {
+        setIsDialogOpen(true);
+        // We don't clear the input here, we wait for the dialog to handle it or user to cancel
     };
 
     return (
@@ -200,6 +207,15 @@ export function CreateTaskInput({ listId, defaultDueDate, userId }: { listId?: n
                                     setTitle(prev => prev ? `${prev} ${text}` : text);
                                     setIsExpanded(true);
                                 }} />
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleFullDetails}
+                                    className="text-xs text-muted-foreground hover:text-foreground"
+                                >
+                                    Full Details
+                                </Button>
                             </div>
 
                             <div className="flex items-center gap-2">
@@ -214,6 +230,25 @@ export function CreateTaskInput({ listId, defaultDueDate, userId }: { listId?: n
                     )}
                 </form>
             </div>
+
+            <TaskDialog
+                initialTitle={title}
+                initialPriority={priority !== "none" ? priority : undefined}
+                initialEnergyLevel={energyLevel}
+                initialContext={context}
+                open={isDialogOpen}
+                onOpenChange={(open) => {
+                    setIsDialogOpen(open);
+                    if (!open) {
+                        // Dialog closed
+                    } else {
+                        // Dialog opened
+                    }
+                }}
+                defaultListId={listId}
+                defaultDueDate={dueDate}
+                userId={userId}
+            />
         </div>
     );
 }

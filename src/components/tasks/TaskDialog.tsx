@@ -30,13 +30,17 @@ interface TaskDialogProps {
     defaultLabelIds?: number[];
     defaultDueDate?: Date | string;
     userId?: string;
+    initialTitle?: string;
+    initialPriority?: "none" | "low" | "medium" | "high";
+    initialEnergyLevel?: "high" | "medium" | "low";
+    initialContext?: "computer" | "phone" | "errands" | "meeting" | "home" | "anywhere";
 }
 
 /**
  * Dialog for creating or editing a task.
  * Refactored to use custom hooks for state and data management.
  */
-export function TaskDialog({ task, open, onOpenChange, trigger, defaultListId, defaultLabelIds, defaultDueDate, userId }: TaskDialogProps) {
+export function TaskDialog({ task, open, onOpenChange, trigger, defaultListId, defaultLabelIds, defaultDueDate, userId, initialTitle, initialPriority, initialEnergyLevel, initialContext }: TaskDialogProps) {
     const [internalOpen, setInternalOpen] = useState(false);
     const effectiveOpen = open !== undefined ? open : internalOpen;
     const setEffectiveOpen = onOpenChange || setInternalOpen;
@@ -53,6 +57,10 @@ export function TaskDialog({ task, open, onOpenChange, trigger, defaultListId, d
                     defaultListId={defaultListId}
                     defaultLabelIds={defaultLabelIds}
                     defaultDueDate={defaultDueDate}
+                    initialTitle={initialTitle}
+                    initialPriority={initialPriority}
+                    initialEnergyLevel={initialEnergyLevel}
+                    initialContext={initialContext}
                     userId={userId}
                     onClose={() => setEffectiveOpen(false)}
                 />
@@ -61,7 +69,18 @@ export function TaskDialog({ task, open, onOpenChange, trigger, defaultListId, d
     );
 }
 
-function TaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId, onClose }: { task?: TaskType, defaultListId?: number, defaultLabelIds?: number[], defaultDueDate?: Date | string, userId?: string, onClose: () => void }) {
+function TaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId, onClose, initialTitle, initialPriority, initialEnergyLevel, initialContext }: {
+    task?: TaskType,
+    defaultListId?: number,
+    defaultLabelIds?: number[],
+    defaultDueDate?: Date | string,
+    userId?: string,
+    onClose: () => void,
+    initialTitle?: string;
+    initialPriority?: "none" | "low" | "medium" | "high";
+    initialEnergyLevel?: "high" | "medium" | "low";
+    initialContext?: "computer" | "phone" | "errands" | "meeting" | "home" | "anywhere";
+}) {
     // Form State
     const {
         title, setTitle,
@@ -81,7 +100,7 @@ function TaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId
         handleDelete,
         toggleLabel,
         isEdit
-    } = useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId, onClose });
+    } = useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId, onClose, initialTitle, initialPriority, initialEnergyLevel, initialContext });
 
     // Data State (Subtasks, Reminders, Logs, etc.)
     const {

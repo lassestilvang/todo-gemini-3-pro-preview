@@ -28,6 +28,11 @@ interface UseTaskFormProps {
     defaultDueDate?: Date | string;
     userId?: string;
     onClose: () => void;
+    // Initial values for new task
+    initialTitle?: string;
+    initialPriority?: "none" | "low" | "medium" | "high";
+    initialEnergyLevel?: "high" | "medium" | "low";
+    initialContext?: "computer" | "phone" | "errands" | "meeting" | "home" | "anywhere";
 }
 
 /**
@@ -76,12 +81,12 @@ function handleActionError(
  * @param defaultDueDate - Default due date to select if creating a new task
  * @param onClose - Callback to close the dialog after successful submission
  */
-export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId, onClose }: UseTaskFormProps) {
+export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId, onClose, initialTitle, initialPriority, initialEnergyLevel, initialContext }: UseTaskFormProps) {
     const router = useRouter();
 
-    const [title, setTitle] = useState(task?.title || "");
+    const [title, setTitle] = useState(task?.title || initialTitle || "");
     const [description, setDescription] = useState(task?.description || "");
-    const [priority, setPriority] = useState<"none" | "low" | "medium" | "high">(task?.priority || "none");
+    const [priority, setPriority] = useState<"none" | "low" | "medium" | "high">(task?.priority || initialPriority || "none");
     const [listId, setListId] = useState<string>(task?.listId?.toString() || defaultListId?.toString() || "inbox");
     const [dueDate, setDueDate] = useState<Date | undefined>(
         task
@@ -90,8 +95,8 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
     );
     const [deadline, setDeadline] = useState<Date | undefined>(task?.deadline ? new Date(task.deadline) : undefined);
     const [selectedLabelIds, setSelectedLabelIds] = useState<number[]>(task?.labels?.map((l) => l.id) || defaultLabelIds || []);
-    const [energyLevel, setEnergyLevel] = useState<"high" | "medium" | "low" | "none">(task?.energyLevel || "none");
-    const [context, setContext] = useState<"computer" | "phone" | "errands" | "meeting" | "home" | "anywhere" | "none">(task?.context || "none");
+    const [energyLevel, setEnergyLevel] = useState<"high" | "medium" | "low" | "none">(task?.energyLevel || initialEnergyLevel || "none");
+    const [context, setContext] = useState<"computer" | "phone" | "errands" | "meeting" | "home" | "anywhere" | "none">(task?.context || initialContext || "none");
 
     // Recurring state
     const [isRecurring, setIsRecurring] = useState(task?.isRecurring || false);

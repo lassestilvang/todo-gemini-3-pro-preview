@@ -15,6 +15,7 @@
   - *Status*: **RESOLVED** - Verified with E2E test `e2e/search-latency.spec.ts`.
 - [x] **Fix Dialog Accessibility Warnings**: Missing `Description` or `aria-describedby`.
   - *Status*: **RESOLVED** - Added `<DialogDescription className="sr-only">` to all dialogs.
+- [ ] **[Bug] Inline Task Adder UX**: In the `CreateTaskInput` component, the date and priority popups should automatically close after a selection is made to improve the user flow.
 
 
 ## 🚀 Features & Enhancements
@@ -39,10 +40,11 @@
   - *Status*: **RESOLVED** - Extended `taskLogs` schema with `listId`/`labelId`, added logging to list/label actions, built `ActivityLogContent.tsx` with search, filters, date grouping, action icons, and deep links.
 - [x] **Sidebar Reordering**: Allow users to manually reorder Lists and Labels in the sidebar (drag-and-drop).
   - *Status*: **RESOLVED** - Implemented using `@dnd-kit`, added `position` column to schema, and new server actions for reordering.
-- [ ] **Inline Task Creation Refinement**:
+- [x] **Inline Task Creation Refinement**:
   - **Inbox Support**: Add the `CreateTaskInput` component (inline adder) to the Inbox view.
   - **Details Toggle**: When the inline adder is active, add an option ("Full Details" button) to open the task in the full `TaskDialog` for advanced editing.
   - **UI Consolidation**: Remove the legacy "+ Add Task" button from all headers/views once the inline adder is ubiquitous to avoid duplication.
+  - *Status*: **RESOLVED** - Added `CreateTaskInput` to Inbox, implemented "Full Details" toggle which opens pre-filled `TaskDialog`, and hid legacy "Add Task" button in Inbox and List views.
 - [ ] **Offline-First Background Sync**: Implement a sync queue (e.g., Workbox or IndexedDB) for offline reliability.
 - [x] **24-Hour Time Preference**: Detect user/system preference for 24-hour clock automatically, and provide a manual toggle in the Settings to override it.
   - **Logic**: Use `Intl.DateTimeFormat` for auto-detection and persist the manual override in user settings/local storage.
@@ -52,6 +54,15 @@
   - **Logic**: Tasks in the /upcoming view should be grouped by their due date (e.g., Today, Tomorrow, Monday, etc.).
   - **UI**: Use sticky headers for each date group so users can easily see which day they are looking at while scrolling.
   - *Status*: **RESOLVED** - Updated `TaskListWithSettings.tsx` with default date grouping for "upcoming" view, sticky headers, and friendly date formatting (Today, Tomorrow, weekday).
+- [ ] **Icons on Tasks**: Allow tasks to be assigned an icon (optional), similar to lists and labels.
+  - **UI**: Add an icon picker to the task editor (`TaskDialog`) and the inline task adder (`CreateTaskInput`).
+  - **Display**: Show the assigned icon next to the task title everywhere a task is shown (List views, Sidebar, Search, etc.).
+  - **Logic**: Update the `tasks` schema to include an `icon` field and update relevant server actions to handle it.
+- [ ] **Enhanced Icon Picker**: Create a premium icon/emoji picker for lists, labels, and tasks.
+  - **Emoji Support**: Full support for native platform emojis with category browsing and search.
+  - **Uploads**: Allow users to upload custom icons/images to use as avatars for lists or tasks.
+  - **External API**: Integrate with an external icon/logo search service (e.g., Lucide, Phosphor, or a Logo API) for a broader selection.
+  - **Design**: Needs to look and feel premium with smooth animations and a clean categorization layout.
 
 
 - [ ] **Privacy-Friendly Analytics**: Connect WebVitals/page-events to a provider (Plausible/PostHog) with opt-out.

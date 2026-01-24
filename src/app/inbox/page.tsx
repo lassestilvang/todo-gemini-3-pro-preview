@@ -1,6 +1,7 @@
 import { getTasks, getViewSettings } from "@/lib/actions";
 import { getCurrentUser } from "@/lib/auth";
 import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
+import { CreateTaskInput } from "@/components/tasks/CreateTaskInput";
 import { redirect } from "next/navigation";
 import { defaultViewSettings } from "@/lib/view-settings";
 
@@ -38,11 +39,14 @@ export default async function InboxPage() {
                     </p>
                 </div>
 
+                <CreateTaskInput userId={user.id} />
+
                 <TaskListWithSettings
                     tasks={tasks}
                     viewId="inbox"
                     userId={user.id}
                     initialSettings={initialSettings}
+                    hideAddButton={true}
                 />
             </div>
         </div>
