@@ -71,7 +71,9 @@
 - [x] **[UX] Glassmorphism Themes**: Modals are transparent so the content is visible through the modal and realy hard to read. Blur the background for a really good premium feel. Verify with screenshots in the browser. Use frontend skills to implement this.
   - *Status*: **RESOLVED** - Enhanced `DialogOverlay` in `dialog.tsx` with 8px base backdrop blur and vendor prefixes. Added theme-specific overlays: glassmorphism (20px blur + gradient), glassmorphism-dark (28px blur + atmospheric effects). Creates premium frosted glass aesthetic with excellent readability.
 
-- [ ] **[UX] Onboarding flow**: The Quick Capture (2/4) overlay is displayed outside of the screen. Make sure all onboarding steps are visible.
+- [x] **[UX] Onboarding flow**: The Quick Capture (2/4) overlay is displayed outside of the screen. Make sure all onboarding steps are visible. Verify in all themes.
+  - *Status*: **RESOLVED** - Enhanced `OnboardingTour.tsx` with intelligent viewport boundary checking to prevent tooltips from overflowing off-screen. Added `backdrop-blur-lg` to overlay for glassmorphism theme readability. Verified across all themes (Default, Glassmorphism, Glassmorphism Dark).
+  - *Priority*: **High**
 
 ## Code Quality & Best Practices
 

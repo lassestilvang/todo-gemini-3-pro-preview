@@ -10,10 +10,11 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, User, ChevronsUpDown } from "lucide-react";
+import { LogOut, User, ChevronsUpDown, GraduationCap } from "lucide-react";
 import { signOut } from "@/lib/auth";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useOnboarding } from "@/components/providers/OnboardingProvider";
 
 interface UserProfileProps {
     user: {
@@ -38,6 +39,8 @@ export function UserProfile({ user }: UserProfileProps) {
         ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
         : (user.email[0] || "?").toUpperCase();
 
+    const { startTour } = useOnboarding();
+
     const handleSignOut = async () => {
         try {
             await signOut();
@@ -45,6 +48,10 @@ export function UserProfile({ user }: UserProfileProps) {
             console.error("Sign out failed:", error);
             toast.error("Failed to sign out. Please try again.");
         }
+    };
+
+    const handleReplayOnboarding = () => {
+        startTour();
     };
 
     return (
@@ -88,6 +95,10 @@ export function UserProfile({ user }: UserProfileProps) {
                         <User className="mr-2 h-4 w-4" />
                         Profile Settings
                     </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleReplayOnboarding} className="w-full flex items-center">
+                    <GraduationCap className="mr-2 h-4 w-4" />
+                    Replay Onboarding
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive" data-testid="sign-out-button">
