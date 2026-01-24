@@ -43,6 +43,7 @@ export async function setupTestDb() {
             avatar_url TEXT,
             is_initialized INTEGER NOT NULL DEFAULT 0,
             use_24h_clock INTEGER,
+            week_starts_on_monday INTEGER,
             created_at INTEGER DEFAULT(strftime('%s', 'now')),
             updated_at INTEGER DEFAULT(strftime('%s', 'now'))
         );
