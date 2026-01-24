@@ -4,7 +4,7 @@ import { useZenMode } from "../providers/ZenModeProvider";
 import { m, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { X, Timer, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PomodoroTimer } from "./PomodoroTimer";
 import { cn } from "@/lib/utils";
 import { usePerformanceMode } from "@/components/providers/PerformanceContext";
@@ -12,10 +12,16 @@ import { usePerformanceMode } from "@/components/providers/PerformanceContext";
 export function ZenOverlay({ children }: { children: React.ReactNode }) {
     const { isZenMode, toggleZenMode } = useZenMode();
     const [timerOpen, setTimerOpen] = useState(false);
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     const isPerformanceMode = usePerformanceMode();
+    const resolvedPerformanceMode = mounted && isPerformanceMode;
 
     return (
-        !isPerformanceMode ? (
+        !resolvedPerformanceMode ? (
             <AnimatePresence>
                 {isZenMode && (
                     <m.div

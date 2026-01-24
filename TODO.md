@@ -17,7 +17,7 @@
   - *Status*: **RESOLVED** - Added `<DialogDescription className="sr-only">` to all dialogs.
 - [x] **[Bug] Inline Task Adder UX**: In the `CreateTaskInput` component, the date and priority popups should automatically close after a selection is made to improve the user flow.
   - *Status*: **RESOLVED** - Controlled `open` state of Popovers and closed them on selection.
-- [ ] **[Bug] Sidebar: Saved Views**: Shown on load, then hidden if empty. Should always be visible and display helpful educational message. It should always have a "+ Add View" button. Move it below labels.
+- [x] **[Bug] Sidebar: Saved Views**: Shown on load, then hidden if empty. Should always be visible and display helpful educational message. It should always have a "+ Add View" button. Move it below labels.
 
 ## 🚀 Features & Enhancements
 
@@ -84,6 +84,12 @@
   - **Standard**: The current default layout and spacing.
   - **Spacious**: Increased padding and vertical rhythm for better readability and focus.
   - **Settings**: Integrate density selection into the `ViewOptionsPopover` and persist it per view using the `ViewSettings` system.
+- [ ] **Sidebar Favorites Sections**: Allow users to favorite lists and labels for quick access.
+  - **Logic**: Add a `isFavorite` or `favorite` field to the `lists` and `labels` tables.
+  - **UI**: Add a "star" or "favorite" icon toggle in the sidebar (next to titles) and in the manage dialogs.
+  - **Combined View**: Display all favorited items in a new "Favorites" section at the top of the sidebar.
+  - **Reordering**: Allow manual reordering within the Favorites section.
+  - **UX**: This is especially helpful for users with many lists and labels, providing a way to pin the most important ones.
 
 - [ ] **Privacy-Friendly Analytics**: Connect WebVitals/page-events to a provider (Plausible/PostHog) with opt-out.
 - [ ] **Real-User Monitoring (RUM) Dashboard**: Dashboard for Web Vitals metrics.

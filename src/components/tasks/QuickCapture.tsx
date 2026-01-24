@@ -44,11 +44,17 @@ export function QuickCapture({ userId }: { userId: string }) {
         }
     };
 
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     const isPerformanceMode = usePerformanceMode();
+    const resolvedPerformanceMode = mounted && isPerformanceMode;
 
     return (
         <div className="fixed bottom-6 right-6 z-40">
-            {!isPerformanceMode ? (
+            {!resolvedPerformanceMode ? (
                 <AnimatePresence>
                     {isOpen && (
                         <m.div
@@ -137,12 +143,12 @@ export function QuickCapture({ userId }: { userId: string }) {
                 className={cn(
                     "h-14 w-14 rounded-full shadow-lg transition-all duration-300 hover:scale-110 active:scale-95",
                     isOpen ? "bg-indigo-600 rotate-45" : "bg-primary",
-                    isPerformanceMode && "transition-none hover:scale-100 active:scale-100 shadow-none border-2 border-primary rotate-0"
+                    resolvedPerformanceMode && "transition-none hover:scale-100 active:scale-100 shadow-none border-2 border-primary rotate-0"
                 )}
                 onClick={() => setIsOpen(!isOpen)}
                 aria-label="Quick Capture"
             >
-                <Plus className={cn("h-7 w-7 transition-transform", (isOpen && !isPerformanceMode) ? "rotate-0" : "rotate-0")} />
+                <Plus className={cn("h-7 w-7 transition-transform", (isOpen && resolvedPerformanceMode) ? "rotate-45" : "rotate-0")} />
             </Button>
         </div>
     );

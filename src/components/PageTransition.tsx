@@ -1,12 +1,20 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { m } from "framer-motion";
 import { usePerformanceMode } from "@/components/providers/PerformanceContext";
 
 export function PageTransition({ children }: { children: React.ReactNode }) {
     const isPerformanceMode = usePerformanceMode();
+    const [mounted, setMounted] = useState(false);
 
-    if (isPerformanceMode) {
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    // During SSR and initial hydration, render a plain div to match server output.
+    // This avoids hydration mismatches caused by framer-motion's initial styles.
+    if (isPerformanceMode || !mounted) {
         return <div className="flex-1 w-full h-full">{children}</div>;
     }
 

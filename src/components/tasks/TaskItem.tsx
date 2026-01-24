@@ -2,7 +2,7 @@
 
 import { m } from "framer-motion";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
@@ -134,15 +134,23 @@ export function TaskItem({ task, showListInfo = true, userId, disableAnimations 
         none: "text-gray-400",
     };
 
-    const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && !isCompleted;
-    const isDeadlineExceeded = task.deadline && new Date(task.deadline) < new Date() && !isCompleted;
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    const isPerformanceMode = usePerformanceMode();
+    const resolvedPerformanceMode = mounted && isPerformanceMode;
+
+    const now = mounted ? new Date() : new Date(0); // Use a stable "now" for server/hydration
+    const isOverdue = task.dueDate && new Date(task.dueDate) < now && !isCompleted;
+    const isDeadlineExceeded = task.deadline && new Date(task.deadline) < now && !isCompleted;
     const isBlocked = (task.blockedByCount || 0) > 0;
     const [showFocusMode, setShowFocusMode] = useState(false);
     const { use24HourClock } = useUser();
-    const isPerformanceMode = usePerformanceMode();
 
     // Force animations disabled if performance mode is on
-    const effectiveDisableAnimations = disableAnimations || isPerformanceMode;
+    const effectiveDisableAnimations = disableAnimations || resolvedPerformanceMode;
 
     return (
         <m.div

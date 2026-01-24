@@ -78,10 +78,10 @@ export function AppSidebar({ className, lists, labels, user, id }: AppSidebarPro
                 <SidebarLists lists={lists} userId={user?.id} />
 
                 <Separator />
-                <SidebarSavedViews userId={user?.id} />
+                <SidebarLabels labels={labels} userId={user?.id} />
 
                 <Separator />
-                <SidebarLabels labels={labels} userId={user?.id} />
+                <SidebarSavedViews userId={user?.id} />
             </div>
 
             <div className="shrink-0 p-2 border-t space-y-4 bg-sidebar h-auto">
