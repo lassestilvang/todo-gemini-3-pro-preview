@@ -68,6 +68,11 @@ export default async function LabelPage({ params }: LabelPageProps) {
                             }
                         />
                     </h1>
+                    {label.description && (
+                        <p className="text-muted-foreground mt-1">
+                            {label.description}
+                        </p>
+                    )}
                 </div>
 
                 <CreateTaskInput userId={user.id} defaultLabelIds={[labelId]} />

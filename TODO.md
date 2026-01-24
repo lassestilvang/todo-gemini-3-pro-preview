@@ -17,7 +17,7 @@
   - *Status*: **RESOLVED** - Added `<DialogDescription className="sr-only">` to all dialogs.
 - [x] **[Bug] Inline Task Adder UX**: In the `CreateTaskInput` component, the date and priority popups should automatically close after a selection is made to improve the user flow.
   - *Status*: **RESOLVED** - Controlled `open` state of Popovers and closed them on selection.
-
+- [ ] **[Bug] Sidebar: Saved Views**: Shown on load, then hidden if empty. Should always be visible and display helpful educational message. It should always have a "+ Add View" button. Move it below labels.
 
 ## 🚀 Features & Enhancements
 
@@ -52,10 +52,24 @@
   - **Logic**: Use `Intl.DateTimeFormat` for auto-detection and persist the manual override in user settings/local storage.
   - **UI**: Update all time-related displays (task due times, analytics, logs) to respect this setting.
   - *Status*: **RESOLVED** - Added `use24HourClock` to users schema, created `TimeSettings.tsx` toggle in Settings, built `UserProvider` context and `formatTimePreference()` utility.
+- [ ] **First Day of Week Setting**: Add a user preference for the start of the week (Monday vs. Sunday).
+  - **Logic**: Default to the user's locale but allow a manual override in Settings.
+  - **Integration**: Ensure this setting is respected across the application, specifically in:
+    - Date pickers (e.g., in `CreateTaskInput` and `TaskDialog`)
+    - "Upcoming" view grouping and headers
+    - Analytics charts (e.g., weekly productivity heatmap)
+    - Calendar views (when implemented)
+  - **Persistence**: Save the preference in the `users` table via Drizzle ORM.
 - [x] **"Upcoming" view refinement**: Group tasks by date with sticky headers for better readability.
   - **Logic**: Tasks in the /upcoming view should be grouped by their due date (e.g., Today, Tomorrow, Monday, etc.).
   - **UI**: Use sticky headers for each date group so users can easily see which day they are looking at while scrolling.
   - *Status*: **RESOLVED** - Updated `TaskListWithSettings.tsx` with default date grouping for "upcoming" view, sticky headers, and friendly date formatting (Today, Tomorrow, weekday).
+- [x] **Descriptions for Lists and Labels**: Add a description field to lists and labels.
+  - **Logic**: Allow users to provide context or instructions for specific lists and labels.
+  - **Schema**: Add a `description` field to the `lists` and `labels` tables in the database.
+  - **UI**: Display the description below the title in the main view (similar to the "Today" view).
+  - **Editing**: Update the list and label edit dialogs to include a description input.
+  - *Status*: **RESOLVED** - Added `description` column to `lists` and `labels`, updated `ManageListDialog` and `ManageLabelDialog` with textarea inputs, and updated `ListPage` and `LabelPage` to display the description.
 - [ ] **Icons on Tasks**: Allow tasks to be assigned an icon (optional), similar to lists and labels.
   - **UI**: Add an icon picker to the task editor (`TaskDialog`) and the inline task adder (`CreateTaskInput`).
   - **Display**: Show the assigned icon next to the task title everywhere a task is shown (List views, Sidebar, Search, etc.).
@@ -96,7 +110,8 @@
 - [x] **[UX] Onboarding Flow**: Fixed viewport overflow issues for tour tooltips.
 - [x] **[UX] Sidebar Structure**: Move "Templates" nav item below "Smart Schedule", move "I'm behind" below "Smart Schedule", relocate "Install App" to user menu, and move gamification (XP Bar) to the bottom.
 - [x] **[UX] Sidebar Reordering Toggle**: Move the list/label reordering functionality behind a toggle or icon. Since reordering is infrequent, it shouldn't be active by default to prevent accidental drags and keep the UI clean.
-- [ ] **[UX] Performance Theme**: Add a new theme that has no animations, transitions or any other fancy effects. It should be super clean and fast. Focus on raw performance and a "no-nonsense" aesthetic. Use your frontend skill to create a theme that is as fast and beautiful as possible.
+- [x] **[UX] Performance Theme**: Add a new theme that has no animations, transitions or any other fancy effects. It should be super clean and fast. Focus on raw performance and a "no-nonsense" aesthetic. Use your frontend skill to create a theme that is as fast and beautiful as possible.
+  - *Status*: **RESOLVED** - Added "performance" theme to `themes.ts`, created CSS variables in `globals.css` with global animation/transition kill switch, added `PerformanceProvider` context, and updated components (`PageTransition`, `TaskItem`, `QuickCapture`, `ZenOverlay`) to skip animations.
 
 ## 🛠 Engineering & Quality
 

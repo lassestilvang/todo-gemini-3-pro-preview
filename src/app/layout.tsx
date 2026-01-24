@@ -55,6 +55,7 @@ import { WebVitals } from "@/components/WebVitals";
 import { AVAILABLE_THEMES } from "@/lib/themes";
 import { ZenModeProvider } from "@/components/providers/ZenModeProvider";
 import { LazyMotionProvider } from "@/components/providers/LazyMotionProvider";
+import { PerformanceProvider } from "@/components/providers/PerformanceContext";
 
 // Validate env vars at startup
 validateEnv();
@@ -91,15 +92,17 @@ export default function RootLayout({
             themes={[...AVAILABLE_THEMES].filter(t => t !== "system")}
           >
             <ZenModeProvider>
-              <LazyMotionProvider>
-                <OnboardingProvider>
-                  <PwaRegister />
-                  <WebVitals />
-                  <LevelUpWatcher />
-                  <MainLayout>{children}</MainLayout>
-                  <Toaster />
-                </OnboardingProvider>
-              </LazyMotionProvider>
+              <PerformanceProvider>
+                <LazyMotionProvider>
+                  <OnboardingProvider>
+                    <PwaRegister />
+                    <WebVitals />
+                    <LevelUpWatcher />
+                    <MainLayout>{children}</MainLayout>
+                    <Toaster />
+                  </OnboardingProvider>
+                </LazyMotionProvider>
+              </PerformanceProvider>
             </ZenModeProvider>
           </ThemeProvider>
         </QueryProvider>

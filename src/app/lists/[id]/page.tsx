@@ -68,6 +68,11 @@ export default async function ListPage({ params }: ListPageProps) {
                             }
                         />
                     </h1>
+                    {list.description && (
+                        <p className="text-muted-foreground mt-1">
+                            {list.description}
+                        </p>
+                    )}
                 </div>
 
                 <CreateTaskInput listId={listId} userId={user.id} />

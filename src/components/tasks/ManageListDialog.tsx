@@ -11,6 +11,7 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { createList, updateList, deleteList } from "@/lib/actions";
 import { LIST_ICONS as ICONS } from "@/lib/icons";
@@ -37,6 +38,7 @@ interface ManageListDialogProps {
         name: string;
         color: string | null;
         icon: string | null;
+        description?: string | null;
     };
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
@@ -71,6 +73,7 @@ interface ListFormProps {
         name: string;
         color: string | null;
         icon: string | null;
+        description?: string | null;
     };
     userId?: string;
     onClose: () => void;
@@ -80,6 +83,7 @@ function ListForm({ list, userId, onClose }: ListFormProps) {
     const [name, setName] = useState(list?.name || "");
     const [color, setColor] = useState(list?.color || COLORS[0]);
     const [icon, setIcon] = useState(list?.icon || "list");
+    const [description, setDescription] = useState(list?.description || "");
 
     const isEdit = !!list;
 
@@ -88,12 +92,13 @@ function ListForm({ list, userId, onClose }: ListFormProps) {
         if (!userId) return;
         try {
             if (isEdit) {
-                await updateList(list.id, userId, { name, color, icon });
+                await updateList(list.id, userId, { name, color, icon, description });
             } else {
                 await createList({
                     name,
                     color,
                     icon,
+                    description,
                     slug: name.toLowerCase().replace(/\s+/g, "-") + "-" + Date.now(), // Simple slug generation
                     userId
                 });
@@ -128,6 +133,17 @@ function ListForm({ list, userId, onClose }: ListFormProps) {
                     onChange={(e) => setName(e.target.value)}
                     placeholder="List Name"
                     required
+                />
+            </div>
+
+            <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                    id="description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="List Description (optional)"
+                    rows={2}
                 />
             </div>
 

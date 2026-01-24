@@ -71,7 +71,7 @@ async function reorderListsImpl(userId: string, items: { id: number; position: n
     action: "list_updated",
     details: `Reordered ${items.length} lists`,
   });
-  revalidateTag(`lists-${userId}`);
+  revalidateTag(`lists-${userId}`, 'max');
   // Also revalidate path to ensure client router cache is updated for side effects
   revalidatePath("/", "layout");
 }
@@ -127,7 +127,7 @@ async function createListImpl(data: typeof lists.$inferInsert) {
     details: `Created list: ${result[0].name}`,
   });
 
-  revalidateTag(`lists-${data.userId}`);
+  revalidateTag(`lists-${data.userId}`, 'max');
   revalidatePath("/", "layout");
   return result[0];
 }
@@ -177,7 +177,7 @@ async function updateListImpl(
     });
   }
 
-  revalidateTag(`lists-${userId}`);
+  revalidateTag(`lists-${userId}`, 'max');
   revalidatePath("/", "layout");
 }
 
@@ -216,7 +216,7 @@ async function deleteListImpl(id: number, userId: string) {
     });
   }
 
-  revalidateTag(`lists-${userId}`);
+  revalidateTag(`lists-${userId}`, 'max');
   revalidatePath("/", "layout");
 }
 

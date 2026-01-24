@@ -1,8 +1,15 @@
 "use client";
 
 import { m } from "framer-motion";
+import { usePerformanceMode } from "@/components/providers/PerformanceContext";
 
 export function PageTransition({ children }: { children: React.ReactNode }) {
+    const isPerformanceMode = usePerformanceMode();
+
+    if (isPerformanceMode) {
+        return <div className="flex-1 w-full h-full">{children}</div>;
+    }
+
     return (
         <m.div
             initial={{ opacity: 0, scale: 0.98, y: 10 }}

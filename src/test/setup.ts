@@ -57,6 +57,7 @@ export async function setupTestDb() {
             color TEXT DEFAULT '#000000',
             icon TEXT,
             slug TEXT NOT NULL,
+            description TEXT,
             position INTEGER DEFAULT 0 NOT NULL,
             created_at INTEGER DEFAULT(strftime('%s', 'now')),
             updated_at INTEGER DEFAULT(strftime('%s', 'now'))
@@ -80,6 +81,7 @@ export async function setupTestDb() {
             recurring_rule TEXT,
             parent_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
             estimate_minutes INTEGER,
+            position INTEGER DEFAULT 0 NOT NULL,
             actual_minutes INTEGER,
             energy_level TEXT,
             context TEXT,
@@ -107,6 +109,7 @@ export async function setupTestDb() {
             name TEXT NOT NULL,
             color TEXT DEFAULT '#000000',
             icon TEXT,
+            description TEXT,
             position INTEGER DEFAULT 0 NOT NULL
         );
     `);

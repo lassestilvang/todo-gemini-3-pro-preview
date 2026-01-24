@@ -13,6 +13,7 @@ export const AVAILABLE_THEMES = [
     "neubrutalism",
     "minimalist",
     "synthwave",
+    "performance",
     "system",
 ] as const;
 
@@ -61,6 +62,11 @@ export const THEME_METADATA: Record<AppTheme, {
         label: "Synthwave",
         description: "Neon-soaked retro future",
         previewColor: "bg-slate-950 border-purple-500 shadow-[0_0_10px_#a855f7]",
+    },
+    performance: {
+        label: "Performance",
+        description: "Zero animations, maximum speed",
+        previewColor: "bg-white border-black border-2",
     },
     system: {
         label: "System",

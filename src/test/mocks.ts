@@ -8,12 +8,12 @@ import { mock } from "bun:test";
 // Mock next/navigation globally - must be before any component imports
 mock.module("next/navigation", () => ({
     useRouter: () => ({
-        push: () => {},
-        replace: () => {},
-        prefetch: () => {},
-        back: () => {},
-        forward: () => {},
-        refresh: () => {},
+        push: () => { },
+        replace: () => { },
+        prefetch: () => { },
+        back: () => { },
+        forward: () => { },
+        refresh: () => { },
     }),
     usePathname: () => "/",
     useSearchParams: () => new URLSearchParams(),
@@ -26,6 +26,7 @@ mock.module("next/navigation", () => ({
 mock.module("next/cache", () => ({
     revalidatePath: () => { },
     revalidateTag: () => { },
+    unstable_cache: (fn: any) => fn,
 }));
 
 // Mock gemini client globally to prevent AI calls during tests

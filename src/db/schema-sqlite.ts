@@ -39,6 +39,7 @@ export const lists = sqliteTable("lists", {
     color: text("color").default("#000000"),
     icon: text("icon"),
     slug: text("slug").notNull(),
+    description: text("description"),
     position: integer("position").default(0).notNull(),
     createdAt: integer("created_at", { mode: "timestamp" })
         .notNull()
@@ -104,6 +105,7 @@ export const labels = sqliteTable("labels", {
     name: text("name").notNull(),
     color: text("color").default("#000000"),
     icon: text("icon"),
+    description: text("description"),
     position: integer("position").default(0).notNull(),
 }, (table) => ({
     userIdIdx: index("labels_user_id_idx").on(table.userId),

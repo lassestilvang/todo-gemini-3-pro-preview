@@ -15,6 +15,7 @@ import { Target } from "lucide-react";
 import { playSuccessSound } from "@/lib/audio";
 import { useUser } from "@/components/providers/UserProvider";
 import { formatTimePreference } from "@/lib/time-utils";
+import { usePerformanceMode } from "@/components/providers/PerformanceContext";
 
 
 import { createElement } from "react";
@@ -102,14 +103,16 @@ export function TaskItem({ task, showListInfo = true, userId, disableAnimations 
         setIsCompleted(checked);
 
         if (checked) {
-            import("canvas-confetti").then((confetti) => {
-                confetti.default({
-                    particleCount: 30,
-                    spread: 50,
-                    origin: { y: 0.7 },
-                    colors: ['#5b21b6', '#7c3aed', '#a78bfa'] // Purple theme
+            if (!isPerformanceMode) {
+                import("canvas-confetti").then((confetti) => {
+                    confetti.default({
+                        particleCount: 30,
+                        spread: 50,
+                        origin: { y: 0.7 },
+                        colors: ['#5b21b6', '#7c3aed', '#a78bfa'] // Purple theme
+                    });
                 });
-            });
+            }
             playSuccessSound();
         }
 
@@ -136,13 +139,17 @@ export function TaskItem({ task, showListInfo = true, userId, disableAnimations 
     const isBlocked = (task.blockedByCount || 0) > 0;
     const [showFocusMode, setShowFocusMode] = useState(false);
     const { use24HourClock } = useUser();
+    const isPerformanceMode = usePerformanceMode();
+
+    // Force animations disabled if performance mode is on
+    const effectiveDisableAnimations = disableAnimations || isPerformanceMode;
 
     return (
         <m.div
-            layout={!disableAnimations ? true : undefined}
-            initial={!disableAnimations ? { opacity: 0, y: 10 } : undefined}
-            animate={!disableAnimations ? { opacity: 1, y: 0 } : undefined}
-            exit={!disableAnimations ? { opacity: 0, height: 0 } : undefined}
+            layout={!effectiveDisableAnimations ? true : undefined}
+            initial={!effectiveDisableAnimations ? { opacity: 0, y: 10 } : undefined}
+            animate={!effectiveDisableAnimations ? { opacity: 1, y: 0 } : undefined}
+            exit={!effectiveDisableAnimations ? { opacity: 0, height: 0 } : undefined}
             className="mb-2" // Add margin bottom here to separate items when animating
         >
             <div
@@ -216,10 +223,8 @@ export function TaskItem({ task, showListInfo = true, userId, disableAnimations 
                         <div className="relative inline-flex items-center gap-2 max-w-full">
                             <span className="truncate">{task.title}</span>
                             {isCompleted && (
-                                <m.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: "100%" }}
-                                    className="absolute left-0 top-1/2 h-[1.5px] bg-muted-foreground/50"
+                                <div
+                                    className="absolute left-0 top-1/2 h-[1.5px] bg-muted-foreground/50 w-full"
                                 />
                             )}
                         </div>

@@ -68,7 +68,7 @@ async function reorderLabelsImpl(userId: string, items: { id: number; position: 
     action: "label_updated",
     details: `Reordered ${items.length} labels`,
   });
-  revalidateTag(`labels-${userId}`);
+  revalidateTag(`labels-${userId}`, 'max');
   revalidatePath("/", "layout");
 }
 
@@ -123,7 +123,7 @@ async function createLabelImpl(data: typeof labels.$inferInsert) {
     details: `Created label: ${result[0].name}`,
   });
 
-  revalidateTag(`labels-${data.userId}`);
+  revalidateTag(`labels-${data.userId}`, 'max');
   revalidatePath("/", "layout");
   return result[0];
 }
@@ -172,7 +172,7 @@ async function updateLabelImpl(
     });
   }
 
-  revalidateTag(`labels-${userId}`);
+  revalidateTag(`labels-${userId}`, 'max');
   revalidatePath("/", "layout");
 }
 
@@ -211,7 +211,7 @@ async function deleteLabelImpl(id: number, userId: string) {
     });
   }
 
-  revalidateTag(`labels-${userId}`);
+  revalidateTag(`labels-${userId}`, 'max');
   revalidatePath("/", "layout");
 }
 

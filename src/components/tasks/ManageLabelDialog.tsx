@@ -12,6 +12,7 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { createLabel, updateLabel, deleteLabel } from "@/lib/actions";
 import { LABEL_ICONS as ICONS } from "@/lib/icons";
@@ -38,6 +39,7 @@ interface ManageLabelDialogProps {
         name: string;
         color: string | null;
         icon: string | null;
+        description?: string | null;
     };
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
@@ -71,10 +73,11 @@ export function ManageLabelDialog({ label, open, onOpenChange, trigger, userId }
     );
 }
 
-function LabelForm({ label, userId, onClose }: { label?: { id: number; name: string; color: string | null; icon: string | null; }, userId?: string, onClose: () => void }) {
+function LabelForm({ label, userId, onClose }: { label?: { id: number; name: string; color: string | null; icon: string | null; description?: string | null; }, userId?: string, onClose: () => void }) {
     const [name, setName] = useState(label?.name || "");
     const [color, setColor] = useState(label?.color || COLORS[0]);
     const [icon, setIcon] = useState(label?.icon || "hash");
+    const [description, setDescription] = useState(label?.description || "");
 
     const isEdit = !!label;
 
@@ -86,9 +89,9 @@ function LabelForm({ label, userId, onClose }: { label?: { id: number; name: str
         }
         try {
             if (label) {
-                await updateLabel(label.id, userId, { name, color, icon });
+                await updateLabel(label.id, userId, { name, color, icon, description });
             } else {
-                await createLabel({ name, color, icon, userId });
+                await createLabel({ name, color, icon, description, userId });
             }
             onClose();
         } catch (error) {
@@ -123,6 +126,17 @@ function LabelForm({ label, userId, onClose }: { label?: { id: number; name: str
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Label Name"
                     required
+                />
+            </div>
+
+            <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                    id="description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Label Description (optional)"
+                    rows={2}
                 />
             </div>
 
