@@ -136,6 +136,8 @@ export async function setupTestDb() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
             task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
+            list_id INTEGER REFERENCES lists(id) ON DELETE CASCADE,
+            label_id INTEGER REFERENCES labels(id) ON DELETE CASCADE,
             action TEXT NOT NULL,
             details TEXT,
             created_at INTEGER DEFAULT(strftime('%s', 'now'))
@@ -143,6 +145,8 @@ export async function setupTestDb() {
     `);
     sqliteConnection.run(`CREATE INDEX IF NOT EXISTS task_logs_user_id_idx ON task_logs(user_id);`);
     sqliteConnection.run(`CREATE INDEX IF NOT EXISTS task_logs_task_id_idx ON task_logs(task_id);`);
+    sqliteConnection.run(`CREATE INDEX IF NOT EXISTS task_logs_list_id_idx ON task_logs(list_id);`);
+    sqliteConnection.run(`CREATE INDEX IF NOT EXISTS task_logs_label_id_idx ON task_logs(label_id);`);
 
     // Habit completions table
     sqliteConnection.run(`
@@ -254,10 +258,30 @@ export async function setupTestDb() {
             last_request INTEGER NOT NULL DEFAULT(strftime('%s', 'now'))
         );
     `);
+
+    // Time entries table
+    sqliteConnection.run(`
+        CREATE TABLE IF NOT EXISTS time_entries(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+            user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            started_at INTEGER NOT NULL,
+            ended_at INTEGER,
+            duration_minutes INTEGER,
+            notes TEXT,
+            is_manual INTEGER DEFAULT 0,
+            created_at INTEGER DEFAULT(strftime('%s', 'now')),
+            updated_at INTEGER DEFAULT(strftime('%s', 'now'))
+        );
+    `);
+    sqliteConnection.run(`CREATE INDEX IF NOT EXISTS time_entries_task_id_idx ON time_entries(task_id);`);
+    sqliteConnection.run(`CREATE INDEX IF NOT EXISTS time_entries_user_id_idx ON time_entries(user_id);`);
+    sqliteConnection.run(`CREATE INDEX IF NOT EXISTS time_entries_started_at_idx ON time_entries(started_at);`);
 }
 
 export async function resetTestDb() {
     // Delete in order respecting foreign key constraints
+    sqliteConnection.run(`DELETE FROM time_entries`);
     sqliteConnection.run(`DELETE FROM saved_views`);
     sqliteConnection.run(`DELETE FROM user_achievements`);
     sqliteConnection.run(`DELETE FROM achievements`);
