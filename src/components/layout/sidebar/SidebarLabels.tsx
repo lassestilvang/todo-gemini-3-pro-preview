@@ -24,6 +24,9 @@ import {
     DragEndEvent,
 } from "@dnd-kit/core";
 import {
+    restrictToVerticalAxis,
+} from "@dnd-kit/modifiers";
+import {
     arrayMove,
     SortableContext,
     sortableKeyboardCoordinates,
@@ -64,10 +67,10 @@ function SortableLabelItem({
     } = useSortable({ id: label.id });
 
     const style = {
-        transform: CSS.Transform.toString(transform),
-        transition,
-        zIndex: isDragging ? 1 : 0,
-        position: isDragging ? "relative" as const : undefined,
+        transform: CSS.Translate.toString(transform),
+        transition: isDragging ? "none" : transition,
+        zIndex: isDragging ? 50 : 0,
+        position: "relative" as const,
     };
 
     return (
@@ -76,13 +79,13 @@ function SortableLabelItem({
             style={style}
             className={cn(
                 "group flex items-center justify-between rounded-md",
-                isDragging ? "bg-accent/50 opacity-80" : "hover:bg-accent hover:text-accent-foreground"
+                isDragging ? "bg-accent/50 opacity-80 shadow-sm" : "hover:bg-accent hover:text-accent-foreground"
             )}
-            {...attributes}
         >
             <div
-                className="cursor-grab p-2 opacity-0 group-hover:opacity-50 hover:opacity-100 flex items-center justify-center transition-opacity"
+                className="cursor-grab p-2 opacity-0 group-hover:opacity-50 hover:opacity-100 flex items-center justify-center transition-opacity touch-none"
                 {...listeners}
+                {...attributes}
             >
                 <GripVertical className="h-3 w-3" />
             </div>
@@ -131,7 +134,7 @@ export function SidebarLabels({ labels, userId }: SidebarLabelsProps) {
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
-                distance: 8,
+                distance: 5, // Slightly more responsive
             },
         }),
         useSensor(KeyboardSensor, {
@@ -185,6 +188,7 @@ export function SidebarLabels({ labels, userId }: SidebarLabelsProps) {
                 sensors={sensors}
                 collisionDetection={closestCenter}
                 onDragEnd={handleDragEnd}
+                modifiers={[restrictToVerticalAxis]}
             >
                 <SortableContext
                     items={items.map(i => i.id)}

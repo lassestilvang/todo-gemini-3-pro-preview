@@ -63,8 +63,6 @@ async function reorderListsImpl(userId: string, items: { id: number; position: n
     action: "list_updated",
     details: `Reordered ${items.length} lists`,
   });
-
-  revalidatePath("/", "layout");
 }
 
 /**

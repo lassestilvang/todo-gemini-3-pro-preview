@@ -60,8 +60,6 @@ async function reorderLabelsImpl(userId: string, items: { id: number; position: 
     action: "label_updated",
     details: `Reordered ${items.length} labels`,
   });
-
-  revalidatePath("/", "layout");
 }
 
 /**
