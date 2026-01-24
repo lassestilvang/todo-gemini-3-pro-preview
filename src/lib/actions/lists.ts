@@ -36,8 +36,48 @@ export const getLists = cache(async function getLists(userId: string) {
     .select()
     .from(lists)
     .where(eq(lists.userId, userId))
-    .orderBy(lists.createdAt);
+    .orderBy(lists.position, lists.createdAt);
 });
+
+/**
+ * Internal implementation for reordering lists.
+ *
+ * @param userId - The ID of the user who owns the lists
+ * @param items - Array of list IDs and their new positions
+ */
+async function reorderListsImpl(userId: string, items: { id: number; position: number }[]) {
+  // Update updates in a transaction or batch would be ideal, 
+  // but for now we'll do promise.all since Drizzle standard batching varies by driver
+  // and Neon driver supports valid connection pooling.
+  await Promise.all(
+    items.map((item) =>
+      db
+        .update(lists)
+        .set({ position: item.position })
+        .where(and(eq(lists.id, item.id), eq(lists.userId, userId)))
+    )
+  );
+
+  await logActivity({
+    userId,
+    action: "list_updated",
+    details: `Reordered ${items.length} lists`,
+  });
+
+  revalidatePath("/", "layout");
+}
+
+/**
+ * Reorders lists.
+ *
+ * @param userId - The ID of the user who owns the lists
+ * @param items - Array of list IDs and their new positions
+ * @returns ActionResult with void on success or error
+ */
+export const reorderLists: (
+  userId: string,
+  items: { id: number; position: number }[]
+) => Promise<ActionResult<void>> = withErrorHandling(reorderListsImpl);
 
 /**
  * Retrieves a single list by ID for a specific user.

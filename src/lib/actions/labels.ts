@@ -32,8 +32,49 @@ import { cache } from "react";
  * @returns Array of labels
  */
 export const getLabels = cache(async function getLabels(userId: string) {
-  return await db.select().from(labels).where(eq(labels.userId, userId));
+  return await db
+    .select()
+    .from(labels)
+    .where(eq(labels.userId, userId))
+    .orderBy(labels.position, labels.id);
 });
+
+/**
+ * Internal implementation for reordering labels.
+ *
+ * @param userId - The ID of the user who owns the labels
+ * @param items - Array of label IDs and their new positions
+ */
+async function reorderLabelsImpl(userId: string, items: { id: number; position: number }[]) {
+  await Promise.all(
+    items.map((item) =>
+      db
+        .update(labels)
+        .set({ position: item.position })
+        .where(and(eq(labels.id, item.id), eq(labels.userId, userId)))
+    )
+  );
+
+  await logActivity({
+    userId,
+    action: "label_updated",
+    details: `Reordered ${items.length} labels`,
+  });
+
+  revalidatePath("/", "layout");
+}
+
+/**
+ * Reorders labels.
+ *
+ * @param userId - The ID of the user who owns the labels
+ * @param items - Array of label IDs and their new positions
+ * @returns ActionResult with void on success or error
+ */
+export const reorderLabels: (
+  userId: string,
+  items: { id: number; position: number }[]
+) => Promise<ActionResult<void>> = withErrorHandling(reorderLabelsImpl);
 
 /**
  * Retrieves a single label by ID for a specific user.

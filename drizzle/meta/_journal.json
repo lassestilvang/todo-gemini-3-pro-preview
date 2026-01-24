@@ -57,6 +57,13 @@
       "when": 1769279181838,
       "tag": "0007_furry_magus",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1769282669967,
+      "tag": "0008_known_swordsman",
+      "breakpoints": true
     }
   ]
 }

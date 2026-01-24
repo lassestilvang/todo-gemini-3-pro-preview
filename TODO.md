@@ -37,7 +37,8 @@
   - **Page**: Dedicated `/activity` page with a searchable/filterable audit trail.
   - **Sidebar**: Add "Activity Log" to the main navigation.
   - *Status*: **RESOLVED** - Extended `taskLogs` schema with `listId`/`labelId`, added logging to list/label actions, built `ActivityLogContent.tsx` with search, filters, date grouping, action icons, and deep links.
-- [ ] **Sidebar Reordering**: Allow users to manually reorder Lists and Labels in the sidebar (drag-and-drop).
+- [x] **Sidebar Reordering**: Allow users to manually reorder Lists and Labels in the sidebar (drag-and-drop).
+  - *Status*: **RESOLVED** - Implemented using `@dnd-kit`, added `position` column to schema, and new server actions for reordering.
 - [ ] **Inline Task Creation Refinement**:
   - **Inbox Support**: Add the `CreateTaskInput` component (inline adder) to the Inbox view.
   - **Details Toggle**: When the inline adder is active, add an option ("Full Details" button) to open the task in the full `TaskDialog` for advanced editing.

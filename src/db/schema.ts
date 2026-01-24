@@ -27,6 +27,7 @@ export const lists = pgTable("lists", {
     color: text("color").default("#000000"),
     icon: text("icon"),
     slug: text("slug").notNull(),
+    position: integer("position").default(0).notNull(),
     createdAt: timestamp("created_at")
         .notNull()
         .defaultNow(),
@@ -96,6 +97,7 @@ export const labels = pgTable("labels", {
     name: text("name").notNull(),
     color: text("color").default("#000000"),
     icon: text("icon"),
+    position: integer("position").default(0).notNull(),
 }, (table) => ({
     userIdIdx: index("labels_user_id_idx").on(table.userId),
 }));

@@ -31,7 +31,7 @@ bun lint
 bun test
 
 # 4. Database setup (requires DATABASE_URL in .env.local)
-bun run db:push
+bun --env-file=.env.local run db:push
 
 # 5. Build (validates TypeScript compilation and Next.js build)
 bun run build
@@ -82,7 +82,7 @@ E2E tests are located in `e2e/` and cover:
 ### Command Notes
 
 - `bun test` - Uses in-memory SQLite via `bun:sqlite` for fast test execution
-- `bun run db:push` - Interactive schema push for local development
+- `bun --env-file=.env.local run db:push` - Interactive schema push for local development
 - `bun run db:generate` - Generate SQL migration files from schema changes
 - `bun run db:migrate` - Apply migrations locally
 - `bun run db:migrate:ci` - Apply migrations in CI (handles legacy databases)
@@ -95,7 +95,7 @@ The application uses Neon PostgreSQL for development and production:
 
 1. Copy `.env.example` to `.env.local`
 2. Set `DATABASE_URL` to your Neon connection string
-3. Run `bun run db:push` to create/update tables (for local dev)
+3. Run `bun --env-file=.env.local run db:push` to create/update tables (for local dev)
 
 ```bash
 # .env.local example

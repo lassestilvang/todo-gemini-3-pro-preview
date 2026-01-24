@@ -9,6 +9,7 @@ export {
   createList,
   updateList,
   deleteList,
+  reorderLists,
 } from "./actions/lists";
 
 // Labels
@@ -18,6 +19,7 @@ export {
   createLabel,
   updateLabel,
   deleteLabel,
+  reorderLabels,
 } from "./actions/labels";
 
 // Reminders

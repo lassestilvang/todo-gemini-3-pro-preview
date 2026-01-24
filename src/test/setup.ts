@@ -42,6 +42,7 @@ export async function setupTestDb() {
             last_name TEXT,
             avatar_url TEXT,
             is_initialized INTEGER NOT NULL DEFAULT 0,
+            use_24h_clock INTEGER,
             created_at INTEGER DEFAULT(strftime('%s', 'now')),
             updated_at INTEGER DEFAULT(strftime('%s', 'now'))
         );
@@ -56,6 +57,7 @@ export async function setupTestDb() {
             color TEXT DEFAULT '#000000',
             icon TEXT,
             slug TEXT NOT NULL,
+            position INTEGER DEFAULT 0 NOT NULL,
             created_at INTEGER DEFAULT(strftime('%s', 'now')),
             updated_at INTEGER DEFAULT(strftime('%s', 'now'))
         );
@@ -104,7 +106,8 @@ export async function setupTestDb() {
             user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
             name TEXT NOT NULL,
             color TEXT DEFAULT '#000000',
-            icon TEXT
+            icon TEXT,
+            position INTEGER DEFAULT 0 NOT NULL
         );
     `);
     sqliteConnection.run(`CREATE INDEX IF NOT EXISTS labels_user_id_idx ON labels(user_id);`);
