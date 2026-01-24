@@ -7,7 +7,7 @@ import { format } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { Calendar, Flag, Clock, Repeat, AlertCircle, Lock, ChevronDown, GitBranch, GripVertical } from "lucide-react";
-import { toggleTaskCompletion, updateSubtask } from "@/lib/actions/tasks";
+import { toggleTaskCompletion, updateSubtask } from "@/lib/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FocusMode } from "./FocusMode";
@@ -220,7 +220,6 @@ export function TaskItem({ task, showListInfo = true, userId, disableAnimations 
                         )}
                         onClick={(e) => {
                             e.stopPropagation();
-                            e.preventDefault();
                         }}
                         data-testid="task-checkbox"
                     />

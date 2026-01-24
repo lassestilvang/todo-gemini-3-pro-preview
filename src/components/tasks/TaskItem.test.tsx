@@ -1,13 +1,12 @@
 import { describe, it, expect, afterEach, mock, beforeEach } from "bun:test";
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
-import { TaskItem, type Task } from "./TaskItem";
-import React from "react";
-
+import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 // Mock the actions
 const mockToggleTaskCompletion = mock(() => Promise.resolve());
 mock.module("@/lib/actions", () => ({
     toggleTaskCompletion: mockToggleTaskCompletion
 }));
+
+import { TaskItem, type Task } from "./TaskItem";
 
 const sampleTask: Task = {
     id: 1,
@@ -43,14 +42,16 @@ describe("TaskItem", () => {
         expect(screen.getByText("30m")).toBeInTheDocument(); // Estimate
     });
 
-    it("should toggle completion status", () => {
+    it("should toggle completion status", async () => {
         render(<TaskItem task={sampleTask} userId="test_user_123" />);
         const checkbox = screen.getByRole("checkbox");
 
         fireEvent.click(checkbox);
 
-        expect(mockToggleTaskCompletion).toHaveBeenCalledTimes(1);
-        expect(mockToggleTaskCompletion).toHaveBeenCalledWith(1, "test_user_123", true);
+        await waitFor(() => {
+            expect(mockToggleTaskCompletion).toHaveBeenCalledTimes(1);
+            expect(mockToggleTaskCompletion).toHaveBeenCalledWith(1, "test_user_123", true);
+        });
     });
 
     it("should render completed state", () => {
