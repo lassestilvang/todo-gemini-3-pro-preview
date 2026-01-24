@@ -29,6 +29,8 @@ export function CreateTaskInput({ listId, defaultDueDate, userId }: { listId?: n
     const [isExpanded, setIsExpanded] = useState(false);
     const [isAiLoading, setIsAiLoading] = useState(false);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+    const [isPriorityOpen, setIsPriorityOpen] = useState(false);
 
     // Parse natural language input - intentionally only depends on title
     useEffect(() => {
@@ -145,7 +147,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId }: { listId?: n
                     {isExpanded && (
                         <div className="flex items-center justify-between p-2 border-t bg-muted/20 rounded-b-lg">
                             <div className="flex items-center gap-2">
-                                <Popover>
+                                <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                                     <PopoverTrigger asChild>
                                         <Button variant="ghost" size="sm" className={cn(dueDate && "text-primary")}>
                                             <Calendar className="mr-2 h-4 w-4" />
@@ -156,13 +158,16 @@ export function CreateTaskInput({ listId, defaultDueDate, userId }: { listId?: n
                                         <CalendarComponent
                                             mode="single"
                                             selected={dueDate}
-                                            onSelect={setDueDate}
+                                            onSelect={(date) => {
+                                                setDueDate(date);
+                                                setIsCalendarOpen(false);
+                                            }}
                                             initialFocus
                                         />
                                     </PopoverContent>
                                 </Popover>
 
-                                <Popover>
+                                <Popover open={isPriorityOpen} onOpenChange={setIsPriorityOpen}>
                                     <PopoverTrigger asChild>
                                         <Button variant="ghost" size="sm" className={cn(priority !== "none" && "text-primary")}>
                                             <Flag className="mr-2 h-4 w-4" />
@@ -177,7 +182,10 @@ export function CreateTaskInput({ listId, defaultDueDate, userId }: { listId?: n
                                                     variant="ghost"
                                                     size="sm"
                                                     className="justify-start"
-                                                    onClick={() => setPriority(p as "none" | "low" | "medium" | "high")}
+                                                    onClick={() => {
+                                                        setPriority(p as "none" | "low" | "medium" | "high");
+                                                        setIsPriorityOpen(false);
+                                                    }}
                                                 >
                                                     {p.charAt(0).toUpperCase() + p.slice(1)}
                                                 </Button>

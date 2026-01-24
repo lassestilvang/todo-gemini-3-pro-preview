@@ -15,7 +15,8 @@
   - *Status*: **RESOLVED** - Verified with E2E test `e2e/search-latency.spec.ts`.
 - [x] **Fix Dialog Accessibility Warnings**: Missing `Description` or `aria-describedby`.
   - *Status*: **RESOLVED** - Added `<DialogDescription className="sr-only">` to all dialogs.
-- [ ] **[Bug] Inline Task Adder UX**: In the `CreateTaskInput` component, the date and priority popups should automatically close after a selection is made to improve the user flow.
+- [x] **[Bug] Inline Task Adder UX**: In the `CreateTaskInput` component, the date and priority popups should automatically close after a selection is made to improve the user flow.
+  - *Status*: **RESOLVED** - Controlled `open` state of Popovers and closed them on selection.
 
 
 ## 🚀 Features & Enhancements
@@ -33,6 +34,7 @@
   - **Logic**: When view sorting is set to "manual", allow users to drag-and-drop tasks to change their order.
   - **Schema**: Ensure tasks have a `position` or `sort_order` field.
   - **Consistency**: Sorting should keep todo and completed tasks separated (sorting within their respective groups).
+
 - [x] **Activity Log System**: Implement a detailed activity log page and sidebar entry.
   - **Tracking**: Log all actions including task completion, list renames, manual sorting, deletions, and metadata changes.
   - **Page**: Dedicated `/activity` page with a searchable/filterable audit trail.
@@ -89,6 +91,8 @@
 - [x] **[UX] Glassmorphism Themes**: Added `glassmorphism` and `glassmorphism-dark` with blur effects.
 - [x] **[UX] Onboarding Flow**: Fixed viewport overflow issues for tour tooltips.
 - [x] **[UX] Sidebar Structure**: Move "Templates" nav item below "Smart Schedule", move "I'm behind" below "Smart Schedule", relocate "Install App" to user menu, and move gamification (XP Bar) to the bottom.
+- [ ] **[UX] Sidebar Reordering Toggle**: Move the list/label reordering functionality behind a toggle or icon. Since reordering is infrequent, it shouldn't be active by default to prevent accidental drags and keep the UI clean.
+
 
 
 ## 🛠 Engineering & Quality
