@@ -6,13 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Plus, MoreHorizontal, GripVertical, ArrowUpDown } from "lucide-react";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Plus, GripVertical, ArrowUpDown } from "lucide-react";
 import { ManageListDialog } from "@/components/tasks/ManageListDialog";
 import { getListIcon } from "@/lib/icons";
 import {
@@ -53,12 +47,10 @@ interface SidebarListsProps {
 function SortableListItem({
     list,
     pathname,
-    onEdit,
     isReordering
 }: {
     list: List;
     pathname: string;
-    onEdit: (list: List) => void;
     isReordering: boolean;
 }) {
     const {
@@ -112,25 +104,12 @@ function SortableListItem({
                     <span className="truncate">{list.name}</span>
                 </Link>
             </Button>
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild aria-label={`Open menu for list ${list.name}`}>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 mr-1 shrink-0">
-                        <MoreHorizontal className="h-3 w-3" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onEdit(list)}>
-                        Edit
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
         </div>
     );
 }
 
 export function SidebarLists({ lists, userId }: SidebarListsProps) {
     const pathname = usePathname();
-    const [editingList, setEditingList] = useState<List | null>(null);
     const [items, setItems] = useState(lists);
     const [isReordering, setIsReordering] = useState(false);
 
@@ -175,7 +154,7 @@ export function SidebarLists({ lists, userId }: SidebarListsProps) {
 
     return (
         <div className="px-3 py-2" data-testid="sidebar-lists">
-            <div className="flex items-center justify-between px-4">
+            <div className="flex items-center justify-between px-2">
                 <h2 className="text-lg font-semibold tracking-tight">
                     Lists
                 </h2>
@@ -217,23 +196,12 @@ export function SidebarLists({ lists, userId }: SidebarListsProps) {
                                 key={list.id}
                                 list={list}
                                 pathname={pathname}
-                                onEdit={setEditingList}
                                 isReordering={isReordering}
                             />
                         ))}
                     </div>
                 </SortableContext>
             </DndContext>
-
-            {/* Edit Dialog */}
-            {editingList && (
-                <ManageListDialog
-                    list={editingList}
-                    open={!!editingList}
-                    onOpenChange={(open) => !open && setEditingList(null)}
-                    userId={userId}
-                />
-            )}
         </div>
     );
 }

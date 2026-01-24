@@ -6,6 +6,9 @@ import { notFound, redirect } from "next/navigation";
 import { getLabelIcon } from "@/lib/icons";
 import { createElement } from "react";
 import { defaultViewSettings } from "@/lib/view-settings";
+import { ManageLabelDialog } from "@/components/tasks/ManageLabelDialog";
+import { Button } from "@/components/ui/button";
+import { Settings2 } from "lucide-react";
 
 interface LabelPageProps {
     params: Promise<{
@@ -54,6 +57,16 @@ export default async function LabelPage({ params }: LabelPageProps) {
                             style: { color: label.color || "#000000" }
                         })}
                         {label.name}
+                        <ManageLabelDialog
+                            label={label}
+                            userId={user.id}
+                            trigger={
+                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-foreground">
+                                    <Settings2 className="h-4 w-4" />
+                                    <span className="sr-only">Edit Label</span>
+                                </Button>
+                            }
+                        />
                     </h1>
                 </div>
 

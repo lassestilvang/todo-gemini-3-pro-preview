@@ -6,6 +6,9 @@ import { notFound, redirect } from "next/navigation";
 import { getListIcon } from "@/lib/icons";
 import { createElement } from "react";
 import { defaultViewSettings } from "@/lib/view-settings";
+import { ManageListDialog } from "@/components/tasks/ManageListDialog";
+import { Button } from "@/components/ui/button";
+import { Settings2 } from "lucide-react";
 
 interface ListPageProps {
     params: Promise<{
@@ -54,6 +57,16 @@ export default async function ListPage({ params }: ListPageProps) {
                             style: { color: list.color || "#000000" }
                         })}
                         {list.name}
+                        <ManageListDialog
+                            list={list}
+                            userId={user.id}
+                            trigger={
+                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-foreground">
+                                    <Settings2 className="h-4 w-4" />
+                                    <span className="sr-only">Edit List</span>
+                                </Button>
+                            }
+                        />
                     </h1>
                 </div>
 

@@ -6,13 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Plus, MoreHorizontal, GripVertical, ArrowUpDown } from "lucide-react";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Plus, GripVertical, ArrowUpDown } from "lucide-react";
 import { ManageLabelDialog } from "@/components/tasks/ManageLabelDialog";
 import { getLabelIcon } from "@/lib/icons";
 import {
@@ -52,12 +46,10 @@ interface SidebarLabelsProps {
 function SortableLabelItem({
     label,
     pathname,
-    onEdit,
     isReordering
 }: {
     label: Label;
     pathname: string;
-    onEdit: (label: Label) => void;
     isReordering: boolean;
 }) {
     const {
@@ -111,25 +103,12 @@ function SortableLabelItem({
                     <span className="truncate">{label.name}</span>
                 </Link>
             </Button>
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild aria-label={`Open menu for label ${label.name}`}>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 mr-1 shrink-0">
-                        <MoreHorizontal className="h-3 w-3" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onEdit(label)}>
-                        Edit
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
         </div>
     );
 }
 
 export function SidebarLabels({ labels, userId }: SidebarLabelsProps) {
     const pathname = usePathname();
-    const [editingLabel, setEditingLabel] = useState<Label | null>(null);
     const [items, setItems] = useState(labels);
     const [isReordering, setIsReordering] = useState(false);
 
@@ -176,7 +155,7 @@ export function SidebarLabels({ labels, userId }: SidebarLabelsProps) {
 
     return (
         <div className="px-3 py-2" data-testid="sidebar-labels">
-            <div className="flex items-center justify-between px-4">
+            <div className="flex items-center justify-between px-2">
                 <h2 className="text-lg font-semibold tracking-tight">
                     Labels
                 </h2>
@@ -218,23 +197,12 @@ export function SidebarLabels({ labels, userId }: SidebarLabelsProps) {
                                 key={label.id}
                                 label={label}
                                 pathname={pathname}
-                                onEdit={setEditingLabel}
                                 isReordering={isReordering}
                             />
                         ))}
                     </div>
                 </SortableContext>
             </DndContext>
-
-            {/* Edit Dialog */}
-            {editingLabel && (
-                <ManageLabelDialog
-                    label={editingLabel}
-                    open={!!editingLabel}
-                    onOpenChange={(open) => !open && setEditingLabel(null)}
-                    userId={userId}
-                />
-            )}
         </div>
     );
 }
