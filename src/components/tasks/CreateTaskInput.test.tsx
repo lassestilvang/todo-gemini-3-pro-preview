@@ -5,7 +5,7 @@ import React from "react";
 
 // Mock the actions
 const mockCreateTask = mock(() => Promise.resolve());
-mock.module("@/lib/actions", () => ({
+mock.module("@/lib/actions/tasks", () => ({
     createTask: mockCreateTask
 }));
 
@@ -53,6 +53,22 @@ describe("CreateTaskInput", () => {
             userId: "test_user_123",
             title: "New Task",
             priority: "none"
+        }));
+    });
+
+    it("should include defaultLabelIds when creating task", async () => {
+        render(<CreateTaskInput userId="test_user_123" defaultLabelIds={[1, 2, 3]} />);
+        const input = screen.getByPlaceholderText(/Add a task/i);
+
+        fireEvent.focus(input);
+        fireEvent.change(input, { target: { value: "Label Task" } });
+        fireEvent.click(screen.getByText("Add Task"));
+
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining({
+            title: "Label Task",
+            labelIds: [1, 2, 3]
         }));
     });
 

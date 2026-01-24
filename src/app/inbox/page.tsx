@@ -46,7 +46,6 @@ export default async function InboxPage() {
                     viewId="inbox"
                     userId={user.id}
                     initialSettings={initialSettings}
-                    hideAddButton={true}
                 />
             </div>
         </div>

@@ -1,20 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
+import { getLists } from "@/lib/actions/lists";
+import { getLabels } from "@/lib/actions/labels";
 import {
-    getLists,
-    getLabels,
     getSubtasks,
     createSubtask,
     updateSubtask,
     deleteSubtask,
-    getReminders,
-    getTaskLogs,
-    createReminder,
-    deleteReminder,
-    getBlockers,
-    addDependency,
-    removeDependency,
     searchTasks
-} from "@/lib/actions";
+} from "@/lib/actions/tasks";
+import { getReminders, createReminder, deleteReminder } from "@/lib/actions/reminders";
+import { getTaskLogs } from "@/lib/actions/logs";
+import { getBlockers, addDependency, removeDependency } from "@/lib/actions/dependencies";
 import { ParsedSubtask } from "@/lib/smart-scheduler";
 
 // Re-using types from TaskDialog (we should move these to a types file eventually)

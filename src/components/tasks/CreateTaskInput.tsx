@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Calendar, Flag, Zap, MapPin } from "lucide-react";
-import { createTask } from "@/lib/actions";
+import { createTask } from "@/lib/actions/tasks";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
@@ -18,7 +18,7 @@ import { VoiceInput } from "./VoiceInput";
 import { TaskDialog } from "./TaskDialog";
 
 
-export function CreateTaskInput({ listId, defaultDueDate, userId }: { listId?: number, defaultDueDate?: Date | string, userId: string }) {
+export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelIds }: { listId?: number, defaultDueDate?: Date | string, userId: string, defaultLabelIds?: number[] }) {
     const [title, setTitle] = useState("");
     const [dueDate, setDueDate] = useState<Date | undefined>(
         defaultDueDate ? new Date(defaultDueDate) : undefined
@@ -81,6 +81,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId }: { listId?: n
             priority: priority !== "none" ? priority : (parsed.priority || "none"),
             energyLevel: energyLevel || parsed.energyLevel || null,
             context: context || parsed.context || null,
+            labelIds: defaultLabelIds,
         });
 
         setTitle("");

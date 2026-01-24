@@ -1,6 +1,7 @@
 import { getLabel, getTasks, getViewSettings } from "@/lib/actions";
 import { getCurrentUser } from "@/lib/auth";
 import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
+import { CreateTaskInput } from "@/components/tasks/CreateTaskInput";
 import { notFound, redirect } from "next/navigation";
 import { getLabelIcon } from "@/lib/icons";
 import { createElement } from "react";
@@ -55,6 +56,8 @@ export default async function LabelPage({ params }: LabelPageProps) {
                         {label.name}
                     </h1>
                 </div>
+
+                <CreateTaskInput userId={user.id} defaultLabelIds={[labelId]} />
 
                 <TaskListWithSettings
                     tasks={tasks}

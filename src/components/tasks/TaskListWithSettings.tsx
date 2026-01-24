@@ -7,7 +7,7 @@ import { Plus, ChevronDown } from "lucide-react";
 import { format, isToday, isTomorrow, isThisYear } from "date-fns";
 import { ViewOptionsPopover } from "./ViewOptionsPopover";
 import { ViewSettings, defaultViewSettings } from "@/lib/view-settings";
-import { getViewSettings } from "@/lib/actions";
+import { getViewSettings } from "@/lib/actions/view-settings";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 
@@ -24,7 +24,6 @@ interface TaskListWithSettingsProps {
     viewId: string;
     userId?: string;
     initialSettings?: ViewSettings;
-    hideAddButton?: boolean;
 }
 
 /**
@@ -149,8 +148,7 @@ export function TaskListWithSettings({
     defaultDueDate,
     viewId,
     userId,
-    initialSettings,
-    hideAddButton = false
+    initialSettings
 }: TaskListWithSettingsProps) {
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -273,12 +271,6 @@ export function TaskListWithSettings({
             <div className="flex items-center justify-between">
                 {title && <h2 className="text-xl font-semibold">{title}</h2>}
                 <div className="flex items-center gap-2 ml-auto">
-                    {!hideAddButton && (
-                        <Button onClick={handleAdd} size="sm">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Task
-                        </Button>
-                    )}
                     <ViewOptionsPopover
                         viewId={viewId}
                         userId={userId}
@@ -290,7 +282,6 @@ export function TaskListWithSettings({
             {processedTasks.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground border rounded-lg border-dashed">
                     <p>No tasks found</p>
-                    <Button variant="link" onClick={handleAdd}>Create one?</Button>
                 </div>
             ) : settings.groupBy === "none" ? (
                 <div className="space-y-2">

@@ -1,7 +1,7 @@
 import { useState, FormEvent, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { createTask, updateTask, deleteTask } from "@/lib/actions";
+import { createTask, updateTask, deleteTask } from "@/lib/actions/tasks";
 import type { ActionResult, ActionError } from "@/lib/action-result";
 
 export type TaskType = {

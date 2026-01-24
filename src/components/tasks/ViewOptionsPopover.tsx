@@ -8,7 +8,9 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { ChevronDown, ChevronUp, Settings2, List, LayoutGrid, Calendar, RotateCcw } from "lucide-react";
 import { ViewSettings, defaultViewSettings } from "@/lib/view-settings";
-import { getViewSettings, saveViewSettings, resetViewSettings, getLabels, createSavedView } from "@/lib/actions";
+import { getViewSettings, saveViewSettings, resetViewSettings } from "@/lib/actions/view-settings";
+import { getLabels } from "@/lib/actions/labels";
+import { createSavedView } from "@/lib/actions/views";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
