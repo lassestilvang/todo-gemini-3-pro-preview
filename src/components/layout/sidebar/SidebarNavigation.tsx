@@ -35,12 +35,12 @@ export function SidebarNavigation() {
                 <Button
                     key={item.href}
                     variant={pathname === item.href ? "secondary" : "ghost"}
-                    className="w-full justify-start"
+                    className="w-full justify-start min-w-0"
                     asChild
                 >
-                    <Link href={item.href}>
-                        <item.icon className={cn("mr-2 h-4 w-4", item.color)} />
-                        {item.name}
+                    <Link href={item.href} className="w-full flex items-center min-w-0">
+                        <item.icon className={cn("mr-2 h-4 w-4 shrink-0", item.color)} />
+                        <span className="truncate">{item.name}</span>
                     </Link>
                 </Button>
             ))}

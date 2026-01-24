@@ -20,36 +20,36 @@ export function SidebarRituals() {
             <Button
                 variant="ghost"
                 size="sm"
-                className="w-full justify-start"
+                className="w-full justify-start min-w-0"
                 onClick={() => {
                     setRitualType("morning");
                     setPlanningRitualOpen(true);
                 }}
             >
-                <Sunrise className="mr-2 h-4 w-4 text-orange-500" />
-                Morning Ritual
+                <Sunrise className="mr-2 h-4 w-4 text-orange-500 shrink-0" />
+                <span className="truncate">Morning Ritual</span>
             </Button>
             <Button
                 variant="ghost"
                 size="sm"
-                className="w-full justify-start"
+                className="w-full justify-start min-w-0"
                 onClick={() => {
                     setRitualType("evening");
                     setPlanningRitualOpen(true);
                 }}
             >
-                <Sunset className="mr-2 h-4 w-4 text-purple-500" />
-                Evening Review
+                <Sunset className="mr-2 h-4 w-4 text-purple-500 shrink-0" />
+                <span className="truncate">Evening Review</span>
             </Button>
             <Button
                 id="zen-toggle"
                 variant="ghost"
                 size="sm"
-                className={cn("w-full justify-start", isZenMode && "bg-indigo-500/10 text-indigo-500")}
+                className={cn("w-full justify-start min-w-0", isZenMode && "bg-indigo-500/10 text-indigo-500")}
                 onClick={toggleZenMode}
             >
-                <Moon className="mr-2 h-4 w-4" />
-                Zen Mode
+                <Moon className="mr-2 h-4 w-4 shrink-0" />
+                <span className="truncate">Zen Mode</span>
             </Button>
             <Button
                 variant="ghost"
@@ -57,8 +57,8 @@ export function SidebarRituals() {
                 className="w-full justify-start"
                 onClick={() => setSmartScheduleOpen(true)}
             >
-                <Sparkles className="mr-2 h-4 w-4 text-indigo-500" />
-                Smart Schedule
+                <Sparkles className="mr-2 h-4 w-4 text-indigo-500 shrink-0" />
+                <span className="truncate">Smart Schedule</span>
             </Button>
             <RescheduleButton />
 

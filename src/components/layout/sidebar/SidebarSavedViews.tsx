@@ -32,7 +32,7 @@ export function SidebarSavedViews({ userId }: { userId?: string }) {
     if (!userId || (views && views.length === 0 && !isLoading)) return null;
 
     return (
-        <div className="space-y-1">
+        <div className="px-3 py-2 space-y-1">
             <button
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="flex items-center justify-between w-full px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:bg-muted/50 transition-colors group"
@@ -45,9 +45,9 @@ export function SidebarSavedViews({ userId }: { userId?: string }) {
             </button>
 
             {isExpanded && (
-                <div className="px-2 space-y-0.5">
+                <div className="space-y-0.5 py-1">
                     {isLoading ? (
-                        <div className="px-2 space-y-2 py-2">
+                        <div className="space-y-2 py-2">
                             <div className="h-8 bg-muted/20 animate-pulse rounded-md w-full" />
                             <div className="h-8 bg-muted/20 animate-pulse rounded-md w-full" />
                         </div>
@@ -56,17 +56,17 @@ export function SidebarSavedViews({ userId }: { userId?: string }) {
                         const isActive = pathname === href;
 
                         return (
-                            <div key={view.id} className="group relative">
+                            <div key={view.id} className="group relative min-w-0">
                                 <Button
                                     variant={isActive ? "secondary" : "ghost"}
                                     size="sm"
                                     className={cn(
-                                        "w-full justify-start pl-8 pr-8",
+                                        "w-full justify-start pl-10 pr-12 min-w-0",
                                         isActive && "bg-secondary"
                                     )}
                                     asChild
                                 >
-                                    <Link href={href}>
+                                    <Link href={href} className="w-full flex items-center min-w-0">
                                         <span className="truncate">{view.name}</span>
                                     </Link>
                                 </Button>

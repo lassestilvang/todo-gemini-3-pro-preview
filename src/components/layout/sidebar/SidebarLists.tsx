@@ -1,11 +1,12 @@
 "use client";
 
+
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Plus, MoreHorizontal, GripVertical } from "lucide-react";
+import { Plus, MoreHorizontal, GripVertical, ArrowUpDown } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -52,11 +53,13 @@ interface SidebarListsProps {
 function SortableListItem({
     list,
     pathname,
-    onEdit
+    onEdit,
+    isReordering
 }: {
     list: List;
     pathname: string;
     onEdit: (list: List) => void;
+    isReordering: boolean;
 }) {
     const {
         attributes,
@@ -65,7 +68,7 @@ function SortableListItem({
         transform,
         transition,
         isDragging
-    } = useSortable({ id: list.id });
+    } = useSortable({ id: list.id, disabled: !isReordering });
 
     const style = {
         transform: CSS.Translate.toString(transform),
@@ -83,32 +86,35 @@ function SortableListItem({
                 isDragging ? "bg-accent/50 opacity-80 shadow-sm" : "hover:bg-accent hover:text-accent-foreground"
             )}
         >
-            <div
-                className="cursor-grab p-2 opacity-0 group-hover:opacity-50 hover:opacity-100 flex items-center justify-center transition-opacity touch-none"
-                {...listeners}
-                {...attributes}
-            >
-                <GripVertical className="h-3 w-3" />
-            </div>
+            {isReordering && (
+                <div
+                    className="cursor-grab p-2 text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors touch-none"
+                    {...listeners}
+                    {...attributes}
+                >
+                    <GripVertical className="h-3 w-3" />
+                </div>
+            )}
             <Button
                 variant="ghost"
                 className={cn(
-                    "flex-1 justify-start font-normal hover:bg-transparent px-2 pl-0",
+                    "flex-1 justify-start font-normal hover:bg-transparent px-2 min-w-0",
+                    !isReordering && "pl-4",
                     pathname === `/lists/${list.id}` ? "bg-secondary" : ""
                 )}
                 asChild
             >
-                <Link href={`/lists/${list.id}`}>
+                <Link href={`/lists/${list.id}`} className="w-full flex items-center min-w-0">
                     {React.createElement(getListIcon(list.icon), {
-                        className: "mr-2 h-4 w-4",
+                        className: "mr-2 h-4 w-4 shrink-0",
                         style: { color: list.color || "#000000" }
                     })}
-                    {list.name}
+                    <span className="truncate">{list.name}</span>
                 </Link>
             </Button>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild aria-label={`Open menu for list ${list.name}`}>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 mr-1">
+                    <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 mr-1 shrink-0">
                         <MoreHorizontal className="h-3 w-3" />
                     </Button>
                 </DropdownMenuTrigger>
@@ -126,6 +132,7 @@ export function SidebarLists({ lists, userId }: SidebarListsProps) {
     const pathname = usePathname();
     const [editingList, setEditingList] = useState<List | null>(null);
     const [items, setItems] = useState(lists);
+    const [isReordering, setIsReordering] = useState(false);
 
     // Sync items when props change (server update)
     useEffect(() => {
@@ -167,20 +174,31 @@ export function SidebarLists({ lists, userId }: SidebarListsProps) {
     };
 
     return (
-        <div className="pl-3 pr-6 py-2" data-testid="sidebar-lists">
+        <div className="px-3 py-2" data-testid="sidebar-lists">
             <div className="flex items-center justify-between px-4">
                 <h2 className="text-lg font-semibold tracking-tight">
                     Lists
                 </h2>
-                <ManageListDialog
-                    trigger={
-                        <Button variant="ghost" size="icon" className="h-8 w-8" data-testid="add-list-button">
-                            <Plus className="h-4 w-4" />
-                            <span className="sr-only">Add List</span>
-                        </Button>
-                    }
-                    userId={userId}
-                />
+                <div className="flex items-center gap-1">
+                    <Button
+                        variant={isReordering ? "secondary" : "ghost"}
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => setIsReordering(!isReordering)}
+                        title={isReordering ? "Done reordering" : "Reorder lists"}
+                    >
+                        <ArrowUpDown className="h-3.5 w-3.5" />
+                    </Button>
+                    <ManageListDialog
+                        trigger={
+                            <Button variant="ghost" size="icon" className="h-7 w-7" data-testid="add-list-button">
+                                <Plus className="h-4 w-4" />
+                                <span className="sr-only">Add List</span>
+                            </Button>
+                        }
+                        userId={userId}
+                    />
+                </div>
             </div>
 
             <DndContext
@@ -193,13 +211,14 @@ export function SidebarLists({ lists, userId }: SidebarListsProps) {
                     items={items.map(i => i.id)}
                     strategy={verticalListSortingStrategy}
                 >
-                    <div className="space-y-1 p-2">
+                    <div className="space-y-1 py-2">
                         {items.map((list) => (
                             <SortableListItem
                                 key={list.id}
                                 list={list}
                                 pathname={pathname}
                                 onEdit={setEditingList}
+                                isReordering={isReordering}
                             />
                         ))}
                     </div>
