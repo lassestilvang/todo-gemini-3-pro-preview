@@ -30,11 +30,11 @@
   - **Responsive Design**: Ensure Board and Calendar views are usable on mobile with horizontal scrolling or simplified layouts.
 - [ ] **AI-Powered Task Suggestions**: Leverage Gemini to suggest next tasks based on user habits and patterns.
 - [ ] **Internationalization (i18n) Support**: Add language files, locale-switcher, and Next.js i18n routing.
-- [ ] **Manual Task Sorting**: Implement manual task reordering within lists.
+- [x] **Manual Task Sorting**: Implement manual task reordering within lists.
   - **Logic**: When view sorting is set to "manual", allow users to drag-and-drop tasks to change their order.
   - **Schema**: Ensure tasks have a `position` or `sort_order` field.
   - **Consistency**: Sorting should keep todo and completed tasks separated (sorting within their respective groups).
-
+  - *Status*: **RESOLVED** - Added `position` column, `reorderTasks` action, and integrated `@dnd-kit` in `TaskListWithSettings`. Server query enforcing todo/completed separation.
 - [x] **Activity Log System**: Implement a detailed activity log page and sidebar entry.
   - **Tracking**: Log all actions including task completion, list renames, manual sorting, deletions, and metadata changes.
   - **Page**: Dedicated `/activity` page with a searchable/filterable audit trail.
@@ -65,7 +65,11 @@
   - **Uploads**: Allow users to upload custom icons/images to use as avatars for lists or tasks.
   - **External API**: Integrate with an external icon/logo search service (e.g., Lucide, Phosphor, or a Logo API) for a broader selection.
   - **Design**: Needs to look and feel premium with smooth animations and a clean categorization layout.
-
+- [ ] **Task List Density Options**: Introduce selectable density views for task lists to improve visibility and focus.
+  - **Compact**: Minimal padding and margin, optimized for power users with many tasks.
+  - **Standard**: The current default layout and spacing.
+  - **Spacious**: Increased padding and vertical rhythm for better readability and focus.
+  - **Settings**: Integrate density selection into the `ViewOptionsPopover` and persist it per view using the `ViewSettings` system.
 
 - [ ] **Privacy-Friendly Analytics**: Connect WebVitals/page-events to a provider (Plausible/PostHog) with opt-out.
 - [ ] **Real-User Monitoring (RUM) Dashboard**: Dashboard for Web Vitals metrics.
@@ -91,9 +95,8 @@
 - [x] **[UX] Glassmorphism Themes**: Added `glassmorphism` and `glassmorphism-dark` with blur effects.
 - [x] **[UX] Onboarding Flow**: Fixed viewport overflow issues for tour tooltips.
 - [x] **[UX] Sidebar Structure**: Move "Templates" nav item below "Smart Schedule", move "I'm behind" below "Smart Schedule", relocate "Install App" to user menu, and move gamification (XP Bar) to the bottom.
-- [ ] **[UX] Sidebar Reordering Toggle**: Move the list/label reordering functionality behind a toggle or icon. Since reordering is infrequent, it shouldn't be active by default to prevent accidental drags and keep the UI clean.
-
-
+- [x] **[UX] Sidebar Reordering Toggle**: Move the list/label reordering functionality behind a toggle or icon. Since reordering is infrequent, it shouldn't be active by default to prevent accidental drags and keep the UI clean.
+- [ ] **[UX] Performance Theme**: Add a new theme that has no animations, transitions or any other fancy effects. It should be super clean and fast. Focus on raw performance and a "no-nonsense" aesthetic. Use your frontend skill to create a theme that is as fast and beautiful as possible.
 
 ## 🛠 Engineering & Quality
 

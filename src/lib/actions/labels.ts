@@ -24,6 +24,7 @@ import { logActivity } from "./logs";
  * @returns Array of labels
  */
 import { cache } from "react";
+import { unstable_cache, revalidateTag } from "next/cache";
 
 /**
  * Retrieves all labels for a specific user.
@@ -32,11 +33,18 @@ import { cache } from "react";
  * @returns Array of labels
  */
 export const getLabels = cache(async function getLabels(userId: string) {
-  return await db
-    .select()
-    .from(labels)
-    .where(eq(labels.userId, userId))
-    .orderBy(labels.position, labels.id);
+  const fn = unstable_cache(
+    async (id: string) => {
+      return await db
+        .select()
+        .from(labels)
+        .where(eq(labels.userId, id))
+        .orderBy(labels.position, labels.id);
+    },
+    ["labels"],
+    { tags: [`labels-${userId}`] }
+  );
+  return fn(userId);
 });
 
 /**
@@ -60,6 +68,8 @@ async function reorderLabelsImpl(userId: string, items: { id: number; position: 
     action: "label_updated",
     details: `Reordered ${items.length} labels`,
   });
+  revalidateTag(`labels-${userId}`);
+  revalidatePath("/", "layout");
 }
 
 /**
@@ -113,6 +123,7 @@ async function createLabelImpl(data: typeof labels.$inferInsert) {
     details: `Created label: ${result[0].name}`,
   });
 
+  revalidateTag(`labels-${data.userId}`);
   revalidatePath("/", "layout");
   return result[0];
 }
@@ -161,6 +172,7 @@ async function updateLabelImpl(
     });
   }
 
+  revalidateTag(`labels-${userId}`);
   revalidatePath("/", "layout");
 }
 
@@ -199,6 +211,7 @@ async function deleteLabelImpl(id: number, userId: string) {
     });
   }
 
+  revalidateTag(`labels-${userId}`);
   revalidatePath("/", "layout");
 }
 

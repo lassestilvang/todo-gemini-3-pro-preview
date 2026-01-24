@@ -24,6 +24,7 @@ import { logActivity } from "./logs";
  * @returns Array of lists ordered by creation date
  */
 import { cache } from "react";
+import { unstable_cache, revalidateTag } from "next/cache";
 
 /**
  * Retrieves all lists for a specific user.
@@ -32,11 +33,18 @@ import { cache } from "react";
  * @returns Array of lists ordered by creation date
  */
 export const getLists = cache(async function getLists(userId: string) {
-  return await db
-    .select()
-    .from(lists)
-    .where(eq(lists.userId, userId))
-    .orderBy(lists.position, lists.createdAt);
+  const fn = unstable_cache(
+    async (id: string) => {
+      return await db
+        .select()
+        .from(lists)
+        .where(eq(lists.userId, id))
+        .orderBy(lists.position, lists.createdAt);
+    },
+    ["lists"],
+    { tags: [`lists-${userId}`] }
+  );
+  return fn(userId);
 });
 
 /**
@@ -63,6 +71,9 @@ async function reorderListsImpl(userId: string, items: { id: number; position: n
     action: "list_updated",
     details: `Reordered ${items.length} lists`,
   });
+  revalidateTag(`lists-${userId}`);
+  // Also revalidate path to ensure client router cache is updated for side effects
+  revalidatePath("/", "layout");
 }
 
 /**
@@ -116,6 +127,7 @@ async function createListImpl(data: typeof lists.$inferInsert) {
     details: `Created list: ${result[0].name}`,
   });
 
+  revalidateTag(`lists-${data.userId}`);
   revalidatePath("/", "layout");
   return result[0];
 }
@@ -165,6 +177,7 @@ async function updateListImpl(
     });
   }
 
+  revalidateTag(`lists-${userId}`);
   revalidatePath("/", "layout");
 }
 
@@ -203,6 +216,7 @@ async function deleteListImpl(id: number, userId: string) {
     });
   }
 
+  revalidateTag(`lists-${userId}`);
   revalidatePath("/", "layout");
 }
 

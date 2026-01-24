@@ -31,6 +31,7 @@ import {
   calculateStreakUpdate,
   suggestMetadata,
   NotFoundError,
+  withErrorHandling,
 } from "./shared";
 import { rateLimit } from "@/lib/rate-limit";
 
@@ -110,6 +111,7 @@ export async function getTasks(
       recurringRule: tasks.recurringRule,
       parentId: tasks.parentId,
       estimateMinutes: tasks.estimateMinutes,
+      position: tasks.position,
       actualMinutes: tasks.actualMinutes,
       createdAt: tasks.createdAt,
       updatedAt: tasks.updatedAt,
@@ -124,7 +126,7 @@ export async function getTasks(
     .from(tasks)
     .leftJoin(lists, eq(tasks.listId, lists.id))
     .where(and(...conditions))
-    .orderBy(asc(tasks.isCompleted), desc(tasks.createdAt));
+    .orderBy(asc(tasks.isCompleted), asc(tasks.position), desc(tasks.createdAt));
 
   // Fetch labels for each task
   const taskIds = tasksResult.map((t) => t.id);
@@ -204,6 +206,7 @@ export async function getTask(id: number, userId: string) {
       recurringRule: tasks.recurringRule,
       parentId: tasks.parentId,
       estimateMinutes: tasks.estimateMinutes,
+      position: tasks.position,
       actualMinutes: tasks.actualMinutes,
       createdAt: tasks.createdAt,
       updatedAt: tasks.updatedAt,
@@ -715,3 +718,40 @@ export async function getTasksForSearch(userId: string) {
 
   return result;
 }
+
+/**
+ * Internal implementation for reordering tasks.
+ *
+ * @param userId - The ID of the user who owns the tasks
+ * @param items - Array of task IDs and their new positions
+ */
+async function reorderTasksImpl(userId: string, items: { id: number; position: number }[]) {
+  await Promise.all(
+    items.map((item) =>
+      db
+        .update(tasks)
+        .set({ position: item.position })
+        .where(and(eq(tasks.id, item.id), eq(tasks.userId, userId)))
+    )
+  );
+
+  if (items.length > 0) {
+    await db.insert(taskLogs).values({
+      userId,
+      taskId: null,
+      action: "reorder",
+      details: `Reordered ${items.length} tasks`,
+    });
+  }
+
+  revalidatePath("/");
+}
+
+/**
+ * Reorders tasks.
+ *
+ * @param userId - The ID of the user who owns the tasks
+ * @param items - Array of task IDs and their new positions
+ * @returns ActionResult with void on success or error
+ */
+export const reorderTasks = withErrorHandling(reorderTasksImpl);

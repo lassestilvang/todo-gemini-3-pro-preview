@@ -6,7 +6,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { Calendar, Flag, Clock, Repeat, AlertCircle, Lock, ChevronDown, GitBranch } from "lucide-react";
+import { Calendar, Flag, Clock, Repeat, AlertCircle, Lock, ChevronDown, GitBranch, GripVertical } from "lucide-react";
 import { toggleTaskCompletion, updateSubtask } from "@/lib/actions/tasks";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,7 @@ export interface Task {
     deadline: Date | null;
     isCompleted: boolean | null;
     estimateMinutes: number | null;
+    position: number;
     actualMinutes: number | null;
     isRecurring: boolean | null;
     listId: number | null;
@@ -61,7 +62,10 @@ interface TaskItemProps {
     task: Task;
     showListInfo?: boolean;
     userId?: string;
+    disableAnimations?: boolean;
+    dragHandleProps?: any;
 }
+
 
 // Format minutes to human-readable duration
 function formatDuration(minutes: number): string {
@@ -73,7 +77,7 @@ function formatDuration(minutes: number): string {
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 }
 
-export function TaskItem({ task, showListInfo = true, userId }: TaskItemProps) {
+export function TaskItem({ task, showListInfo = true, userId, disableAnimations = false, dragHandleProps }: TaskItemProps) {
     const [isCompleted, setIsCompleted] = useState(task.isCompleted || false);
     const [isExpanded, setIsExpanded] = useState(false);
     const [subtaskStates, setSubtaskStates] = useState<Record<number, boolean>>(
@@ -135,27 +139,42 @@ export function TaskItem({ task, showListInfo = true, userId }: TaskItemProps) {
 
     return (
         <m.div
-            layout
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, height: 0 }}
+            layout={!disableAnimations ? true : undefined}
+            initial={!disableAnimations ? { opacity: 0, y: 10 } : undefined}
+            animate={!disableAnimations ? { opacity: 1, y: 0 } : undefined}
+            exit={!disableAnimations ? { opacity: 0, height: 0 } : undefined}
             className="mb-2" // Add margin bottom here to separate items when animating
         >
             <div
                 className={cn(
                     "group flex items-center gap-3 rounded-lg border p-4 hover:bg-accent/40 transition-all duration-200 cursor-pointer hover:shadow-sm bg-card card relative",
                     isCompleted && "opacity-60 bg-muted/30",
-                    isBlocked && !isCompleted && "bg-orange-50/50 border-orange-100"
+                    isBlocked && !isCompleted && "bg-orange-50/50 border-orange-100",
+                    disableAnimations && "cursor-default" // Change cursor if dragging via handle
                 )}
                 data-testid="task-item"
                 data-task-id={task.id}
                 data-task-completed={isCompleted}
             >
+                {/* Drag Handle */}
+                {disableAnimations && (
+                    <div
+                        className="cursor-grab active:cursor-grabbing text-muted-foreground/30 hover:text-muted-foreground transition-colors -ml-2 -mr-1 outline-none"
+                        {...dragHandleProps}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                        }}
+                    >
+                        <GripVertical className="h-4 w-4" />
+                    </div>
+                )}
                 {/* Expand/Collapse Button */}
                 {hasSubtasks ? (
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
+                            e.preventDefault();
                             setIsExpanded(!isExpanded);
                         }}
                         className="flex items-center justify-center w-5 h-5 -ml-1 rounded hover:bg-muted transition-colors"
@@ -184,7 +203,10 @@ export function TaskItem({ task, showListInfo = true, userId }: TaskItemProps) {
                             isCompleted ? "data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" : "border-muted-foreground/30",
                             isBlocked && !isCompleted ? "opacity-30 cursor-not-allowed" : ""
                         )}
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                        }}
                         data-testid="task-checkbox"
                     />
                 </m.div>
@@ -331,9 +353,11 @@ export function TaskItem({ task, showListInfo = true, userId }: TaskItemProps) {
                     className="opacity-0 group-hover:opacity-100 transition-opacity absolute right-4 top-1/2 -translate-y-1/2 z-20 h-8 w-8"
                     onClick={(e) => {
                         e.stopPropagation();
+                        e.preventDefault();
                         e.nativeEvent.stopImmediatePropagation();
                         setShowFocusMode(true);
                     }}
+                    type="button"
                 >
                     <Target className="h-4 w-4 text-muted-foreground hover:text-primary" />
                 </Button>
@@ -351,12 +375,19 @@ export function TaskItem({ task, showListInfo = true, userId }: TaskItemProps) {
                                     "flex items-center gap-3 py-2 px-3 rounded-md hover:bg-muted/50 transition-colors",
                                     isSubtaskCompleted && "opacity-60"
                                 )}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                }}
                             >
                                 <Checkbox
                                     checked={isSubtaskCompleted || false}
                                     onCheckedChange={(checked) => handleSubtaskToggle(subtask.id, checked as boolean)}
                                     className="rounded-full h-4 w-4"
-                                    onClick={(e) => e.stopPropagation()}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                    }}
                                 />
                                 <span
                                     className={cn(

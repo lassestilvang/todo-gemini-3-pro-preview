@@ -140,6 +140,105 @@ function groupTasks(tasks: Task[], groupBy: ViewSettings["groupBy"]): Map<string
     return groups;
 }
 
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent,
+    DragOverlay,
+    DragStartEvent,
+    DragCancelEvent,
+} from "@dnd-kit/core";
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    useSortable,
+    verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import { CSS } from "@dnd-kit/utilities";
+import { reorderTasks } from "@/lib/actions/tasks";
+
+// Sortable Task Component
+function SortableTaskItem({
+    task,
+    handleEdit,
+    focusedIndex,
+    index,
+    listId,
+    userId,
+    isDragEnabled
+}: {
+    task: Task;
+    handleEdit: (task: Task) => void;
+    focusedIndex: number;
+    index: number;
+    listId?: number;
+    userId?: string;
+    isDragEnabled: boolean;
+}) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging
+    } = useSortable({
+        id: task.id,
+        disabled: !isDragEnabled
+    });
+
+    const style = {
+        transform: CSS.Translate.toString(transform),
+        transition: isDragging ? "none" : transition,
+        zIndex: isDragging ? 50 : 0,
+        position: "relative" as const,
+    };
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            {...attributes}
+            // Listeners are applied to the handle inside TaskItem via a prop? 
+            // Better: Render Drag Handle in SortableTaskItem and pass it the listeners.
+            // Or: Pass listeners to TaskItem and attach to handle.
+            // Let's pass dragHandleProps to TaskItem.
+            onClick={(e) => {
+                if (e.defaultPrevented) return;
+                handleEdit(task);
+            }}
+            className={cn(
+                "cursor-pointer rounded-lg transition-all",
+                focusedIndex === index && "ring-2 ring-indigo-500 ring-offset-2 ring-offset-background",
+                isDragging ? "opacity-0" : ""
+            )}
+        >
+            {/* If drag is enabled, we need to handle touch-action to prevent scrolling when dragging?
+                Actually dnd-kit handles touch-action: none on the draggable element.
+                But we want the whole card draggable?
+                If we want the whole card draggable, attributes/listeners go on the container.
+                But text selection might be an issue.
+                Usually it's better to have a drag handle or long press.
+                But requirements say "drag-and-drop tasks", often implies whole row.
+                Lets keep it simple: whole row draggable.
+             */}
+            <TaskItem
+                task={task}
+                showListInfo={!listId}
+                userId={userId}
+                disableAnimations={isDragEnabled}
+                dragHandleProps={isDragEnabled ? listeners : undefined}
+            />
+        </div>
+    );
+}
+
 export function TaskListWithSettings({
     tasks,
     title,
@@ -166,6 +265,15 @@ export function TaskListWithSettings({
     // If we have initialSettings, we don't need to wait for client-side fetch, so we are "mounted" (ready)
     const [mounted, setMounted] = useState(!!initialSettings);
     const [focusedIndex, setFocusedIndex] = useState(-1);
+    const [activeId, setActiveId] = useState<number | null>(null);
+
+    // Local state for tasks to support optimistic UI updates during drag
+    const [localTasks, setLocalTasks] = useState<Task[]>([]);
+
+    // Sync local tasks with props when they change (and not dragging)
+    useEffect(() => {
+        setLocalTasks(tasks);
+    }, [tasks]);
 
     // Load initial settings only if not provided
     useEffect(() => {
@@ -201,14 +309,12 @@ export function TaskListWithSettings({
         setIsDialogOpen(true);
     };
 
-    const handleAdd = () => {
-        setEditingTask(null);
-        setIsDialogOpen(true);
-    };
-
     const processedTasks = useMemo(() => {
-        return applyViewSettings(tasks, settings);
-    }, [tasks, settings]);
+        return applyViewSettings(localTasks, settings);
+    }, [localTasks, settings]);
+
+    // Update local tasks when sorting changes to ensure consistency?
+    // Actually applyViewSettings derives from localTasks. 
 
     // Handle J/K Navigation
     useEffect(() => {
@@ -226,14 +332,12 @@ export function TaskListWithSettings({
                 setFocusedIndex(prev => Math.max(0, prev - 1));
             } else if (e.key === "Enter" && focusedIndex >= 0) {
                 handleEdit(processedTasks[focusedIndex]);
-            } else if (e.key === "x" && focusedIndex >= 0) {
-                // Future: Toggle completion directly if possible, or leave for now
             }
         };
 
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [processedTasks, focusedIndex, userId]);
+    }, [processedTasks, focusedIndex]);
 
     // Group tasks
     const groupedTasks = useMemo(() => {
@@ -258,6 +362,53 @@ export function TaskListWithSettings({
         if (isTomorrow(date)) return "Tomorrow";
         return format(date, isThisYear(date) ? "EEEE, MMM do" : "EEEE, MMM do, yyyy");
     };
+
+    // Drag and Drop Logic
+    const isDragEnabled = settings.sortBy === "manual" && settings.groupBy === "none" && !!userId;
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    const handleDragStart = (event: DragStartEvent) => {
+        setActiveId(event.active.id as number);
+    };
+
+    const handleDragCancel = () => {
+        setActiveId(null);
+    };
+
+    const handleDragEnd = async (event: DragEndEvent) => {
+        const { active, over } = event;
+        setActiveId(null);
+
+        if (over && active.id !== over.id) {
+            const oldIndex = localTasks.findIndex((t) => t.id === active.id);
+            const newIndex = localTasks.findIndex((t) => t.id === over.id);
+            const newTasks = arrayMove(localTasks, oldIndex, newIndex);
+
+            // Update local state immediately
+            setLocalTasks(newTasks);
+
+            // Server update
+            if (userId) {
+                const updates = newTasks.map((t, index) => ({
+                    id: t.id,
+                    position: index
+                }));
+                // Don't await to keep UI responsive
+                reorderTasks(userId, updates).catch(console.error);
+            }
+        }
+    };
+
 
     if (!mounted) {
         return <div className="space-y-4 animate-pulse">
@@ -284,20 +435,47 @@ export function TaskListWithSettings({
                     <p>No tasks found</p>
                 </div>
             ) : settings.groupBy === "none" ? (
-                <div className="space-y-2">
-                    {processedTasks.map((task, index) => (
-                        <div
-                            key={task.id}
-                            onClick={() => handleEdit(task)}
-                            className={cn(
-                                "cursor-pointer rounded-lg transition-all",
-                                focusedIndex === index && "ring-2 ring-indigo-500 ring-offset-2 ring-offset-background"
-                            )}
-                        >
-                            <TaskItem task={task} showListInfo={!listId} userId={userId} />
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                    onDragCancel={handleDragCancel}
+                    modifiers={[restrictToVerticalAxis]}
+                >
+                    <SortableContext
+                        items={processedTasks.map(t => t.id)}
+                        strategy={verticalListSortingStrategy}
+                        disabled={!isDragEnabled}
+                    >
+                        <div className="space-y-2">
+                            {processedTasks.map((task, index) => (
+                                <SortableTaskItem
+                                    key={task.id}
+                                    task={task}
+                                    index={index}
+                                    handleEdit={handleEdit}
+                                    focusedIndex={focusedIndex}
+                                    listId={listId}
+                                    userId={userId}
+                                    isDragEnabled={isDragEnabled}
+                                />
+                            ))}
                         </div>
-                    ))}
-                </div>
+                    </SortableContext>
+                    <DragOverlay>
+                        {activeId ? (
+                            <div className="opacity-90 rotate-2 scale-105 cursor-grabbing">
+                                <TaskItem
+                                    task={localTasks.find(t => t.id === activeId)!}
+                                    showListInfo={!listId}
+                                    userId={userId}
+                                    disableAnimations={true}
+                                />
+                            </div>
+                        ) : null}
+                    </DragOverlay>
+                </DndContext>
             ) : (
                 <div className="space-y-6">
                     {Array.from(groupedTasks.entries()).map(([groupName, groupTasks]) => (
@@ -311,7 +489,10 @@ export function TaskListWithSettings({
                                 return (
                                     <div
                                         key={task.id}
-                                        onClick={() => handleEdit(task)}
+                                        onClick={(e) => {
+                                            if (e.defaultPrevented) return;
+                                            handleEdit(task);
+                                        }}
                                         className={cn(
                                             "cursor-pointer rounded-lg transition-all",
                                             focusedIndex === globalIndex && "ring-2 ring-indigo-500 ring-offset-2 ring-offset-background"
@@ -324,7 +505,8 @@ export function TaskListWithSettings({
                         </div>
                     ))}
                 </div>
-            )}
+            )
+            }
 
             <Suspense fallback={null}>
                 <TaskDialog
@@ -340,6 +522,6 @@ export function TaskListWithSettings({
                     userId={userId}
                 />
             </Suspense>
-        </div>
+        </div >
     );
 }

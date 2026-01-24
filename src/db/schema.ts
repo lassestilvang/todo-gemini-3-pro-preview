@@ -58,6 +58,7 @@ export const tasks = pgTable("tasks", {
     recurringRule: text("recurring_rule"), // RRule string
     parentId: integer("parent_id"), // For subtasks
     estimateMinutes: integer("estimate_minutes"),
+    position: integer("position").default(0).notNull(),
     actualMinutes: integer("actual_minutes"),
     energyLevel: text("energy_level", { enum: ["high", "medium", "low"] }),
     context: text("context", { enum: ["computer", "phone", "errands", "meeting", "home", "anywhere"] }),

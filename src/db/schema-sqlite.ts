@@ -69,6 +69,7 @@ export const tasks = sqliteTable("tasks", {
     recurringRule: text("recurring_rule"),
     parentId: integer("parent_id"),
     estimateMinutes: integer("estimate_minutes"),
+    position: integer("position").default(0).notNull(),
     actualMinutes: integer("actual_minutes"),
     energyLevel: text("energy_level", { enum: ["high", "medium", "low"] }),
     context: text("context", { enum: ["computer", "phone", "errands", "meeting", "home", "anywhere"] }),

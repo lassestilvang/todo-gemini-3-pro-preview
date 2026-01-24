@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { Play, Pause, CheckCircle2, RotateCcw, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -81,13 +82,22 @@ export function FocusMode({ task, userId, onClose }: FocusModeProps) {
         }
     };
 
-    return (
-        <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex flex-col items-center justify-center p-4 animate-in fade-in duration-300">
+    // Use portal to avoid z-index stacking context issues with dnd-kit transforms
+    if (typeof document === 'undefined') return null;
+
+    return createPortal(
+        <div
+            className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-sm flex flex-col items-center justify-center p-4 animate-in fade-in duration-300"
+            onClick={(e) => e.stopPropagation()}
+        >
             <Button
                 variant="ghost"
                 size="icon"
                 className="absolute top-4 right-4"
-                onClick={onClose}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onClose();
+                }}
                 aria-label="Minimize Focus Mode"
             >
                 <Minimize2 className="h-6 w-6" />
@@ -157,6 +167,7 @@ export function FocusMode({ task, userId, onClose }: FocusModeProps) {
                     {isActive ? "Stay focused. You got this!" : "Ready to start?"}
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

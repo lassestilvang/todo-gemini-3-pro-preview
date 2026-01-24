@@ -25,5 +25,5 @@ export function validateEnv() {
         console.warn("⚠️ DATABASE_URL does not start with postgresql:// or postgres://");
     }
 
-    console.log("✅ Environment variables validated.");
+    //console.log("✅ Environment variables validated.");
 }
