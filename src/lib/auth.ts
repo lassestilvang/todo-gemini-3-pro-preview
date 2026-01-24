@@ -15,6 +15,7 @@ export interface AuthUser {
   lastName: string | null;
   avatarUrl: string | null;
   use24HourClock: boolean | null;
+  weekStartsOnMonday: boolean | null;
 }
 
 /**
@@ -39,6 +40,7 @@ async function getTestUser(): Promise<AuthUser | null> {
           lastName: session.user.lastName ?? null,
           avatarUrl: session.user.profilePictureUrl ?? null,
           use24HourClock: session.user.use24HourClock ?? null,
+          weekStartsOnMonday: session.user.weekStartsOnMonday ?? null,
         };
       }
     }
@@ -68,7 +70,7 @@ export const getCurrentUser = cache(async function getCurrentUser(): Promise<Aut
   }
 
   const [dbUser] = await db
-    .select({ use24HourClock: users.use24HourClock })
+    .select({ use24HourClock: users.use24HourClock, weekStartsOnMonday: users.weekStartsOnMonday })
     .from(users)
     .where(eq(users.id, user.id))
     .limit(1);
@@ -80,6 +82,7 @@ export const getCurrentUser = cache(async function getCurrentUser(): Promise<Aut
     lastName: user.lastName ?? null,
     avatarUrl: user.profilePictureUrl ?? null,
     use24HourClock: dbUser?.use24HourClock ?? null,
+    weekStartsOnMonday: dbUser?.weekStartsOnMonday ?? null,
   };
 });
 
@@ -172,6 +175,7 @@ export async function syncUser(workosUser: {
     lastName: upsertedUser.lastName,
     avatarUrl: upsertedUser.avatarUrl,
     use24HourClock: upsertedUser.use24HourClock ?? null,
+    weekStartsOnMonday: upsertedUser.weekStartsOnMonday ?? null,
   };
 }
 

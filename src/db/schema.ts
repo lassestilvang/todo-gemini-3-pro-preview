@@ -9,6 +9,7 @@ export const users = pgTable("users", {
     avatarUrl: text("avatar_url"),
     isInitialized: boolean("is_initialized").notNull().default(false),
     use24HourClock: boolean("use_24h_clock"), // true = 24h, false = 12h, null = auto
+    weekStartsOnMonday: boolean("week_starts_on_monday"), // true = Monday, false = Sunday, null = auto
     createdAt: timestamp("created_at")
         .notNull()
         .defaultNow(),

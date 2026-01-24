@@ -32,7 +32,7 @@ export async function MainLayout({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <UserProvider userId={userId} use24HourClock={user.use24HourClock ?? null}>
+        <UserProvider userId={userId} use24HourClock={user.use24HourClock ?? null} weekStartsOnMonday={user.weekStartsOnMonday ?? null}>
             <div className="flex h-screen overflow-hidden bg-background" data-testid="app-container">
                 {/* Desktop Sidebar - Hidden on mobile */}
                 <Suspense fallback={<SidebarFallback />}>

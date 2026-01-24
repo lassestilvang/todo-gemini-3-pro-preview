@@ -20,6 +20,7 @@ export const users = sqliteTable("users", {
     avatarUrl: text("avatar_url"),
     isInitialized: integer("is_initialized", { mode: "boolean" }).notNull().default(false),
     use24HourClock: integer("use_24h_clock", { mode: "boolean" }),
+    weekStartsOnMonday: integer("week_starts_on_monday", { mode: "boolean" }),
     createdAt: integer("created_at", { mode: "timestamp" })
         .notNull()
         .default(sql`(strftime('%s', 'now'))`),

@@ -227,7 +227,13 @@ export function ViewOptionsPopover({ viewId, userId, onSettingsChange }: ViewOpt
                                             <SelectItem value="none">None</SelectItem>
                                             <SelectItem value="dueDate">Due Date</SelectItem>
                                             <SelectItem value="priority">Priority</SelectItem>
-                                            <SelectItem value="label">Label</SelectItem>
+                                            {!viewId.startsWith("label-") && (
+                                                <SelectItem value="label">Label</SelectItem>
+                                            )}
+                                            {!viewId.startsWith("list-") && (
+                                                <SelectItem value="list">List</SelectItem>
+                                            )}
+                                            <SelectItem value="estimate">Estimate</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>

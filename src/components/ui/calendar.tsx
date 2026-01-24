@@ -10,6 +10,7 @@ import { DayButton, DayPicker, getDefaultClassNames } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { useUser } from "@/components/providers/UserProvider"
 
 function Calendar({
   className,
@@ -19,15 +20,22 @@ function Calendar({
   buttonVariant = "ghost",
   formatters,
   components,
+  weekStartsOn,
   ...props
 }: React.ComponentProps<typeof DayPicker> & {
   buttonVariant?: React.ComponentProps<typeof Button>["variant"]
+  weekStartsOn?: 0 | 1
 }) {
   const defaultClassNames = getDefaultClassNames()
+  const { getWeekStartDay } = useUser()
+
+  // Use prop if provided, otherwise fall back to user preference
+  const effectiveWeekStartsOn = weekStartsOn ?? getWeekStartDay()
 
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
+      weekStartsOn={effectiveWeekStartsOn}
       className={cn(
         "bg-background group/calendar p-3 [--cell-size:--spacing(8)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
         String.raw`rtl:**:[.rdp-button\_next>svg]:rotate-180`,

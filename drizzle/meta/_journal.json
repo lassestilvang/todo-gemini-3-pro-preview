@@ -64,6 +64,13 @@
       "when": 1769282669967,
       "tag": "0008_known_swordsman",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1769293141779,
+      "tag": "0009_aspiring_shadowcat",
+      "breakpoints": true
     }
   ]
 }

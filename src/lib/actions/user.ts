@@ -14,7 +14,7 @@ import { db, users, eq, revalidatePath, withErrorHandling, type ActionResult } f
  */
 async function updateUserPreferencesImpl(
     userId: string,
-    data: { use24HourClock?: boolean | null }
+    data: { use24HourClock?: boolean | null; weekStartsOnMonday?: boolean | null }
 ) {
     await db
         .update(users)
@@ -26,5 +26,6 @@ async function updateUserPreferencesImpl(
 
 export const updateUserPreferences: (
     userId: string,
-    data: { use24HourClock?: boolean | null }
+    data: { use24HourClock?: boolean | null; weekStartsOnMonday?: boolean | null }
 ) => Promise<ActionResult<void>> = withErrorHandling(updateUserPreferencesImpl);
+

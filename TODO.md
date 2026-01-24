@@ -18,6 +18,8 @@
 - [x] **[Bug] Inline Task Adder UX**: In the `CreateTaskInput` component, the date and priority popups should automatically close after a selection is made to improve the user flow.
   - *Status*: **RESOLVED** - Controlled `open` state of Popovers and closed them on selection.
 - [x] **[Bug] Sidebar: Saved Views**: Shown on load, then hidden if empty. Should always be visible and display helpful educational message. It should always have a "+ Add View" button. Move it below labels.
+- [x] **[Bug] View Settings: Grouping**: The Group By setting isn't currently working. Identify issues and make sure completed tasks are separate at the bottom in the same groups. Each Group By header should be sticky. Also add on option to group list and estimated time. Option to group by label should not be available when the view is a label list and the group by list should not be available when the view is a list.
+  - *Status*: **RESOLVED** - Fixed grouping logic to include completed tasks within groups (sorted to bottom). Added 'List' and 'Estimate' grouping options. Restricted invalid grouping options based on view context. Verified sticky headers.
 
 ## 🚀 Features & Enhancements
 
@@ -52,7 +54,7 @@
   - **Logic**: Use `Intl.DateTimeFormat` for auto-detection and persist the manual override in user settings/local storage.
   - **UI**: Update all time-related displays (task due times, analytics, logs) to respect this setting.
   - *Status*: **RESOLVED** - Added `use24HourClock` to users schema, created `TimeSettings.tsx` toggle in Settings, built `UserProvider` context and `formatTimePreference()` utility.
-- [ ] **First Day of Week Setting**: Add a user preference for the start of the week (Monday vs. Sunday).
+- [x] **First Day of Week Setting**: Add a user preference for the start of the week (Monday vs. Sunday).
   - **Logic**: Default to the user's locale but allow a manual override in Settings.
   - **Integration**: Ensure this setting is respected across the application, specifically in:
     - Date pickers (e.g., in `CreateTaskInput` and `TaskDialog`)
@@ -60,6 +62,7 @@
     - Analytics charts (e.g., weekly productivity heatmap)
     - Calendar views (when implemented)
   - **Persistence**: Save the preference in the `users` table via Drizzle ORM.
+  - *Status*: **RESOLVED** - Added `weekStartsOnMonday` to users schema, created `WeekStartSettings.tsx`, updated `UserProvider` with `getWeekStartDay()` helper, and integrated with `CalendarView` and `react-day-picker`.
 - [x] **"Upcoming" view refinement**: Group tasks by date with sticky headers for better readability.
   - **Logic**: Tasks in the /upcoming view should be grouped by their due date (e.g., Today, Tomorrow, Monday, etc.).
   - **UI**: Use sticky headers for each date group so users can easily see which day they are looking at while scrolling.

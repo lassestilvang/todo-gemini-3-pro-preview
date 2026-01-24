@@ -92,12 +92,19 @@ function applyViewSettings(tasks: Task[], settings: ViewSettings): Task[] {
         });
     }
 
+    // Always sort completed tasks to the bottom to match visual split
+    result.sort((a, b) => {
+        if (a.isCompleted === b.isCompleted) return 0;
+        return a.isCompleted ? 1 : -1;
+    });
+
     return result;
 }
 
 /**
  * Groups tasks by the specified grouping key.
  */
+
 function groupTasks(tasks: Task[], groupBy: ViewSettings["groupBy"]): Map<string, Task[]> {
     const groups = new Map<string, Task[]>();
 
@@ -124,9 +131,34 @@ function groupTasks(tasks: Task[], groupBy: ViewSettings["groupBy"]): Map<string
                 break;
             case "label":
                 if (task.labels && task.labels.length > 0) {
-                    key = task.labels.map(l => l.name).join(", ");
+                    // Start a new group for each label? Or cominbation?
+                    // Typically "Group by Label" duplicates tasks or picks primary. 
+                    // Let's pick the first one or join them.
+                    // Joining them creates too many unique groups.
+                    // Duplicating tasks is complex for ID tracking.
+                    // Let's use the first label for now or a primary label if we had one.
+                    // Or "Labels: A, B"
+                    key = task.labels.map(l => l.name).sort().join(", ");
                 } else {
                     key = "No Label";
+                }
+                break;
+            case "list":
+                key = task.listName || "Inbox";
+                break;
+            case "estimate":
+                if (task.estimateMinutes) {
+                    // Group by exact minutes or ranges? 
+                    // Let's try flexible ranges if there are many, but for now exact string
+                    const mins = task.estimateMinutes;
+                    if (mins < 60) key = `${mins}m`;
+                    else {
+                        const h = Math.floor(mins / 60);
+                        const m = mins % 60;
+                        key = m > 0 ? `${h}h ${m}m` : `${h}h`;
+                    }
+                } else {
+                    key = "No Estimate";
                 }
                 break;
         }
@@ -313,35 +345,30 @@ export function TaskListWithSettings({
         return applyViewSettings(localTasks, settings);
     }, [localTasks, settings]);
 
-    // Update local tasks when sorting changes to ensure consistency?
-    // Actually applyViewSettings derives from localTasks. 
+    // Filter completed tasks out if they shouldn't be shown
+    const visibleTasks = useMemo(() => {
+        if (!settings.showCompleted) {
+            return processedTasks.filter(t => !t.isCompleted);
+        }
+        return processedTasks;
+    }, [processedTasks, settings.showCompleted]);
 
-    // Handle J/K Navigation
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            const target = e.target as HTMLElement;
-            if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) {
-                return;
-            }
-
-            if (processedTasks.length === 0) return;
-
-            if (e.key === "j") {
-                setFocusedIndex(prev => Math.min(processedTasks.length - 1, prev + 1));
-            } else if (e.key === "k") {
-                setFocusedIndex(prev => Math.max(0, prev - 1));
-            } else if (e.key === "Enter" && focusedIndex >= 0) {
-                handleEdit(processedTasks[focusedIndex]);
-            }
+    const { activeTasks, completedTasks } = useMemo(() => {
+        // If sorting by manual, we might want to keep the order even for completed tasks?
+        // But usually completed tasks are moved to the bottom.
+        if (!settings.showCompleted) {
+            return { activeTasks: processedTasks, completedTasks: [] };
+        }
+        return {
+            activeTasks: processedTasks.filter(t => !t.isCompleted),
+            completedTasks: processedTasks.filter(t => t.isCompleted)
         };
-
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [processedTasks, focusedIndex]);
+    }, [processedTasks, settings.showCompleted]);
 
     // Group tasks
     const groupedTasks = useMemo(() => {
-        const groups = groupTasks(processedTasks, settings.groupBy);
+        const tasksToGroup = settings.groupBy === "none" ? activeTasks : visibleTasks;
+        const groups = groupTasks(tasksToGroup, settings.groupBy);
 
         // Sort groups by date if grouping by dueDate
         if (settings.groupBy === "dueDate") {
@@ -352,8 +379,31 @@ export function TaskListWithSettings({
             }));
         }
 
+        // Sort groups by estimate (minutes)
+        if (settings.groupBy === "estimate") {
+            const parseMinutes = (s: string) => {
+                if (s === "No Estimate") return Infinity;
+                if (s.includes("h")) {
+                    const parts = s.split(" ");
+                    let total = 0;
+                    for (const part of parts) {
+                        if (part.endsWith("h")) total += parseInt(part) * 60;
+                        if (part.endsWith("m")) total += parseInt(part);
+                    }
+                    return total;
+                }
+                return parseInt(s);
+            };
+
+            return new Map(Array.from(groups.entries()).sort((a, b) => {
+                const mA = parseMinutes(a[0]);
+                const mB = parseMinutes(b[0]);
+                return mA - mB;
+            }));
+        }
+
         return groups;
-    }, [processedTasks, settings.groupBy]);
+    }, [activeTasks, visibleTasks, settings.groupBy]);
 
     const formatGroupName = (name: string, type: ViewSettings["groupBy"]) => {
         if (type !== "dueDate" || name === "No Date") return name;
@@ -435,75 +485,146 @@ export function TaskListWithSettings({
                     <p>No tasks found</p>
                 </div>
             ) : settings.groupBy === "none" ? (
-                <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                    onDragCancel={handleDragCancel}
-                    modifiers={[restrictToVerticalAxis]}
-                >
-                    <SortableContext
-                        items={processedTasks.map(t => t.id)}
-                        strategy={verticalListSortingStrategy}
-                        disabled={!isDragEnabled}
-                    >
-                        <div className="space-y-2">
-                            {processedTasks.map((task, index) => (
-                                <SortableTaskItem
-                                    key={task.id}
-                                    task={task}
-                                    index={index}
-                                    handleEdit={handleEdit}
-                                    focusedIndex={focusedIndex}
-                                    listId={listId}
-                                    userId={userId}
-                                    isDragEnabled={isDragEnabled}
-                                />
-                            ))}
-                        </div>
-                    </SortableContext>
-                    <DragOverlay>
-                        {activeId ? (
-                            <div className="opacity-90 rotate-2 scale-105 cursor-grabbing">
-                                <TaskItem
-                                    task={localTasks.find(t => t.id === activeId)!}
-                                    showListInfo={!listId}
-                                    userId={userId}
-                                    disableAnimations={true}
-                                />
+                <div className="space-y-6">
+                    {/* Active Tasks */}
+                    {activeTasks.length > 0 && (
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragStart={handleDragStart}
+                            onDragEnd={handleDragEnd}
+                            onDragCancel={handleDragCancel}
+                            modifiers={[restrictToVerticalAxis]}
+                        >
+                            <SortableContext
+                                items={activeTasks.map(t => t.id)}
+                                strategy={verticalListSortingStrategy}
+                                disabled={!isDragEnabled}
+                            >
+                                <div className="space-y-2">
+                                    {activeTasks.map((task, index) => (
+                                        <SortableTaskItem
+                                            key={task.id}
+                                            task={task}
+                                            index={index}
+                                            handleEdit={handleEdit}
+                                            focusedIndex={focusedIndex}
+                                            listId={listId}
+                                            userId={userId}
+                                            isDragEnabled={isDragEnabled}
+                                        />
+                                    ))}
+                                </div>
+                            </SortableContext>
+                            <DragOverlay>
+                                {activeId ? (
+                                    <div className="opacity-90 rotate-2 scale-105 cursor-grabbing">
+                                        <TaskItem
+                                            task={localTasks.find(t => t.id === activeId)!}
+                                            showListInfo={!listId}
+                                            userId={userId}
+                                            disableAnimations={true}
+                                        />
+                                    </div>
+                                ) : null}
+                            </DragOverlay>
+                        </DndContext>
+                    )}
+
+                    {/* Completed Tasks with Sticky Header */}
+                    {completedTasks.length > 0 && (
+                        <div className="space-y-4 pt-2">
+                            <h3 className="text-sm font-semibold text-muted-foreground bg-background/95 backdrop-blur-md sticky top-0 py-2 z-10 border-b flex items-center justify-between px-2 -mx-2 mb-2">
+                                <span>Completed</span>
+                                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{completedTasks.length}</span>
+                            </h3>
+                            <div className="space-y-2">
+                                {completedTasks.map((task, index) => {
+                                    const globalIndex = activeTasks.length + index;
+                                    return (
+                                        <div
+                                            key={task.id}
+                                            onClick={(e) => {
+                                                if (e.defaultPrevented) return;
+                                                handleEdit(task);
+                                            }}
+                                            className={cn(
+                                                "cursor-pointer rounded-lg transition-all",
+                                                focusedIndex === globalIndex && "ring-2 ring-indigo-500 ring-offset-2 ring-offset-background"
+                                            )}
+                                        >
+                                            <TaskItem
+                                                task={task}
+                                                showListInfo={!listId}
+                                                userId={userId}
+                                                disableAnimations={true}
+                                            />
+                                        </div>
+                                    );
+                                })}
                             </div>
-                        ) : null}
-                    </DragOverlay>
-                </DndContext>
+                        </div>
+                    )}
+                </div>
             ) : (
                 <div className="space-y-6">
-                    {Array.from(groupedTasks.entries()).map(([groupName, groupTasks]) => (
-                        <div key={groupName} className="space-y-2">
-                            <h3 className="text-sm font-semibold text-muted-foreground bg-background/95 backdrop-blur-md sticky top-0 py-2 z-10 border-b flex items-center justify-between px-2 -mx-2">
-                                <span>{formatGroupName(groupName, settings.groupBy)}</span>
-                                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{groupTasks.length}</span>
-                            </h3>
-                            {groupTasks.map((task) => {
-                                const globalIndex = processedTasks.findIndex(t => t.id === task.id);
-                                return (
-                                    <div
-                                        key={task.id}
-                                        onClick={(e) => {
-                                            if (e.defaultPrevented) return;
-                                            handleEdit(task);
-                                        }}
-                                        className={cn(
-                                            "cursor-pointer rounded-lg transition-all",
-                                            focusedIndex === globalIndex && "ring-2 ring-indigo-500 ring-offset-2 ring-offset-background"
+                    {Array.from(groupedTasks.entries()).map(([groupName, groupTasks]) => {
+                        const groupActiveTasks = groupTasks.filter(t => !t.isCompleted);
+                        const groupCompletedTasks = groupTasks.filter(t => t.isCompleted);
+
+                        return (
+                            <div key={groupName} className="space-y-2">
+                                <h3 className="text-sm font-semibold text-muted-foreground bg-background/95 backdrop-blur-md sticky top-0 py-2 z-10 border-b flex items-center justify-between px-2 -mx-2">
+                                    <span>{formatGroupName(groupName, settings.groupBy)}</span>
+                                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{groupTasks.length}</span>
+                                </h3>
+                                {groupActiveTasks.map((task) => {
+                                    const globalIndex = processedTasks.findIndex(t => t.id === task.id);
+                                    return (
+                                        <div
+                                            key={task.id}
+                                            onClick={(e) => {
+                                                if (e.defaultPrevented) return;
+                                                handleEdit(task);
+                                            }}
+                                            className={cn(
+                                                "cursor-pointer rounded-lg transition-all",
+                                                focusedIndex === globalIndex && "ring-2 ring-indigo-500 ring-offset-2 ring-offset-background"
+                                            )}
+                                        >
+                                            <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} />
+                                        </div>
+                                    );
+                                })}
+
+                                {groupCompletedTasks.length > 0 && (
+                                    <>
+                                        {groupActiveTasks.length > 0 && (
+                                            <div className="ml-4 h-px bg-border/50 my-2" />
                                         )}
-                                    >
-                                        <TaskItem task={task} showListInfo={!listId} userId={userId} />
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    ))}
+                                        {groupCompletedTasks.map((task) => {
+                                            const globalIndex = processedTasks.findIndex(t => t.id === task.id);
+                                            return (
+                                                <div
+                                                    key={task.id}
+                                                    onClick={(e) => {
+                                                        if (e.defaultPrevented) return;
+                                                        handleEdit(task);
+                                                    }}
+                                                    className={cn(
+                                                        "cursor-pointer rounded-lg transition-all",
+                                                        focusedIndex === globalIndex && "ring-2 ring-indigo-500 ring-offset-2 ring-offset-background"
+                                                    )}
+                                                >
+                                                    <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} />
+                                                </div>
+                                            );
+                                        })}
+                                    </>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
             )
             }

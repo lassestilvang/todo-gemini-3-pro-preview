@@ -17,6 +17,7 @@ import {
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, CheckCircle2, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useUser } from "@/components/providers/UserProvider";
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -36,9 +37,13 @@ interface CalendarViewProps {
 export function CalendarView({ tasks }: CalendarViewProps) {
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+    const { getWeekStartDay } = useUser();
 
-    const startDate = startOfWeek(startOfMonth(currentMonth));
-    const endDate = endOfWeek(endOfMonth(currentMonth));
+    const weekStartsOn = getWeekStartDay();
+    const weekOptions = { weekStartsOn };
+
+    const startDate = startOfWeek(startOfMonth(currentMonth), weekOptions);
+    const endDate = endOfWeek(endOfMonth(currentMonth), weekOptions);
 
     const days = eachDayOfInterval({
         start: startDate,
@@ -52,6 +57,11 @@ export function CalendarView({ tasks }: CalendarViewProps) {
         setCurrentMonth(today);
         setSelectedDate(today);
     };
+
+    // Generate weekday headers dynamically based on week start
+    const weekdayHeaders = weekStartsOn === 1
+        ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
     // Filter tasks for the calendar view (only those with due dates)
     const calendarTasks = tasks.filter(t => t.dueDate);
@@ -97,7 +107,7 @@ export function CalendarView({ tasks }: CalendarViewProps) {
             <div className="flex-1 border rounded-lg overflow-hidden flex flex-col bg-background shadow-sm">
                 {/* Days Header */}
                 <div className="grid grid-cols-7 border-b bg-muted/40">
-                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                    {weekdayHeaders.map((day) => (
                         <div key={day} className="py-2 text-center text-sm font-medium text-muted-foreground">
                             {day}
                         </div>

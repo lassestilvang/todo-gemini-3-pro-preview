@@ -7,7 +7,7 @@
 export interface ViewSettings {
     layout: "list" | "board" | "calendar";
     showCompleted: boolean;
-    groupBy: "none" | "dueDate" | "priority" | "label";
+    groupBy: "none" | "dueDate" | "priority" | "label" | "list" | "estimate";
     sortBy: "manual" | "dueDate" | "priority" | "name";
     sortOrder: "asc" | "desc";
     filterDate: "all" | "hasDate" | "noDate";

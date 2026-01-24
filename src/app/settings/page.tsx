@@ -10,6 +10,7 @@ export const metadata: Metadata = {
 import { getCurrentUser } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { TimeSettings } from "@/components/settings/TimeSettings"
+import { WeekStartSettings } from "@/components/settings/WeekStartSettings"
 
 export default async function SettingsPage() {
     const user = await getCurrentUser();
@@ -42,7 +43,10 @@ export default async function SettingsPage() {
                     <p className="mb-6 text-muted-foreground">
                         Configure how dates and times are displayed.
                     </p>
-                    <TimeSettings userId={user.id} initialUse24HourClock={user.use24HourClock} />
+                    <div className="space-y-6">
+                        <TimeSettings userId={user.id} initialUse24HourClock={user.use24HourClock} />
+                        <WeekStartSettings userId={user.id} initialWeekStartsOnMonday={user.weekStartsOnMonday} />
+                    </div>
                 </section>
                 <section>
                     <DataExportImport />
