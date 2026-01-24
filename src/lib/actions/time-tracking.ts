@@ -19,6 +19,8 @@ import {
     success,
     failure,
     withErrorHandling,
+    ValidationError,
+    NotFoundError,
     type ActionResult,
 } from "./shared";
 import { rateLimit } from "@/lib/rate-limit";
@@ -39,7 +41,7 @@ export async function startTimeEntry(
     userId: string
 ): Promise<ActionResult<typeof timeEntries.$inferSelect>> {
     return withErrorHandling(async () => {
-        await rateLimit(userId, "time-tracking", 100);
+        await rateLimit(`${userId}:time-tracking`, 20, 60);
 
         // Check if there's already an active entry for this task
         const existingActive = await db
@@ -55,10 +57,7 @@ export async function startTimeEntry(
             .limit(1);
 
         if (existingActive.length > 0) {
-            return failure({
-                code: "VALIDATION_ERROR",
-                message: "A time entry is already active for this task",
-            });
+            throw new ValidationError("A time entry is already active for this task");
         }
 
         const [entry] = await db
@@ -72,8 +71,9 @@ export async function startTimeEntry(
             .returning();
 
         revalidatePath("/");
-        return success(entry);
-    }, "startTimeEntry");
+        return entry;
+
+    })();
 }
 
 /**
@@ -100,17 +100,11 @@ export async function stopTimeEntry(
             .limit(1);
 
         if (!existing) {
-            return failure({
-                code: "NOT_FOUND",
-                message: "Time entry not found",
-            });
+            throw new NotFoundError("Time entry not found");
         }
 
         if (existing.endedAt) {
-            return failure({
-                code: "VALIDATION_ERROR",
-                message: "Time entry is already stopped",
-            });
+            throw new ValidationError("Time entry is already stopped");
         }
 
         const endedAt = new Date();
@@ -154,8 +148,8 @@ export async function stopTimeEntry(
             );
 
         revalidatePath("/");
-        return success(entry);
-    }, "stopTimeEntry");
+        return entry;
+    })();
 }
 
 /**
@@ -182,8 +176,8 @@ export async function getActiveTimeEntry(
             )
             .limit(1);
 
-        return success(entry || null);
-    }, "getActiveTimeEntry");
+        return entry || null;
+    })();
 }
 
 /**
@@ -209,8 +203,8 @@ export async function getTimeEntries(
             )
             .orderBy(desc(timeEntries.startedAt));
 
-        return success(entries);
-    }, "getTimeEntries");
+        return entries;
+    })();
 }
 
 /**
@@ -231,7 +225,7 @@ export async function createManualTimeEntry(
     notes?: string
 ): Promise<ActionResult<typeof timeEntries.$inferSelect>> {
     return withErrorHandling(async () => {
-        await rateLimit(userId, "time-tracking", 100);
+        await rateLimit(`${userId}:time-tracking`, 20, 60);
 
         const startedAt = date || new Date();
         const endedAt = new Date(startedAt.getTime() + durationMinutes * 60000);
@@ -276,8 +270,8 @@ export async function createManualTimeEntry(
             );
 
         revalidatePath("/");
-        return success(entry);
-    }, "createManualTimeEntry");
+        return entry;
+    })();
 }
 
 /**
@@ -311,10 +305,7 @@ export async function updateTimeEntry(
             .limit(1);
 
         if (!existing) {
-            return failure({
-                code: "NOT_FOUND",
-                message: "Time entry not found",
-            });
+            throw new NotFoundError("Time entry not found");
         }
 
         const [entry] = await db
@@ -350,8 +341,8 @@ export async function updateTimeEntry(
             );
 
         revalidatePath("/");
-        return success(entry);
-    }, "updateTimeEntry");
+        return entry;
+    })();
 }
 
 /**
@@ -378,10 +369,7 @@ export async function deleteTimeEntry(
             .limit(1);
 
         if (!existing) {
-            return failure({
-                code: "NOT_FOUND",
-                message: "Time entry not found",
-            });
+            throw new NotFoundError("Time entry not found");
         }
 
         await db.delete(timeEntries).where(eq(timeEntries.id, entryId));
@@ -413,8 +401,8 @@ export async function deleteTimeEntry(
             );
 
         revalidatePath("/");
-        return success({ deleted: true });
-    }, "deleteTimeEntry");
+        return { deleted: true };
+    })();
 }
 
 // ============================================================================
@@ -488,13 +476,14 @@ export async function getTimeStats(
             .map(([taskId, data]) => ({ taskId, ...data }))
             .sort((a, b) => b.totalMinutes - a.totalMinutes);
 
-        return success({
+
+        return {
             totalTrackedMinutes,
             entriesCount: entries.length,
             averageSessionMinutes,
             taskBreakdown,
-        });
-    }, "getTimeStats");
+        };
+    })();
 }
 
 /**
@@ -523,13 +512,11 @@ export async function updateTaskEstimate(
             .returning();
 
         if (!task) {
-            return failure({
-                code: "NOT_FOUND",
-                message: "Task not found",
-            });
+            throw new NotFoundError("Task not found");
         }
 
         revalidatePath("/");
-        return success(task);
-    }, "updateTaskEstimate");
+        return task;
+
+    })();
 }

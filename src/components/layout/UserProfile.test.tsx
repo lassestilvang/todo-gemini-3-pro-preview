@@ -10,6 +10,7 @@ mock.module("@/lib/auth", () => ({
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { UserProfile } from "./UserProfile";
+import { OnboardingProvider } from "@/components/providers/OnboardingProvider";
 
 describe("UserProfile", () => {
     beforeEach(() => {
@@ -22,7 +23,11 @@ describe("UserProfile", () => {
     });
 
     it("returns null when user is null", () => {
-        const { container } = render(<UserProfile user={null} />);
+        const { container } = render(
+            <OnboardingProvider>
+                <UserProfile user={null} />
+            </OnboardingProvider>
+        );
         expect(container.firstChild).toBeNull();
     });
 
@@ -35,7 +40,11 @@ describe("UserProfile", () => {
             avatarUrl: null,
         };
 
-        render(<UserProfile user={user} />);
+        render(
+            <OnboardingProvider>
+                <UserProfile user={user} />
+            </OnboardingProvider>
+        );
         expect(screen.getByText("John Doe")).toBeInTheDocument();
     });
 
@@ -48,7 +57,11 @@ describe("UserProfile", () => {
             avatarUrl: null,
         };
 
-        render(<UserProfile user={user} />);
+        render(
+            <OnboardingProvider>
+                <UserProfile user={user} />
+            </OnboardingProvider>
+        );
         expect(screen.getAllByText("john@example.com").length).toBeGreaterThan(0);
     });
 
@@ -61,7 +74,11 @@ describe("UserProfile", () => {
             avatarUrl: null,
         };
 
-        render(<UserProfile user={user} />);
+        render(
+            <OnboardingProvider>
+                <UserProfile user={user} />
+            </OnboardingProvider>
+        );
         expect(screen.getByText("John")).toBeInTheDocument();
     });
 
@@ -74,7 +91,11 @@ describe("UserProfile", () => {
             avatarUrl: null,
         };
 
-        render(<UserProfile user={user} />);
+        render(
+            <OnboardingProvider>
+                <UserProfile user={user} />
+            </OnboardingProvider>
+        );
         expect(screen.getByText("JD")).toBeInTheDocument();
     });
 
@@ -87,7 +108,11 @@ describe("UserProfile", () => {
             avatarUrl: null,
         };
 
-        render(<UserProfile user={user} />);
+        render(
+            <OnboardingProvider>
+                <UserProfile user={user} />
+            </OnboardingProvider>
+        );
         expect(screen.getByText("J")).toBeInTheDocument();
     });
 
@@ -101,7 +126,11 @@ describe("UserProfile", () => {
             avatarUrl: null,
         };
 
-        render(<UserProfile user={userData} />);
+        render(
+            <OnboardingProvider>
+                <UserProfile user={userData} />
+            </OnboardingProvider>
+        );
 
         // Open dropdown using userEvent
         const triggerButton = screen.getByRole("button");

@@ -27,6 +27,8 @@ interface UserProfileProps {
 }
 
 export function UserProfile({ user }: UserProfileProps) {
+    const { startTour } = useOnboarding();
+
     if (!user) {
         return null;
     }
@@ -38,8 +40,6 @@ export function UserProfile({ user }: UserProfileProps) {
     const initials = user.firstName && user.lastName
         ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
         : (user.email[0] || "?").toUpperCase();
-
-    const { startTour } = useOnboarding();
 
     const handleSignOut = async () => {
         try {

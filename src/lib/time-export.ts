@@ -59,7 +59,7 @@ export async function exportTimeData(userId: string, options: ExportOptions) {
         .orderBy(desc(timeEntries.startedAt));
 
     // Fetch task titles if needed
-    let taskMap: Map<number, string> = new Map();
+    const taskMap: Map<number, string> = new Map();
     if (includeTaskDetails) {
         const taskIds = [...new Set(entries.map(e => e.taskId))];
         if (taskIds.length > 0) {

@@ -270,8 +270,8 @@ export function AnalyticsCharts({ data }: { data: AnalyticsData }) {
                                 <XAxis dataKey="date" tick={{ fontSize: 12 }} />
                                 <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${Math.floor(v / 60)}h`} />
                                 <Tooltip
-                                    formatter={(value: number) => [
-                                        `${Math.floor(value / 60)}h ${value % 60}m`,
+                                    formatter={(value: number | undefined) => [
+                                        value ? `${Math.floor(value / 60)}h ${value % 60}m` : "0h 0m",
                                         "Time Tracked"
                                     ]}
                                 />
