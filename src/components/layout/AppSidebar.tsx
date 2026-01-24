@@ -4,8 +4,6 @@ import { cn } from "@/lib/utils";
 import { XPBar } from "@/components/gamification/XPBar";
 import { Separator } from "@/components/ui/separator";
 
-import { RescheduleButton } from "@/components/tasks/RescheduleButton";
-import { InstallPrompt } from "@/components/InstallPrompt";
 import { SearchDialog } from "@/components/tasks/SearchDialog";
 import { TemplateManager } from "@/components/tasks/TemplateManager";
 
@@ -66,7 +64,6 @@ export function AppSidebar({ className, lists, labels, user, id }: AppSidebarPro
                     <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
                         Planner
                     </h2>
-                    <XPBar userId={user?.id} />
                     <div className="mb-4">
                         <SearchDialog userId={user?.id} />
                     </div>
@@ -87,9 +84,10 @@ export function AppSidebar({ className, lists, labels, user, id }: AppSidebarPro
                 <SidebarLabels labels={labels} userId={user?.id} />
             </div>
 
-            <div className="shrink-0 p-2 border-t space-y-2 bg-sidebar h-auto">
-                <InstallPrompt />
-                <RescheduleButton />
+            <div className="shrink-0 p-2 border-t space-y-4 bg-sidebar h-auto">
+                <div className="px-2">
+                    <XPBar userId={user?.id} />
+                </div>
                 {user && <UserProfile user={user} />}
             </div>
         </aside>

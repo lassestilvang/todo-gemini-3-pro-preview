@@ -10,11 +10,12 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, User, ChevronsUpDown, GraduationCap } from "lucide-react";
+import { LogOut, User, ChevronsUpDown, GraduationCap, Download } from "lucide-react";
 import { signOut } from "@/lib/auth";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useOnboarding } from "@/components/providers/OnboardingProvider";
+import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 
 interface UserProfileProps {
     user: {
@@ -28,6 +29,7 @@ interface UserProfileProps {
 
 export function UserProfile({ user }: UserProfileProps) {
     const { startTour } = useOnboarding();
+    const { isInstallable, handleInstall } = useInstallPrompt();
 
     if (!user) {
         return null;
@@ -100,6 +102,12 @@ export function UserProfile({ user }: UserProfileProps) {
                     <GraduationCap className="mr-2 h-4 w-4" />
                     Replay Onboarding
                 </DropdownMenuItem>
+                {isInstallable && (
+                    <DropdownMenuItem onClick={handleInstall} className="w-full flex items-center">
+                        <Download className="mr-2 h-4 w-4" />
+                        Install App
+                    </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive" data-testid="sign-out-button">
                     <LogOut className="mr-2 h-4 w-4" />

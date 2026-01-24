@@ -1,44 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
+import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 
 export function InstallPrompt() {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-    const [isInstalled, setIsInstalled] = useState(false);
+    const { isInstallable, handleInstall } = useInstallPrompt();
 
-    useEffect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const handler = (e: any) => {
-            e.preventDefault();
-            setDeferredPrompt(e);
-        };
-
-        window.addEventListener("beforeinstallprompt", handler);
-
-        if (window.matchMedia("(display-mode: standalone)").matches) {
-            setIsInstalled(true);
-        }
-
-        return () => {
-            window.removeEventListener("beforeinstallprompt", handler);
-        };
-    }, []);
-
-    const handleInstall = async () => {
-        if (!deferredPrompt) return;
-
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-
-        if (outcome === "accepted") {
-            setDeferredPrompt(null);
-        }
-    };
-
-    if (!deferredPrompt || isInstalled) return null;
+    if (!isInstallable) return null;
 
     return (
         <Button

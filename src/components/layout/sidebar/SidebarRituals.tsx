@@ -7,6 +7,7 @@ import { Sunrise, Sunset, Sparkles, Moon } from "lucide-react";
 import { PlanningRitual } from "@/components/tasks/PlanningRitual";
 import { SmartScheduleDialog } from "@/components/tasks/SmartScheduleDialog";
 import { useZenMode } from "@/components/providers/ZenModeProvider";
+import { RescheduleButton } from "@/components/tasks/RescheduleButton";
 
 export function SidebarRituals() {
     const { isZenMode, toggleZenMode } = useZenMode();
@@ -59,6 +60,7 @@ export function SidebarRituals() {
                 <Sparkles className="mr-2 h-4 w-4 text-indigo-500" />
                 Smart Schedule
             </Button>
+            <RescheduleButton />
 
             {/* Dialogs */}
             <PlanningRitual

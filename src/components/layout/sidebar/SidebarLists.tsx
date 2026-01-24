@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -99,10 +99,10 @@ function SortableListItem({
                 asChild
             >
                 <Link href={`/lists/${list.id}`}>
-                    {(() => {
-                        const Icon = getListIcon(list.icon);
-                        return <Icon className="mr-2 h-4 w-4" style={{ color: list.color || "#000000" }} />;
-                    })()}
+                    {React.createElement(getListIcon(list.icon), {
+                        className: "mr-2 h-4 w-4",
+                        style: { color: list.color || "#000000" }
+                    })}
                     {list.name}
                 </Link>
             </Button>

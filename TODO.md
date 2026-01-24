@@ -77,7 +77,7 @@
 - [x] **[UX] Implement 'Synthwave' Theme**: Neon-inspired dark theme with Orbitron font.
 - [x] **[UX] Glassmorphism Themes**: Added `glassmorphism` and `glassmorphism-dark` with blur effects.
 - [x] **[UX] Onboarding Flow**: Fixed viewport overflow issues for tour tooltips.
-- [x] **[UX] Sidebar Structure**: Move "Templates" nav item below "Smart Schedule" in the sidebar.
+- [x] **[UX] Sidebar Structure**: Move "Templates" nav item below "Smart Schedule", move "I'm behind" below "Smart Schedule", relocate "Install App" to user menu, and move gamification (XP Bar) to the bottom.
 
 
 ## 🛠 Engineering & Quality
