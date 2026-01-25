@@ -115,14 +115,13 @@ jobs:
           project_id: ${{ secrets.NEON_PROJECT_ID }}
           api_key: ${{ secrets.NEON_API_KEY }}
           branch_name: preview/${{ github.head_ref }}
-          username: neondb_owner
           suspend_timeout: 0
 
       - name: Setup Database (PR)
-        if: github.event_name == 'pull_request' && steps.neon-branch.outputs.db_url != ''
+        if: github.event_name == 'pull_request'
         run: bun run db:migrate:ci
         env:
-          DATABASE_URL: ${{ steps.neon-branch.outputs.db_url_with_pooler }}
+          DATABASE_URL: ${{ steps.neon-branch.outputs.db_url_with_pooler || secrets.DATABASE_URL }}
 
       - name: Setup Database (Main)
         if: github.event_name == 'push'
@@ -186,14 +185,13 @@ jobs:
           project_id: ${{ secrets.NEON_PROJECT_ID }}
           api_key: ${{ secrets.NEON_API_KEY }}
           branch_name: preview/${{ github.head_ref }}
-          username: neondb_owner
           suspend_timeout: 0
 
       - name: Setup Database (PR)
-        if: github.event_name == 'pull_request' && steps.neon-branch.outputs.db_url != ''
+        if: github.event_name == 'pull_request'
         run: bun run db:migrate:ci
         env:
-          DATABASE_URL: ${{ steps.neon-branch.outputs.db_url_with_pooler }}
+          DATABASE_URL: ${{ steps.neon-branch.outputs.db_url_with_pooler || secrets.DATABASE_URL }}
 
       - name: Setup Database (Main)
         if: github.event_name == 'push'
