@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from "bun:test";
 import * as fc from "fast-check";
 import { setupTestDb, resetTestDb } from "@/test/setup";
+import { setMockAuthUser } from "@/test/mocks";
 import {
     createTaskSafe,
     updateTaskSafe,
@@ -60,6 +61,7 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                     validUserIdArb,
                     async (userId) => {
                         // Create a task first
+                        setMockAuthUser({ id: userId, email: `${userId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const createResult = await createTaskSafe({
                             userId,
                             title: "Test Task",
@@ -109,6 +111,7 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                     validUserIdArb,
                     invalidTitleArb,
                     async (userId, invalidTitle) => {
+                        setMockAuthUser({ id: userId, email: `${userId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const result = await createTaskSafe({
                             userId,
                             title: invalidTitle,
@@ -142,6 +145,7 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                     validUserIdArb,
                     fc.string({ minLength: 501, maxLength: 600 }),
                     async (userId, longTitle) => {
+                        setMockAuthUser({ id: userId, email: `${userId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const result = await createTaskSafe({
                             userId,
                             title: longTitle,
@@ -166,6 +170,7 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                     validUserIdArb,
                     invalidTitleArb,
                     async (userId, invalidName) => {
+                        setMockAuthUser({ id: userId, email: `${userId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const result = await createListSafe({
                             userId,
                             name: invalidName,
@@ -190,6 +195,7 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                     validUserIdArb,
                     invalidTitleArb,
                     async (userId, invalidName) => {
+                        setMockAuthUser({ id: userId, email: `${userId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const result = await createLabelSafe({
                             userId,
                             name: invalidName,
@@ -223,6 +229,8 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                 fc.asyncProperty(
                     validTitleArb,
                     async (title) => {
+                        // Here we don't need setMockAuthUser because userId is empty/missing
+                        // and createTaskSafe handles it before reaching protected logic
                         const result = await createTaskSafe({
                             userId: "",
                             title,
@@ -256,6 +264,7 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                         if (ownerId === wrongUserId) return;
                         
                         // Create a task with the owner
+                        setMockAuthUser({ id: ownerId, email: `${ownerId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const createResult = await createTaskSafe({
                             userId: ownerId,
                             title,
@@ -264,6 +273,7 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                         if (!isSuccess(createResult)) return;
                         
                         // Try to update with wrong user
+                        setMockAuthUser({ id: wrongUserId, email: `${wrongUserId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const updateResult = await updateTaskSafe(
                             createResult.data.id,
                             wrongUserId,
@@ -294,6 +304,7 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                     async (ownerId, wrongUserId, title) => {
                         if (ownerId === wrongUserId) return;
                         
+                        setMockAuthUser({ id: ownerId, email: `${ownerId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const createResult = await createTaskSafe({
                             userId: ownerId,
                             title,
@@ -301,6 +312,7 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                         
                         if (!isSuccess(createResult)) return;
                         
+                        setMockAuthUser({ id: wrongUserId, email: `${wrongUserId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const deleteResult = await deleteTaskSafe(
                             createResult.data.id,
                             wrongUserId
@@ -331,6 +343,7 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                     validUserIdArb,
                     validTitleArb,
                     async (userId, title) => {
+                        setMockAuthUser({ id: userId, email: `${userId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const result = await createTaskSafe({
                             userId,
                             title,
@@ -357,6 +370,7 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                     validTitleArb,
                     fc.string({ minLength: 1, maxLength: 50 }).filter(s => /^[a-z0-9-]+$/.test(s)),
                     async (userId, name, slug) => {
+                        setMockAuthUser({ id: userId, email: `${userId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const result = await createListSafe({
                             userId,
                             name,
@@ -382,6 +396,7 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                     validUserIdArb,
                     fc.string({ minLength: 1, maxLength: 50 }).filter(s => s.trim().length > 0),
                     async (userId, name) => {
+                        setMockAuthUser({ id: userId, email: `${userId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const result = await createLabelSafe({
                             userId,
                             name,
@@ -409,6 +424,7 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                     validTitleArb,
                     async (userId, originalTitle, newTitle) => {
                         // Create task first
+                        setMockAuthUser({ id: userId, email: `${userId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const createResult = await createTaskSafe({
                             userId,
                             title: originalTitle,
@@ -441,6 +457,7 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                     validTitleArb,
                     async (userId, title) => {
                         // Create task first
+                        setMockAuthUser({ id: userId, email: `${userId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const createResult = await createTaskSafe({
                             userId,
                             title,
@@ -481,6 +498,7 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                     fc.integer({ min: -1000000, max: 1000000 }),
                     async (userId, nonExistentId) => {
                         // Try to update a non-existent task
+                        setMockAuthUser({ id: userId, email: `${userId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const result = await updateTaskSafe(
                             nonExistentId,
                             userId,
@@ -511,6 +529,7 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                     validUserIdArb,
                     fc.integer({ min: -1000000, max: 1000000 }),
                     async (userId, nonExistentId) => {
+                        setMockAuthUser({ id: userId, email: `${userId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const result = await deleteTaskSafe(nonExistentId, userId);
                         
                         if (isFailure(result)) {

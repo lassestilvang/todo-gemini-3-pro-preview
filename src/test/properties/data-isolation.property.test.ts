@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, beforeEach } from "bun:test";
 import * as fc from "fast-check";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
+import { setMockAuthUser } from "@/test/mocks";
 import {
     createTask, getTasks, getTask, updateTask, deleteTask,
     createList, getLists,
@@ -46,6 +47,7 @@ describeOrSkip("Property Tests: Data Isolation", () => {
                     async (userId, taskTitle) => {
                         await resetTestDb();
                         await createTestUser(userId, `${userId}@test.com`);
+                        setMockAuthUser({ id: userId, email: `${userId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
 
                         const task = await createTask({
                             userId,
@@ -68,6 +70,7 @@ describeOrSkip("Property Tests: Data Isolation", () => {
                     async (userId, listName) => {
                         await resetTestDb();
                         await createTestUser(userId, `${userId}@test.com`);
+                        setMockAuthUser({ id: userId, email: `${userId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
 
                         const listResult = await createList({
                             userId,
@@ -93,6 +96,7 @@ describeOrSkip("Property Tests: Data Isolation", () => {
                     async (userId, labelName) => {
                         await resetTestDb();
                         await createTestUser(userId, `${userId}@test.com`);
+                        setMockAuthUser({ id: userId, email: `${userId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
 
                         const labelResult = await createLabel({
                             userId,
@@ -125,12 +129,14 @@ describeOrSkip("Property Tests: Data Isolation", () => {
                         await createTestUser(userBId, `${userBId}@test.com`);
 
                         // User B creates a task
+                        setMockAuthUser({ id: userBId, email: `${userBId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         await createTask({
                             userId: userBId,
                             title: "User B's private task",
                         });
 
                         // User A queries tasks
+                        setMockAuthUser({ id: userAId, email: `${userAId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const userATasks = await getTasks(userAId, undefined, "all");
 
                         // Property: User A sees zero tasks from User B
@@ -155,6 +161,7 @@ describeOrSkip("Property Tests: Data Isolation", () => {
                         await createTestUser(userBId, `${userBId}@test.com`);
 
                         // User B creates a list
+                        setMockAuthUser({ id: userBId, email: `${userBId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         await createList({
                             userId: userBId,
                             name: "User B's list",
@@ -162,6 +169,7 @@ describeOrSkip("Property Tests: Data Isolation", () => {
                         });
 
                         // User A queries lists
+                        setMockAuthUser({ id: userAId, email: `${userAId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const userALists = await getLists(userAId);
 
                         // Property: User A sees zero lists from User B
@@ -186,12 +194,14 @@ describeOrSkip("Property Tests: Data Isolation", () => {
                         await createTestUser(userBId, `${userBId}@test.com`);
 
                         // User B creates a label
+                        setMockAuthUser({ id: userBId, email: `${userBId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         await createLabel({
                             userId: userBId,
                             name: "User B's label",
                         });
 
                         // User A queries labels
+                        setMockAuthUser({ id: userAId, email: `${userAId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const userALabels = await getLabels(userAId);
 
                         // Property: User A sees zero labels from User B
@@ -216,9 +226,11 @@ describeOrSkip("Property Tests: Data Isolation", () => {
                         await createTestUser(userBId, `${userBId}@test.com`);
 
                         // User B creates a template
+                        setMockAuthUser({ id: userBId, email: `${userBId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         await createTemplate(userBId, "User B's template", "{}");
 
                         // User A queries templates
+                        setMockAuthUser({ id: userAId, email: `${userAId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const userATemplates = await getTemplates(userAId);
 
                         // Property: User A sees zero templates from User B
@@ -244,9 +256,11 @@ describeOrSkip("Property Tests: Data Isolation", () => {
                         await createTestUser(userBId, `${userBId}@test.com`);
 
                         // User B adds XP
+                        setMockAuthUser({ id: userBId, email: `${userBId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         await addXP(userBId, xpAmount);
 
                         // User A queries their stats
+                        setMockAuthUser({ id: userAId, email: `${userAId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const userAStats = await getUserStats(userAId);
 
                         // Property: User A's XP is unaffected by User B's XP
@@ -273,19 +287,23 @@ describeOrSkip("Property Tests: Data Isolation", () => {
                         await createTestUser(userBId, `${userBId}@test.com`);
 
                         // Both users create tasks
+                        setMockAuthUser({ id: userAId, email: `${userAId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const taskA = await createTask({
                             userId: userAId,
                             title: "User A's task",
                         });
+                        setMockAuthUser({ id: userBId, email: `${userBId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const taskB = await createTask({
                             userId: userBId,
                             title: "User B's task",
                         });
 
                         // User A updates their task
+                        setMockAuthUser({ id: userAId, email: `${userAId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         await updateTask(taskA.id, userAId, { title: "Updated by A" });
 
                         // User B's task should be unchanged
+                        setMockAuthUser({ id: userBId, email: `${userBId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const taskBAfter = await getTask(taskB.id, userBId);
                         expect(taskBAfter?.title).toBe("User B's task");
                     }
@@ -308,13 +326,18 @@ describeOrSkip("Property Tests: Data Isolation", () => {
                         await createTestUser(userBId, `${userBId}@test.com`);
 
                         // Initialize both users' stats
+                        setMockAuthUser({ id: userAId, email: `${userAId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         await getUserStats(userAId);
+
+                        setMockAuthUser({ id: userBId, email: `${userBId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const userBStatsBefore = await getUserStats(userBId);
 
                         // User A adds XP
+                        setMockAuthUser({ id: userAId, email: `${userAId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         await addXP(userAId, xpAmount);
 
                         // User B's stats should be unchanged
+                        setMockAuthUser({ id: userBId, email: `${userBId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const userBStatsAfter = await getUserStats(userBId);
                         expect(userBStatsAfter.xp).toBe(userBStatsBefore.xp);
                         expect(userBStatsAfter.level).toBe(userBStatsBefore.level);
@@ -337,19 +360,24 @@ describeOrSkip("Property Tests: Data Isolation", () => {
                         await createTestUser(userBId, `${userBId}@test.com`);
 
                         // Both users create tasks
+                        setMockAuthUser({ id: userAId, email: `${userAId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const taskA = await createTask({
                             userId: userAId,
                             title: "User A's task",
                         });
+
+                        setMockAuthUser({ id: userBId, email: `${userBId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const taskB = await createTask({
                             userId: userBId,
                             title: "User B's task",
                         });
 
                         // User A deletes their task
+                        setMockAuthUser({ id: userAId, email: `${userAId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         await deleteTask(taskA.id, userAId);
 
                         // User B's task should still exist
+                        setMockAuthUser({ id: userBId, email: `${userBId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const taskBAfter = await getTask(taskB.id, userBId);
                         expect(taskBAfter).not.toBeNull();
                         expect(taskBAfter?.title).toBe("User B's task");

@@ -34,6 +34,7 @@ import {
   withErrorHandling,
 } from "./shared";
 import { rateLimit } from "@/lib/rate-limit";
+import { requireUser } from "@/lib/auth";
 
 // Import from other domain modules
 import { getLists, getList } from "./lists";
@@ -55,6 +56,8 @@ export async function getTasks(
   filter?: "today" | "upcoming" | "all" | "completed" | "next-7-days",
   labelId?: number
 ) {
+  await requireUser(userId);
+
   const conditions = [];
 
   // Always filter by user
@@ -191,6 +194,8 @@ export async function getTasks(
  * @returns The task with related data, or null if not found
  */
 export async function getTask(id: number, userId: string) {
+  await requireUser(userId);
+
   const result = await db
     .select({
       id: tasks.id,
@@ -252,6 +257,8 @@ export async function getTask(id: number, userId: string) {
  * @returns The created task
  */
 export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: number[] }) {
+  await requireUser(data.userId);
+
   // Rate limit: 100 tasks per hour
   const limit = await rateLimit(`task:create:${data.userId}`, 100, 3600);
   if (!limit.success) {
@@ -309,6 +316,8 @@ export async function updateTask(
   userId: string,
   data: Partial<Omit<typeof tasks.$inferInsert, "userId">> & { labelIds?: number[] }
 ) {
+  await requireUser(userId);
+
   const { labelIds, ...taskData } = data;
 
   const currentTask = await getTask(id, userId);
@@ -428,6 +437,7 @@ export async function updateTask(
  * @param userId - The ID of the user who owns the task
  */
 export async function deleteTask(id: number, userId: string) {
+  await requireUser(userId);
   await db.delete(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
   revalidatePath("/", "layout");
 }
@@ -441,6 +451,8 @@ export async function deleteTask(id: number, userId: string) {
  * @returns XP result with newXP, newLevel, and leveledUp flag
  */
 export async function toggleTaskCompletion(id: number, userId: string, isCompleted: boolean) {
+  await requireUser(userId);
+
   const task = await getTask(id, userId);
   if (!task) {
     throw new NotFoundError("Task not found or access denied");
@@ -539,6 +551,8 @@ export async function toggleTaskCompletion(id: number, userId: string, isComplet
  * @param userId - The ID of the user
  */
 export async function updateStreak(userId: string) {
+  await requireUser(userId);
+
   const stats = await getUserStats(userId);
   const { newStreak, shouldUpdate, usedFreeze } = calculateStreakUpdate(
     stats.currentStreak,
@@ -583,6 +597,8 @@ export async function updateStreak(userId: string) {
  * @returns Array of subtasks
  */
 export async function getSubtasks(taskId: number, userId: string) {
+  await requireUser(userId);
+
   const result = await db
     .select()
     .from(tasks)
@@ -606,6 +622,8 @@ export async function createSubtask(
   title: string,
   estimateMinutes?: number
 ) {
+  await requireUser(userId);
+
   const result = await db
     .insert(tasks)
     .values({
@@ -638,6 +656,8 @@ export async function createSubtask(
  * @param isCompleted - The new completion status
  */
 export async function updateSubtask(id: number, userId: string, isCompleted: boolean) {
+  await requireUser(userId);
+
   await db
     .update(tasks)
     .set({
@@ -655,6 +675,7 @@ export async function updateSubtask(id: number, userId: string, isCompleted: boo
  * @param userId - The ID of the user who owns the subtask
  */
 export async function deleteSubtask(id: number, userId: string) {
+  await requireUser(userId);
   await db.delete(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
   revalidatePath("/", "layout");
 }
@@ -667,6 +688,8 @@ export async function deleteSubtask(id: number, userId: string) {
  * @returns Array of matching tasks (limited to 10)
  */
 export async function searchTasks(userId: string, query: string) {
+  await requireUser(userId);
+
   if (!query || query.trim().length === 0) return [];
 
   // Rate limit: 500 searches per hour
@@ -704,6 +727,8 @@ export async function searchTasks(userId: string, query: string) {
  * @returns Array of tasks optimized for search (id, title, description, status)
  */
 export async function getTasksForSearch(userId: string) {
+  await requireUser(userId);
+
   // Rate limit: 200 index fetches per hour
   const limit = await rateLimit(`task:index:${userId}`, 200, 3600);
   if (!limit.success) {
@@ -733,6 +758,8 @@ export async function getTasksForSearch(userId: string) {
  * @param items - Array of task IDs and their new positions
  */
 async function reorderTasksImpl(userId: string, items: { id: number; position: number }[]) {
+  await requireUser(userId);
+
   await Promise.all(
     items.map((item) =>
       db

@@ -215,3 +215,23 @@ export async function requireResourceOwnership(
     throw new ForbiddenError();
   }
 }
+
+/**
+ * Require that the current authenticated user matches the provided userId.
+ * Use this to protect Server Actions from IDOR attacks.
+ * Throws UnauthorizedError if not authenticated.
+ * Throws ForbiddenError if authenticated user does not match userId.
+ */
+export async function requireUser(userId: string): Promise<AuthUser> {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    throw new UnauthorizedError();
+  }
+
+  if (user.id !== userId) {
+    throw new ForbiddenError("You are not authorized to access this user's data");
+  }
+
+  return user;
+}

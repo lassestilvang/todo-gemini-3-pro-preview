@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { calculateStreakUpdate } from "@/lib/gamification";
 import { toggleTaskCompletion, createTask, getUserStats } from "@/lib/actions";
 import { db, userAchievements, achievements } from "@/db";
+import { setMockAuthUser } from "@/test/mocks";
 
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 
@@ -17,6 +18,7 @@ describe("Gamification Logic", () => {
         // Create a test user for each test
         const user = await createTestUser("test_user_gamification", "test@gamification.com");
         testUserId = user.id;
+        setMockAuthUser({ id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, profilePictureUrl: null });
 
         // Seed achievements
         await db.insert(achievements).values([
