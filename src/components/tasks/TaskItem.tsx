@@ -16,7 +16,7 @@ import { playSuccessSound } from "@/lib/audio";
 import { useUser } from "@/components/providers/UserProvider";
 import { formatTimePreference } from "@/lib/time-utils";
 import { usePerformanceMode } from "@/components/providers/PerformanceContext";
-
+import type { DraggableSyntheticListeners } from "@dnd-kit/core";
 
 import { createElement } from "react";
 import { getListIcon, getLabelIcon, LIST_ICONS } from "@/lib/icons";
@@ -65,7 +65,8 @@ interface TaskItemProps {
     showListInfo?: boolean;
     userId?: string;
     disableAnimations?: boolean;
-    dragHandleProps?: any;
+    // Typed for @dnd-kit stability - ensures memo works correctly with drag-and-drop
+    dragHandleProps?: DraggableSyntheticListeners;
 }
 
 
