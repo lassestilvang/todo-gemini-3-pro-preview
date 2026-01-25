@@ -124,6 +124,9 @@
 
 ## 🛠 Engineering & Quality
 
+- [ ] **[Improvement] CI E2E Test Splitting**: Investigate and implement better test distribution for E2E tests.
+  - **Issue**: Shard 1 takes ~10 mins while Shard 2 takes ~4 mins.
+  - **Proposed Solution**: Split E2E tests into more runners (e.g., 4 shards) to parallelize the workload and reduce the critical path.
 - [ ] **[Improvement] Settings Page A11y Test**: Complete the skipped accessibility test in `e2e/a11y.spec.ts`.
 - [ ] **[Improvement] Visual Regression CI baselines**: Add Linux-based snapshots for CI.
 - [ ] **[Improvement] LazyMotion domMax**: Consider upgrading `domAnimation` to `domMax` in `LazyMotionProvider.tsx`.

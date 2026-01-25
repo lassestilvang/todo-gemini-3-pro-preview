@@ -240,8 +240,8 @@ export async function importUserData(jsonData: unknown) {
             })
         }
 
-        revalidateTag(`lists-${userId}`);
-        revalidateTag(`labels-${userId}`);
+        revalidateTag(`lists-${userId}`, 'max');
+        revalidateTag(`labels-${userId}`, 'max');
         revalidatePath("/", "layout");
         return {
             success: true, counts: {
