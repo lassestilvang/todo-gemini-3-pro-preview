@@ -52,6 +52,7 @@ export const tasks = pgTable("tasks", {
     listId: integer("list_id").references(() => lists.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     description: text("description"),
+    icon: text("icon"),
     priority: text("priority", { enum: ["none", "low", "medium", "high"] }).default("none"),
     dueDate: timestamp("due_date"),
     isCompleted: boolean("is_completed").default(false),

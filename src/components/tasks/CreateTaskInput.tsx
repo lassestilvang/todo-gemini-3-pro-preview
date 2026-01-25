@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Calendar, Flag, Zap, MapPin } from "lucide-react";
+import { Calendar, Flag, Zap, MapPin, Smile } from "lucide-react";
 import { createTask } from "@/lib/actions/tasks";
+import { LIST_ICONS } from "@/lib/icons";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
@@ -31,6 +32,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const [isPriorityOpen, setIsPriorityOpen] = useState(false);
+    const [icon, setIcon] = useState<string | undefined>(undefined);
 
     // Parse natural language input - intentionally only depends on title
     useEffect(() => {
@@ -77,11 +79,12 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
             userId,
             title: parsed.title || title,
             listId: listId || null,
-            dueDate: dueDate || parsed.dueDate || null,
             priority: priority !== "none" ? priority : (parsed.priority || "none"),
             energyLevel: energyLevel || parsed.energyLevel || null,
             context: context || parsed.context || null,
+            dueDate: dueDate || parsed.dueDate || null,
             labelIds: defaultLabelIds,
+            icon: icon || null,
         });
 
         setTitle("");
@@ -89,6 +92,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
         setPriority("none");
         setEnergyLevel(undefined);
         setContext(undefined);
+        setIcon(undefined);
         setIsExpanded(false);
     };
 
@@ -194,6 +198,47 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                                         </div>
                                     </PopoverContent>
                                 </Popover>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button variant="ghost" size="sm" className={cn(icon && "text-primary")}>
+                                            {icon ? (
+                                                (() => {
+                                                    // Dynamic icon lookup
+                                                    const IconComponent = LIST_ICONS.find(i => i.name === icon)?.icon || Smile;
+                                                    return <IconComponent className="mr-2 h-4 w-4" />;
+                                                })()
+                                            ) : (
+                                                <Smile className="mr-2 h-4 w-4" />
+                                            )}
+                                            {icon || "Icon"}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[340px] p-2" align="start">
+                                        <div className="grid grid-cols-6 gap-2">
+                                            {LIST_ICONS.map((item) => (
+                                                <Button
+                                                    key={item.name}
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className={cn(
+                                                        "h-10 w-10",
+                                                        icon === item.name ? "bg-accent" : ""
+                                                    )}
+                                                    onClick={() => setIcon(item.name)}
+                                                    title={item.name}
+                                                    type="button"
+                                                >
+                                                    <item.icon className="h-5 w-5" />
+                                                </Button>
+                                            ))}
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
+
+
                             </div>
 
                             <div className="flex items-center gap-2">

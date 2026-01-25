@@ -74,6 +74,7 @@ export async function setupTestDb() {
             list_id INTEGER REFERENCES lists(id) ON DELETE CASCADE,
             title TEXT NOT NULL,
             description TEXT,
+            icon TEXT,
             priority TEXT DEFAULT 'none',
             due_date INTEGER,
             is_completed INTEGER DEFAULT 0,

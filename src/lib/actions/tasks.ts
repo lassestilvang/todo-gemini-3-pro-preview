@@ -102,6 +102,7 @@ export async function getTasks(
       listId: tasks.listId,
       title: tasks.title,
       description: tasks.description,
+      icon: tasks.icon,
       priority: tasks.priority,
       dueDate: tasks.dueDate,
       deadline: tasks.deadline,
@@ -197,6 +198,7 @@ export async function getTask(id: number, userId: string) {
       listId: tasks.listId,
       title: tasks.title,
       description: tasks.description,
+      icon: tasks.icon,
       priority: tasks.priority,
       dueDate: tasks.dueDate,
       deadline: tasks.deadline,
@@ -339,6 +341,11 @@ export async function updateTask(
       `Description changed from "${currentTask.description || "(empty)"}" to "${taskData.description || "(empty)"}"`
     );
   }
+
+  if (taskData.icon !== undefined && taskData.icon !== currentTask.icon) {
+    changes.push(`Icon changed from "${currentTask.icon || "none"}" to "${taskData.icon || "none"}"`);
+  }
+
   if (taskData.priority && taskData.priority !== currentTask.priority) {
     changes.push(`Priority changed from ${currentTask.priority} to ${taskData.priority}`);
   }

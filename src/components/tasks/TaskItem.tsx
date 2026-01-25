@@ -19,7 +19,7 @@ import { usePerformanceMode } from "@/components/providers/PerformanceContext";
 
 
 import { createElement } from "react";
-import { getListIcon, getLabelIcon } from "@/lib/icons";
+import { getListIcon, getLabelIcon, LIST_ICONS } from "@/lib/icons";
 
 // Define a type for the task prop based on the schema or a shared type
 // For now, I'll define a simplified interface matching the schema
@@ -36,6 +36,7 @@ export interface Task {
     id: number;
     title: string;
     description: string | null;
+    icon?: string | null;
     priority: "none" | "low" | "medium" | "high" | null;
     dueDate: Date | null;
     deadline: Date | null;
@@ -228,6 +229,12 @@ export function TaskItem({ task, showListInfo = true, userId, disableAnimations 
                 <div className="flex-1 min-w-0">
                     <div className={cn("font-medium truncate text-sm transition-all flex items-center gap-2", isCompleted && "text-muted-foreground")}>
                         <div className="relative inline-flex items-center gap-2 max-w-full">
+                            {task.icon && (
+                                (() => {
+                                    const IconComponent = LIST_ICONS.find(i => i.name === task.icon)?.icon;
+                                    return IconComponent ? <IconComponent className="h-4 w-4 text-muted-foreground" /> : null;
+                                })()
+                            )}
                             <span className="truncate">{task.title}</span>
                             {isCompleted && (
                                 <div

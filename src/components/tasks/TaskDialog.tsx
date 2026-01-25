@@ -85,6 +85,7 @@ function TaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId
     const {
         title, setTitle,
         description, setDescription,
+        icon, setIcon,
         priority, setPriority,
         listId, setListId,
         dueDate, setDueDate,
@@ -136,6 +137,7 @@ function TaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId
                         isEdit={isEdit}
                         title={title} setTitle={setTitle}
                         description={description} setDescription={setDescription}
+                        icon={icon} setIcon={setIcon}
                         listId={listId} setListId={setListId} lists={lists}
                         priority={priority} setPriority={setPriority}
                         energyLevel={energyLevel} setEnergyLevel={setEnergyLevel}

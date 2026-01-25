@@ -63,6 +63,7 @@ export const tasks = sqliteTable("tasks", {
     listId: integer("list_id").references(() => lists.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     description: text("description"),
+    icon: text("icon"),
     priority: text("priority", { enum: ["none", "low", "medium", "high"] }).default("none"),
     dueDate: integer("due_date", { mode: "timestamp" }),
     isCompleted: integer("is_completed", { mode: "boolean" }).default(false),

@@ -8,6 +8,7 @@ export type TaskType = {
     id: number;
     title: string;
     description: string | null;
+    icon: string | null;
     priority: "none" | "low" | "medium" | "high" | null;
     listId: number | null;
     dueDate: Date | null;
@@ -30,6 +31,7 @@ interface UseTaskFormProps {
     onClose: () => void;
     // Initial values for new task
     initialTitle?: string;
+    initialIcon?: string;
     initialPriority?: "none" | "low" | "medium" | "high";
     initialEnergyLevel?: "high" | "medium" | "low";
     initialContext?: "computer" | "phone" | "errands" | "meeting" | "home" | "anywhere";
@@ -81,11 +83,12 @@ function handleActionError(
  * @param defaultDueDate - Default due date to select if creating a new task
  * @param onClose - Callback to close the dialog after successful submission
  */
-export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId, onClose, initialTitle, initialPriority, initialEnergyLevel, initialContext }: UseTaskFormProps) {
+export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId, onClose, initialTitle, initialIcon, initialPriority, initialEnergyLevel, initialContext }: UseTaskFormProps) {
     const router = useRouter();
 
     const [title, setTitle] = useState(task?.title || initialTitle || "");
     const [description, setDescription] = useState(task?.description || "");
+    const [icon, setIcon] = useState<string | null>(task?.icon || initialIcon || null);
     const [priority, setPriority] = useState<"none" | "low" | "medium" | "high">(task?.priority || initialPriority || "none");
     const [listId, setListId] = useState<string>(task?.listId?.toString() || defaultListId?.toString() || "inbox");
     const [dueDate, setDueDate] = useState<Date | undefined>(
@@ -151,6 +154,7 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
             const data = {
                 title,
                 description,
+                icon,
                 priority,
                 listId: listId === "inbox" ? null : parseInt(listId),
                 dueDate,
@@ -240,6 +244,7 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
     return {
         title, setTitle: setTitleWithClear,
         description, setDescription,
+        icon, setIcon,
         priority, setPriority,
         listId, setListId,
         dueDate, setDueDate,

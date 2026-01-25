@@ -2,9 +2,6 @@
 
 ## 🚨 High Priority (Bugs & Core Issues)
 
-- [x] **Verify AGENTS.md** - Make sure the AGENTS.md file is up to date and accurate. Do a thorough review of the file and project and make sure it is accurate. If not, update it.
-- [x] **[Bug] Fix Sidebar Duplication**: Remove duplicate "Smart Schedule" link in the sidebar.
-  - *Status*: **RESOLVED** - Removed redundant "Smart Schedule" button and state from `AppSidebar.tsx`.
 - [x] **[Perf] Fix CSP blocking `react-grab`**: Resolve content security policy violation.
   - *Status*: **RESOLVED** - Loading `react-grab` via HTTPS to align with CSP.
 - [x] **[Perf] Optimize Initial Load**: Investigate and improve TTFB/FCP (~2.5s).
@@ -15,11 +12,6 @@
   - *Status*: **RESOLVED** - Verified with E2E test `e2e/search-latency.spec.ts`.
 - [x] **Fix Dialog Accessibility Warnings**: Missing `Description` or `aria-describedby`.
   - *Status*: **RESOLVED** - Added `<DialogDescription className="sr-only">` to all dialogs.
-- [x] **[Bug] Inline Task Adder UX**: In the `CreateTaskInput` component, the date and priority popups should automatically close after a selection is made to improve the user flow.
-  - *Status*: **RESOLVED** - Controlled `open` state of Popovers and closed them on selection.
-- [x] **[Bug] Sidebar: Saved Views**: Shown on load, then hidden if empty. Should always be visible and display helpful educational message. It should always have a "+ Add View" button. Move it below labels.
-- [x] **[Bug] View Settings: Grouping**: The Group By setting isn't currently working. Identify issues and make sure completed tasks are separate at the bottom in the same groups. Each Group By header should be sticky. Also add on option to group list and estimated time. Option to group by label should not be available when the view is a label list and the group by list should not be available when the view is a list.
-  - *Status*: **RESOLVED** - Fixed grouping logic to include completed tasks within groups (sorted to bottom). Added 'List' and 'Estimate' grouping options. Restricted invalid grouping options based on view context. Verified sticky headers.
 
 ## 🚀 Features & Enhancements
 
@@ -73,15 +65,6 @@
   - **UI**: Display the description below the title in the main view (similar to the "Today" view).
   - **Editing**: Update the list and label edit dialogs to include a description input.
   - *Status*: **RESOLVED** - Added `description` column to `lists` and `labels`, updated `ManageListDialog` and `ManageLabelDialog` with textarea inputs, and updated `ListPage` and `LabelPage` to display the description.
-- [ ] **Icons on Tasks**: Allow tasks to be assigned an icon (optional), similar to lists and labels.
-  - **UI**: Add an icon picker to the task editor (`TaskDialog`) and the inline task adder (`CreateTaskInput`).
-  - **Display**: Show the assigned icon next to the task title everywhere a task is shown (List views, Sidebar, Search, etc.).
-  - **Logic**: Update the `tasks` schema to include an `icon` field and update relevant server actions to handle it.
-- [ ] **Enhanced Icon Picker**: Create a premium icon/emoji picker for lists, labels, and tasks.
-  - **Emoji Support**: Full support for native platform emojis with category browsing and search.
-  - **Uploads**: Allow users to upload custom icons/images to use as avatars for lists or tasks.
-  - **External API**: Integrate with an external icon/logo search service (e.g., Lucide, Phosphor, or a Logo API) for a broader selection.
-  - **Design**: Needs to look and feel premium with smooth animations and a clean categorization layout.
 - [ ] **Task List Density Options**: Introduce selectable density views for task lists to improve visibility and focus.
   - **Compact**: Minimal padding and margin, optimized for power users with many tasks.
   - **Standard**: The current default layout and spacing.
@@ -124,9 +107,8 @@
 
 ## 🛠 Engineering & Quality
 
-- [ ] **[Improvement] CI E2E Test Splitting**: Investigate and implement better test distribution for E2E tests.
-  - **Issue**: Shard 1 takes ~10 mins while Shard 2 takes ~4 mins.
-  - **Proposed Solution**: Split E2E tests into more runners (e.g., 4 shards) to parallelize the workload and reduce the critical path.
+- [x] **[Improvement] CI E2E Test Splitting**: Investigate and implement better test distribution for E2E tests.
+  - **Status**: **RESOLVED** - Analyzed bottlenecks using `gh` CLI and increased shard count from 2 to 4 in `ci.yml`. This distributes the 42+ tests more evenly across runners.
 - [ ] **[Improvement] Settings Page A11y Test**: Complete the skipped accessibility test in `e2e/a11y.spec.ts`.
 - [ ] **[Improvement] Visual Regression CI baselines**: Add Linux-based snapshots for CI.
 - [ ] **[Improvement] LazyMotion domMax**: Consider upgrading `domAnimation` to `domMax` in `LazyMotionProvider.tsx`.
