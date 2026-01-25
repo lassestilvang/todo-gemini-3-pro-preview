@@ -8,7 +8,7 @@ import {
 import { getCurrentUser } from "@/lib/auth"
 import { eq, and } from "drizzle-orm"
 import { z } from "zod"
-import { revalidatePath } from "next/cache"
+import { revalidatePath, revalidateTag } from "next/cache"
 
 // Schema for validation
 const BackupSchema = z.object({
@@ -240,7 +240,9 @@ export async function importUserData(jsonData: unknown) {
             })
         }
 
-        // revalidatePath("/")
+        revalidateTag(`lists-${userId}`);
+        revalidateTag(`labels-${userId}`);
+        revalidatePath("/", "layout");
         return {
             success: true, counts: {
                 lists: listMap.size,

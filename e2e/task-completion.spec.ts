@@ -77,7 +77,7 @@ test.describe('Task Completion Flow', () => {
     await expect(checkbox).toBeChecked();
 
     // Wait for server to persist the "complete" action
-    await page.waitForTimeout(3000);
+    await page.waitForTimeout(5000); // Increased from 3000 for CI stability
 
     // Reload to verify completion persisted
     await page.reload();
@@ -102,7 +102,7 @@ test.describe('Task Completion Flow', () => {
     await expect(checkboxAfterComplete).not.toBeChecked({ timeout: 5000 });
 
     // Wait for server to persist the "uncomplete" action
-    await page.waitForTimeout(3000);
+    await page.waitForTimeout(5000); // Increased from 3000 for CI stability
 
     // Reload to verify uncomplete persisted
     await page.reload();

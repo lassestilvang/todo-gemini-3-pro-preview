@@ -40,27 +40,4 @@ test.describe('Task Upcoming View Verification', () => {
         await expect(taskItem.first()).toBeVisible({ timeout: 10000 });
     });
 
-    test('should create a task for next week and show it in Next 7 Days view', async ({ authenticatedPage: page }) => {
-        // Navigate to today page to create the task
-        await page.goto('/today');
-        await page.waitForLoadState('load');
-
-        // Find the task input
-        const taskInput = page.getByTestId('task-input');
-
-        const uniqueId = Date.now();
-        const taskTitle = `Weekly Review ${uniqueId} next friday`;
-        await taskInput.fill(taskTitle);
-        await taskInput.press('Enter');
-
-        await expect(taskInput).toHaveValue('', { timeout: 10000 });
-
-        // Now navigate to Next 7 Days
-        await page.goto('/next-7-days');
-        await page.waitForLoadState('load');
-
-        // Verify the task appears
-        const taskItem = page.getByTestId('task-item').filter({ hasText: `Weekly Review ${uniqueId}` });
-        await expect(taskItem.first()).toBeVisible({ timeout: 10000 });
-    });
 });

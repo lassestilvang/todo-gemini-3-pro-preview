@@ -130,8 +130,14 @@ export async function createTask(page: Page, title: string): Promise<void> {
   const taskInput = page.getByTestId('task-input');
   await taskInput.fill(title);
   await taskInput.press('Enter');
-  // Wait for the task to be created
-  await page.waitForTimeout(1000);
+  // Wait for the input to be cleared (optimistic update signal)
+  await expect(taskInput).toHaveValue('', { timeout: 10000 });
+
+  // Wait for the task to appear in the list to ensure it's ready for interaction
+  await page.waitForSelector(`[data-testid="task-item"]:has-text("${title}")`, {
+    state: 'visible',
+    timeout: 30000
+  });
 }
 
 /**
