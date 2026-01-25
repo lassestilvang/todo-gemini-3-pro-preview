@@ -144,4 +144,24 @@ describe("UserProfile", () => {
             expect(mockSignOut).toHaveBeenCalled();
         });
     });
+
+    it("has accessible name on the trigger button", () => {
+        const user = {
+            id: "user_123",
+            email: "john@example.com",
+            firstName: "John",
+            lastName: "Doe",
+            avatarUrl: null,
+        };
+
+        render(
+            <OnboardingProvider>
+                <UserProfile user={user} />
+            </OnboardingProvider>
+        );
+
+        const button = screen.getByRole("button", { name: "User Profile" });
+        expect(button).toBeInTheDocument();
+        expect(button).toHaveAttribute("aria-label", "User Profile");
+    });
 });
