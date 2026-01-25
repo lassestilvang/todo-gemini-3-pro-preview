@@ -11,6 +11,7 @@ type TaskType = {
     id: number;
     title: string;
     description: string | null;
+    icon: string | null;
     priority: "none" | "low" | "medium" | "high" | null;
     listId: number | null;
     dueDate: Date | null;
@@ -20,7 +21,7 @@ type TaskType = {
     energyLevel: "high" | "medium" | "low" | null;
     context: "computer" | "phone" | "errands" | "meeting" | "home" | "anywhere" | null;
     isHabit: boolean | null;
-    labels?: Array<{ id: number; name: string; color: string | null }>;
+    labels?: Array<{ id: number; name: string; color: string | null; icon: string | null }>;
 };
 
 interface TaskEditModalWrapperProps {

@@ -57,7 +57,7 @@ export function TaskList({ tasks, title, listId, labelId, defaultDueDate, userId
             )}
 
             <TaskDialog
-                task={editingTask ?? undefined}
+                task={editingTask ? { ...editingTask, icon: editingTask.icon ?? null } : undefined}
                 defaultListId={listId}
                 defaultLabelIds={labelId ? [labelId] : undefined}
                 defaultDueDate={defaultDueDate}

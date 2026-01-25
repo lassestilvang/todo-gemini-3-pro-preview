@@ -631,7 +631,7 @@ export function TaskListWithSettings({
 
             <Suspense fallback={null}>
                 <TaskDialog
-                    task={editingTask ?? undefined}
+                    task={editingTask ? { ...editingTask, icon: editingTask.icon ?? null } : undefined}
                     defaultListId={listId}
                     defaultLabelIds={labelId ? [labelId] : undefined}
                     defaultDueDate={defaultDueDate}
