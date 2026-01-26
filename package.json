@@ -82,6 +82,7 @@
     "@types/react": "^19.2.9",
     "@types/react-dom": "^19.2.3",
     "babel-plugin-react-compiler": "1.0.0",
+    "baseline-browser-mapping": "^2.9.18",
     "bun-types": "^1.3.6",
     "drizzle-kit": "^0.31.8",
     "eslint": "^9.39.2",
@@ -90,5 +91,8 @@
     "happy-dom": "^20.3.7",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3"
+  },
+  "resolutions": {
+    "baseline-browser-mapping": "^2.9.18"
   }
 }
