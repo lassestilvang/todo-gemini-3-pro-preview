@@ -344,6 +344,15 @@ export function TaskListWithSettings({
     const processedTasks = useMemo(() => {
         return applyViewSettings(localTasks, settings);
     }, [localTasks, settings]);
+    // Precompute index lookup to avoid O(n^2) findIndex calls when rendering grouped tasks.
+    // Expected impact: reduces grouped render from O(n^2) to O(n); for 1k tasks this avoids ~1M comparisons.
+    const taskIndexById = useMemo(() => {
+        const map = new Map<number, number>();
+        processedTasks.forEach((task, index) => {
+            map.set(task.id, index);
+        });
+        return map;
+    }, [processedTasks]);
 
     // Filter completed tasks out if they shouldn't be shown
     const visibleTasks = useMemo(() => {
@@ -579,7 +588,7 @@ export function TaskListWithSettings({
                                     <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{groupTasks.length}</span>
                                 </h3>
                                 {groupActiveTasks.map((task) => {
-                                    const globalIndex = processedTasks.findIndex(t => t.id === task.id);
+                                    const globalIndex = taskIndexById.get(task.id) ?? -1;
                                     return (
                                         <div
                                             key={task.id}
@@ -603,7 +612,7 @@ export function TaskListWithSettings({
                                             <div className="ml-4 h-px bg-border/50 my-2" />
                                         )}
                                         {groupCompletedTasks.map((task) => {
-                                            const globalIndex = processedTasks.findIndex(t => t.id === task.id);
+                                            const globalIndex = taskIndexById.get(task.id) ?? -1;
                                             return (
                                                 <div
                                                     key={task.id}
