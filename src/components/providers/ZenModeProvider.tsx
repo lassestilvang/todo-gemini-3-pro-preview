@@ -42,7 +42,12 @@ export function ZenModeProvider({ children }: { children: React.ReactNode }) {
 export function useZenMode() {
     const context = useContext(ZenModeContext);
     if (context === undefined) {
-        throw new Error("useZenMode must be used within a ZenModeProvider");
+        // Return fallback to prevent crash if used outside provider
+        return {
+            isZenMode: false,
+            toggleZenMode: () => { },
+            setZenMode: () => { }
+        };
     }
     return context;
 }

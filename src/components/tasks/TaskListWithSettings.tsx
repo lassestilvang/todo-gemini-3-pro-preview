@@ -303,12 +303,13 @@ export function TaskListWithSettings({
     }, [initialSettings, viewId]);
 
     const [settings, setSettings] = useState<ViewSettings>(effectiveInitialSettings);
-    // If we have initialSettings, we don't need to wait for client-side fetch, so we are "mounted" (ready)
-    const [mounted, setMounted] = useState(!!initialSettings);
+    // Trust server-provided data/defaults; assume mounted to avoid skeleton flicker
+    const [mounted, setMounted] = useState(true);
     const [activeId, setActiveId] = useState<number | null>(null);
 
     // Local state for tasks to support optimistic UI updates during drag
-    const [localTasks, setLocalTasks] = useState<Task[]>([]);
+    // Initialize with props.tasks to avoid "No tasks found" flicker on first render
+    const [localTasks, setLocalTasks] = useState<Task[]>(tasks);
 
     // Sync local tasks with props when they change (and not dragging)
     useEffect(() => {

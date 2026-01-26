@@ -217,7 +217,7 @@ export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps
                 setActiveTab("library"); // Switch back to library to see it
 
                 // Refresh in background to ensure consistency
-                loadCustomIcons();
+                // loadCustomIcons(); // Removed to prevent stale data overwrite (optimistic update is sufficient)
             } else {
                 toast.error(result.error?.message || "Failed to save icon");
                 console.error("Save failed:", result.error);
@@ -337,7 +337,7 @@ export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps
                                 </div>
                             )}
 
-                            {isLoading ? (
+                            {isLoading && customIcons.length === 0 ? (
                                 <div className="p-2">
                                     <h4 className="text-[10px] font-medium text-muted-foreground px-1 mb-1 uppercase tracking-wider">My Icons</h4>
                                     <div className="flex items-center justify-center py-4 text-muted-foreground">
