@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
+import { setMockAuthUser } from "@/test/mocks";
 import { createList, createTask, toggleTaskCompletion, getTasks, deleteTask, deleteList } from "@/lib/actions";
 import { isSuccess } from "@/lib/action-result";
 
@@ -20,6 +21,7 @@ describeOrSkip("Integration: Task Flow", () => {
         // Create a test user for each test
         const user = await createTestUser("test_user_integration", "test@integration.com");
         testUserId = user.id;
+        setMockAuthUser({ id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, profilePictureUrl: null });
     });
 
     it("should create a list, add a task, and complete it", async () => {

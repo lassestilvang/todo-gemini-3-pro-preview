@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeAll, mock, beforeEach } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
+import { setMockAuthUser } from "@/test/mocks";
 import {
     createTask, getTasks, updateTask, deleteTask, getTask, createReminder, getReminders, getTaskLogs,
     createList, getLists, updateList, deleteList, getList,
@@ -41,6 +42,15 @@ describe("Server Actions", () => {
         // Create a test user for each test
         const user = await createTestUser("test_user_actions", "test@actions.com");
         testUserId = user.id;
+
+        // Set the mock auth user so that requireUser() checks pass
+        setMockAuthUser({
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            profilePictureUrl: null
+        });
     });
 
     describe("Tasks", () => {
