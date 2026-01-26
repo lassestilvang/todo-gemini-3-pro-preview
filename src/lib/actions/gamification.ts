@@ -146,38 +146,42 @@ export async function checkAchievements(
   currentXP: number,
   currentStreak: number
 ) {
-  // Get all achievements
-  const allAchievements = await db.select().from(achievements);
-
-  // Get unlocked achievements for this user
-  const unlocked = await db
-    .select()
-    .from(userAchievements)
-    .where(eq(userAchievements.userId, userId));
-  const unlockedIds = new Set(unlocked.map((u) => u.achievementId));
-
-  // Get total tasks completed by this user
-  const completedTasks = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(tasks)
-    .where(and(eq(tasks.userId, userId), eq(tasks.isCompleted, true)));
-  const totalCompleted = completedTasks[0].count;
-
-  // Get tasks completed today for "Hat Trick"
+  // Parallelize independent queries
   const todayStart = startOfDay(new Date());
   const todayEnd = endOfDay(new Date());
-  const completedToday = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(tasks)
-    .where(
-      and(
-        eq(tasks.userId, userId),
-        eq(tasks.isCompleted, true),
-        gte(tasks.completedAt, todayStart),
-        lte(tasks.completedAt, todayEnd)
+
+  const [
+    allAchievements,
+    unlocked,
+    completedTasksResult,
+    completedTodayResult
+  ] = await Promise.all([
+    // Get all achievements
+    db.select().from(achievements),
+    // Get unlocked achievements for this user
+    db.select().from(userAchievements).where(eq(userAchievements.userId, userId)),
+    // Get total tasks completed by this user
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(tasks)
+      .where(and(eq(tasks.userId, userId), eq(tasks.isCompleted, true))),
+    // Get tasks completed today for "Hat Trick"
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(tasks)
+      .where(
+        and(
+          eq(tasks.userId, userId),
+          eq(tasks.isCompleted, true),
+          gte(tasks.completedAt, todayStart),
+          lte(tasks.completedAt, todayEnd)
+        )
       )
-    );
-  const dailyCompleted = completedToday[0].count;
+  ]);
+
+  const unlockedIds = new Set(unlocked.map((u) => u.achievementId));
+  const totalCompleted = completedTasksResult[0].count;
+  const dailyCompleted = completedTodayResult[0].count;
 
   for (const achievement of allAchievements) {
     if (unlockedIds.has(achievement.id)) continue;
