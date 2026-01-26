@@ -97,7 +97,7 @@ describe("TaskItem", () => {
         // Let's check for a partial match or just ensure it doesn't crash.
     });
 
-    it("should have accessible labels", () => {
+    it("should have accessible labels", async () => {
         const taskWithSubtasks = {
             ...sampleTask,
             subtaskCount: 1,
@@ -105,8 +105,25 @@ describe("TaskItem", () => {
         };
         render(<TaskItem task={taskWithSubtasks} />);
 
-        expect(screen.getByLabelText("Expand subtasks")).toBeInTheDocument();
+        // Check static labels
         expect(screen.getByLabelText("Start focus mode")).toBeInTheDocument();
         expect(screen.getByLabelText("Mark task as complete")).toBeInTheDocument();
+
+        // Check expand button initial state
+        const expandButton = screen.getByLabelText("Expand subtasks");
+        expect(expandButton).toBeInTheDocument();
+        expect(expandButton).toHaveAttribute("aria-expanded", "false");
+
+        // Expand subtasks
+        fireEvent.click(expandButton);
+
+        // Check expand button toggled state
+        expect(expandButton).toHaveAttribute("aria-label", "Collapse subtasks");
+        expect(expandButton).toHaveAttribute("aria-expanded", "true");
+
+        // Check subtask checkbox is now visible with correct label
+        await waitFor(() => {
+            expect(screen.getByLabelText("Mark subtask as complete")).toBeInTheDocument();
+        });
     });
 });

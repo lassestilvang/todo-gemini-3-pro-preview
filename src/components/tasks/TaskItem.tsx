@@ -228,7 +228,7 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                             e.stopPropagation();
                         }}
                         data-testid="task-checkbox"
-aria-label={isCompleted ? `Mark task '${task.title}' as incomplete` : `Mark task '${task.title}' as complete`}
+                        aria-label={isCompleted ? "Mark task as incomplete" : "Mark task as complete"}
                     />
                 </m.div>
 
@@ -416,7 +416,7 @@ aria-label={isCompleted ? `Mark task '${task.title}' as incomplete` : `Mark task
                                         e.stopPropagation();
                                         e.preventDefault();
                                     }}
-aria-label={isSubtaskCompleted ? `Mark subtask '${subtask.title}' as incomplete` : `Mark subtask '${subtask.title}' as complete`}
+                                    aria-label={isSubtaskCompleted ? "Mark subtask as incomplete" : "Mark subtask as complete"}
                                 />
                                 <span
                                     className={cn(
