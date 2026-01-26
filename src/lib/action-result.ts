@@ -7,6 +7,8 @@
  * @module action-result
  */
 
+import { ForbiddenError as AuthForbiddenError, UnauthorizedError as AuthUnauthorizedError } from "./auth-errors";
+
 /**
  * Error codes for categorizing Server Action failures
  */
@@ -177,10 +179,17 @@ export function withErrorHandling<T, Args extends unknown[]>(
         });
       }
 
-      if (error instanceof AuthorizationError) {
+      if (error instanceof AuthorizationError || error instanceof AuthForbiddenError) {
         return failure({
           code: "FORBIDDEN",
           message: "You do not have permission to perform this action",
+        });
+      }
+
+      if (error instanceof AuthUnauthorizedError) {
+        return failure({
+          code: "UNAUTHORIZED",
+          message: "Authentication required",
         });
       }
 

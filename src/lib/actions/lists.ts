@@ -16,6 +16,8 @@ import {
   ValidationError,
 } from "./shared";
 import { logActivity } from "./logs";
+import { getCurrentUser } from "@/lib/auth";
+import { ForbiddenError, UnauthorizedError } from "@/lib/auth-errors";
 
 /**
  * Retrieves all lists for a specific user.
@@ -33,6 +35,14 @@ import { unstable_cache, revalidateTag } from "next/cache";
  * @returns Array of lists ordered by creation date
  */
 export const getLists = cache(async function getLists(userId: string) {
+  const user = await getCurrentUser();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
+  if (user.id !== userId) {
+    throw new ForbiddenError("You are not authorized to access this user's data");
+  }
+
   const fn = unstable_cache(
     async (id: string) => {
       return await db
@@ -54,6 +64,14 @@ export const getLists = cache(async function getLists(userId: string) {
  * @param items - Array of list IDs and their new positions
  */
 async function reorderListsImpl(userId: string, items: { id: number; position: number }[]) {
+  const user = await getCurrentUser();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
+  if (user.id !== userId) {
+    throw new ForbiddenError("You are not authorized to access this user's data");
+  }
+
   // Update updates in a transaction or batch would be ideal, 
   // but for now we'll do promise.all since Drizzle standard batching varies by driver
   // and Neon driver supports valid connection pooling.
@@ -96,6 +114,14 @@ export const reorderLists: (
  * @returns The list if found, undefined otherwise
  */
 export async function getList(id: number, userId: string) {
+  const user = await getCurrentUser();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
+  if (user.id !== userId) {
+    throw new ForbiddenError("You are not authorized to access this user's data");
+  }
+
   const result = await db
     .select()
     .from(lists)
@@ -116,6 +142,14 @@ async function createListImpl(data: typeof lists.$inferInsert) {
   }
   if (!data.userId) {
     throw new ValidationError("User ID is required", { userId: "User ID cannot be empty" });
+  }
+
+  const user = await getCurrentUser();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
+  if (user.id !== data.userId) {
+    throw new ForbiddenError("You are not authorized to access this user's data");
   }
 
   const result = await db.insert(lists).values(data).returning();
@@ -156,6 +190,14 @@ async function updateListImpl(
   userId: string,
   data: Partial<Omit<typeof lists.$inferInsert, "userId">>
 ) {
+  const user = await getCurrentUser();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
+  if (user.id !== userId) {
+    throw new ForbiddenError("You are not authorized to access this user's data");
+  }
+
   if (data.name !== undefined && data.name.trim().length === 0) {
     throw new ValidationError("List name cannot be empty", { name: "Name cannot be empty" });
   }
@@ -204,6 +246,14 @@ export const updateList: (
  * @param userId - The ID of the user who owns the list
  */
 async function deleteListImpl(id: number, userId: string) {
+  const user = await getCurrentUser();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
+  if (user.id !== userId) {
+    throw new ForbiddenError("You are not authorized to access this user's data");
+  }
+
   const currentList = await getList(id, userId);
 
   await db.delete(lists).where(and(eq(lists.id, id), eq(lists.userId, userId)));

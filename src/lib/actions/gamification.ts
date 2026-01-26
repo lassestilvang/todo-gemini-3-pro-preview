@@ -153,35 +153,24 @@ export async function checkAchievements(
   const [
     allAchievements,
     unlocked,
-    completedTasksResult,
-    completedTodayResult
+    [taskCounts]
   ] = await Promise.all([
     // Get all achievements
     db.select().from(achievements),
     // Get unlocked achievements for this user
     db.select().from(userAchievements).where(eq(userAchievements.userId, userId)),
-    // Get total tasks completed by this user
-    db
-      .select({ count: sql<number>`count(*)` })
+    // Get total and daily completed task counts in one query
+    db.select({
+      totalCompleted: sql<number>`count(*)`,
+      dailyCompleted: sql<number>`count(case when ${and(gte(tasks.completedAt, todayStart), lte(tasks.completedAt, todayEnd))} then 1 else null end)`
+    })
       .from(tasks)
-      .where(and(eq(tasks.userId, userId), eq(tasks.isCompleted, true))),
-    // Get tasks completed today for "Hat Trick"
-    db
-      .select({ count: sql<number>`count(*)` })
-      .from(tasks)
-      .where(
-        and(
-          eq(tasks.userId, userId),
-          eq(tasks.isCompleted, true),
-          gte(tasks.completedAt, todayStart),
-          lte(tasks.completedAt, todayEnd)
-        )
-      )
+      .where(and(eq(tasks.userId, userId), eq(tasks.isCompleted, true)))
   ]);
 
   const unlockedIds = new Set(unlocked.map((u) => u.achievementId));
-  const totalCompleted = completedTasksResult[0].count;
-  const dailyCompleted = completedTodayResult[0].count;
+  const totalCompleted = taskCounts?.totalCompleted || 0;
+  const dailyCompleted = taskCounts?.dailyCompleted || 0;
 
   for (const achievement of allAchievements) {
     if (unlockedIds.has(achievement.id)) continue;
