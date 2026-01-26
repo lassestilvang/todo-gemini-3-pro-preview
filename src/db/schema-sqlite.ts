@@ -135,7 +135,9 @@ export const reminders = sqliteTable("reminders", {
     createdAt: integer("created_at", { mode: "timestamp" })
         .notNull()
         .default(sql`(strftime('%s', 'now'))`),
-});
+}, (table) => ({
+    taskIdIdx: index("reminders_task_id_idx").on(table.taskId),
+}));
 
 export const taskLogs = sqliteTable("task_logs", {
     id: integer("id").primaryKey({ autoIncrement: true }),
@@ -168,7 +170,9 @@ export const habitCompletions = sqliteTable("habit_completions", {
     createdAt: integer("created_at", { mode: "timestamp" })
         .notNull()
         .default(sql`(strftime('%s', 'now'))`),
-});
+}, (table) => ({
+    taskIdCompletedAtIdx: index("habit_completions_task_id_completed_at_idx").on(table.taskId, table.completedAt),
+}));
 
 export const taskDependencies = sqliteTable("task_dependencies", {
     taskId: integer("task_id")

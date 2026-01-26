@@ -130,7 +130,9 @@ export const reminders = pgTable("reminders", {
     createdAt: timestamp("created_at")
         .notNull()
         .defaultNow(),
-});
+}, (table) => ({
+    taskIdIdx: index("reminders_task_id_idx").on(table.taskId),
+}));
 
 export const taskLogs = pgTable("task_logs", {
     id: serial("id").primaryKey(),
@@ -164,7 +166,9 @@ export const habitCompletions = pgTable("habit_completions", {
     createdAt: timestamp("created_at")
         .notNull()
         .defaultNow(),
-});
+}, (table) => ({
+    taskIdCompletedAtIdx: index("habit_completions_task_id_completed_at_idx").on(table.taskId, table.completedAt),
+}));
 
 export const taskDependencies = pgTable("task_dependencies", {
     taskId: integer("task_id")

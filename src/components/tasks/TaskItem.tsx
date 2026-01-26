@@ -82,7 +82,7 @@ function formatDuration(minutes: number): string {
 }
 
 // React.memo prevents re-renders when parent state changes (e.g., dialog open/close)
-// but the task props remain unchanged. In lists with 50+ tasks, this reduces 
+// but the task props remain unchanged. In lists with 50+ tasks, this reduces
 // unnecessary re-renders by ~95% when opening the task edit dialog.
 export const TaskItem = memo(function TaskItem({ task, showListInfo = true, userId, disableAnimations = false, dragHandleProps }: TaskItemProps) {
     const [isCompleted, setIsCompleted] = useState(task.isCompleted || false);
@@ -357,11 +357,11 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                                     }}
                                     className="text-[10px] px-1.5 py-0 h-5 font-normal border flex items-center gap-1"
                                 >
-                                    {/* <ResolvedIcon> handles fallback internally if needed, or we can just pass null. 
-                                        But wait, ResolvedIcon renders `ListTodo` fallback if null. 
-                                        For labels without icons, we might prefer *no* icon? 
+                                    {/* <ResolvedIcon> handles fallback internally if needed, or we can just pass null.
+                                        But wait, ResolvedIcon renders `ListTodo` fallback if null.
+                                        For labels without icons, we might prefer *no* icon?
                                         The old code called `getLabelIcon(label.icon)` which returned a Lucide icon (Tag default).
-                                        ResolvedIcon defaults to ListTodo. Let's provide a fallback of Tag explicitly if needed, 
+                                        ResolvedIcon defaults to ListTodo. Let's provide a fallback of Tag explicitly if needed,
                                         or let ResolvedIcon handle it. Since `label.icon` is nullable string.
                                         Let's assume standard behavior: if icon is present, show it.
                                     */}

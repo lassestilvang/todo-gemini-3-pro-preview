@@ -63,8 +63,8 @@ export function ResolvedIcon({ icon, color, className, fallback }: ResolvedIconP
     if (resolved.type === "image") {
         return (
             <div className={cn("relative overflow-hidden rounded-sm shrink-0", className)}>
-                {/* 
-                   Using standard img for data URIs or external URLs where we can't easily optimize 
+                {/*
+                   Using standard img for data URIs or external URLs where we can't easily optimize
                    with Next.Image without whitelisting domains.
                 */}
                 <img

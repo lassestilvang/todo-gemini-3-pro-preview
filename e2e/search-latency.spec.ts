@@ -28,7 +28,7 @@ test.describe('Search Task Latency', () => {
         }
 
         // Small grace period for server-side search indexing if needed
-        // Although the test checks for "latency", local search should be near-instant 
+        // Although the test checks for "latency", local search should be near-instant
         // after revalidatePath, but GitHub Actions can be slow.
         await page.waitForTimeout(1000);
 
