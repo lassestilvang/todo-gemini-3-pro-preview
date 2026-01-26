@@ -197,6 +197,8 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                             setIsExpanded(!isExpanded);
                         }}
                         className="flex items-center justify-center w-5 h-5 -ml-1 rounded hover:bg-muted transition-colors"
+                        aria-label={isExpanded ? "Collapse subtasks" : "Expand subtasks"}
+                        aria-expanded={isExpanded}
                     >
                         <ChevronDown
                             className={cn(
@@ -226,6 +228,7 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                             e.stopPropagation();
                         }}
                         data-testid="task-checkbox"
+                        aria-label={isCompleted ? "Mark task as incomplete" : "Mark task as complete"}
                     />
                 </m.div>
 
@@ -382,6 +385,7 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                         setShowFocusMode(true);
                     }}
                     type="button"
+                    aria-label="Start focus mode"
                 >
                     <Target className="h-4 w-4 text-muted-foreground hover:text-primary" />
                 </Button>
@@ -412,6 +416,7 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                                         e.stopPropagation();
                                         e.preventDefault();
                                     }}
+                                    aria-label={isSubtaskCompleted ? "Mark subtask as incomplete" : "Mark subtask as complete"}
                                 />
                                 <span
                                     className={cn(
