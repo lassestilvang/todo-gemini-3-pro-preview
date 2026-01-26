@@ -47,10 +47,9 @@ export function OnboardingTour() {
         const offset = 12;
         const padding = 16; // Minimum distance from viewport edges
         const tooltipWidth = 320; // w-80 = 20rem = 320px
-        const tooltipHeight = 250; // Approximate height with padding and content
+        // const tooltipHeight = 250; // Approximate height with padding and content
 
         let position: { top?: number; bottom?: number; left?: number; right?: number } = {};
-        let needsAdjustment = false;
 
         // Calculate preferred position based on step.position
         switch (step.position) {
@@ -92,11 +91,9 @@ export function OnboardingTour() {
             if (tooltipLeft < padding) {
                 // Too far left, adjust
                 position.left = padding + tooltipWidth / 2;
-                needsAdjustment = true;
             } else if (tooltipLeft + tooltipWidth > window.innerWidth - padding) {
                 // Too far right, adjust
                 position.left = window.innerWidth - padding - tooltipWidth / 2;
-                needsAdjustment = true;
             }
         }
 
@@ -105,19 +102,15 @@ export function OnboardingTour() {
             if (position.top < padding) {
                 // Too close to top
                 position.top = padding;
-                needsAdjustment = true;
-            } else if (position.top + tooltipHeight > window.innerHeight - padding) {
                 // Would overflow bottom, switch to positioning from bottom
                 delete position.top;
                 position.bottom = padding;
-                needsAdjustment = true;
             }
         }
 
         if (position.bottom !== undefined && position.bottom < padding) {
             // Too close to bottom edge when using bottom positioning
             position.bottom = padding;
-            needsAdjustment = true;
         }
 
         return position;

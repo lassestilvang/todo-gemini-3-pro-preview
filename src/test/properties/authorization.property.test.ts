@@ -62,19 +62,9 @@ describeOrSkip("Property Tests: Authorization", () => {
 
                         try {
                             const result = await getTask(taskA.id, userBId);
-                            // It should fail or return null depending on implementation
-                            // Since we added authorization check, it will likely throw ForbiddenError.
-                            // However, getTask implementation checks `eq(tasks.userId, userId)`.
-                            // If userId is passed as userBId, it will query for task where id=taskA.id AND userId=userBId.
-                            // This will return undefined (not found).
-                            // BUT, we added requireUser(userId) at the top.
-                            // So calling getTask(id, userBId) as User B is ALLOWED (User B is calling with their own ID).
-                            // But the query will return nothing because the task belongs to User A.
-                            // So the expectation expect(result).toBeNull() is still valid.
-
                             expect(result).toBeNull();
-                        } catch (e) {
-                             // If it throws, that's also fine (safe)
+                        } catch {
+                            // If it throws, that's also fine (safe)
                         }
                     }
                 ),
@@ -179,7 +169,7 @@ describeOrSkip("Property Tests: Authorization", () => {
                             const result = await getList(listA.id, userBId);
                             // Same logic as getTask
                             expect(result).toBeUndefined();
-                        } catch (e) {
+                        } catch {
                             // Safe
                         }
                     }
@@ -291,7 +281,7 @@ describeOrSkip("Property Tests: Authorization", () => {
                         try {
                             const result = await getLabel(labelA.id, userBId);
                             expect(result).toBeUndefined();
-                        } catch (e) {
+                        } catch {
                             // Safe
                         }
                     }

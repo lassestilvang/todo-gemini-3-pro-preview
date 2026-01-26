@@ -5,7 +5,6 @@ import {
     customIcons,
     eq,
     and,
-    revalidatePath,
     type ActionResult,
     withErrorHandling,
     ValidationError,

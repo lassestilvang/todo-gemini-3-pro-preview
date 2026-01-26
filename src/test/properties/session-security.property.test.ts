@@ -24,7 +24,7 @@ import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser, clearMockAuthUser } from "@/test/mocks";
 import { getCurrentUser, requireAuth } from "@/lib/auth";
 import { UnauthorizedError } from "@/lib/auth-errors";
-import { getTasks, getLists, getLabels } from "@/lib/actions";
+import { getTasks } from "@/lib/actions";
 
 // Configure fast-check for reproducibility in CI
 // Requirements: 3.5 - Property tests use fixed seed for reproducibility
@@ -101,10 +101,10 @@ describeOrSkip("Property Tests: Session Security", () => {
       // The middleware configuration in src/middleware.ts specifies:
       // - unauthenticatedPaths: ['/login', '/auth/callback']
       // - All other routes require authentication
-      
+
       const publicPaths = ['/login', '/auth/callback'];
       const protectedPaths = ['/inbox', '/today', '/calendar', '/settings', '/tasks', '/lists'];
-      
+
       await fc.assert(
         fc.asyncProperty(
           fc.constantFrom(...protectedPaths),
@@ -131,7 +131,7 @@ describeOrSkip("Property Tests: Session Security", () => {
       await fc.assert(
         fc.asyncProperty(workosUserArb, async (workosUser) => {
           await resetTestDb();
-          
+
           // Set up mock to return this user
           setMockAuthUser({
             id: workosUser.id,
@@ -146,7 +146,7 @@ describeOrSkip("Property Tests: Session Security", () => {
 
           // Property: getCurrentUser returns user data for authenticated sessions
           const user = await getCurrentUser();
-          
+
           expect(user).not.toBeNull();
           expect(user?.id).toBe(workosUser.id);
           expect(user?.email).toBe(workosUser.email);
@@ -162,7 +162,7 @@ describeOrSkip("Property Tests: Session Security", () => {
           fc.integer({ min: 1, max: 5 }), // Number of times to call getCurrentUser
           async (workosUser, callCount) => {
             await resetTestDb();
-            
+
             setMockAuthUser({
               id: workosUser.id,
               email: workosUser.email,
@@ -206,10 +206,10 @@ describeOrSkip("Property Tests: Session Security", () => {
           async () => {
             // Ensure no user is authenticated
             clearMockAuthUser();
-            
+
             // Property: requireAuth throws UnauthorizedError when not authenticated
             let thrownError: Error | null = null;
-            
+
             try {
               await requireAuth();
             } catch (error) {
@@ -232,7 +232,7 @@ describeOrSkip("Property Tests: Session Security", () => {
           async () => {
             // Ensure no user is authenticated
             clearMockAuthUser();
-            
+
             // Property: getCurrentUser returns null when not authenticated
             const user = await getCurrentUser();
             expect(user).toBeNull();
@@ -252,7 +252,7 @@ describeOrSkip("Property Tests: Session Security", () => {
 
             // Property: Querying with a non-existent user ID returns error
             const fakeUserId = "fake_unauthorized_user";
-            
+
             // Ensure no user is authenticated (which is the default in beforeEach)
             clearMockAuthUser();
 
@@ -260,10 +260,11 @@ describeOrSkip("Property Tests: Session Security", () => {
             try {
               await getTasks(fakeUserId, undefined, "all");
               expect(true).toBe(false); // Fail if no error
-            } catch (e: any) {
+            } catch (e: unknown) {
+              const err = e as { name: string };
               // Should be UnauthorizedError or ForbiddenError
               // Since we are unauthenticated, it should be UnauthorizedError
-              expect(e.name).toBe("UnauthorizedError");
+              expect(err.name).toBe("UnauthorizedError");
             }
 
             // We can't check lists/labels easily because they might not be protected yet

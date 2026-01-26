@@ -1,6 +1,5 @@
 import { test, expect } from './fixtures';
-import { readFileSync, unlinkSync } from 'fs';
-import { join } from 'path';
+import { readFileSync } from 'fs';
 
 test.describe('Data Persistence (Export/Import)', () => {
     test('should export and import data correctly preserving relationships', async ({ authenticatedPage: page }) => {
@@ -52,8 +51,8 @@ test.describe('Data Persistence (Export/Import)', () => {
 
         expect(jsonData.data).toBeDefined();
         // Verify our data is in there
-        const foundList = jsonData.data.lists.find((l: any) => l.name === listName);
-        const foundTask = jsonData.data.tasks.find((t: any) => t.title === taskName);
+        const foundList = jsonData.data.lists.find((l: { name: string; id: number }) => l.name === listName);
+        const foundTask = jsonData.data.tasks.find((t: { title: string; id: number; listId: number }) => t.title === taskName);
 
         expect(foundList).toBeDefined();
         expect(foundTask).toBeDefined();

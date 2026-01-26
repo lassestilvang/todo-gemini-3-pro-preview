@@ -26,7 +26,7 @@ mock.module("next/navigation", () => ({
 mock.module("next/cache", () => ({
     revalidatePath: () => { },
     revalidateTag: () => { },
-    unstable_cache: (fn: any) => fn,
+    unstable_cache: (fn: unknown) => fn,
 }));
 
 // Mock gemini client globally to prevent AI calls during tests
@@ -55,6 +55,35 @@ interface MockAuthUser {
     lastName: string | null;
     profilePictureUrl: string | null;
 }
+
+export const mockDb: {
+    select: () => { from: () => { where: () => Promise<unknown[]>; limit: () => Promise<unknown[]>; orderBy: () => Promise<unknown[]>; execute: () => Promise<unknown[]> } };
+    insert: (table: unknown) => { values: (data: unknown) => { returning: () => Promise<unknown[]> } };
+    update: (table: unknown) => { set: (data: unknown) => { where: (condition: unknown) => Promise<unknown[]> } };
+    delete: (table: unknown) => { where: (condition: unknown) => Promise<{ deleted: boolean }> };
+} = {
+    select: () => ({
+        from: () => ({
+            where: () => Promise.resolve([]),
+            limit: () => Promise.resolve([]),
+            orderBy: () => Promise.resolve([]),
+            execute: () => Promise.resolve([]),
+        }),
+    }),
+    insert: (_table: unknown) => ({ // eslint-disable-line @typescript-eslint/no-unused-vars
+        values: (data: unknown) => ({
+            returning: () => Promise.resolve([Object.assign({}, data, { id: Math.random().toString(36).substring(7) })]),
+        }),
+    }),
+    update: (_table: unknown) => ({ // eslint-disable-line @typescript-eslint/no-unused-vars
+        set: (data: unknown) => ({
+            where: (_condition: unknown) => Promise.resolve([Object.assign({}, data, { id: "mock-id" })]), // eslint-disable-line @typescript-eslint/no-unused-vars
+        }),
+    }),
+    delete: (_table: unknown) => ({ // eslint-disable-line @typescript-eslint/no-unused-vars
+        where: (_condition: unknown) => Promise.resolve({ deleted: true }), // eslint-disable-line @typescript-eslint/no-unused-vars
+    }),
+};
 
 // Use globalThis to ensure the mock state is shared across module boundaries
 const mockState = globalThis as unknown as { __mockAuthUser: MockAuthUser | null };

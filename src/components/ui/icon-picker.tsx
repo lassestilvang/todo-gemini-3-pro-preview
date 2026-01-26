@@ -14,9 +14,7 @@ import {
     TabsList,
     TabsTrigger,
 } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Search, Shuffle, Upload as UploadIcon, X, Plus } from "lucide-react";
+import { Search, Shuffle, Upload as UploadIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AVAILABLE_ICONS } from "@/lib/icons";
 import { ResolvedIcon } from "./resolved-icon";
@@ -71,6 +69,7 @@ export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps
     const [uploadName, setUploadName] = useState("");
     const [uploadUrl, setUploadUrl] = useState("");
     const [isUploading, setIsUploading] = useState(false);
+    // const [isLoading, setIsLoading] = useState(false); // Unused for now
 
     // Recents
     const [recentIcons, setRecentIcons] = useState<string[]>([]);
@@ -78,12 +77,30 @@ export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const loadCustomIcons = React.useCallback(async () => {
+        if (!userId) return;
+        setIsLoading(true);
+        try {
+            const icons = await getCustomIcons(userId);
+            setCustomIcons(icons.map(Icon => ({
+                type: "custom",
+                value: Icon.url,
+                name: Icon.name,
+                id: Icon.id
+            })));
+        } catch (error) {
+            console.error("Failed to load custom icons", error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [userId]);
+
     // Effects
     useEffect(() => {
         if (open && userId) {
             loadCustomIcons();
         }
-    }, [open, userId]);
+    }, [open, userId, loadCustomIcons]);
 
     useEffect(() => {
         // Load recents on mount
@@ -96,21 +113,6 @@ export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps
             }
         }
     }, []);
-
-    const loadCustomIcons = async () => {
-        if (!userId) return;
-        try {
-            const icons = await getCustomIcons(userId);
-            setCustomIcons(icons.map(Icon => ({
-                type: "custom",
-                value: Icon.url,
-                name: Icon.name,
-                id: Icon.id
-            })));
-        } catch (error) {
-            console.error("Failed to load custom icons", error);
-        }
-    };
 
     const handleSelectIcon = (iconValue: string) => {
         let finalValue = iconValue;
@@ -244,11 +246,6 @@ export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps
         );
     }, [searchQuery]);
 
-    const filteredCustomIcons = useMemo(() => {
-        if (!searchQuery) return customIcons;
-        return customIcons.filter(i => i.name.toLowerCase().includes(searchQuery.toLowerCase()));
-    }, [customIcons, searchQuery]);
-
     // Recents filtering (just split standard vs other)
     // Actually we just show all recents in a row, regardless of tab?
     // Plan said "Recently Used row for Tab 1 and Tab 2".
@@ -341,6 +338,7 @@ export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps
                                                     title={c.name}
                                                 >
                                                     <div className="w-5 h-5 rounded overflow-hidden">
+                                                        {/* eslint-disable-next-line @next/next/no-img-element */}
                                                         <img src={c.value} alt={c.name} className="w-full h-full object-cover" />
                                                     </div>
                                                 </button>
@@ -370,7 +368,7 @@ export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps
                             <EmojiPicker
                                 onEmojiClick={(e) => handleSelectIcon(e.emoji)}
                                 autoFocusSearch={false}
-                                theme={theme === 'dark' ? 'dark' as any : 'light' as any}
+                                theme={theme === 'dark' ? 'dark' as any : 'light' as any} // eslint-disable-line @typescript-eslint/no-explicit-any
                                 lazyLoadEmojis={true}
                                 skinTonesDisabled={false}
                                 width="100%"
@@ -467,6 +465,7 @@ export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps
                             >
                                 {uploadUrl ? (
                                     <div className="relative w-24 h-24">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img src={uploadUrl} className="w-full h-full object-contain" alt="Preview" />
                                         <button
                                             onClick={(e) => { e.stopPropagation(); setUploadUrl(""); }}

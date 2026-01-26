@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useMemo } from "react";
-import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { ListTodo, Hash } from "lucide-react";
+import { ListTodo } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -47,7 +46,7 @@ export function ResolvedIcon({ icon, color, className, fallback }: ResolvedIconP
                 .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
                 .join("");
 
-            // @ts-ignore - Dynamic lookup
+            // @ts-expect-error - Dynamic lookup
             const IconComponent = LucideIcons[pascalName] || LucideIcons[name];
 
             if (IconComponent) {
@@ -67,6 +66,7 @@ export function ResolvedIcon({ icon, color, className, fallback }: ResolvedIconP
                    Using standard img for data URIs or external URLs where we can't easily optimize
                    with Next.Image without whitelisting domains.
                 */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                     src={resolved.value}
                     alt="Icon"

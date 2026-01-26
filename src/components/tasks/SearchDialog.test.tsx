@@ -12,11 +12,17 @@ mock.module("@/lib/actions", () => ({
 const mockPush = mock();
 
 // Wrapper replicating the Client-Side Search Logic with Fuse.js
+interface TaskSearchItem {
+    id: number;
+    title: string;
+    description: string | null;
+}
+
 function SearchDialogWrapper() {
-    const [fuse, setFuse] = React.useState<Fuse<any> | null>(null);
+    const [fuse, setFuse] = React.useState<Fuse<TaskSearchItem> | null>(null);
     const [open, setOpen] = React.useState(false);
     const [query, setQuery] = React.useState("");
-    const [results, setResults] = React.useState<Array<{ id: number; title: string; description: string | null }>>([]);
+    const [results, setResults] = React.useState<TaskSearchItem[]>([]);
 
     React.useEffect(() => {
         const init = async () => {

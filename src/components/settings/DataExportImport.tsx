@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
-import { Download, Upload, Loader2, AlertCircle } from "lucide-react"
+import { Download, Loader2, AlertCircle } from "lucide-react";
 import { exportUserData, importUserData } from "@/lib/actions/data-migration"
 
 export function DataExportImport() {

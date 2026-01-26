@@ -2,11 +2,11 @@
 
 import { db } from "@/db"
 import {
-    lists, labels, tasks, taskLabels, reminders, templates, savedViews, users,
-    achievements, userAchievements, viewSettings
+    lists, labels, tasks, taskLabels, reminders, templates, savedViews,
+    viewSettings
 } from "@/db/schema"
 import { getCurrentUser } from "@/lib/auth"
-import { eq, and } from "drizzle-orm"
+import { eq } from "drizzle-orm"
 import { z } from "zod"
 import { revalidatePath, revalidateTag } from "next/cache"
 
@@ -54,8 +54,8 @@ export async function exportUserData() {
     // Get task IDs to fetch related data
     const taskIds = userTasks.map(t => t.id)
 
-    let userTaskLabels: any[] = []
-    let userReminders: any[] = []
+    let userTaskLabels: { taskId: number; labelId: number }[] = []
+    let userReminders: unknown[] = []
 
     if (taskIds.length > 0) {
         // Fetch task-related data

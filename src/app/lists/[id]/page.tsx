@@ -3,8 +3,6 @@ import { getCurrentUser } from "@/lib/auth";
 import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
 import { CreateTaskInput } from "@/components/tasks/CreateTaskInput";
 import { notFound, redirect } from "next/navigation";
-import { getListIcon } from "@/lib/icons";
-import { createElement } from "react";
 import { defaultViewSettings } from "@/lib/view-settings";
 import { ManageListDialog } from "@/components/tasks/ManageListDialog";
 import { Button } from "@/components/ui/button";

@@ -52,27 +52,6 @@ export function AnalyticsCharts({ data }: { data: AnalyticsData }) {
         { name: "None", value: data.priorityDist.none, color: "#6b7280" },
     ];
 
-    const energyEfficiency = [
-        {
-            name: "High Energy",
-            tasks: data.energyStats.high,
-            completed: data.energyCompleted.high,
-            rate: data.energyStats.high > 0 ? Math.round((data.energyCompleted.high / data.energyStats.high) * 100) : 0
-        },
-        {
-            name: "Medium Energy",
-            tasks: data.energyStats.medium,
-            completed: data.energyCompleted.medium,
-            rate: data.energyStats.medium > 0 ? Math.round((data.energyCompleted.medium / data.energyStats.medium) * 100) : 0
-        },
-        {
-            name: "Low Energy",
-            tasks: data.energyStats.low,
-            completed: data.energyCompleted.low,
-            rate: data.energyStats.low > 0 ? Math.round((data.energyCompleted.low / data.energyStats.low) * 100) : 0
-        },
-    ];
-
     const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const dayData = data.productivityByDay.map((val, i) => ({
         day: days[i],

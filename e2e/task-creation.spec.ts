@@ -1,4 +1,4 @@
-import { test, expect, authenticateTestUser, waitForTask } from './fixtures';
+import { test, expect, waitForTask } from './fixtures';
 
 /**
  * E2E tests for task creation flow.
@@ -23,7 +23,7 @@ test.describe('Task Creation Flow', () => {
     await expect(taskInput).toBeVisible();
 
     // Type a task title
-    const taskTitle = `Test task ${Date.now()}`;
+    const taskTitle = `Test task ${Date.now()} `;
     await taskInput.fill(taskTitle);
     await taskInput.press('Enter');
 
@@ -40,7 +40,7 @@ test.describe('Task Creation Flow', () => {
     await expect(taskInput).toBeVisible();
 
     // Type a task with natural language date
-    const taskTitle = `Meeting tomorrow ${Date.now()}`;
+    const taskTitle = `Meeting tomorrow ${Date.now()} `;
     await taskInput.fill(taskTitle);
     await taskInput.press('Enter');
 
@@ -57,7 +57,7 @@ test.describe('Task Creation Flow', () => {
     await expect(taskInput).toBeVisible();
 
     // Type a task with priority flag
-    const taskTitle = `Urgent task !high ${Date.now()}`;
+    const taskTitle = `Urgent task!high ${Date.now()} `;
     await taskInput.fill(taskTitle);
     await taskInput.press('Enter');
 
@@ -79,29 +79,29 @@ test.describe('Task Creation Flow', () => {
     // Create a new task with unique identifier
     const taskInput = page.getByTestId('task-input');
     const uniqueId = Date.now();
-    const taskTitle = `List test task ${uniqueId}`;
+    const taskTitle = `List test task ${uniqueId} `;
     await taskInput.fill(taskTitle);
     await taskInput.press('Enter');
 
     // Wait for the task to appear
-    await waitForTask(page, `List test task ${uniqueId}`);
+    await waitForTask(page, `List test task ${uniqueId} `);
 
     // Verify the specific task is visible
-    const newTask = page.getByTestId('task-item').filter({ hasText: `List test task ${uniqueId}` });
+    const newTask = page.getByTestId('task-item').filter({ hasText: `List test task ${uniqueId} ` });
     await expect(newTask.first()).toBeVisible();
   });
 
   test('should clear input after creating task', async ({ authenticatedPage: page }) => {
     const taskInput = page.getByTestId('task-input');
     const uniqueId = Date.now();
-    const taskTitle = `Task to clear input ${uniqueId}`;
+    const taskTitle = `Task to clear input ${uniqueId} `;
 
     // Create a task
     await taskInput.fill(taskTitle);
     await taskInput.press('Enter');
 
     // Wait for task to appear in the list (confirms creation completed)
-    await waitForTask(page, `Task to clear input ${uniqueId}`);
+    await waitForTask(page, `Task to clear input ${uniqueId} `);
 
     // Input should be cleared after successful creation
     await expect(taskInput).toHaveValue('');

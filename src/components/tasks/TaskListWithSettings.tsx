@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useMemo, Suspense } from "react";
 import { TaskItem, Task } from "./TaskItem";
-import { Button } from "@/components/ui/button";
-import { Plus, ChevronDown } from "lucide-react";
 import { format, isToday, isTomorrow, isThisYear } from "date-fns";
 import { ViewOptionsPopover } from "./ViewOptionsPopover";
 import { ViewSettings, defaultViewSettings } from "@/lib/view-settings";
@@ -151,11 +149,11 @@ function groupTasks(tasks: Task[], groupBy: ViewSettings["groupBy"]): Map<string
                     // Group by exact minutes or ranges? 
                     // Let's try flexible ranges if there are many, but for now exact string
                     const mins = task.estimateMinutes;
-                    if (mins < 60) key = `${mins}m`;
+                    if (mins < 60) key = `${mins} m`;
                     else {
                         const h = Math.floor(mins / 60);
                         const m = mins % 60;
-                        key = m > 0 ? `${h}h ${m}m` : `${h}h`;
+                        key = m > 0 ? `${h}h ${m} m` : `${h} h`;
                     }
                 } else {
                     key = "No Estimate";
@@ -180,9 +178,8 @@ import {
     useSensor,
     useSensors,
     DragEndEvent,
-    DragOverlay,
     DragStartEvent,
-    DragCancelEvent,
+    DragOverlay,
 } from "@dnd-kit/core";
 import {
     arrayMove,
@@ -199,15 +196,12 @@ import { reorderTasks } from "@/lib/actions/tasks";
 function SortableTaskItem({
     task,
     handleEdit,
-    focusedIndex,
-    index,
     listId,
     userId,
     isDragEnabled
 }: {
     task: Task;
     handleEdit: (task: Task) => void;
-    focusedIndex: number;
     index: number;
     listId?: number;
     userId?: string;
@@ -247,7 +241,6 @@ function SortableTaskItem({
             }}
             className={cn(
                 "cursor-pointer rounded-lg transition-all",
-                focusedIndex === index && "ring-2 ring-indigo-500 ring-offset-2 ring-offset-background",
                 isDragging ? "opacity-0" : ""
             )}
         >
@@ -296,7 +289,6 @@ export function TaskListWithSettings({
     const [settings, setSettings] = useState<ViewSettings>(effectiveInitialSettings);
     // If we have initialSettings, we don't need to wait for client-side fetch, so we are "mounted" (ready)
     const [mounted, setMounted] = useState(!!initialSettings);
-    const [focusedIndex, setFocusedIndex] = useState(-1);
     const [activeId, setActiveId] = useState<number | null>(null);
 
     // Local state for tasks to support optimistic UI updates during drag
@@ -328,8 +320,8 @@ export function TaskListWithSettings({
                     filterDate: savedSettings.filterDate || defaultViewSettings.filterDate,
                     filterPriority: savedSettings.filterPriority,
                     filterLabelId: savedSettings.filterLabelId,
-                    filterEnergyLevel: savedSettings.filterEnergyLevel as any,
-                    filterContext: savedSettings.filterContext as any,
+                    filterEnergyLevel: savedSettings.filterEnergyLevel,
+                    filterContext: savedSettings.filterContext,
                 });
             }
         }
@@ -344,15 +336,6 @@ export function TaskListWithSettings({
     const processedTasks = useMemo(() => {
         return applyViewSettings(localTasks, settings);
     }, [localTasks, settings]);
-    // Precompute index lookup to avoid O(n^2) findIndex calls when rendering grouped tasks.
-    // Expected impact: reduces grouped render from O(n^2) to O(n); for 1k tasks this avoids ~1M comparisons.
-    const taskIndexById = useMemo(() => {
-        const map = new Map<number, number>();
-        processedTasks.forEach((task, index) => {
-            map.set(task.id, index);
-        });
-        return map;
-    }, [processedTasks]);
 
     // Filter completed tasks out if they shouldn't be shown
     const visibleTasks = useMemo(() => {
@@ -517,7 +500,6 @@ export function TaskListWithSettings({
                                             task={task}
                                             index={index}
                                             handleEdit={handleEdit}
-                                            focusedIndex={focusedIndex}
                                             listId={listId}
                                             userId={userId}
                                             isDragEnabled={isDragEnabled}
@@ -548,8 +530,7 @@ export function TaskListWithSettings({
                                 <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{completedTasks.length}</span>
                             </h3>
                             <div className="space-y-2">
-                                {completedTasks.map((task, index) => {
-                                    const globalIndex = activeTasks.length + index;
+                                {completedTasks.map((task) => {
                                     return (
                                         <div
                                             key={task.id}
@@ -557,10 +538,7 @@ export function TaskListWithSettings({
                                                 if (e.defaultPrevented) return;
                                                 handleEdit(task);
                                             }}
-                                            className={cn(
-                                                "cursor-pointer rounded-lg transition-all",
-                                                focusedIndex === globalIndex && "ring-2 ring-indigo-500 ring-offset-2 ring-offset-background"
-                                            )}
+                                            className="cursor-pointer rounded-lg transition-all"
                                         >
                                             <TaskItem
                                                 task={task}
@@ -588,7 +566,6 @@ export function TaskListWithSettings({
                                     <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{groupTasks.length}</span>
                                 </h3>
                                 {groupActiveTasks.map((task) => {
-                                    const globalIndex = taskIndexById.get(task.id) ?? -1;
                                     return (
                                         <div
                                             key={task.id}
@@ -596,10 +573,7 @@ export function TaskListWithSettings({
                                                 if (e.defaultPrevented) return;
                                                 handleEdit(task);
                                             }}
-                                            className={cn(
-                                                "cursor-pointer rounded-lg transition-all",
-                                                focusedIndex === globalIndex && "ring-2 ring-indigo-500 ring-offset-2 ring-offset-background"
-                                            )}
+                                            className="cursor-pointer rounded-lg transition-all"
                                         >
                                             <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} />
                                         </div>
@@ -612,7 +586,6 @@ export function TaskListWithSettings({
                                             <div className="ml-4 h-px bg-border/50 my-2" />
                                         )}
                                         {groupCompletedTasks.map((task) => {
-                                            const globalIndex = taskIndexById.get(task.id) ?? -1;
                                             return (
                                                 <div
                                                     key={task.id}
@@ -620,10 +593,7 @@ export function TaskListWithSettings({
                                                         if (e.defaultPrevented) return;
                                                         handleEdit(task);
                                                     }}
-                                                    className={cn(
-                                                        "cursor-pointer rounded-lg transition-all",
-                                                        focusedIndex === globalIndex && "ring-2 ring-indigo-500 ring-offset-2 ring-offset-background"
-                                                    )}
+                                                    className="cursor-pointer rounded-lg transition-all"
                                                 >
                                                     <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} />
                                                 </div>

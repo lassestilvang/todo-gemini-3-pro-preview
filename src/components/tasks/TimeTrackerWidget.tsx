@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { m, AnimatePresence } from "framer-motion";
-import { Play, Pause, Square, Clock, Edit2 } from "lucide-react";
+import { m } from "framer-motion";
+import { Play, Square, Clock, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";

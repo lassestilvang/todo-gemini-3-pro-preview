@@ -18,8 +18,6 @@ import { formatTimePreference } from "@/lib/time-utils";
 import { usePerformanceMode } from "@/components/providers/PerformanceContext";
 import type { DraggableSyntheticListeners } from "@dnd-kit/core";
 
-import { createElement } from "react";
-import { getListIcon, getLabelIcon, LIST_ICONS } from "@/lib/icons";
 import { ResolvedIcon } from "@/components/ui/resolved-icon";
 
 // Define a type for the task prop based on the schema or a shared type

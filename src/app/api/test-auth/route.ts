@@ -21,8 +21,7 @@ const TEST_USER = {
   profilePictureUrl: null,
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function POST(request: NextRequest) {
+export async function POST() {
   // Only allow in E2E test mode
   if (process.env.E2E_TEST_MODE !== 'true') {
     return NextResponse.json(

@@ -1,7 +1,7 @@
 import { getActivityLog } from "@/lib/actions";
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { ActivityLogContent } from "@/components/activity/ActivityLogContent";
+import { ActivityLogContent, type LogType } from "@/components/activity/ActivityLogContent";
 import { startOfDay, endOfDay, parseISO } from "date-fns";
 
 interface PageProps {
@@ -34,8 +34,9 @@ export default async function ActivityLogPage({ searchParams }: PageProps) {
 
     return (
         <div className="flex flex-col h-full p-8 overflow-hidden bg-background">
+            {/* ... */}
             <ActivityLogContent
-                initialLogs={logs as any}
+                initialLogs={logs as LogType[]}
                 userId={user.id}
                 use24h={user.use24HourClock}
             />

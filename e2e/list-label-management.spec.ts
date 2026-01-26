@@ -1,4 +1,4 @@
-import { test, expect, authenticateTestUser } from './fixtures';
+import { test, expect } from './fixtures';
 
 /**
  * E2E tests for list and label management.

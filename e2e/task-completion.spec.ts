@@ -1,4 +1,4 @@
-import { test, expect, authenticateTestUser, createTask } from './fixtures';
+import { test, expect, createTask } from './fixtures';
 
 /**
  * E2E tests for task completion flow.

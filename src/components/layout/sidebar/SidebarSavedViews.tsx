@@ -1,18 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getSavedViews, deleteSavedView } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Filter, Trash2, ChevronRight, ChevronDown, Plus, Info } from "lucide-react";
+import { Filter, Trash2, Plus, Info } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
@@ -49,7 +48,7 @@ function AddViewHelpDialog() {
                     </div>
                 </DialogHeader>
             </DialogContent>
-        </Dialog>
+        </Dialog >
     );
 }
 

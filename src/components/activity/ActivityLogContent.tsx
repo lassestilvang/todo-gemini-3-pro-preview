@@ -37,6 +37,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { formatTimePreference } from "@/lib/time-utils";
 
 
+export type LogType = ActivityLogEntry;
+
 interface ActivityLogEntry {
     id: number;
     taskId: number | null;
@@ -57,7 +59,7 @@ interface ActivityLogContentProps {
     use24h: boolean | null;
 }
 
-export function ActivityLogContent({ initialLogs, userId, use24h }: ActivityLogContentProps) {
+export function ActivityLogContent({ initialLogs, use24h }: ActivityLogContentProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [searchQuery, setSearchQuery] = useState(searchParams.get("query") || "");
