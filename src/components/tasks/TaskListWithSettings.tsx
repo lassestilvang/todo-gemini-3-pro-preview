@@ -90,11 +90,17 @@ function applyViewSettings(tasks: Task[], settings: ViewSettings): Task[] {
         });
     }
 
-    // Always sort completed tasks to the bottom to match visual split
-    result.sort((a, b) => {
-        if (a.isCompleted === b.isCompleted) return 0;
-        return a.isCompleted ? 1 : -1;
-    });
+    // Perf: stable-partition completed tasks in O(n) instead of a second O(n log n) sort.
+    // This preserves the existing order within active/completed groups while reducing work
+    // on large lists when view settings change.
+    if (settings.showCompleted) {
+        const active: Task[] = [];
+        const completed: Task[] = [];
+        for (const task of result) {
+            (task.isCompleted ? completed : active).push(task);
+        }
+        result = active.concat(completed);
+    }
 
     return result;
 }
@@ -337,13 +343,6 @@ export function TaskListWithSettings({
         return applyViewSettings(localTasks, settings);
     }, [localTasks, settings]);
 
-    // Filter completed tasks out if they shouldn't be shown
-    const visibleTasks = useMemo(() => {
-        if (!settings.showCompleted) {
-            return processedTasks.filter(t => !t.isCompleted);
-        }
-        return processedTasks;
-    }, [processedTasks, settings.showCompleted]);
 
     const { activeTasks, completedTasks } = useMemo(() => {
         // If sorting by manual, we might want to keep the order even for completed tasks?
@@ -359,7 +358,7 @@ export function TaskListWithSettings({
 
     // Group tasks
     const groupedTasks = useMemo(() => {
-        const tasksToGroup = settings.groupBy === "none" ? activeTasks : visibleTasks;
+        const tasksToGroup = settings.groupBy === "none" ? activeTasks : processedTasks;
         const groups = groupTasks(tasksToGroup, settings.groupBy);
 
         // Sort groups by date if grouping by dueDate
@@ -395,7 +394,7 @@ export function TaskListWithSettings({
         }
 
         return groups;
-    }, [activeTasks, visibleTasks, settings.groupBy]);
+    }, [activeTasks, processedTasks, settings.groupBy]);
 
     const formatGroupName = (name: string, type: ViewSettings["groupBy"]) => {
         if (type !== "dueDate" || name === "No Date") return name;
