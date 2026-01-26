@@ -2,20 +2,27 @@ import { describe, it, expect, beforeEach, afterEach, mock } from "bun:test";
 import { setMockAuthUser, clearMockAuthUser } from "@/test/mocks";
 import { ForbiddenError } from "@/lib/auth-errors";
 
-// Create the mock function outside so we can spy on it
-const requireUserMock = mock(async (userId: string) => {
-    if (userId !== "attacker_123") {
-       // We still need to throw to stop the action execution
-       const { ForbiddenError } = require("@/lib/auth-errors");
-       throw new ForbiddenError("You are not authorized to access this user's data");
-    }
-    return { id: "attacker_123", email: "attacker@example.com", firstName: "Attacker", lastName: "User", avatarUrl: null, use24HourClock: null, weekStartsOnMonday: null };
+// Simple mock for getCurrentUser that just returns the attacker
+const getCurrentUserMock = mock(async () => {
+    return {
+      id: "attacker_123",
+      email: "attacker@example.com",
+      firstName: "Attacker",
+      lastName: "User",
+      avatarUrl: null,
+      use24HourClock: null,
+      weekStartsOnMonday: null
+    };
 });
 
+// Mock the auth module
 mock.module("@/lib/auth", () => {
   return {
-    requireUser: requireUserMock,
-    getCurrentUser: async () => {
+    getCurrentUser: getCurrentUserMock,
+    // We can keep requireUser mock if other files use it, or just let it default.
+    // Since we removed usage in lists.ts, it shouldn't matter for this test.
+    requireUser: async (userId: string) => {
+        // This is no longer used by lists.ts, but just in case
         return { id: "attacker_123", email: "attacker@example.com", firstName: "Attacker", lastName: "User", avatarUrl: null, use24HourClock: null, weekStartsOnMonday: null };
     }
   };
@@ -35,7 +42,7 @@ describe("Lists Security (IDOR)", () => {
       lastName: "User",
       profilePictureUrl: null,
     });
-    requireUserMock.mockClear();
+    getCurrentUserMock.mockClear();
   });
 
   afterEach(() => {
@@ -43,8 +50,9 @@ describe("Lists Security (IDOR)", () => {
   });
 
   it("should prevent creating a list for another user", async () => {
+    // We are logged in as ATTACKER (via getCurrentUserMock), but we try to create for VICTIM
     const result = await createList({
-      userId: VICTIM_ID, // Attacker tries to create list for Victim
+      userId: VICTIM_ID,
       name: "Hacked List",
       color: "#000000",
       icon: "alert",
@@ -52,16 +60,14 @@ describe("Lists Security (IDOR)", () => {
       position: 0,
     });
 
+    // The explicit check in lists.ts should see attacker.id !== victimId and throw Forbidden
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.code).toBe("FORBIDDEN");
     }
-    // Verify that requireUser was called with the VICTIM'S ID (the crucial check)
-    expect(requireUserMock).toHaveBeenCalledWith(VICTIM_ID);
   });
 
   it("should prevent updating another user's list", async () => {
-    // Attempt to update a list belonging to victim (passed as userId param)
     const result = await updateList(999, VICTIM_ID, {
       name: "Renamed by Attacker",
     });
@@ -70,7 +76,6 @@ describe("Lists Security (IDOR)", () => {
     if (!result.success) {
       expect(result.error.code).toBe("FORBIDDEN");
     }
-    expect(requireUserMock).toHaveBeenCalledWith(VICTIM_ID);
   });
 
   it("should prevent deleting another user's list", async () => {
@@ -80,7 +85,6 @@ describe("Lists Security (IDOR)", () => {
     if (!result.success) {
       expect(result.error.code).toBe("FORBIDDEN");
     }
-    expect(requireUserMock).toHaveBeenCalledWith(VICTIM_ID);
   });
 
   it("should prevent reordering another user's lists", async () => {
@@ -90,7 +94,6 @@ describe("Lists Security (IDOR)", () => {
     if (!result.success) {
       expect(result.error.code).toBe("FORBIDDEN");
     }
-    expect(requireUserMock).toHaveBeenCalledWith(VICTIM_ID);
   });
 
   it("should prevent getting another user's lists", async () => {
@@ -101,7 +104,6 @@ describe("Lists Security (IDOR)", () => {
     } catch (error: any) {
       expect(error.name).toBe("ForbiddenError");
     }
-    expect(requireUserMock).toHaveBeenCalledWith(VICTIM_ID);
   });
 
   it("should prevent getting a specific list of another user", async () => {
@@ -111,6 +113,5 @@ describe("Lists Security (IDOR)", () => {
     } catch (error: any) {
        expect(error.name).toBe("ForbiddenError");
     }
-    expect(requireUserMock).toHaveBeenCalledWith(VICTIM_ID);
   });
 });
