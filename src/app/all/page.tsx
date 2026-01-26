@@ -11,8 +11,12 @@ export default async function AllTasksPage() {
         redirect("/login");
     }
 
-    const tasks = await getTasks(user.id, undefined, "all");
     const savedSettings = await getViewSettings(user.id, "all");
+
+    // Default to true if settings aren't saved yet, matching defaultViewSettings
+    const showCompleted = savedSettings?.showCompleted ?? defaultViewSettings.showCompleted;
+
+    const tasks = await getTasks(user.id, undefined, "all", undefined, showCompleted);
 
     const initialSettings = savedSettings ? {
         layout: savedSettings.layout || defaultViewSettings.layout,

@@ -54,7 +54,8 @@ export async function getTasks(
   userId: string,
   listId?: number | null,
   filter?: "today" | "upcoming" | "all" | "completed" | "next-7-days",
-  labelId?: number
+  labelId?: number,
+  showCompleted: boolean = true
 ) {
   await requireUser(userId);
 
@@ -65,6 +66,10 @@ export async function getTasks(
 
   // Always filter out subtasks - only show parent tasks
   conditions.push(isNull(tasks.parentId));
+
+  if (!showCompleted) {
+    conditions.push(eq(tasks.isCompleted, false));
+  }
 
   if (listId) {
     conditions.push(eq(tasks.listId, listId));

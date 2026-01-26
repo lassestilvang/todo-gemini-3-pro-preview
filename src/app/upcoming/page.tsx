@@ -11,10 +11,12 @@ export default async function UpcomingPage() {
         redirect("/login");
     }
 
-    const [tasks, savedSettings] = await Promise.all([
-        getTasks(user.id, undefined, "upcoming"),
-        getViewSettings(user.id, "upcoming")
-    ]);
+    const savedSettings = await getViewSettings(user.id, "upcoming");
+
+    // Default to true if settings aren't saved yet, matching defaultViewSettings
+    const showCompleted = savedSettings?.showCompleted ?? defaultViewSettings.showCompleted;
+
+    const tasks = await getTasks(user.id, undefined, "upcoming", undefined, showCompleted);
 
     const initialSettings = savedSettings ? {
         layout: savedSettings.layout || defaultViewSettings.layout,

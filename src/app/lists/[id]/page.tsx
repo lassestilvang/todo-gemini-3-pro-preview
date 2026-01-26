@@ -25,13 +25,17 @@ export default async function ListPage({ params }: ListPageProps) {
     const listId = parseInt(id);
     if (isNaN(listId)) return notFound();
 
-    const [list, tasks, savedSettings] = await Promise.all([
+    const [list, savedSettings] = await Promise.all([
         getList(listId, user.id),
-        getTasks(user.id, listId),
         getViewSettings(user.id, `list-${listId}`)
     ]);
 
     if (!list) return notFound();
+
+    // Default to true if settings aren't saved yet, matching defaultViewSettings
+    const showCompleted = savedSettings?.showCompleted ?? defaultViewSettings.showCompleted;
+
+    const tasks = await getTasks(user.id, listId, undefined, undefined, showCompleted);
 
     const initialSettings = savedSettings ? {
         layout: savedSettings.layout || defaultViewSettings.layout,
