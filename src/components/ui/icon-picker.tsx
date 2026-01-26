@@ -202,11 +202,22 @@ export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps
             });
 
             if (result.success) {
-                await loadCustomIcons();
+                // Optimistically update list
+                const newIcon = result.data;
+                setCustomIcons(prev => [...prev, {
+                    type: "custom",
+                    value: newIcon.url,
+                    name: newIcon.name,
+                    id: newIcon.id
+                }]);
+
                 toast.success("Icon saved!");
                 setUploadName("");
                 setUploadUrl("");
                 setActiveTab("library"); // Switch back to library to see it
+
+                // Refresh in background to ensure consistency
+                loadCustomIcons();
             } else {
                 toast.error(result.error?.message || "Failed to save icon");
                 console.error("Save failed:", result.error);
