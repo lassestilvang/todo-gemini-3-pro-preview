@@ -96,4 +96,17 @@ describe("TaskItem", () => {
         // "Dec 31" or similar.
         // Let's check for a partial match or just ensure it doesn't crash.
     });
+
+    it("should have accessible labels", () => {
+        const taskWithSubtasks = {
+            ...sampleTask,
+            subtaskCount: 1,
+            subtasks: [{ id: 101, title: "Subtask 1", isCompleted: false, parentId: 1, estimateMinutes: 5 }]
+        };
+        render(<TaskItem task={taskWithSubtasks} />);
+
+        expect(screen.getByLabelText("Expand subtasks")).toBeInTheDocument();
+        expect(screen.getByLabelText("Start focus mode")).toBeInTheDocument();
+        expect(screen.getByLabelText("Mark task as complete")).toBeInTheDocument();
+    });
 });
