@@ -416,7 +416,7 @@ aria-label={isCompleted ? `Mark task '${task.title}' as incomplete` : `Mark task
                                         e.stopPropagation();
                                         e.preventDefault();
                                     }}
-                                    aria-label={isSubtaskCompleted ? "Mark subtask as incomplete" : "Mark subtask as complete"}
+aria-label={isSubtaskCompleted ? `Mark subtask '${subtask.title}' as incomplete` : `Mark subtask '${subtask.title}' as complete`}
                                 />
                                 <span
                                     className={cn(
