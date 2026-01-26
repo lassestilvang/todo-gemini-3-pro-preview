@@ -14,7 +14,7 @@ import {
     TabsList,
     TabsTrigger,
 } from "@/components/ui/tabs";
-import { Search, Shuffle, Upload as UploadIcon, X } from "lucide-react";
+import { Search, Shuffle, Upload as UploadIcon, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AVAILABLE_ICONS } from "@/lib/icons";
 import { ResolvedIcon } from "./resolved-icon";
@@ -69,7 +69,7 @@ export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps
     const [uploadName, setUploadName] = useState("");
     const [uploadUrl, setUploadUrl] = useState("");
     const [isUploading, setIsUploading] = useState(false);
-    // const [isLoading, setIsLoading] = useState(false); // Unused for now
+    const [isLoading, setIsLoading] = useState(false);
 
     // Recents
     const [recentIcons, setRecentIcons] = useState<string[]>([]);
@@ -326,7 +326,14 @@ export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps
                                 </div>
                             )}
 
-                            {customIcons.length > 0 && (
+                            {isLoading ? (
+                                <div className="p-2">
+                                    <h4 className="text-[10px] font-medium text-muted-foreground px-1 mb-1 uppercase tracking-wider">My Icons</h4>
+                                    <div className="flex items-center justify-center py-4 text-muted-foreground">
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    </div>
+                                </div>
+                            ) : customIcons.length > 0 && (
                                 <div className="p-2">
                                     <h4 className="text-[10px] font-medium text-muted-foreground px-1 mb-1 uppercase tracking-wider">My Icons</h4>
                                     <div className="grid grid-cols-8 gap-1">

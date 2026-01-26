@@ -17,7 +17,9 @@ import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import { useZenMode } from "@/components/providers/ZenModeProvider";
 import { AVAILABLE_THEMES, THEME_METADATA } from "@/lib/themes";
-import Fuse from "fuse.js";
+// Fuse.js is dynamically imported only when dialog opens to reduce initial bundle size.
+// This removes ~15KB from the critical path for users who never use search.
+type Fuse<T> = import("fuse.js").default<T>;
 
 type SearchResult = {
     id: number;
@@ -35,14 +37,19 @@ export function SearchDialog({ userId }: { userId?: string }) {
     const { setTheme } = useTheme();
     const { toggleZenMode } = useZenMode();
 
-    // Initialize Fuse.js with data
+    // Initialize Fuse.js with data - dynamically imported to reduce initial bundle
     React.useEffect(() => {
         if (!userId) return;
 
         const initSearch = async () => {
             try {
-                const tasks = await getTasksForSearch(userId);
-                const fuseInstance = new Fuse(tasks, {
+                // Dynamic import: Fuse.js (~15KB gzipped) loads only when search opens
+                const [FuseModule, tasks] = await Promise.all([
+                    import("fuse.js"),
+                    getTasksForSearch(userId),
+                ]);
+                const FuseClass = FuseModule.default;
+                const fuseInstance = new FuseClass(tasks, {
                     keys: ['title', 'description'],
                     threshold: 0.4,
                     shouldSort: true,

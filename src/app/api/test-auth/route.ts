@@ -21,7 +21,7 @@ const TEST_USER = {
   profilePictureUrl: null,
 };
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   // Only allow in E2E test mode
   if (process.env.E2E_TEST_MODE !== 'true') {
     return NextResponse.json(

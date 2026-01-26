@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { format, isToday, isYesterday, subDays, startOfDay, endOfDay } from "date-fns";
 import {
     Search,
@@ -135,13 +135,16 @@ export function ActivityLogContent({ initialLogs, use24h }: ActivityLogContentPr
         }
     };
 
-    // Group logs by date
-    const groupedLogs = initialLogs.reduce((groups: Record<string, ActivityLogEntry[]>, log) => {
-        const date = format(new Date(log.createdAt), "yyyy-MM-dd");
-        if (!groups[date]) groups[date] = [];
-        groups[date].push(log);
-        return groups;
-    }, {});
+    // Perf: useMemo prevents re-grouping logs on every render when only filter state changes.
+    // For activity logs with 1000+ entries, this avoids O(n) reduce + date formatting on each keystroke.
+    const groupedLogs = useMemo(() => {
+        return initialLogs.reduce((groups: Record<string, ActivityLogEntry[]>, log) => {
+            const date = format(new Date(log.createdAt), "yyyy-MM-dd");
+            if (!groups[date]) groups[date] = [];
+            groups[date].push(log);
+            return groups;
+        }, {});
+    }, [initialLogs]);
 
     const formatDateHeader = (dateStr: string) => {
         const date = new Date(dateStr);

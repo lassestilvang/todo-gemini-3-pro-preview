@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
     format,
     startOfMonth,
@@ -63,13 +63,26 @@ export function CalendarView({ tasks }: CalendarViewProps) {
         ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
         : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-    // Filter tasks for the calendar view (only those with due dates)
-    const calendarTasks = tasks.filter(t => t.dueDate);
+    // Pre-compute task lookup map by date string for O(1) access per day.
+    // Without this, each of the 35-42 calendar cells would iterate all tasks O(n),
+    // resulting in O(n*days) complexity. This reduces it to O(n) total preprocessing.
+    const tasksByDate = useMemo(() => {
+        const map = new Map<string, Task[]>();
+        for (const task of tasks) {
+            if (!task.dueDate) continue;
+            const dateKey = format(new Date(task.dueDate), "yyyy-MM-dd");
+            const existing = map.get(dateKey);
+            if (existing) {
+                existing.push(task);
+            } else {
+                map.set(dateKey, [task]);
+            }
+        }
+        return map;
+    }, [tasks]);
 
-    const getTasksForDay = (date: Date) => {
-        return calendarTasks.filter(task =>
-            task.dueDate && isSameDay(new Date(task.dueDate), date)
-        );
+    const getTasksForDay = (date: Date): Task[] => {
+        return tasksByDate.get(format(date, "yyyy-MM-dd")) || [];
     };
 
 
