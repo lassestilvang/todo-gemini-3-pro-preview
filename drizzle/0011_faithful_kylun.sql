@@ -1,2 +1,0 @@
-CREATE INDEX "habit_completions_task_id_completed_at_idx" ON "habit_completions" USING btree ("task_id","completed_at");--> statement-breakpoint
-CREATE INDEX "reminders_task_id_idx" ON "reminders" USING btree ("task_id");
