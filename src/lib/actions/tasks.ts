@@ -39,7 +39,7 @@ import { requireUser } from "@/lib/auth";
 // Import from other domain modules
 import { getLists, getList } from "./lists";
 import { getLabels } from "./labels";
-import { getUserStats, addXP } from "./gamification";
+import { getUserStats, updateUserProgress } from "./gamification";
 
 /**
  * Retrieves tasks for a user with optional filtering.
@@ -136,30 +136,33 @@ export async function getTasks(
   const taskIds = tasksResult.map((t) => t.id);
   if (taskIds.length === 0) return [];
 
-  const labelsResult = await db
-    .select({
-      taskId: taskLabels.taskId,
-      labelId: taskLabels.labelId,
-      name: labels.name,
-      color: labels.color,
-      icon: labels.icon,
-    })
-    .from(taskLabels)
-    .leftJoin(labels, eq(taskLabels.labelId, labels.id))
-    .where(inArray(taskLabels.taskId, taskIds));
+  /* eslint-disable prefer-const */
+  let [labelsResult, subtasksResult] = await Promise.all([
+    db
+      .select({
+        taskId: taskLabels.taskId,
+        labelId: taskLabels.labelId,
+        name: labels.name,
+        color: labels.color,
+        icon: labels.icon,
+      })
+      .from(taskLabels)
+      .leftJoin(labels, eq(taskLabels.labelId, labels.id))
+      .where(inArray(taskLabels.taskId, taskIds)),
 
-  // Fetch subtasks for all parent tasks
-  const subtasksResult = await db
-    .select({
-      id: tasks.id,
-      parentId: tasks.parentId,
-      title: tasks.title,
-      isCompleted: tasks.isCompleted,
-      estimateMinutes: tasks.estimateMinutes,
-    })
-    .from(tasks)
-    .where(inArray(tasks.parentId, taskIds))
-    .orderBy(asc(tasks.isCompleted), asc(tasks.createdAt));
+    db
+      .select({
+        id: tasks.id,
+        parentId: tasks.parentId,
+        title: tasks.title,
+        isCompleted: tasks.isCompleted,
+        estimateMinutes: tasks.estimateMinutes,
+      })
+      .from(tasks)
+      .where(inArray(tasks.parentId, taskIds))
+      .orderBy(asc(tasks.isCompleted), asc(tasks.createdAt))
+  ]);
+  /* eslint-enable prefer-const */
 
   const tasksWithLabelsAndSubtasks = tasksResult.map((task) => {
     const taskLabelsList = labelsResult
@@ -224,28 +227,30 @@ export async function getTask(id: number, userId: string) {
   const task = result[0];
   if (!task) return null;
 
-  const labelsResult = await db
-    .select({
-      id: labels.id,
-      name: labels.name,
-      color: labels.color,
-      icon: labels.icon,
-    })
-    .from(taskLabels)
-    .leftJoin(labels, eq(taskLabels.labelId, labels.id))
-    .where(eq(taskLabels.taskId, id));
+  const [labelsResult, remindersResult, blockersResult] = await Promise.all([
+    db
+      .select({
+        id: labels.id,
+        name: labels.name,
+        color: labels.color,
+        icon: labels.icon,
+      })
+      .from(taskLabels)
+      .leftJoin(labels, eq(taskLabels.labelId, labels.id))
+      .where(eq(taskLabels.taskId, id)),
 
-  const remindersResult = await db.select().from(reminders).where(eq(reminders.taskId, id));
+    db.select().from(reminders).where(eq(reminders.taskId, id)),
 
-  const blockersResult = await db
-    .select({
-      id: tasks.id,
-      title: tasks.title,
-      isCompleted: tasks.isCompleted,
-    })
-    .from(taskDependencies)
-    .innerJoin(tasks, eq(taskDependencies.blockerId, tasks.id))
-    .where(eq(taskDependencies.taskId, id));
+    db
+      .select({
+        id: tasks.id,
+        title: tasks.title,
+        isCompleted: tasks.isCompleted,
+      })
+      .from(taskDependencies)
+      .innerJoin(tasks, eq(taskDependencies.blockerId, tasks.id))
+      .where(eq(taskDependencies.taskId, id)),
+  ]);
 
   return { ...task, labels: labelsResult, reminders: remindersResult, blockers: blockersResult };
 }
@@ -509,40 +514,56 @@ export async function toggleTaskCompletion(id: number, userId: string, isComplet
       .innerJoin(tasks, eq(taskDependencies.taskId, tasks.id))
       .where(eq(taskDependencies.blockerId, id));
 
-    for (const blockedTask of blockedTasks) {
-      // Check if this was the last blocker
-      const remainingBlockers = await db
-        .select({ count: sql<number>`count(*)` })
+    if (blockedTasks.length > 0) {
+      const blockedTaskIds = blockedTasks.map((t) => t.id);
+
+      // Find which of these tasks are still blocked by OTHER incomplete tasks
+      // We leverage the fact that "isCompleted" for the current task was just set to true,
+      // so it won't be counted in this query looking for 'false'
+      const stillBlockedResult = await db
+        .select({ taskId: taskDependencies.taskId })
         .from(taskDependencies)
-        .leftJoin(tasks, eq(taskDependencies.blockerId, tasks.id))
+        .innerJoin(tasks, eq(taskDependencies.blockerId, tasks.id))
         .where(
           and(
-            eq(taskDependencies.taskId, blockedTask.id),
-            eq(tasks.isCompleted, false) // Only count uncompleted blockers
+            inArray(taskDependencies.taskId, blockedTaskIds),
+            eq(tasks.isCompleted, false)
           )
-        );
+        )
+        .groupBy(taskDependencies.taskId);
 
-      const isNowUnblocked = remainingBlockers[0].count === 0;
+      const stillBlockedTaskIds = new Set(stillBlockedResult.map((t) => t.taskId));
 
-      await db.insert(taskLogs).values({
-        userId,
-        taskId: blockedTask.id,
-        action: "blocker_completed",
-        details: `Blocker "${task.title}" completed.${isNowUnblocked ? " Task is now unblocked!" : ""}`,
+      const logsToInsert = blockedTasks.map((blockedTask) => {
+        const isNowUnblocked = !stillBlockedTaskIds.has(blockedTask.id);
+        return {
+          userId,
+          taskId: blockedTask.id,
+          action: "blocker_completed",
+          details: `Blocker "${task.title}" completed.${isNowUnblocked ? " Task is now unblocked!" : ""
+            }`,
+        };
       });
+
+      if (logsToInsert.length > 0) {
+        await db.insert(taskLogs).values(logsToInsert);
+      }
     }
   }
 
-  // Update Streak
-  await updateStreak(userId);
-
-  // Award XP
+  // Consolidated Gamification Update (Streak + XP in one go)
   const baseXP = 10;
   let bonusXP = 0;
   if (task.priority === "medium") bonusXP += 5;
   if (task.priority === "high") bonusXP += 10;
 
-  return await addXP(userId, baseXP + bonusXP);
+  const progressResult = await updateUserProgress(userId, baseXP + bonusXP);
+
+  return {
+    newXP: progressResult.newXP,
+    newLevel: progressResult.newLevel,
+    leveledUp: progressResult.leveledUp
+  };
 }
 
 /**

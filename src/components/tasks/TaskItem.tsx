@@ -79,6 +79,13 @@ function formatDuration(minutes: number): string {
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 }
 
+const priorityColors = {
+    high: "text-red-500",
+    medium: "text-orange-500",
+    low: "text-blue-500",
+    none: "text-gray-400",
+};
+
 // React.memo prevents re-renders when parent state changes (e.g., dialog open/close)
 // but the task props remain unchanged. In lists with 50+ tasks, this reduces
 // unnecessary re-renders by ~95% when opening the task edit dialog.
@@ -129,13 +136,6 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
             });
             window.dispatchEvent(event);
         }
-    };
-
-    const priorityColors = {
-        high: "text-red-500",
-        medium: "text-orange-500",
-        low: "text-blue-500",
-        none: "text-gray-400",
     };
 
     const [mounted, setMounted] = useState(false);

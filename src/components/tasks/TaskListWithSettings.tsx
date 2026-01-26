@@ -219,7 +219,6 @@ const SortableTaskItem = memo(function SortableTaskItem({
 }: {
     task: Task;
     handleEdit: (task: Task) => void;
-    index: number;
     listId?: number;
     userId?: string;
     isDragEnabled: boolean;
@@ -507,11 +506,10 @@ export function TaskListWithSettings({
                                 disabled={!isDragEnabled}
                             >
                                 <div className="space-y-2">
-                                    {activeTasks.map((task, index) => (
+                                    {activeTasks.map((task) => (
                                         <SortableTaskItem
                                             key={task.id}
                                             task={task}
-                                            index={index}
                                             handleEdit={handleEdit}
                                             listId={listId}
                                             userId={userId}

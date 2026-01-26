@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, lazy, Suspense } from "react";
 import { cn } from "@/lib/utils";
 import { ListTodo } from "lucide-react";
-import * as LucideIcons from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 interface ResolvedIconProps {
@@ -13,7 +12,46 @@ interface ResolvedIconProps {
     fallback?: LucideIcon;
 }
 
+// Cache for lazy-loaded icons to prevent creating new lazy components on every render
+const iconCache = new Map<string, React.LazyExoticComponent<LucideIcon>>();
+
+const getLazyIcon = (name: string): React.LazyExoticComponent<LucideIcon> => {
+    if (iconCache.has(name)) {
+        return iconCache.get(name)!;
+    }
+
+    const LazyIcon = lazy(async () => {
+        try {
+            const mod = await import("lucide-react");
+
+            // Handle "lucide:name#color" or just "name" formats
+            const cleanName = name.startsWith("lucide:")
+                ? name.replace("lucide:", "").split("#")[0]
+                : name;
+
+            // PascalCase the name for lookup (e.g. "shopping-cart" -> "ShoppingCart")
+            const pascalName = cleanName
+                .split("-")
+                .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+                .join("");
+
+            // @ts-expect-error - Dynamic lookup
+            const Icon = mod[pascalName] || mod[cleanName] || mod.ListTodo;
+
+            return { default: Icon };
+        } catch (error) {
+            console.error(`Failed to load icon: ${name}`, error);
+            return { default: ListTodo };
+        }
+    });
+
+    iconCache.set(name, LazyIcon);
+    return LazyIcon;
+};
+
 export function ResolvedIcon({ icon, color, className, fallback }: ResolvedIconProps) {
+    const FallbackIcon = fallback || ListTodo;
+
     // Memoize the resolved icon data to prevent unnecessary re-parsing
     const resolved = useMemo(() => {
         if (!icon) return { type: "fallback" as const };
@@ -24,7 +62,6 @@ export function ResolvedIcon({ icon, color, className, fallback }: ResolvedIconP
         }
 
         // Check for Lucide format: "lucide:name#color" or just "name" (legacy)
-        // Also supports legacy "name" which implies Lucide icon
         const isLucide = icon.startsWith("lucide:") || /^[a-z-]+$/.test(icon);
 
         if (isLucide) {
@@ -39,19 +76,8 @@ export function ResolvedIcon({ icon, color, className, fallback }: ResolvedIconP
                 }
             }
 
-            // PascalCase the name for lookup (e.g. "shopping-cart" -> "ShoppingCart")
-            // This is a rough heuristic, we might need a better map if we want to support all
-            const pascalName = name
-                .split("-")
-                .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-                .join("");
-
-            // @ts-expect-error - Dynamic lookup
-            const IconComponent = LucideIcons[pascalName] || LucideIcons[name];
-
-            if (IconComponent) {
-                return { type: "icon" as const, Component: IconComponent, color: iconColor };
-            }
+            // Instead of returning the component directly, we return the name to lazy load it
+            return { type: "icon" as const, name: name, color: iconColor };
         }
 
         // Assume Emoji if not matched above
@@ -62,10 +88,6 @@ export function ResolvedIcon({ icon, color, className, fallback }: ResolvedIconP
     if (resolved.type === "image") {
         return (
             <div className={cn("relative overflow-hidden rounded-sm shrink-0", className)}>
-                {/*
-                   Using standard img for data URIs or external URLs where we can't easily optimize
-                   with Next.Image without whitelisting domains.
-                */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                     src={resolved.value}
@@ -99,17 +121,18 @@ export function ResolvedIcon({ icon, color, className, fallback }: ResolvedIconP
     }
 
     if (resolved.type === "icon") {
-        const { Component, color: resolvedColor } = resolved;
+        const LazyIcon = getLazyIcon(resolved.name);
         return (
-            <Component
-                className={cn("shrink-0", className)}
-                style={{ color: resolvedColor || undefined }}
-            />
+            <Suspense fallback={<div className={cn("shrink-0 bg-muted/20 animate-pulse rounded-sm", className)} />}>
+                {React.createElement(LazyIcon, {
+                    className: cn("shrink-0", className),
+                    style: { color: resolved.color || undefined }
+                })}
+            </Suspense>
         );
     }
 
     // Fallback
-    const FallbackIcon = fallback || ListTodo;
     return (
         <FallbackIcon
             className={cn("shrink-0", className)}

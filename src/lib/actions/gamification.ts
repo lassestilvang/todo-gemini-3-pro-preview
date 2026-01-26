@@ -22,6 +22,7 @@ import {
   endOfDay,
   revalidatePath,
   calculateLevel,
+  calculateStreakUpdate,
 } from "./shared";
 
 /**
@@ -49,23 +50,88 @@ export async function getUserStats(userId: string) {
  * @returns Object with newXP, newLevel, and leveledUp flag
  */
 export async function addXP(userId: string, amount: number) {
+  return await updateUserProgress(userId, amount);
+}
+
+/**
+ * Updates user progress (Streak + XP) in a single transaction.
+ * Optimized to reduce database roundtrips during high-frequency actions like task completion.
+ *
+ * @param userId - The ID of the user
+ * @param xpAmount - The amount of XP to add (can be 0 if just updating streak)
+ * @returns Object with newXP, newLevel, leveledUp flag, and streak info
+ */
+export async function updateUserProgress(userId: string, xpAmount: number) {
   const stats = await getUserStats(userId);
-  const newXP = stats.xp + amount;
+
+  // 1. Calculate Streak Update
+  const { newStreak, shouldUpdate: shouldUpdateStreak, usedFreeze } = calculateStreakUpdate(
+    stats.currentStreak,
+    stats.lastLogin,
+    stats.streakFreezes
+  );
+
+  // 2. Calculate XP Update
+  const newXP = stats.xp + xpAmount;
   const newLevel = calculateLevel(newXP);
+  const leveledUp = newLevel > stats.level;
+
+  // 3. Perform Single DB Update
+  const updateData: Partial<typeof userStats.$inferSelect> = {
+    xp: newXP,
+    level: newLevel,
+  };
+
+  if (shouldUpdateStreak) {
+    updateData.currentStreak = newStreak;
+    updateData.longestStreak = Math.max(stats.longestStreak, newStreak);
+    updateData.streakFreezes = usedFreeze ? stats.streakFreezes - 1 : stats.streakFreezes;
+    updateData.lastLogin = new Date();
+  }
 
   await db
     .update(userStats)
-    .set({
-      xp: newXP,
-      level: newLevel,
-    })
+    .set(updateData)
     .where(eq(userStats.userId, userId));
 
+  // 4. Handle Side Effects (Logs & Achievements)
+  // Streak Logs
+  if (shouldUpdateStreak) {
+    if (usedFreeze) {
+      await db.insert(taskLogs).values({
+        userId,
+        taskId: null,
+        action: "streak_frozen",
+        details: "Streak freeze used! ❄️ Your streak is safe.",
+      });
+    } else if (newStreak > stats.currentStreak) {
+      // Only log significant streak increases (optional: avoid spamming log on every day)
+      // But based on existing logic, we log it.
+      await db.insert(taskLogs).values({
+        userId,
+        taskId: null,
+        action: "streak_updated",
+        details: `Streak increased to ${newStreak} days! 🔥`,
+      });
+    }
+  }
+
   // Check for achievements
-  await checkAchievements(userId, stats.xp + amount, stats.currentStreak);
+  // We pass the NEW streak and NEW XP
+  await checkAchievements(userId, newXP, shouldUpdateStreak ? newStreak : stats.currentStreak);
 
   revalidatePath("/");
-  return { newXP, newLevel, leveledUp: newLevel > stats.level };
+
+  return {
+    newXP,
+    newLevel,
+    leveledUp,
+    streak: {
+      current: shouldUpdateStreak ? newStreak : stats.currentStreak,
+      updated: shouldUpdateStreak,
+      frozen: usedFreeze
+    }
+  };
 }
 
 /**

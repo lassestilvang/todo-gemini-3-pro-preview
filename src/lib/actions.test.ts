@@ -336,6 +336,50 @@ describe("Server Actions", () => {
                 expect(result.error.details?.blockerId).toContain("own blocker");
             }
         });
+
+        it("should log unblocked status correctly for multiple blocked tasks", async () => {
+            // Task A blocks Task B and Task C
+            const blocker = await createTask({ userId: testUserId, title: "Blocker" });
+            const blocked1 = await createTask({ userId: testUserId, title: "Blocked 1" });
+            const blocked2 = await createTask({ userId: testUserId, title: "Blocked 2" });
+
+            await addDependency(testUserId, blocked1.id, blocker.id);
+            await addDependency(testUserId, blocked2.id, blocker.id);
+
+            // Complete the blocker
+            await toggleTaskCompletion(blocker.id, testUserId, true);
+
+            // Check logs
+            const logs1 = await getTaskLogs(blocked1.id);
+            const logs2 = await getTaskLogs(blocked2.id);
+
+            // Both should say "Task is now unblocked!"
+            expect(logs1[0].details).toContain("Task is now unblocked!");
+            expect(logs2[0].details).toContain("Task is now unblocked!");
+        });
+
+        it("should handle partial unblocking", async () => {
+            // Task Target blocked by Blocker A and Blocker B
+            const target = await createTask({ userId: testUserId, title: "Target" });
+            const blockerA = await createTask({ userId: testUserId, title: "Blocker A" });
+            const blockerB = await createTask({ userId: testUserId, title: "Blocker B" });
+
+            await addDependency(testUserId, target.id, blockerA.id);
+            await addDependency(testUserId, target.id, blockerB.id);
+
+            // Complete Blocker A first
+            await toggleTaskCompletion(blockerA.id, testUserId, true);
+            const logsAfterA = await getTaskLogs(target.id);
+            // Should verify it is NOT unblocked yet
+            expect(logsAfterA[0].details).toContain("Blocker \"Blocker A\" completed");
+            expect(logsAfterA[0].details).not.toContain("Task is now unblocked!");
+
+            // Complete Blocker B
+            await toggleTaskCompletion(blockerB.id, testUserId, true);
+            const logsAfterB = await getTaskLogs(target.id);
+            // NOW it should be unblocked
+            expect(logsAfterB[0].details).toContain("Task is now unblocked!");
+        });
     });
 
     describe("Templates", () => {

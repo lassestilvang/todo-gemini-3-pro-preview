@@ -27,6 +27,8 @@ type SearchResult = {
     description: string | null;
 };
 
+const COMMAND_PROPS = { shouldFilter: false };
+
 export function SearchDialog({ userId }: { userId?: string }) {
     const [fuse, setFuse] = React.useState<Fuse<SearchResult> | null>(null);
     const [open, setOpen] = React.useState(false);
@@ -37,6 +39,25 @@ export function SearchDialog({ userId }: { userId?: string }) {
     const { setTheme } = useTheme();
     const { toggleZenMode } = useZenMode();
 
+    const searchPromiseRef = React.useRef<Promise<[typeof import("fuse.js"), Awaited<ReturnType<typeof getTasksForSearch>>]> | null>(null);
+
+    // Reset cache when userId changes
+    React.useEffect(() => {
+        setFuse(null);
+        searchPromiseRef.current = null;
+    }, [userId]);
+
+    const loadSearchData = React.useCallback(() => {
+        if (!userId) return null;
+        if (searchPromiseRef.current) return searchPromiseRef.current;
+
+        searchPromiseRef.current = Promise.all([
+            import("fuse.js"),
+            getTasksForSearch(userId),
+        ]);
+        return searchPromiseRef.current;
+    }, [userId]);
+
     // Initialize Fuse.js with data - dynamically imported to reduce initial bundle
     React.useEffect(() => {
         if (!userId) return;
@@ -44,10 +65,10 @@ export function SearchDialog({ userId }: { userId?: string }) {
         const initSearch = async () => {
             try {
                 // Dynamic import: Fuse.js (~15KB gzipped) loads only when search opens
-                const [FuseModule, tasks] = await Promise.all([
-                    import("fuse.js"),
-                    getTasksForSearch(userId),
-                ]);
+                const promise = loadSearchData();
+                if (!promise) return;
+
+                const [FuseModule, tasks] = await promise;
                 const FuseClass = FuseModule.default;
                 const fuseInstance = new FuseClass(tasks, {
                     keys: ['title', 'description'],
@@ -57,13 +78,23 @@ export function SearchDialog({ userId }: { userId?: string }) {
                 setFuse(fuseInstance);
             } catch (error) {
                 console.error("Failed to initialize search index:", error);
+                setFuse(null);
+                searchPromiseRef.current = null; // Retry on next attempt
             }
         };
 
         if (open && !fuse) {
             initSearch();
         }
-    }, [userId, open, fuse]);
+    }, [userId, open, fuse, loadSearchData]);
+
+    // Prefetch Fuse.js and data when user hovers over the search button
+    // This saves ~100-300ms of perceived latency when the user actually clicks
+    const prefetchSearch = React.useCallback(() => {
+        if (!userId || fuse) return;
+        loadSearchData();
+    }, [userId, fuse, loadSearchData]);
+
     // Debounce search input to avoid running Fuse on every keystroke.
     // For large task lists, this reduces search executions during rapid typing by ~60-80%.
     React.useEffect(() => {
@@ -95,9 +126,7 @@ export function SearchDialog({ userId }: { userId?: string }) {
         if (!fuse) return;
 
         if (debouncedQuery.trim().length > 0) {
-            console.time('search');
             const searchResults = fuse.search(debouncedQuery).map(result => result.item);
-            console.timeEnd('search');
             setResults(searchResults.slice(0, 10)); // Limit to 10 results
         } else {
             setResults([]);
@@ -114,12 +143,27 @@ export function SearchDialog({ userId }: { userId?: string }) {
         setOpen(false);
     };
 
+    const matches = (text: string) => {
+        return !query || text.toLowerCase().includes(query.toLowerCase());
+    };
+
+    const hasSuggestions =
+        matches("Go to Inbox") ||
+        matches("Create New Task") ||
+        matches("Toggle Zen Mode");
+
+    const filteredThemes = AVAILABLE_THEMES.filter(theme =>
+        matches(`${THEME_METADATA[theme].label} Theme`)
+    );
+
     return (
         <>
             <Button
                 variant="outline"
                 className="w-full justify-start text-muted-foreground relative h-9 sm:pr-12"
                 onClick={() => setOpen(true)}
+                onMouseEnter={prefetchSearch}
+                onFocus={prefetchSearch}
             >
                 <Search className="mr-2 h-4 w-4" />
                 <span className="hidden lg:inline-flex">Search tasks...</span>
@@ -128,7 +172,11 @@ export function SearchDialog({ userId }: { userId?: string }) {
                     <span className="text-xs">⌘</span>K
                 </kbd>
             </Button>
-            <CommandDialog open={open} onOpenChange={setOpen}>
+            <CommandDialog
+                open={open}
+                onOpenChange={setOpen}
+                commandProps={COMMAND_PROPS}
+            >
                 <CommandInput
                     placeholder="Type a command or search..."
                     value={query}
@@ -136,39 +184,50 @@ export function SearchDialog({ userId }: { userId?: string }) {
                 />
                 <CommandList>
                     <CommandEmpty>No results found.</CommandEmpty>
-                    <CommandGroup heading="Suggestions">
-                        <CommandItem onSelect={() => runCommand(() => router.push("/"))}>
-                            <Layout className="mr-2 h-4 w-4" />
-                            <span>Go to Inbox</span>
-                        </CommandItem>
-                        <CommandItem onSelect={() => runCommand(() => router.push("?create=true"))}>
-                            <Zap className="mr-2 h-4 w-4 text-yellow-500" />
-                            <span>Create New Task</span>
-                        </CommandItem>
-                        <CommandItem onSelect={() => runCommand(() => toggleZenMode())}>
-                            <MousePointer2 className="mr-2 h-4 w-4 text-indigo-500" />
-                            <span>Toggle Zen Mode</span>
-                            <kbd className="ml-auto pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
-                                <span className="text-xs">⌘</span>Z
-                            </kbd>
-                        </CommandItem>
-                    </CommandGroup>
+
+                    {hasSuggestions && (
+                        <CommandGroup heading="Suggestions">
+                            {matches("Go to Inbox") && (
+                                <CommandItem onSelect={() => runCommand(() => router.push("/"))}>
+                                    <Layout className="mr-2 h-4 w-4" />
+                                    <span>Go to Inbox</span>
+                                </CommandItem>
+                            )}
+                            {matches("Create New Task") && (
+                                <CommandItem onSelect={() => runCommand(() => router.push("?create=true"))}>
+                                    <Zap className="mr-2 h-4 w-4 text-yellow-500" />
+                                    <span>Create New Task</span>
+                                </CommandItem>
+                            )}
+                            {matches("Toggle Zen Mode") && (
+                                <CommandItem onSelect={() => runCommand(() => toggleZenMode())}>
+                                    <MousePointer2 className="mr-2 h-4 w-4 text-indigo-500" />
+                                    <span>Toggle Zen Mode</span>
+                                    <kbd className="ml-auto pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+                                        <span className="text-xs">⌘</span>Z
+                                    </kbd>
+                                </CommandItem>
+                            )}
+                        </CommandGroup>
+                    )}
 
                     <CommandSeparator />
 
-                    <CommandGroup heading="Themes">
-                        {AVAILABLE_THEMES.map((theme) => (
-                            <CommandItem
-                                key={theme}
-                                onSelect={() => runCommand(() => setTheme(theme))}
-                            >
-                                {theme === 'dark' ? <Moon className="mr-2 h-4 w-4" /> :
-                                    theme === 'light' ? <Sun className="mr-2 h-4 w-4" /> :
-                                        <Palette className="mr-2 h-4 w-4" />}
-                                <span>{THEME_METADATA[theme].label} Theme</span>
-                            </CommandItem>
-                        ))}
-                    </CommandGroup>
+                    {filteredThemes.length > 0 && (
+                        <CommandGroup heading="Themes">
+                            {filteredThemes.map((theme) => (
+                                <CommandItem
+                                    key={theme}
+                                    onSelect={() => runCommand(() => setTheme(theme))}
+                                >
+                                    {theme === 'dark' ? <Moon className="mr-2 h-4 w-4" /> :
+                                        theme === 'light' ? <Sun className="mr-2 h-4 w-4" /> :
+                                            <Palette className="mr-2 h-4 w-4" />}
+                                    <span>{THEME_METADATA[theme].label} Theme</span>
+                                </CommandItem>
+                            ))}
+                        </CommandGroup>
+                    )}
 
                     {results.length > 0 && (
                         <>
