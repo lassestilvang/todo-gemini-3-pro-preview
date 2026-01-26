@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Plus, GripVertical, ArrowUpDown } from "lucide-react";
 import { ManageLabelDialog } from "@/components/tasks/ManageLabelDialog";
-import { getLabelIcon } from "@/lib/icons";
+import { ResolvedIcon } from "@/components/ui/resolved-icon";
 import {
     DndContext,
     closestCenter,
@@ -96,10 +96,12 @@ function SortableLabelItem({
                 asChild
             >
                 <Link href={`/labels/${label.id}`} className="w-full flex items-center min-w-0">
-                    {React.createElement(getLabelIcon(label.icon), {
-                        className: "mr-2 h-4 w-4 shrink-0",
-                        style: { color: label.color || "#000000" }
-                    })}
+                    <ResolvedIcon
+                        icon={label.icon}
+                        className="mr-2 h-4 w-4 shrink-0 transition-colors"
+                        color={label.color || "#000000"}
+                    // Labels usually use Hash as fallback, handled by ResolvedIcon logic if we want default
+                    />
                     <span className="truncate">{label.name}</span>
                 </Link>
             </Button>

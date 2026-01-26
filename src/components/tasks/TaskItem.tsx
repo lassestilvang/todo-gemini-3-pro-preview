@@ -20,6 +20,7 @@ import type { DraggableSyntheticListeners } from "@dnd-kit/core";
 
 import { createElement } from "react";
 import { getListIcon, getLabelIcon, LIST_ICONS } from "@/lib/icons";
+import { ResolvedIcon } from "@/components/ui/resolved-icon";
 
 // Define a type for the task prop based on the schema or a shared type
 // For now, I'll define a simplified interface matching the schema
@@ -234,10 +235,7 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                     <div className={cn("font-medium truncate text-sm transition-all flex items-center gap-2", isCompleted && "text-muted-foreground")}>
                         <div className="relative inline-flex items-center gap-2 max-w-full">
                             {task.icon && (
-                                (() => {
-                                    const IconComponent = LIST_ICONS.find(i => i.name === task.icon)?.icon;
-                                    return IconComponent ? <IconComponent className="h-4 w-4 text-muted-foreground" /> : null;
-                                })()
+                                <ResolvedIcon icon={task.icon} className="h-4 w-4 text-muted-foreground" />
                             )}
                             <span className="truncate">{task.title}</span>
                             {isCompleted && (
@@ -251,10 +249,7 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                         )}
                         {showListInfo && task.listName && (
                             <div className="flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full ml-auto">
-                                {createElement(getListIcon(task.listIcon || null), {
-                                    className: "w-3 h-3",
-                                    style: { color: task.listColor || 'currentColor' }
-                                })}
+                                <ResolvedIcon icon={task.listIcon || null} className="w-3 h-3" color={task.listColor} />
                                 <span>{task.listName}</span>
                             </div>
                         )}
@@ -362,7 +357,15 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                                     }}
                                     className="text-[10px] px-1.5 py-0 h-5 font-normal border flex items-center gap-1"
                                 >
-                                    {createElement(getLabelIcon(label.icon), { className: "h-3 w-3" })}
+                                    {/* <ResolvedIcon> handles fallback internally if needed, or we can just pass null. 
+                                        But wait, ResolvedIcon renders `ListTodo` fallback if null. 
+                                        For labels without icons, we might prefer *no* icon? 
+                                        The old code called `getLabelIcon(label.icon)` which returned a Lucide icon (Tag default).
+                                        ResolvedIcon defaults to ListTodo. Let's provide a fallback of Tag explicitly if needed, 
+                                        or let ResolvedIcon handle it. Since `label.icon` is nullable string.
+                                        Let's assume standard behavior: if icon is present, show it.
+                                    */}
+                                    <ResolvedIcon icon={label.icon} className="h-3 w-3" color={label.color} />
                                     {label.name}
                                 </Badge>
                             ))}

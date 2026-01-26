@@ -9,6 +9,7 @@ import { defaultViewSettings } from "@/lib/view-settings";
 import { ManageListDialog } from "@/components/tasks/ManageListDialog";
 import { Button } from "@/components/ui/button";
 import { Settings2 } from "lucide-react";
+import { ResolvedIcon } from "@/components/ui/resolved-icon";
 
 interface ListPageProps {
     params: Promise<{
@@ -52,10 +53,7 @@ export default async function ListPage({ params }: ListPageProps) {
             <div className="flex flex-col gap-8">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-                        {createElement(getListIcon(list.icon), {
-                            className: "h-6 w-6",
-                            style: { color: list.color || "#000000" }
-                        })}
+                        <ResolvedIcon icon={list.icon} className="h-6 w-6" color={list.color || undefined} />
                         {list.name}
                         <ManageListDialog
                             list={list}

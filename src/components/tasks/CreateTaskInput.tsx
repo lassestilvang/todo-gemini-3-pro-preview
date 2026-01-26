@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Calendar, Flag, Zap, MapPin, Smile } from "lucide-react";
+import { Calendar, Flag, Zap, MapPin, Smile, X } from "lucide-react";
+import { ResolvedIcon } from "@/components/ui/resolved-icon";
 import { createTask } from "@/lib/actions/tasks";
-import { LIST_ICONS } from "@/lib/icons";
+import { IconPicker } from "@/components/ui/icon-picker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
@@ -201,42 +202,37 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                             </div>
 
                             <div className="flex items-center gap-2">
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button variant="ghost" size="sm" className={cn(icon && "text-primary")}>
+                                <IconPicker
+                                    value={icon}
+                                    onChange={setIcon}
+                                    userId={userId}
+                                    trigger={
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className={cn(icon && "text-primary")}
+                                        >
                                             {icon ? (
-                                                (() => {
-                                                    // Dynamic icon lookup
-                                                    const IconComponent = LIST_ICONS.find(i => i.name === icon)?.icon || Smile;
-                                                    return <IconComponent className="mr-2 h-4 w-4" />;
-                                                })()
+                                                <ResolvedIcon icon={icon} className="mr-2 h-4 w-4" />
                                             ) : (
                                                 <Smile className="mr-2 h-4 w-4" />
                                             )}
-                                            {icon || "Icon"}
+                                            Icon
                                         </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-[340px] p-2" align="start">
-                                        <div className="grid grid-cols-6 gap-2">
-                                            {LIST_ICONS.map((item) => (
-                                                <Button
-                                                    key={item.name}
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className={cn(
-                                                        "h-10 w-10",
-                                                        icon === item.name ? "bg-accent" : ""
-                                                    )}
-                                                    onClick={() => setIcon(item.name)}
-                                                    title={item.name}
-                                                    type="button"
-                                                >
-                                                    <item.icon className="h-5 w-5" />
-                                                </Button>
-                                            ))}
-                                        </div>
-                                    </PopoverContent>
-                                </Popover>
+                                    }
+                                />
+                                {icon && (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                        onClick={() => setIcon(undefined)}
+                                        title="Remove icon"
+                                    >
+                                        <X className="h-4 w-4" />
+                                        <span className="sr-only">Remove icon</span>
+                                    </Button>
+                                )}
 
 
                             </div>

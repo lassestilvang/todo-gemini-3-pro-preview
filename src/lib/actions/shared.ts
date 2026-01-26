@@ -21,6 +21,7 @@ export {
   savedViews,
   timeEntries,
   users,
+  customIcons,
 } from "@/db";
 
 // Drizzle ORM operators

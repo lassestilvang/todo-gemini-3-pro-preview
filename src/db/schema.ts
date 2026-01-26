@@ -298,3 +298,17 @@ export const timeEntries = pgTable("time_entries", {
     userIdIdx: index("time_entries_user_id_idx").on(table.userId),
     startedAtIdx: index("time_entries_started_at_idx").on(table.startedAt),
 }));
+
+export const customIcons = pgTable("custom_icons", {
+    id: serial("id").primaryKey(),
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    url: text("url").notNull(), // Base64 or external URL
+    createdAt: timestamp("created_at")
+        .notNull()
+        .defaultNow(),
+}, (t) => ({
+    userIdIdx: index("custom_icons_user_id_idx").on(t.userId),
+}));
