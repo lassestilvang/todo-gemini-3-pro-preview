@@ -24,7 +24,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     } catch (error) {
       console.error('Failed to get authentication URLs:', error);
       return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-violet-50 via-white to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-violet-950 p-4">
+        <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-gradient-to-br from-violet-50 via-white to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-violet-950 p-4">
           <div className="w-full max-w-md space-y-6 text-center">
             <div className="flex items-center justify-center gap-2 mb-4">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
@@ -45,7 +45,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-violet-50 via-white to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-violet-950 p-4">
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-gradient-to-br from-violet-50 via-white to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-violet-950 p-4">
       <div className="w-full max-w-md space-y-8">
         {/* Logo and Title */}
         <div className="text-center space-y-2">

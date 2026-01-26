@@ -14,10 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { createList, updateList, deleteList } from "@/lib/actions";
-import { LIST_ICONS as ICONS } from "@/lib/icons";
-import { ListTodo } from "lucide-react";
+import { IconPicker } from "@/components/ui/icon-picker";
 import { cn } from "@/lib/utils";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const COLORS = [
     "#000000", // Black
@@ -121,7 +119,7 @@ function ListForm({ list, userId, onClose }: ListFormProps) {
         }
     };
 
-    const SelectedIcon = ICONS.find(i => i.name === icon)?.icon || ListTodo;
+
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
@@ -167,33 +165,11 @@ function ListForm({ list, userId, onClose }: ListFormProps) {
 
             <div className="space-y-2">
                 <Label>Icon</Label>
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start">
-                            <SelectedIcon className="mr-2 h-4 w-4" />
-                            {icon}
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[280px] p-2">
-                        <div className="grid grid-cols-4 gap-2">
-                            {ICONS.map((item) => (
-                                <Button
-                                    key={item.name}
-                                    variant="ghost"
-                                    size="icon"
-                                    className={cn(
-                                        "h-10 w-10",
-                                        icon === item.name ? "bg-accent" : ""
-                                    )}
-                                    onClick={() => setIcon(item.name)}
-                                    type="button"
-                                >
-                                    <item.icon className="h-5 w-5" />
-                                </Button>
-                            ))}
-                        </div>
-                    </PopoverContent>
-                </Popover>
+                <IconPicker
+                    value={icon}
+                    onChange={setIcon}
+                    userId={userId}
+                />
             </div>
 
             <DialogFooter className="flex justify-between sm:justify-between">

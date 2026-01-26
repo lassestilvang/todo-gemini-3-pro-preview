@@ -155,6 +155,7 @@ function TaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId
                         reminders={reminders} newReminderDate={newReminderDate} setNewReminderDate={setNewReminderDate}
                         handleAddReminder={handleAddReminder} handleDeleteReminder={handleDeleteReminder}
                         handleSubmit={handleSubmit}
+                        userId={userId}
                     />
 
                     <TaskDependenciesTab

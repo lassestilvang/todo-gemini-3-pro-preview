@@ -23,11 +23,12 @@ import { cn } from "@/lib/utils";
 import { AiBreakdownDialog } from "../AiBreakdownDialog";
 import { ParsedSubtask } from "@/lib/smart-scheduler";
 
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { createElement } from "react";
-import { getListIcon, getLabelIcon, LIST_ICONS } from "@/lib/icons";
+import { getListIcon, getLabelIcon } from "@/lib/icons";
 import { Smile } from "lucide-react";
 import { TimeEstimateInput } from "../TimeEstimateInput";
+import { IconPicker } from "@/components/ui/icon-picker";
+import { ResolvedIcon } from "@/components/ui/resolved-icon";
 
 // Types
 type ListType = { id: number; name: string; color: string | null; icon: string | null; };
@@ -85,6 +86,7 @@ interface TaskDetailsTabProps {
     setEstimateMinutes: (v: number | null) => void;
     // Form submission
     handleSubmit: (e: React.FormEvent) => void;
+    userId?: string;
 }
 
 export function TaskDetailsTab({
@@ -105,7 +107,8 @@ export function TaskDetailsTab({
     labels, selectedLabelIds, toggleLabel,
     reminders, newReminderDate, setNewReminderDate, handleAddReminder, handleDeleteReminder,
     estimateMinutes, setEstimateMinutes,
-    handleSubmit
+    handleSubmit,
+    userId // Missing in destructuring
 }: TaskDetailsTabProps) {
     const [aiBreakdownOpen, setAiBreakdownOpen] = useState(false);
 
@@ -118,53 +121,20 @@ export function TaskDetailsTab({
                 <div className="space-y-2">
                     <Label htmlFor="title">Title & Icon</Label>
                     <div className="flex gap-2">
-                        <Popover>
-                            <PopoverTrigger asChild>
+                        <IconPicker
+                            value={icon}
+                            onChange={setIcon}
+                            userId={userId}
+                            trigger={
                                 <Button variant="outline" size="icon" className="shrink-0 h-10 w-10">
                                     {icon ? (
-                                        (() => {
-                                            const IconComponent = LIST_ICONS.find(i => i.name === icon)?.icon || Smile;
-                                            return <IconComponent className="h-4 w-4" />;
-                                        })()
+                                        <ResolvedIcon icon={icon} className="h-4 w-4" />
                                     ) : (
                                         <Smile className="h-4 w-4 text-muted-foreground" />
                                     )}
                                 </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[340px] p-2" align="start">
-                                <div className="grid grid-cols-6 gap-2">
-                                    {LIST_ICONS.map((item) => (
-                                        <Button
-                                            key={item.name}
-                                            variant="ghost"
-                                            size="icon"
-                                            className={cn(
-                                                "h-10 w-10",
-                                                icon === item.name ? "bg-accent" : ""
-                                            )}
-                                            onClick={() => setIcon(item.name)}
-                                            title={item.name}
-                                            type="button"
-                                        >
-                                            <item.icon className="h-5 w-5" />
-                                        </Button>
-                                    ))}
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className={cn(
-                                            "h-10 w-10",
-                                            !icon ? "bg-accent" : ""
-                                        )}
-                                        onClick={() => setIcon(null)}
-                                        title="No Icon"
-                                        type="button"
-                                    >
-                                        <X className="h-5 w-5" />
-                                    </Button>
-                                </div>
-                            </PopoverContent>
-                        </Popover>
+                            }
+                        />
                         <Input
                             id="title"
                             value={title}

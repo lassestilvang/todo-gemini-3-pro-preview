@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Plus, GripVertical, ArrowUpDown } from "lucide-react";
 import { ManageListDialog } from "@/components/tasks/ManageListDialog";
-import { getListIcon } from "@/lib/icons";
+import { ResolvedIcon } from "@/components/ui/resolved-icon";
 import {
     DndContext,
     closestCenter,
@@ -97,10 +97,11 @@ function SortableListItem({
                 asChild
             >
                 <Link href={`/lists/${list.id}`} className="w-full flex items-center min-w-0">
-                    {React.createElement(getListIcon(list.icon), {
-                        className: "mr-2 h-4 w-4 shrink-0",
-                        style: { color: list.color || "#000000" }
-                    })}
+                    <ResolvedIcon
+                        icon={list.icon}
+                        className="mr-2 h-4 w-4 shrink-0 transition-colors"
+                        color={list.color || "#000000"}
+                    />
                     <span className="truncate">{list.name}</span>
                 </Link>
             </Button>

@@ -22,7 +22,7 @@ export default async function CalendarPage() {
     }));
 
     return (
-        <div className="container mx-auto p-6 h-screen flex flex-col">
+        <div className="container mx-auto p-6 h-full flex flex-col">
             <div className="mb-4">
                 <h1 className="text-3xl font-bold">Calendar 📅</h1>
                 <p className="text-muted-foreground mt-1">

@@ -311,3 +311,17 @@ export const timeEntries = sqliteTable("time_entries", {
     userIdIdx: index("time_entries_user_id_idx").on(table.userId),
     startedAtIdx: index("time_entries_started_at_idx").on(table.startedAt),
 }));
+
+export const customIcons = sqliteTable("custom_icons", {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    url: text("url").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" })
+        .notNull()
+        .default(sql`(strftime('%s', 'now'))`),
+}, (t) => ({
+    userIdIdx: index("custom_icons_user_id_idx").on(t.userId),
+}));

@@ -9,6 +9,7 @@ import { defaultViewSettings } from "@/lib/view-settings";
 import { ManageLabelDialog } from "@/components/tasks/ManageLabelDialog";
 import { Button } from "@/components/ui/button";
 import { Settings2 } from "lucide-react";
+import { ResolvedIcon } from "@/components/ui/resolved-icon";
 
 interface LabelPageProps {
     params: Promise<{
@@ -52,10 +53,7 @@ export default async function LabelPage({ params }: LabelPageProps) {
             <div className="flex flex-col gap-8">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-                        {createElement(getLabelIcon(label.icon), {
-                            className: "h-6 w-6",
-                            style: { color: label.color || "#000000" }
-                        })}
+                        <ResolvedIcon icon={label.icon} className="h-6 w-6" color={label.color || undefined} />
                         {label.name}
                         <ManageLabelDialog
                             label={label}

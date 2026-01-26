@@ -57,6 +57,7 @@ export const {
     rateLimits,
     savedViews,
     timeEntries,
+    customIcons,
 } = schema;
 
 export { db, sqliteConnection, schema };
