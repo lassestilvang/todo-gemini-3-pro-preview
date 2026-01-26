@@ -43,6 +43,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   userScalable: true,
+  viewportFit: "cover",
 };
 
 import { PwaRegister } from "@/components/PwaRegister";
