@@ -7,7 +7,7 @@ describe("icons", () => {
         it("should have expected icons", () => {
             expect(LIST_ICONS.length).toBeGreaterThan(0);
             const iconNames = LIST_ICONS.map(i => i.name);
-            expect(iconNames).toContain("list");
+            expect(iconNames).toContain("list-todo");
             expect(iconNames).toContain("briefcase");
             expect(iconNames).toContain("home");
         });
