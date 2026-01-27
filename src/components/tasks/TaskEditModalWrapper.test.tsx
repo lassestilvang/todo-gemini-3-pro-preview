@@ -1,12 +1,12 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import React from "react";
+import { db, tasks } from "@/db";
+import { setupTestDb, resetTestDb } from "@/test/setup";
 
 // Mock dependencies
 const mockGetTask = mock(() => Promise.resolve(null));
-mock.module("@/lib/actions", () => ({
-    getTask: mockGetTask
-}));
+// Actions mock removed to prevent pollution
 
 // Since TaskEditModalWrapper heavily depends on next/navigation hooks,
 // we test the behavior through a simplified mock component

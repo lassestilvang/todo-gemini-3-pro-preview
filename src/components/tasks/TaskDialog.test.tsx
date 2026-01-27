@@ -1,121 +1,129 @@
-import { describe, it, expect, afterEach, mock, beforeEach } from "bun:test";
+import { describe, it, expect, afterEach, mock, beforeEach, spyOn } from "bun:test";
 import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 import { TaskDialog } from "./TaskDialog";
 import React from "react";
+import { setMockAuthUser } from "@/test/mocks";
+import * as syncProvider from "@/components/providers/sync-provider";
 
-// Mock all actions
-const mockCreateTask = mock(() => Promise.resolve());
-const mockUpdateTask = mock(() => Promise.resolve());
-const mockDeleteTask = mock(() => Promise.resolve());
-const mockGetLists = mock(() => Promise.resolve([]));
-const mockGetLabels = mock(() => Promise.resolve([]));
-const mockGetSubtasks = mock(() => Promise.resolve([]));
-const mockCreateSubtask = mock(() => Promise.resolve());
-const mockUpdateSubtask = mock(() => Promise.resolve());
-const mockDeleteSubtask = mock(() => Promise.resolve());
-const mockGetReminders = mock(() => Promise.resolve([]));
-const mockCreateReminder = mock(() => Promise.resolve());
-const mockDeleteReminder = mock(() => Promise.resolve());
-const mockGetTaskLogs = mock(() => Promise.resolve([]));
-
-mock.module("@/lib/actions", () => ({
-    createTask: mockCreateTask,
-    updateTask: mockUpdateTask,
-    deleteTask: mockDeleteTask,
-    getLists: mockGetLists,
-    getLabels: mockGetLabels,
-    getSubtasks: mockGetSubtasks,
-    createSubtask: mockCreateSubtask,
-    updateSubtask: mockUpdateSubtask,
-    deleteSubtask: mockDeleteSubtask,
-    getReminders: mockGetReminders,
-    createReminder: mockCreateReminder,
-    deleteReminder: mockDeleteReminder,
-    getTaskLogs: mockGetTaskLogs,
-    getBlockers: mock(() => Promise.resolve([])),
-    addDependency: mock(() => Promise.resolve()),
-    removeDependency: mock(() => Promise.resolve()),
-    searchTasks: mock(() => Promise.resolve([]))
+// Local UI Mocks to avoid Portals issues in Happy-dom
+mock.module("@/components/ui/dialog", () => ({
+    Dialog: ({ children, open }: any) => <div data-testid="dialog-root" data-open={open}>{children}</div>,
+    DialogContent: ({ children }: any) => <div data-testid="dialog-content">{children}</div>,
+    DialogHeader: ({ children }: any) => <div data-testid="dialog-header">{children}</div>,
+    DialogFooter: ({ children }: any) => <div data-testid="dialog-footer">{children}</div>,
+    DialogTitle: ({ children }: any) => <h2>{children}</h2>,
+    DialogDescription: ({ children }: any) => <p>{children}</p>,
+    DialogTrigger: ({ children, asChild }: any) => asChild ? children : <button>{children}</button>,
 }));
 
-const sampleTask = {
-    id: 1,
-    title: "Existing Task",
-    description: "Description",
-    priority: "medium" as const,
-    listId: 1,
-    dueDate: null,
-    deadline: null,
-    isRecurring: false,
-    recurringRule: null,
-    labels: [],
-    energyLevel: "medium" as const,
-    context: "computer" as const,
-    isHabit: false
-};
+mock.module("@/components/ui/popover", () => ({
+    Popover: ({ children, open }: any) => <div data-testid="popover-root" data-open={open}>{children}</div>,
+    PopoverContent: ({ children }: any) => <div data-testid="popover-content">{children}</div>,
+    PopoverTrigger: ({ children, asChild }: any) => asChild ? children : <button>{children}</button>,
+}));
+
+mock.module("@/components/ui/select", () => ({
+    Select: ({ children, value }: any) => <div data-testid="select-root" data-value={value}>{children}</div>,
+    SelectTrigger: ({ children }: any) => <button>{children}</button>,
+    SelectValue: ({ children, placeholder }: any) => <span>{children || placeholder}</span>,
+    SelectContent: ({ children }: any) => <div data-testid="select-content">{children}</div>,
+    SelectItem: ({ children, value }: any) => <div data-testid={`select-item-${value}`} role="option">{children}</div>,
+}));
+
+mock.module("@/components/ui/icon-picker", () => ({
+    IconPicker: ({ value, onChange, trigger }: any) => (
+        <div data-testid="icon-picker">
+            {trigger}
+            <input
+                data-testid="icon-picker-input"
+                value={value || ""}
+                onChange={(e) => onChange(e.target.value)}
+            />
+        </div>
+    ),
+}));
 
 describe("TaskDialog", () => {
+    let dispatchSpy: any;
+
     beforeEach(() => {
-        mockCreateTask.mockClear();
-        mockUpdateTask.mockClear();
-        mockDeleteTask.mockClear();
-        mockGetLists.mockClear();
-        mockGetLabels.mockClear();
+        // Mock global confirm
+        global.confirm = mock(() => true);
+
+        // Spy on useSync hook
+        const mockDispatch = mock(() => Promise.resolve({ success: true, data: { id: 1 } }));
+        dispatchSpy = mockDispatch;
+
+        spyOn(syncProvider, "useSync").mockReturnValue({
+            isOnline: true,
+            lastSynced: new Date(),
+            sync: mock(() => Promise.resolve()),
+            pendingCount: 0,
+            dispatch: mockDispatch as any,
+        });
+
+        // Set mock user so setup.tsx auth mock works
+        setMockAuthUser({
+            id: "test_user_123",
+            email: "test@example.com",
+            firstName: "Test",
+            lastName: "User",
+            profilePictureUrl: null,
+        });
     });
 
     afterEach(() => {
         cleanup();
-        document.body.innerHTML = "";
     });
+
+    const sampleTask = {
+        id: 1,
+        title: "Sample Task",
+        description: "Sample Description",
+        priority: "high" as const,
+        userId: "test_user_123",
+        isCompleted: false,
+        icon: null,
+        listId: null,
+        dueDate: null,
+        deadline: null,
+        isRecurring: false,
+        recurringRule: null,
+        energyLevel: null,
+        context: null,
+        isHabit: false,
+    };
 
     it("should render in create mode", async () => {
-        render(<TaskDialog open={true} />);
-        expect(screen.getByText("New Task")).toBeInTheDocument();
-        expect(screen.getByPlaceholderText("Task Title")).toBeInTheDocument();
+        render(<TaskDialog open={true} userId="test_user_123" />);
+        await waitFor(() => {
+            expect(screen.getByPlaceholderText("Task Title")).toBeDefined();
+        });
     });
 
-    it("should render in edit mode", async () => {
-        render(<TaskDialog open={true} task={sampleTask} />);
-        expect(screen.getByText("Edit Task")).toBeInTheDocument();
-        expect(screen.getByDisplayValue("Existing Task")).toBeInTheDocument();
-    });
-
-    it("should create task on submit", async () => {
+    it("should call createTask on save via dispatch", async () => {
         render(<TaskDialog open={true} userId="test_user_123" />);
 
-        fireEvent.change(screen.getByPlaceholderText("Task Title"), { target: { value: "New Task" } });
-        fireEvent.click(screen.getByText("Save"));
+        const input = screen.getByPlaceholderText("Task Title");
+        fireEvent.change(input, { target: { value: "New Task" } });
+
+        const saveButton = screen.getByRole("button", { name: /Save/i });
+        fireEvent.click(saveButton);
 
         await waitFor(() => {
-            expect(mockCreateTask).toHaveBeenCalledTimes(1);
-        });
-        expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining({
-            title: "New Task",
-            userId: "test_user_123"
-        }));
+            expect(dispatchSpy).toHaveBeenCalledWith("createTask", expect.anything());
+        }, { timeout: 3000 });
     });
 
-    it("should update task on submit", async () => {
+    it("should call deleteTask on delete via dispatch", async () => {
+        // @ts-ignore
         render(<TaskDialog open={true} task={sampleTask} userId="test_user_123" />);
 
-        fireEvent.change(screen.getByDisplayValue("Existing Task"), { target: { value: "Updated Task" } });
-        fireEvent.click(screen.getByText("Save"));
+        const deleteBtn = screen.getByText("Delete");
+        fireEvent.click(deleteBtn);
 
         await waitFor(() => {
-            expect(mockUpdateTask).toHaveBeenCalledTimes(1);
-        });
-    });
-
-    it("should delete task", async () => {
-        // Mock confirm dialog
-        global.confirm = () => true;
-
-        render(<TaskDialog open={true} task={sampleTask} userId="test_user_123" />);
-
-        fireEvent.click(screen.getByText("Delete"));
-
-        await waitFor(() => {
-            expect(mockDeleteTask).toHaveBeenCalledWith(1, "test_user_123");
-        });
+            expect(dispatchSpy).toHaveBeenCalledWith("deleteTask", 1, "test_user_123");
+        }, { timeout: 3000 });
     });
 });

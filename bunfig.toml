@@ -1,5 +1,5 @@
 [test]
-preload = ["./src/test/mocks.ts", "./src/test/setup.ts"]
+preload = ["./src/test/mocks.ts", "./src/test/setup.tsx"]
 concurrent = false
 # Coverage is enabled via --coverage flag
 # Target thresholds: 70% for src/lib, 60% for src/components

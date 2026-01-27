@@ -1,9 +1,8 @@
-import { getTasks, getViewSettings } from "@/lib/actions";
 import { getCurrentUser } from "@/lib/auth";
 import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
 import { CreateTaskInput } from "@/components/tasks/CreateTaskInput";
 import { redirect } from "next/navigation";
-import { defaultViewSettings } from "@/lib/view-settings";
+
 
 export default async function UpcomingPage() {
     const user = await getCurrentUser();
@@ -11,25 +10,8 @@ export default async function UpcomingPage() {
         redirect("/login");
     }
 
-    const savedSettings = await getViewSettings(user.id, "upcoming");
-
-    // Default to true if settings aren't saved yet, matching defaultViewSettings
-    const showCompleted = savedSettings?.showCompleted ?? defaultViewSettings.showCompleted;
-
-    const tasks = await getTasks(user.id, undefined, "upcoming", undefined, showCompleted);
-
-    const initialSettings = savedSettings ? {
-        layout: savedSettings.layout || defaultViewSettings.layout,
-        showCompleted: savedSettings.showCompleted ?? defaultViewSettings.showCompleted,
-        groupBy: savedSettings.groupBy || defaultViewSettings.groupBy,
-        sortBy: savedSettings.sortBy || defaultViewSettings.sortBy,
-        sortOrder: savedSettings.sortOrder || defaultViewSettings.sortOrder,
-        filterDate: savedSettings.filterDate || defaultViewSettings.filterDate,
-        filterPriority: savedSettings.filterPriority,
-        filterLabelId: savedSettings.filterLabelId,
-        filterEnergyLevel: savedSettings.filterEnergyLevel ?? defaultViewSettings.filterEnergyLevel,
-        filterContext: savedSettings.filterContext ?? defaultViewSettings.filterContext,
-    } : undefined;
+    // OPTIM: Removed blocking data fetch to solve "Slow Navigation"
+    const tasks: any[] = [];
 
     return (
         <div className="container max-w-4xl py-6 lg:py-10">
@@ -47,7 +29,7 @@ export default async function UpcomingPage() {
                     tasks={tasks}
                     viewId="upcoming"
                     userId={user.id}
-                    initialSettings={initialSettings}
+                    filterType="upcoming"
                 />
             </div>
         </div>

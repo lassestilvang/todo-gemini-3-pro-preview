@@ -13,6 +13,7 @@ export class UnauthorizedError extends Error {
   constructor(message = "Authentication required") {
     super(message);
     this.name = "UnauthorizedError";
+    Object.defineProperty(this, "name", { value: "UnauthorizedError", enumerable: true });
     // Maintains proper stack trace in V8 environments
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, UnauthorizedError);
@@ -30,6 +31,7 @@ export class ForbiddenError extends Error {
   constructor(message = "Access denied") {
     super(message);
     this.name = "ForbiddenError";
+    Object.defineProperty(this, "name", { value: "ForbiddenError", enumerable: true });
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, ForbiddenError);
     }

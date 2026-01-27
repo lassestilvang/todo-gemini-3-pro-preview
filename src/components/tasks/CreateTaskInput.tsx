@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Calendar, Flag, Zap, MapPin, Smile, X } from "lucide-react";
 import { ResolvedIcon } from "@/components/ui/resolved-icon";
-import { createTask } from "@/lib/actions/tasks";
+import { createTask } from "@/lib/actions";
 import { IconPicker } from "@/components/ui/icon-picker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";

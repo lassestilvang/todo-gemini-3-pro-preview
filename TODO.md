@@ -105,10 +105,10 @@
 - [x] **[UX] Performance Theme**: Add a new theme that has no animations, transitions or any other fancy effects. It should be super clean and fast. Focus on raw performance and a "no-nonsense" aesthetic. Use your frontend skill to create a theme that is as fast and beautiful as possible.
   - *Status*: **RESOLVED** - Added "performance" theme to `themes.ts`, created CSS variables in `globals.css` with global animation/transition kill switch, added `PerformanceProvider` context, and updated components (`PageTransition`, `TaskItem`, `QuickCapture`, `ZenOverlay`) to skip animations.
 - [ ] **[UX] Sidebar Resize**: Make the sidebar resizable.
+- [ ] **[UX] Sidebar Count**: Add a count of tasks in each list/label to the sidebar.
 
 ## 🛠 Engineering & Quality
 
-- [ ] **React Compiler?**: Are we using the React compiler?
 - [x] **[Improvement] CI E2E Test Splitting**: Investigate and implement better test distribution for E2E tests.
   - **Status**: **RESOLVED** - Analyzed bottlenecks using `gh` CLI and increased shard count from 2 to 4 in `ci.yml`. This distributes the 42+ tests more evenly across runners.
 - [ ] **[Improvement] Settings Page A11y Test**: Complete the skipped accessibility test in `e2e/a11y.spec.ts`.

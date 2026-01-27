@@ -70,7 +70,12 @@ const SENSITIVE_PATTERNS = [
  * Sanitizes error messages by removing sensitive information
  */
 export function sanitizeError(error: unknown): string {
-  const message = error instanceof Error ? error.message : String(error);
+  let message: string;
+  try {
+    message = error instanceof Error ? error.message : String(error);
+  } catch {
+    message = "Unknown error";
+  }
   let sanitized = message;
 
   for (const pattern of SENSITIVE_PATTERNS) {

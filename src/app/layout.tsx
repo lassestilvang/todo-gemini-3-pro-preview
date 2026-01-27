@@ -57,6 +57,8 @@ import { AVAILABLE_THEMES } from "@/lib/themes";
 import { ZenModeProvider } from "@/components/providers/ZenModeProvider";
 import { LazyMotionProvider } from "@/components/providers/LazyMotionProvider";
 import { PerformanceProvider } from "@/components/providers/PerformanceContext";
+import { SyncProvider } from "@/components/providers/sync-provider";
+import { DataLoader } from "@/components/providers/data-loader";
 
 // Validate env vars at startup
 validateEnv();
@@ -85,27 +87,30 @@ export default function RootLayout({
       </head>
       <body className="font-sans antialiased" suppressHydrationWarning>
         <QueryProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-            themes={[...AVAILABLE_THEMES].filter(t => t !== "system")}
-          >
-            <ZenModeProvider>
-              <PerformanceProvider>
-                <LazyMotionProvider>
-                  <OnboardingProvider>
-                    <PwaRegister />
-                    <WebVitals />
-                    <LevelUpWatcher />
-                    <MainLayout>{children}</MainLayout>
-                    <Toaster />
-                  </OnboardingProvider>
-                </LazyMotionProvider>
-              </PerformanceProvider>
-            </ZenModeProvider>
-          </ThemeProvider>
+          <SyncProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+              themes={[...AVAILABLE_THEMES].filter(t => t !== "system")}
+            >
+              <ZenModeProvider>
+                <PerformanceProvider>
+                  <LazyMotionProvider>
+                    <OnboardingProvider>
+                      <PwaRegister />
+                      <DataLoader />
+                      <WebVitals />
+                      <LevelUpWatcher />
+                      <MainLayout>{children}</MainLayout>
+                      <Toaster />
+                    </OnboardingProvider>
+                  </LazyMotionProvider>
+                </PerformanceProvider>
+              </ZenModeProvider>
+            </ThemeProvider>
+          </SyncProvider>
         </QueryProvider>
       </body>
     </html>

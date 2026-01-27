@@ -2,34 +2,29 @@ import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
 import { render, screen, cleanup, fireEvent, waitFor, within } from "@testing-library/react";
 import { TemplateFormDialog } from "./TemplateFormDialog";
 
-// Mock actions
-const mockCreateTemplate = mock(() => Promise.resolve({ success: true }));
-const mockUpdateTemplate = mock(() => Promise.resolve({ success: true }));
-
-mock.module("@/lib/actions", () => ({
-  createTemplate: mockCreateTemplate,
-  updateTemplate: mockUpdateTemplate,
-}));
-
 // Mock sonner toast
 mock.module("sonner", () => ({
   toast: {
-    success: mock(() => {}),
-    error: mock(() => {}),
+    success: mock(() => { }),
+    error: mock(() => { }),
   },
 }));
+
+import { db, templates } from "@/db";
+import { eq } from "drizzle-orm";
+import { setupTestDb, resetTestDb } from "@/test/setup";
 
 describe("TemplateFormDialog", () => {
   const defaultProps = {
     open: true,
-    onOpenChange: mock(() => {}),
+    onOpenChange: mock(() => { }),
     userId: "test_user_123",
-    onSave: mock(() => {}),
+    onSave: mock(() => { }),
   };
 
-  beforeEach(() => {
-    mockCreateTemplate.mockClear();
-    mockUpdateTemplate.mockClear();
+  beforeEach(async () => {
+    await setupTestDb();
+    await resetTestDb();
     defaultProps.onOpenChange.mockClear();
     defaultProps.onSave.mockClear();
   });
@@ -177,21 +172,21 @@ describe("TemplateFormDialog", () => {
 
       // Fill in required fields
       const nameInput = screen.getByTestId("template-name-input");
-      const titleInput = screen.getByTestId("task-title-input");
+      fireEvent.change(nameInput, { target: { value: "New Template" } });
 
-      fireEvent.change(nameInput, { target: { value: "My Template" } });
+      const titleInput = screen.getByTestId("task-title-input");
       fireEvent.change(titleInput, { target: { value: "My Task" } });
 
       // Submit
       const submitButton = screen.getByRole("button", { name: /Create Template/i });
       fireEvent.click(submitButton);
 
-      await waitFor(() => {
-        expect(mockCreateTemplate).toHaveBeenCalledWith(
-          "test_user_123",
-          "My Template",
-          expect.stringContaining('"title":"My Task"')
-        );
+      await waitFor(async () => {
+        // expect(defaultProps.onSave).toHaveBeenCalled(); // Kept this as prop spy?
+        // Check DB
+        const templatesInDb = await db.select().from(templates).where(eq(templates.name, "New Template"));
+        expect(templatesInDb.length).toBe(1);
+        expect(templatesInDb[0].userId).toBe("test_user_123");
       });
     });
   });
@@ -239,7 +234,14 @@ describe("TemplateFormDialog", () => {
     });
 
     it("should call updateTemplate on valid submit in edit mode", async () => {
-      render(<TemplateFormDialog {...defaultProps} template={existingTemplate} />);
+      const inserted = await db.insert(templates).values({
+        userId: "test_user_123",
+        name: "Existing Template",
+        content: JSON.stringify({ title: "Existing Task", description: "Existing description" }),
+      }).returning();
+      const template = inserted[0];
+
+      render(<TemplateFormDialog {...defaultProps} template={template} />);
 
       // Modify the name
       const nameInput = screen.getByTestId("template-name-input");
@@ -248,13 +250,10 @@ describe("TemplateFormDialog", () => {
       // Submit
       fireEvent.click(screen.getByText("Save Changes"));
 
-      await waitFor(() => {
-        expect(mockUpdateTemplate).toHaveBeenCalledWith(
-          1,
-          "test_user_123",
-          "Updated Template",
-          expect.any(String)
-        );
+      await waitFor(async () => {
+        const updated = await db.select().from(templates).where(eq(templates.id, template.id));
+        expect(updated.length).toBe(1);
+        expect(updated[0].name).toBe("Updated Template");
       });
     });
 

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, memo, Suspense } from "react";
-import { TaskItem, Task } from "./TaskItem";
+import { TaskItem } from "./TaskItem";
+import { Task } from "@/lib/types";
 import { format, isToday, isTomorrow, isThisYear } from "date-fns";
 import { ViewOptionsPopover } from "./ViewOptionsPopover";
 import { ViewSettings, defaultViewSettings } from "@/lib/view-settings";
@@ -14,14 +15,15 @@ const TaskDialog = dynamic(() => import("./TaskDialog").then(mod => mod.TaskDial
 });
 
 interface TaskListWithSettingsProps {
-    tasks: Task[];
+    tasks?: Task[]; // Make optional as we might not fetch it
     title?: string;
-    listId?: number;
+    listId?: number | null; // Allow null explicit
     labelId?: number;
     defaultDueDate?: Date | string;
     viewId: string;
     userId?: string;
     initialSettings?: ViewSettings;
+    filterType?: "inbox" | "today" | "upcoming" | "all" | "completed"; // New prop to control client filtering
 }
 
 /**
@@ -205,8 +207,13 @@ import {
 } from "@dnd-kit/sortable";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
-import { reorderTasks } from "@/lib/actions/tasks";
+import { useSync } from "@/components/providers/sync-provider";
+import { useTaskStore } from "@/lib/store/task-store";
+import { Virtuoso } from "react-virtuoso";
 
+// Perf: React.memo prevents re-renders when parent state changes (e.g., dialog open/close,
+// settings updates) but the task itself hasn't changed. For lists with 100+ tasks, this
+// reduces re-renders by ~90% during common interactions like opening the edit dialog.
 // Perf: React.memo prevents re-renders when parent state changes (e.g., dialog open/close,
 // settings updates) but the task itself hasn't changed. For lists with 100+ tasks, this
 // reduces re-renders by ~90% during common interactions like opening the edit dialog.
@@ -215,13 +222,15 @@ const SortableTaskItem = memo(function SortableTaskItem({
     handleEdit,
     listId,
     userId,
-    isDragEnabled
+    isDragEnabled,
+    dispatch
 }: {
     task: Task;
     handleEdit: (task: Task) => void;
-    listId?: number;
+    listId?: number | null;
     userId?: string;
     isDragEnabled: boolean;
+    dispatch: (type: any, ...args: any[]) => Promise<any>;
 }) {
     const {
         attributes,
@@ -275,6 +284,7 @@ const SortableTaskItem = memo(function SortableTaskItem({
                 userId={userId}
                 disableAnimations={isDragEnabled}
                 dragHandleProps={isDragEnabled ? listeners : undefined}
+                dispatch={dispatch}
             />
         </div>
     );
@@ -288,7 +298,8 @@ export function TaskListWithSettings({
     defaultDueDate,
     viewId,
     userId,
-    initialSettings
+    initialSettings,
+    filterType
 }: TaskListWithSettingsProps) {
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -307,14 +318,65 @@ export function TaskListWithSettings({
     const [mounted, setMounted] = useState(true);
     const [activeId, setActiveId] = useState<number | null>(null);
 
-    // Local state for tasks to support optimistic UI updates during drag
-    // Initialize with props.tasks to avoid "No tasks found" flicker on first render
-    const [localTasks, setLocalTasks] = useState<Task[]>(tasks);
+    const { dispatch } = useSync();
 
-    // Sync local tasks with props when they change (and not dragging)
+    // Global Store Integration
+    const { tasks: storeTasksFn, setTasks, initialize } = useTaskStore();
+
+    // Hydrate store from props if provided (Server Side props)
     useEffect(() => {
-        setLocalTasks(tasks);
-    }, [tasks]);
+        initialize();
+        if (tasks && tasks.length > 0) {
+            setTasks(tasks);
+        }
+    }, [tasks, setTasks, initialize]);
+
+    // Select tasks from store that match current view filters
+    const allStoreTasks = useMemo(() => Object.values(storeTasksFn), [storeTasksFn]);
+
+    // Derive display tasks using Client-Side Logic
+    const derivedTasks = useMemo(() => {
+        let result = allStoreTasks;
+
+        // 0. Initial Server Filter Override (if tasks prop exists and we didn't specify filterType)
+        // If we still use server-side fetching for some routes, we might rely on prop IDs.
+        // But if `tasks` is empty (navigated fast), we rely on `filterType`.
+        if (tasks && tasks.length > 0 && !filterType) {
+            const propIds = new Set(tasks.map(t => t.id));
+            // Fallback to "prop IDs + new" if no filter type is set
+            return allStoreTasks.filter(t => propIds.has(t.id) || t.id < 0);
+        }
+
+        // 1. Filter by List
+        if (listId !== undefined) {
+            if (listId === null) {
+                result = result.filter(t => t.listId === null);
+            } else {
+                result = result.filter(t => t.listId === listId);
+            }
+        }
+
+        // 2. Filter by Label
+        if (labelId) {
+            result = result.filter(t => t.labels?.some(l => l.id === labelId));
+        }
+
+        // 3. Filter by FilterType (today, upcoming, etc)
+        // Logic mirrored from src/lib/actions/tasks.ts
+        if (filterType === 'inbox') {
+            result = result.filter(t => t.listId === null);
+        } else if (filterType === 'today') {
+            result = result.filter(t => t.dueDate && isToday(new Date(t.dueDate)));
+        } else if (filterType === 'upcoming') {
+            result = result.filter(t => t.dueDate && new Date(t.dueDate) > new Date());
+        }
+
+        return result;
+    }, [allStoreTasks, listId, labelId, filterType, tasks, viewId]);
+
+    // Zustand store already has optimistic updates applied via SyncProvider.dispatch()
+    // No need for a separate optimistic layer
+    const displayTasks = derivedTasks;
 
     // Load initial settings only if not provided
     useEffect(() => {
@@ -354,8 +416,8 @@ export function TaskListWithSettings({
     }, []);
 
     const processedTasks = useMemo(() => {
-        return applyViewSettings(localTasks, settings);
-    }, [localTasks, settings]);
+        return applyViewSettings(displayTasks, settings);
+    }, [displayTasks, settings]);
 
 
     const { activeTasks, completedTasks } = useMemo(() => {
@@ -445,12 +507,12 @@ export function TaskListWithSettings({
         setActiveId(null);
 
         if (over && active.id !== over.id) {
-            const oldIndex = localTasks.findIndex((t) => t.id === active.id);
-            const newIndex = localTasks.findIndex((t) => t.id === over.id);
-            const newTasks = arrayMove(localTasks, oldIndex, newIndex);
+            const oldIndex = displayTasks.findIndex((t) => t.id === active.id);
+            const newIndex = displayTasks.findIndex((t) => t.id === over.id);
+            const newTasks = arrayMove(displayTasks, oldIndex, newIndex);
 
-            // Update local state immediately
-            setLocalTasks(newTasks);
+            // Update local state immediately (Store)
+            setTasks(newTasks);
 
             // Server update
             if (userId) {
@@ -459,7 +521,7 @@ export function TaskListWithSettings({
                     position: index
                 }));
                 // Don't await to keep UI responsive
-                reorderTasks(userId, updates).catch(console.error);
+                dispatch("reorderTasks", userId, updates).catch(console.error);
             }
         }
     };
@@ -493,45 +555,69 @@ export function TaskListWithSettings({
                 <div className="space-y-6">
                     {/* Active Tasks */}
                     {activeTasks.length > 0 && (
-                        <DndContext
-                            sensors={sensors}
-                            collisionDetection={closestCenter}
-                            onDragStart={handleDragStart}
-                            onDragEnd={handleDragEnd}
-                            onDragCancel={handleDragCancel}
-                            modifiers={[restrictToVerticalAxis]}
-                        >
-                            <SortableContext
-                                items={activeTasks.map(t => t.id)}
-                                strategy={verticalListSortingStrategy}
-                                disabled={!isDragEnabled}
-                            >
-                                <div className="space-y-2">
-                                    {activeTasks.map((task) => (
-                                        <SortableTaskItem
+                        /* Hybrid Approach: Use Virtualization for large lists (>50) to fix rendering lag. 
+                           DnD is disabled in virtualized mode for simplicity/stability. 
+                           For small lists, keep full DnD capability. */
+                        activeTasks.length > 50 ? (
+                            <Virtuoso
+                                useWindowScroll
+                                data={activeTasks}
+                                itemContent={(index, task) => (
+                                    <div className="mb-2">
+                                        <TaskItem
                                             key={task.id}
                                             task={task}
-                                            handleEdit={handleEdit}
-                                            listId={listId}
-                                            userId={userId}
-                                            isDragEnabled={isDragEnabled}
-                                        />
-                                    ))}
-                                </div>
-                            </SortableContext>
-                            <DragOverlay>
-                                {activeId ? (
-                                    <div className="opacity-90 rotate-2 scale-105 cursor-grabbing">
-                                        <TaskItem
-                                            task={localTasks.find(t => t.id === activeId)!}
                                             showListInfo={!listId}
                                             userId={userId}
                                             disableAnimations={true}
+                                            dispatch={dispatch}
                                         />
                                     </div>
-                                ) : null}
-                            </DragOverlay>
-                        </DndContext>
+                                )}
+                            />
+                        ) : (
+                            <DndContext
+                                sensors={sensors}
+                                collisionDetection={closestCenter}
+                                onDragStart={handleDragStart}
+                                onDragEnd={handleDragEnd}
+                                onDragCancel={handleDragCancel}
+                                modifiers={[restrictToVerticalAxis]}
+                            >
+                                <SortableContext
+                                    items={activeTasks.map(t => t.id)}
+                                    strategy={verticalListSortingStrategy}
+                                    disabled={!isDragEnabled}
+                                >
+                                    <div className="space-y-2">
+                                        {activeTasks.map((task) => (
+                                            <SortableTaskItem
+                                                key={task.id}
+                                                task={task}
+                                                handleEdit={handleEdit}
+                                                listId={listId}
+                                                userId={userId}
+                                                isDragEnabled={isDragEnabled}
+                                                dispatch={dispatch}
+                                            />
+                                        ))}
+                                    </div>
+                                </SortableContext>
+                                <DragOverlay>
+                                    {activeId ? (
+                                        <div className="opacity-90 rotate-2 scale-105 cursor-grabbing">
+                                            <TaskItem
+                                                task={displayTasks.find(t => t.id === activeId)!}
+                                                showListInfo={!listId}
+                                                userId={userId}
+                                                disableAnimations={true}
+                                                dispatch={dispatch}
+                                            />
+                                        </div>
+                                    ) : null}
+                                </DragOverlay>
+                            </DndContext>
+                        )
                     )}
 
                     {/* Completed Tasks with Sticky Header */}
@@ -557,6 +643,7 @@ export function TaskListWithSettings({
                                                 showListInfo={!listId}
                                                 userId={userId}
                                                 disableAnimations={true}
+                                                dispatch={dispatch}
                                             />
                                         </div>
                                     );
@@ -587,7 +674,7 @@ export function TaskListWithSettings({
                                             }}
                                             className="cursor-pointer rounded-lg transition-all"
                                         >
-                                            <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} />
+                                            <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} />
                                         </div>
                                     );
                                 })}
@@ -607,7 +694,7 @@ export function TaskListWithSettings({
                                                     }}
                                                     className="cursor-pointer rounded-lg transition-all"
                                                 >
-                                                    <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} />
+                                                    <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} />
                                                 </div>
                                             );
                                         })}
@@ -623,7 +710,7 @@ export function TaskListWithSettings({
             <Suspense fallback={null}>
                 <TaskDialog
                     task={editingTask ? { ...editingTask, icon: editingTask.icon ?? null } : undefined}
-                    defaultListId={listId}
+                    defaultListId={listId ?? undefined}
                     defaultLabelIds={labelId ? [labelId] : undefined}
                     defaultDueDate={defaultDueDate}
                     open={isDialogOpen}

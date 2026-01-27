@@ -1,7 +1,7 @@
 import { useState, FormEvent, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { createTask, updateTask, deleteTask } from "@/lib/actions/tasks";
+import { useSync } from "@/components/providers/sync-provider";
 import type { ActionResult, ActionError } from "@/lib/action-result";
 
 export type TaskType = {
@@ -115,6 +115,8 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
+    const { dispatch } = useSync();
+
     const isEdit = !!task;
 
     // Clear field errors when user modifies input
@@ -168,20 +170,10 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
                 estimateMinutes,
             };
 
-            let result: unknown;
             if (isEdit && task) {
-                result = await updateTask(task.id, userId, data);
+                dispatch("updateTask", task.id, userId, data);
             } else {
-                result = await createTask({ ...data, userId });
-            }
-
-            // Handle ActionResult pattern (when server actions are updated)
-            if (isActionResult(result)) {
-                if (!result.success) {
-                    handleActionError(result.error, router, setFieldErrors);
-                    setIsSubmitting(false);
-                    return;
-                }
+                dispatch("createTask", { ...data, userId });
             }
 
             // Success - close dialog
@@ -213,16 +205,7 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
         if (confirm("Are you sure you want to delete this task?")) {
             setIsSubmitting(true);
             try {
-                const result = await deleteTask(task.id, userId);
-
-                // Handle ActionResult pattern (when server actions are updated)
-                if (isActionResult(result)) {
-                    if (!result.success) {
-                        handleActionError(result.error, router, setFieldErrors);
-                        setIsSubmitting(false);
-                        return;
-                    }
-                }
+                dispatch("deleteTask", task.id, userId);
 
                 toast.success("Task deleted");
                 onClose();

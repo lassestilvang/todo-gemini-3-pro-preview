@@ -7,7 +7,6 @@ import { format } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { Calendar, Flag, Clock, Repeat, AlertCircle, Lock, ChevronDown, GitBranch, GripVertical } from "lucide-react";
-import { toggleTaskCompletion, updateSubtask } from "@/lib/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FocusMode } from "./FocusMode";
@@ -19,45 +18,9 @@ import { usePerformanceMode } from "@/components/providers/PerformanceContext";
 import type { DraggableSyntheticListeners } from "@dnd-kit/core";
 
 import { ResolvedIcon } from "@/components/ui/resolved-icon";
+import { useSync } from "@/components/providers/sync-provider";
 
-// Define a type for the task prop based on the schema or a shared type
-// For now, I'll define a simplified interface matching the schema
-
-export interface Subtask {
-    id: number;
-    parentId: number | null;
-    title: string;
-    isCompleted: boolean | null;
-    estimateMinutes: number | null;
-}
-
-export interface Task {
-    id: number;
-    title: string;
-    description: string | null;
-    icon?: string | null;
-    priority: "none" | "low" | "medium" | "high" | null;
-    dueDate: Date | null;
-    deadline: Date | null;
-    isCompleted: boolean | null;
-    estimateMinutes: number | null;
-    position: number;
-    actualMinutes: number | null;
-    isRecurring: boolean | null;
-    listId: number | null;
-    listName?: string | null;
-    listColor?: string | null;
-    listIcon?: string | null;
-    recurringRule: string | null;
-    energyLevel: "high" | "medium" | "low" | null;
-    context: "computer" | "phone" | "errands" | "meeting" | "home" | "anywhere" | null;
-    isHabit: boolean | null;
-    labels?: Array<{ id: number; name: string; color: string | null; icon: string | null }>;
-    blockedByCount?: number;
-    subtasks?: Subtask[];
-    subtaskCount?: number;
-    completedSubtaskCount?: number;
-}
+import { Task, Subtask } from "@/lib/types";
 
 interface TaskItemProps {
     task: Task;
@@ -66,6 +29,8 @@ interface TaskItemProps {
     disableAnimations?: boolean;
     // Typed for @dnd-kit stability - ensures memo works correctly with drag-and-drop
     dragHandleProps?: DraggableSyntheticListeners;
+    // Optional: if not provided, will use useSync() internally
+    dispatch?: (type: any, ...args: any[]) => Promise<any>;
 }
 
 
@@ -89,7 +54,7 @@ const priorityColors = {
 // React.memo prevents re-renders when parent state changes (e.g., dialog open/close)
 // but the task props remain unchanged. In lists with 50+ tasks, this reduces
 // unnecessary re-renders by ~95% when opening the task edit dialog.
-export const TaskItem = memo(function TaskItem({ task, showListInfo = true, userId, disableAnimations = false, dragHandleProps }: TaskItemProps) {
+export const TaskItem = memo(function TaskItem({ task, showListInfo = true, userId, disableAnimations = false, dragHandleProps, dispatch: dispatchProp }: TaskItemProps) {
     const [isCompleted, setIsCompleted] = useState(task.isCompleted || false);
     const [isExpanded, setIsExpanded] = useState(false);
     const [subtaskStates, setSubtaskStates] = useState<Record<number, boolean>>(
@@ -100,10 +65,14 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
     const completedCount = task.completedSubtaskCount || 0;
     const totalCount = task.subtaskCount || 0;
 
+    // Use prop if provided, otherwise fall back to context
+    const { dispatch: dispatchFromContext } = useSync();
+    const dispatch = dispatchProp ?? dispatchFromContext;
+
     const handleSubtaskToggle = async (subtaskId: number, checked: boolean) => {
         if (!userId) return;
         setSubtaskStates(prev => ({ ...prev, [subtaskId]: checked }));
-        await updateSubtask(subtaskId, userId, checked);
+        dispatch("updateSubtask", subtaskId, userId, checked);
     };
 
     const handleToggle = async (checked: boolean) => {
@@ -128,14 +97,11 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
         }
 
         if (!userId) return;
-        const result = await toggleTaskCompletion(task.id, userId, checked);
+        dispatch("toggleTaskCompletion", task.id, userId, checked);
 
-        if (result && result.leveledUp) {
-            const event = new CustomEvent("user-level-update", {
-                detail: { level: result.newLevel, leveledUp: true }
-            });
-            window.dispatchEvent(event);
-        }
+        // Optimistic UI means we don't wait for the result here.
+        // Gamification effects (level up) will need to be handled via a different mechanism
+        // or accepted as eventually consistent.
     };
 
     const [mounted, setMounted] = useState(false);

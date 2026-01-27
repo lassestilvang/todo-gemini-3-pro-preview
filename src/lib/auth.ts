@@ -54,7 +54,6 @@ async function getTestUser(): Promise<AuthUser | null> {
 /**
  * Get the current authenticated user from the session.
  * Returns null if not authenticated.
- * 
  * In E2E test mode, checks for test session cookie instead of WorkOS.
  */
 export const getCurrentUser = cache(async function getCurrentUser(): Promise<AuthUser | null> {

@@ -3,7 +3,7 @@
  * @description Server Actions for list management including CRUD operations.
  * Lists are used to organize tasks into categories (e.g., Inbox, Work, Personal).
  */
-"use server";
+// "use server";
 
 import {
   db,
@@ -140,28 +140,38 @@ async function createListImpl(data: typeof lists.$inferInsert) {
   if (!data.name || data.name.trim().length === 0) {
     throw new ValidationError("List name is required", { name: "Name cannot be empty" });
   }
-  if (!data.userId) {
-    throw new ValidationError("User ID is required", { userId: "User ID cannot be empty" });
-  }
 
   const user = await getCurrentUser();
   if (!user) {
     throw new UnauthorizedError();
   }
-  if (user.id !== data.userId) {
+
+  // Ensure userId is set and matches current user
+  const effectiveUserId = data.userId || user.id;
+  if (user.id !== effectiveUserId) {
     throw new ForbiddenError("You are not authorized to access this user's data");
   }
 
-  const result = await db.insert(lists).values(data).returning();
+  // Generate slug if not provided
+  const slug = data.slug || data.name.toLowerCase().trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  const result = await db.insert(lists).values({
+    ...data,
+    userId: effectiveUserId,
+    slug,
+  }).returning();
 
   await logActivity({
-    userId: data.userId,
+    userId: effectiveUserId,
     action: "list_created",
     listId: result[0].id,
     details: `Created list: ${result[0].name}`,
   });
 
-  revalidateTag(`lists-${data.userId}`, 'max');
+  revalidateTag(`lists-${effectiveUserId}`, 'max');
   revalidatePath("/", "layout");
   return result[0];
 }

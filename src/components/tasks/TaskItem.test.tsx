@@ -1,9 +1,16 @@
 import { describe, it, expect, afterEach, mock, beforeEach } from "bun:test";
 import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
-// Mock the actions
+// Actions are not used directly, only via dispatch
 const mockToggleTaskCompletion = mock(() => Promise.resolve());
-mock.module("@/lib/actions", () => ({
-    toggleTaskCompletion: mockToggleTaskCompletion
+// Removed mock.module("@/lib/actions") as TaskItem does not import them.
+
+// Mock useSync
+const mockDispatch = mock(() => Promise.resolve());
+mock.module("@/components/providers/sync-provider", () => ({
+    useSync: () => ({
+        dispatch: mockDispatch,
+        pendingActions: []
+    })
 }));
 
 import { TaskItem, type Task } from "./TaskItem";
@@ -49,8 +56,8 @@ describe("TaskItem", () => {
         fireEvent.click(checkbox);
 
         await waitFor(() => {
-            expect(mockToggleTaskCompletion).toHaveBeenCalledTimes(1);
-            expect(mockToggleTaskCompletion).toHaveBeenCalledWith(1, "test_user_123", true);
+            expect(mockDispatch).toHaveBeenCalledTimes(1);
+            expect(mockDispatch).toHaveBeenCalledWith("toggleTaskCompletion", 1, "test_user_123", true);
         });
     });
 

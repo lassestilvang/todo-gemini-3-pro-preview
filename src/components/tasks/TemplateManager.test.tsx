@@ -2,52 +2,49 @@ import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
 import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 import { TemplateManager } from "./TemplateManager";
 
-// Mock actions
-const mockGetTemplates = mock(() => Promise.resolve([]));
-const mockDeleteTemplate = mock(() => Promise.resolve({ success: true }));
-const mockInstantiateTemplate = mock(() => Promise.resolve({ success: true }));
-
-mock.module("@/lib/actions", () => ({
-  getTemplates: mockGetTemplates,
-  deleteTemplate: mockDeleteTemplate,
-  instantiateTemplate: mockInstantiateTemplate,
-  createTemplate: mock(() => Promise.resolve({ success: true })),
-  updateTemplate: mock(() => Promise.resolve({ success: true })),
-}));
-
 // Mock sonner toast
 mock.module("sonner", () => ({
   toast: {
-    success: mock(() => {}),
-    error: mock(() => {}),
+    success: mock(() => { }),
+    error: mock(() => { }),
   },
 }));
 
 // Mock window.confirm
 const originalConfirm = globalThis.confirm;
 
-describe("TemplateManager", () => {
-  const mockTemplates = [
-    {
-      id: 1,
-      name: "Weekly Report",
-      content: JSON.stringify({ title: "Weekly Report Task", priority: "high" }),
-      createdAt: new Date("2024-01-15"),
-    },
-    {
-      id: 2,
-      name: "Daily Standup",
-      content: JSON.stringify({ title: "Daily Standup Task", priority: "medium" }),
-      createdAt: new Date("2024-01-16"),
-    },
-  ];
+import { db, templates } from "@/db";
+import { setupTestDb, resetTestDb } from "@/test/setup";
+import { getCurrentUser } from "@/lib/auth";
 
-  beforeEach(() => {
-    mockGetTemplates.mockClear();
-    mockDeleteTemplate.mockClear();
-    mockInstantiateTemplate.mockClear();
-    mockGetTemplates.mockImplementation(() => Promise.resolve(mockTemplates));
+// Mock auth
+mock.module("@/lib/auth", () => ({
+  getCurrentUser: mock(() => Promise.resolve({ id: "test_user_123" })),
+}));
+
+describe("TemplateManager", () => {
+  beforeEach(async () => {
+    await setupTestDb();
+    await resetTestDb();
     globalThis.confirm = mock(() => true);
+
+    // Seed templates
+    await db.insert(templates).values([
+      {
+        id: 1,
+        userId: "test_user_123",
+        name: "Weekly Report",
+        content: JSON.stringify({ title: "Weekly Report Task", priority: "high" }),
+        createdAt: new Date("2024-01-15"),
+      },
+      {
+        id: 2,
+        userId: "test_user_123",
+        name: "Daily Standup",
+        content: JSON.stringify({ title: "Daily Standup Task", priority: "medium" }),
+        createdAt: new Date("2024-01-16"),
+      }
+    ]);
   });
 
   afterEach(() => {
@@ -78,14 +75,14 @@ describe("TemplateManager", () => {
       fireEvent.click(screen.getByText("Templates"));
 
       await waitFor(() => {
-        expect(mockGetTemplates).toHaveBeenCalledWith("test_user_123");
+        // expect(mockGetTemplates).toHaveBeenCalledWith("test_user_123"); // Removed action spy
         expect(screen.getByText("Weekly Report")).toBeInTheDocument();
         expect(screen.getByText("Daily Standup")).toBeInTheDocument();
       });
     });
 
     it("should show empty state when no templates exist", async () => {
-      mockGetTemplates.mockImplementation(() => Promise.resolve([]));
+      await db.delete(templates);
 
       render(<TemplateManager userId="test_user_123" />);
 
@@ -227,7 +224,7 @@ describe("TemplateManager", () => {
       // Wait a bit to ensure no call is made
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      expect(mockGetTemplates).not.toHaveBeenCalled();
+      expect(screen.queryByText("Weekly Report")).not.toBeInTheDocument();
     });
   });
 });

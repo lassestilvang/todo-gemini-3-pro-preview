@@ -1,6 +1,7 @@
 "use client";
 
-import { TaskItem, Task } from "./TaskItem";
+import { TaskItem } from "./TaskItem";
+import { Task } from "@/lib/types";
 import { TaskDialog } from "./TaskDialog";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";

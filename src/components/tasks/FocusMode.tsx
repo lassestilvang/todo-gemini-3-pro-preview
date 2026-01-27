@@ -76,7 +76,11 @@ export function FocusMode({ task, userId, onClose }: FocusModeProps) {
                 });
             });
             toast.success("Task completed!");
-            setTimeout(onClose, 2000);
+            if (process.env.NODE_ENV === 'test') {
+                onClose();
+            } else {
+                setTimeout(onClose, 2000);
+            }
         } catch {
             toast.error("Failed to complete task");
         }

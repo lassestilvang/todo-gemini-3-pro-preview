@@ -14,7 +14,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { createList, updateList, deleteList } from "@/lib/actions";
+import { useActionResult } from "@/hooks/useActionResult";
 import { IconPicker } from "@/components/ui/icon-picker";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const COLORS = [
@@ -41,16 +43,59 @@ interface ManageListDialogProps {
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
     trigger?: React.ReactNode;
-    userId?: string;
+    authUserId?: string;
 }
 
-export function ManageListDialog({ list, open, onOpenChange, trigger, userId }: ManageListDialogProps) {
+export function ManageListDialog({ list, open, onOpenChange, trigger, authUserId }: ManageListDialogProps) {
     const [internalOpen, setInternalOpen] = useState(false);
 
     const effectiveOpen = open !== undefined ? open : internalOpen;
-    const setEffectiveOpen = onOpenChange || setInternalOpen;
+    const setEffectiveOpen = (val: boolean) => {
+        if (onOpenChange) onOpenChange(val);
+        setInternalOpen(val);
+    };
+
+    const { execute: executeCreate, isLoading: isCreating } = useActionResult({
+        onSuccess: () => {
+            setEffectiveOpen(false);
+            toast.success("List created successfully");
+        }
+    });
+
+    const { execute: executeUpdate, isLoading: isUpdating } = useActionResult({
+        onSuccess: () => {
+            setEffectiveOpen(false);
+            toast.success("List updated successfully");
+        }
+    });
+
+    const { execute: executeDelete, isLoading: isDeleting } = useActionResult({
+        onSuccess: () => {
+            setEffectiveOpen(false);
+            toast.success("List deleted successfully");
+        }
+    });
+
+    const isLoading = isCreating || isUpdating || isDeleting;
 
     const formKey = effectiveOpen ? (list ? `edit-${list.id}` : "create") : "closed";
+
+    const onSubmit = async (data: any) => {
+        const payload = { ...data, userId: authUserId! };
+
+        if (list) {
+            await executeUpdate(updateList, list.id, authUserId!, data);
+        } else {
+            await executeCreate(createList, payload);
+        }
+    };
+
+    const onDelete = async () => {
+        if (list && authUserId) {
+            await deleteList(list.id, authUserId);
+            setEffectiveOpen(false);
+        }
+    };
 
     return (
         <Dialog open={effectiveOpen} onOpenChange={setEffectiveOpen}>
@@ -59,7 +104,15 @@ export function ManageListDialog({ list, open, onOpenChange, trigger, userId }: 
                 <DialogHeader>
                     <DialogTitle>{list ? "Edit List" : "New List"}</DialogTitle>
                 </DialogHeader>
-                <ListForm key={formKey} list={list} userId={userId} onClose={() => setEffectiveOpen(false)} />
+                <ListForm
+                    key={formKey}
+                    list={list}
+                    authUserId={authUserId}
+                    onSubmit={onSubmit}
+                    onDelete={onDelete}
+                    onCancel={() => setEffectiveOpen(false)}
+                    isLoading={isLoading}
+                />
             </DialogContent>
         </Dialog>
     );
@@ -73,11 +126,14 @@ interface ListFormProps {
         icon: string | null;
         description?: string | null;
     };
-    userId?: string;
-    onClose: () => void;
+    authUserId?: string;
+    onSubmit: (data: any) => Promise<void>;
+    onDelete: () => Promise<void>;
+    onCancel: () => void;
+    isLoading: boolean;
 }
 
-function ListForm({ list, userId, onClose }: ListFormProps) {
+function ListForm({ list, authUserId, onSubmit, onDelete, onCancel, isLoading }: ListFormProps) {
     const [name, setName] = useState(list?.name || "");
     const [color, setColor] = useState(list?.color || COLORS[0]);
     const [icon, setIcon] = useState(list?.icon || "list");
@@ -87,35 +143,12 @@ function ListForm({ list, userId, onClose }: ListFormProps) {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!userId) return;
-        try {
-            if (isEdit) {
-                await updateList(list.id, userId, { name, color, icon, description });
-            } else {
-                await createList({
-                    name,
-                    color,
-                    icon,
-                    description,
-                    slug: name.toLowerCase().replace(/\s+/g, "-") + "-" + Date.now(), // Simple slug generation
-                    userId
-                });
-            }
-            onClose();
-        } catch (error) {
-            console.error("Failed to save list:", error);
-        }
+        await onSubmit({ name, color, icon, description });
     };
 
     const handleDelete = async () => {
-        if (!isEdit || !userId) return;
         if (confirm("Are you sure you want to delete this list? Tasks will be deleted.")) {
-            try {
-                await deleteList(list.id, userId);
-                onClose();
-            } catch (error) {
-                console.error("Failed to delete list:", error);
-            }
+            await onDelete();
         }
     };
 
@@ -168,7 +201,7 @@ function ListForm({ list, userId, onClose }: ListFormProps) {
                 <IconPicker
                     value={icon}
                     onChange={setIcon}
-                    userId={userId}
+                    userId={authUserId}
                 />
             </div>
 
@@ -179,10 +212,12 @@ function ListForm({ list, userId, onClose }: ListFormProps) {
                     </Button>
                 )}
                 <div className="flex gap-2">
-                    <Button type="button" variant="outline" onClick={onClose}>
+                    <Button type="button" variant="outline" onClick={onCancel}>
                         Cancel
                     </Button>
-                    <Button type="submit">Save</Button>
+                    <Button type="submit" disabled={isLoading}>
+                        {isLoading ? "Saving..." : "Save"}
+                    </Button>
                 </div>
             </DialogFooter>
         </form>

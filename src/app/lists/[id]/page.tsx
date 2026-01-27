@@ -1,9 +1,8 @@
-import { getList, getTasks, getViewSettings } from "@/lib/actions";
+import { getList } from "@/lib/actions";
 import { getCurrentUser } from "@/lib/auth";
 import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
 import { CreateTaskInput } from "@/components/tasks/CreateTaskInput";
 import { notFound, redirect } from "next/navigation";
-import { defaultViewSettings } from "@/lib/view-settings";
 import { ManageListDialog } from "@/components/tasks/ManageListDialog";
 import { Button } from "@/components/ui/button";
 import { Settings2 } from "lucide-react";
@@ -25,30 +24,16 @@ export default async function ListPage({ params }: ListPageProps) {
     const listId = parseInt(id);
     if (isNaN(listId)) return notFound();
 
-    const [list, savedSettings] = await Promise.all([
-        getList(listId, user.id),
-        getViewSettings(user.id, `list-${listId}`)
-    ]);
-
+    // Blocking List Fetch (Fast, single row) needed for Title/404
+    const list = await getList(listId, user.id);
     if (!list) return notFound();
 
-    // Default to true if settings aren't saved yet, matching defaultViewSettings
-    const showCompleted = savedSettings?.showCompleted ?? defaultViewSettings.showCompleted;
+    // OPTIM: Removed blocking task fetch
+    const tasks: any[] = [];
 
-    const tasks = await getTasks(user.id, listId, undefined, undefined, showCompleted);
-
-    const initialSettings = savedSettings ? {
-        layout: savedSettings.layout || defaultViewSettings.layout,
-        showCompleted: savedSettings.showCompleted ?? defaultViewSettings.showCompleted,
-        groupBy: savedSettings.groupBy || defaultViewSettings.groupBy,
-        sortBy: savedSettings.sortBy || defaultViewSettings.sortBy,
-        sortOrder: savedSettings.sortOrder || defaultViewSettings.sortOrder,
-        filterDate: savedSettings.filterDate || defaultViewSettings.filterDate,
-        filterPriority: savedSettings.filterPriority,
-        filterLabelId: savedSettings.filterLabelId,
-        filterEnergyLevel: savedSettings.filterEnergyLevel ?? defaultViewSettings.filterEnergyLevel,
-        filterContext: savedSettings.filterContext ?? defaultViewSettings.filterContext,
-    } : undefined;
+    // We can't easily skip getViewSettings if we want initialSettings passed.
+    // BUT we can make it hydrating too.
+    const initialSettings = undefined;
 
     return (
         <div className="container max-w-4xl py-6 lg:py-10">

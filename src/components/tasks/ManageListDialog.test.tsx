@@ -4,26 +4,19 @@ import { ManageListDialog } from "./ManageListDialog";
 import React from "react";
 
 // Mock actions
-const mockCreateList = mock(() => Promise.resolve({ id: 2, name: "New List", slug: "new-list" }));
-const mockUpdateList = mock(() => Promise.resolve());
-const mockDeleteList = mock(() => Promise.resolve());
-const mockGetLists = mock(() => Promise.resolve([
-    { id: 1, name: "Existing List", color: "#ff0000", icon: "List", slug: "existing-list" }
-]));
-
-mock.module("@/lib/actions", () => ({
-    createList: mockCreateList,
-    updateList: mockUpdateList,
-    deleteList: mockDeleteList,
-    getLists: mockGetLists
-}));
+import { db, lists as listsTable } from "@/db";
+import { eq } from "drizzle-orm";
+import { setupTestDb, resetTestDb } from "@/test/setup";
+import { setMockAuthUser } from "@/test/mocks";
 
 describe("ManageListDialog", () => {
-    beforeEach(() => {
-        mockCreateList.mockClear();
-        mockUpdateList.mockClear();
-        mockDeleteList.mockClear();
-        mockGetLists.mockClear();
+    beforeEach(async () => {
+        await setupTestDb();
+        await resetTestDb();
+        // Seed user to satisfy FK and for action logic
+        const { users } = await import("@/db");
+        await db.insert(users).values({ id: "test_user_123", email: "test@example.com", isInitialized: true });
+        setMockAuthUser({ id: "test_user_123", email: "test@example.com", firstName: "Test", lastName: "User", profilePictureUrl: null });
     });
 
     afterEach(() => {
@@ -32,45 +25,33 @@ describe("ManageListDialog", () => {
     });
 
     it("should render trigger button", async () => {
-        render(<ManageListDialog trigger={<button>Manage Lists</button>} />);
+        render(<ManageListDialog trigger={<button>Manage Lists</button>} authUserId="test_user_123" />);
         expect(screen.getByText("Manage Lists")).toBeInTheDocument();
     });
 
-    it("should open dialog and list lists", async () => {
-        render(<ManageListDialog trigger={<button>Manage Lists</button>} />);
+    it("should open dialog and show form", async () => {
+        render(<ManageListDialog trigger={<button>Manage Lists</button>} authUserId="test_user_123" />);
         fireEvent.click(screen.getByText("Manage Lists"));
 
-        await waitFor(() => {
-            expect(screen.getByText("New List")).toBeInTheDocument();
-            // The dialog renders a form for creating/editing a single list, not a list of lists.
-            // Wait, ManageListDialog renders ListForm which is for ONE list.
-            // The component name implies managing *lists* (plural), but the code shows it manages A list (singular/create new).
-            // Let's check the code again.
-            // ManageListDialog renders ListForm.
-            // ListForm has inputs for name, color, icon.
-            // It does NOT list existing lists.
-            // So expecting "Existing List" is wrong unless we passed it as prop.
-        });
+        expect(await screen.findByText("New List")).toBeInTheDocument();
+        expect(screen.getByPlaceholderText("List Name")).toBeInTheDocument();
     });
 
     it("should create a new list", async () => {
-        render(<ManageListDialog trigger={<button>Manage Lists</button>} userId="test_user_123" />);
+        render(<ManageListDialog trigger={<button>Manage Lists</button>} authUserId="test_user_123" />);
         fireEvent.click(screen.getByText("Manage Lists"));
 
-        // Wait for dialog to open
-        await waitFor(() => {
-            expect(screen.getByRole("dialog")).toBeInTheDocument();
-        });
-
-        const nameInput = screen.getByPlaceholderText("List Name");
+        const nameInput = await screen.findByPlaceholderText("List Name");
         fireEvent.change(nameInput, { target: { value: "New List" } });
-        fireEvent.click(screen.getByText("Save"));
 
-        await waitFor(() => {
-            expect(mockCreateList).toHaveBeenCalledWith(expect.objectContaining({
-                name: "New List",
-                userId: "test_user_123"
-            }));
-        });
+        const form = nameInput.closest("form");
+        expect(form).not.toBeNull();
+        fireEvent.submit(form!);
+
+        await waitFor(async () => {
+            const list = await db.select().from(listsTable).where(eq(listsTable.name, "New List"));
+            expect(list.length).toBe(1);
+            expect(list[0].userId).toBe("test_user_123");
+        }, { timeout: 3000 });
     });
 });

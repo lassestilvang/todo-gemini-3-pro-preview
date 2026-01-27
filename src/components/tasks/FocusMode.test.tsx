@@ -1,6 +1,10 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
 import { render, screen, fireEvent, cleanup, act } from "@testing-library/react";
 import { FocusMode } from "./FocusMode";
+import { db, tasks } from "@/db";
+import { setupTestDb, resetTestDb } from "@/test/setup";
+import { setMockAuthUser } from "@/test/mocks";
+import { eq } from "drizzle-orm";
 
 // Mock dependencies
 mock.module("canvas-confetti", () => ({
@@ -15,41 +19,33 @@ mock.module("sonner", () => ({
     }
 }));
 
-// Mock actions
-const mockUpdateTask = mock(() => Promise.resolve());
-mock.module("@/lib/actions", () => ({
-    updateTask: mockUpdateTask
-}));
-
 describe("FocusMode", () => {
-    const mockTask = {
-        id: 1,
-        title: "Test Task",
-        description: "Test Description",
-        priority: "high"
-    };
-    const mockUserId = "test_user_123";
-    const mockOnClose = mock();
-
-    beforeEach(() => {
-        mockOnClose.mockClear();
-        mockUpdateTask.mockClear();
+    beforeEach(async () => {
+        await setupTestDb();
+        await resetTestDb();
+        setMockAuthUser({ id: "user-1", email: "test@example.com", firstName: "Test", lastName: "User", profilePictureUrl: null });
     });
 
     afterEach(() => {
         cleanup();
     });
 
-    it("should render task details", () => {
-        render(<FocusMode task={mockTask} userId={mockUserId} onClose={mockOnClose} />);
-        expect(screen.getByText("Test Task")).toBeDefined();
-        expect(screen.getByText("Test Description")).toBeDefined();
-        expect(screen.getByText("Focus Mode")).toBeDefined();
-        expect(screen.getByText("25:00")).toBeDefined();
+    it("should render task details", async () => {
+        render(
+            <FocusMode
+                task={{ id: 1, title: "Focus Task", description: "Desc", priority: "high" }}
+                userId="user-1"
+                onClose={() => { }}
+            />
+        );
+        expect(screen.getByText("Focus Task")).toBeInTheDocument();
+        expect(screen.getByText("Desc")).toBeInTheDocument();
+        expect(screen.getByText("Focus Mode")).toBeInTheDocument();
+        expect(screen.getByText("25:00")).toBeInTheDocument();
     });
 
     it("should toggle timer on play/pause click", async () => {
-        render(<FocusMode task={mockTask} userId={mockUserId} onClose={mockOnClose} />);
+        render(<FocusMode task={{ id: 1, title: "Focus Task", description: "Desc", priority: "high" }} userId="user-1" onClose={() => { }} />);
 
         const startBtn = screen.getByLabelText("Start Timer");
         fireEvent.click(startBtn);
@@ -63,32 +59,40 @@ describe("FocusMode", () => {
     });
 
     it("should reset timer", () => {
-        render(<FocusMode task={mockTask} userId={mockUserId} onClose={mockOnClose} />);
+        render(<FocusMode task={{ id: 1, title: "Focus Task", description: "Desc", priority: "high" }} userId="user-1" onClose={() => { }} />);
 
         // Start timer
         fireEvent.click(screen.getByLabelText("Start Timer"));
 
         // Reset
         fireEvent.click(screen.getByLabelText("Reset Timer"));
-        expect(screen.getByText("25:00")).toBeDefined();
-        expect(screen.getByText("Ready to start?")).toBeDefined();
+        expect(screen.getByText("25:00")).toBeInTheDocument();
+        expect(screen.getByText("Ready to start?")).toBeInTheDocument();
     });
 
     it("should complete task", async () => {
-        render(<FocusMode task={mockTask} userId={mockUserId} onClose={mockOnClose} />);
+        await db.insert(tasks).values({
+            id: 2, title: "Task To Complete", isCompleted: false, listId: 1, userId: "user-1"
+        } as any);
+
+        const onClose = mock();
+        render(<FocusMode task={{ id: 2, title: "Task To Complete", description: "Desc", priority: "high" }} userId="user-1" onClose={onClose} />);
 
         await act(async () => {
             fireEvent.click(screen.getByLabelText("Complete Task"));
-            // Allow promise to resolve
-            await new Promise(resolve => setTimeout(resolve, 10));
+            await new Promise(resolve => setTimeout(resolve, 100));
         });
 
-        expect(mockUpdateTask).toHaveBeenCalledWith(1, mockUserId, { isCompleted: true });
+        // Verify DB update
+        const task = await db.select().from(tasks).where(eq(tasks.id, 2));
+        expect(task[0].isCompleted).toBe(true);
+        expect(onClose).toHaveBeenCalled();
     });
 
     it("should close on minimize click", () => {
-        render(<FocusMode task={mockTask} userId={mockUserId} onClose={mockOnClose} />);
+        const onClose = mock();
+        render(<FocusMode task={{ id: 1, title: "Focus Task", description: "Desc", priority: "high" }} userId="user-1" onClose={onClose} />);
         fireEvent.click(screen.getByLabelText("Minimize Focus Mode"));
-        expect(mockOnClose).toHaveBeenCalled();
+        expect(onClose).toHaveBeenCalled();
     });
 });

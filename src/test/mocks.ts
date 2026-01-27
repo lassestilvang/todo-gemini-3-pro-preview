@@ -56,6 +56,14 @@ interface MockAuthUser {
     profilePictureUrl: string | null;
 }
 
+export const DEFAULT_MOCK_USER = {
+    id: "test_user_123",
+    email: "test@example.com",
+    firstName: "Test",
+    lastName: "User",
+    profilePictureUrl: null,
+};
+
 export const mockDb: {
     select: () => { from: () => { where: () => Promise<unknown[]>; limit: () => Promise<unknown[]>; orderBy: () => Promise<unknown[]>; execute: () => Promise<unknown[]> } };
     insert: (table: unknown) => { values: (data: unknown) => { returning: () => Promise<unknown[]> } };
@@ -86,8 +94,8 @@ export const mockDb: {
 };
 
 // Use globalThis to ensure the mock state is shared across module boundaries
-const mockState = globalThis as unknown as { __mockAuthUser: MockAuthUser | null };
-mockState.__mockAuthUser = null;
+const mockState = globalThis as unknown as { __mockAuthUser: MockAuthUser | null | typeof DEFAULT_MOCK_USER };
+mockState.__mockAuthUser = DEFAULT_MOCK_USER;
 
 export function setMockAuthUser(user: MockAuthUser | null) {
     mockState.__mockAuthUser = user;
@@ -98,7 +106,7 @@ export function clearMockAuthUser() {
 }
 
 export function getMockAuthUser(): MockAuthUser | null {
-    return mockState.__mockAuthUser;
+    return mockState.__mockAuthUser as MockAuthUser | null;
 }
 
 mock.module("@workos-inc/authkit-nextjs", () => ({

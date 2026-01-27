@@ -2,16 +2,7 @@ import { describe, it, expect, afterEach, mock, beforeAll } from "bun:test";
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import React from "react";
 
-// Mock actions
-const mockGetLists = mock(() => Promise.resolve([]));
-const mockGetLabels = mock(() => Promise.resolve([]));
-
-mock.module("@/lib/actions", () => ({
-    getLists: mockGetLists,
-    getLabels: mockGetLabels,
-    getUserStats: mock(() => Promise.resolve({ xp: 0, level: 1 }))
-}));
-
+// Actions mock removed to prevent pollution
 mock.module("@/lib/auth", () => ({
     getCurrentUser: mock(() => Promise.resolve({ id: "test-user", email: "test@example.com" }))
 }));

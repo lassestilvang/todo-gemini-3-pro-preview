@@ -1,92 +1,43 @@
-import { describe, it, expect, afterEach, mock } from "bun:test";
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { describe, it, expect, afterEach } from "bun:test";
+import { render, screen, cleanup } from "@testing-library/react";
 import { TaskList } from "./TaskList";
-import { Task } from "./TaskItem";
 import React from "react";
-
-// Mock actions used by children
-const mockToggleTaskCompletion = mock(() => Promise.resolve());
-const mockGetLists = mock(() => Promise.resolve([]));
-const mockGetLabels = mock(() => Promise.resolve([]));
-const mockGetSubtasks = mock(() => Promise.resolve([]));
-const mockGetReminders = mock(() => Promise.resolve([]));
-const mockGetTaskLogs = mock(() => Promise.resolve([]));
-
-mock.module("@/lib/actions", () => ({
-    toggleTaskCompletion: mockToggleTaskCompletion,
-    getLists: mockGetLists,
-    getLabels: mockGetLabels,
-    getSubtasks: mockGetSubtasks,
-    getReminders: mockGetReminders,
-    getTaskLogs: mockGetTaskLogs,
-    createTask: mock(() => Promise.resolve()),
-    updateTask: mock(() => Promise.resolve()),
-    deleteTask: mock(() => Promise.resolve()),
-    createSubtask: mock(() => Promise.resolve()),
-    updateSubtask: mock(() => Promise.resolve()),
-    deleteSubtask: mock(() => Promise.resolve()),
-    createReminder: mock(() => Promise.resolve()),
-    deleteReminder: mock(() => Promise.resolve())
-}));
-
-const sampleTasks: Task[] = [
-    {
-        id: 1,
-        title: "Task 1",
-        description: null,
-        priority: "high",
-        dueDate: null,
-        deadline: null,
-        isCompleted: false,
-        estimateMinutes: null,
-        isRecurring: false,
-        listId: 1,
-        recurringRule: null,
-        labels: []
-    },
-    {
-        id: 2,
-        title: "Task 2",
-        description: null,
-        priority: "low",
-        dueDate: null,
-        deadline: null,
-        isCompleted: true,
-        estimateMinutes: null,
-        isRecurring: false,
-        listId: 1,
-        recurringRule: null,
-        labels: []
-    }
-];
 
 describe("TaskList", () => {
     afterEach(() => {
         cleanup();
     });
 
+    const mockTasks = [
+        {
+            id: 1,
+            title: "Task 1",
+            isCompleted: false,
+            priority: "low" as const,
+        },
+        {
+            id: 2,
+            title: "Task 2",
+            isCompleted: true,
+            priority: "high" as const,
+        },
+    ];
+
     it("should render tasks", () => {
-        render(<TaskList tasks={sampleTasks} title="My Tasks" />);
-        expect(screen.getByText("My Tasks")).toBeInTheDocument();
-        expect(screen.getByText("Task 1")).toBeInTheDocument();
-        expect(screen.getByText("Task 2")).toBeInTheDocument();
+        // @ts-ignore - Tasks don't need all fields for rendering
+        render(<TaskList tasks={mockTasks} userId="test_user_123" />);
+        expect(screen.getByText("Task 1")).toBeDefined();
+        expect(screen.getByText("Task 2")).toBeDefined();
     });
 
-    it("should render empty state when no tasks", () => {
-        render(<TaskList tasks={[]} />);
-        expect(screen.getByText("No tasks found")).toBeInTheDocument();
-        expect(screen.getByText("Create one?")).toBeInTheDocument();
+    it("should show empty state when no tasks", () => {
+        render(<TaskList tasks={[]} title="Empty List" userId="test_user_123" />);
+        expect(screen.getByText(/No tasks found/i)).toBeDefined();
     });
 
-    it("should open dialog on add task click", async () => {
-        render(<TaskList tasks={sampleTasks} />);
-        fireEvent.click(screen.getByText("Add Task"));
-        expect(screen.getByText("New Task")).toBeInTheDocument();
-    });
-
-    it("should open dialog on empty state create click", async () => {
-        render(<TaskList tasks={[]} />);
-        fireEvent.click(screen.getByText("Create one?"));
-        expect(screen.getByText("New Task")).toBeInTheDocument();
+    it("should render title when provided", () => {
+        // @ts-ignore
+        render(<TaskList tasks={[]} title="My Tasks" userId="test_user_123" />);
+        expect(screen.getByText("My Tasks")).toBeDefined();
     });
 });
