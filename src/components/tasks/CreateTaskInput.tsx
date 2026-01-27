@@ -118,6 +118,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                         placeholder="Add a task... (try 'Buy milk tomorrow !high @errands')"
                         className="border-0 bg-transparent shadow-none focus-visible:ring-0 text-lg py-6"
                         data-testid="task-input"
+                        aria-label="Create new task"
                     />
 
                     {/* Preview Badges */}
