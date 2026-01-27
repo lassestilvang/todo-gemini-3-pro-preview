@@ -1,0 +1,8 @@
+{
+  "track_id": "calendar_view_20260127",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-01-27T14:30:00Z",
+  "updated_at": "2026-01-27T14:30:00Z",
+  "description": "Implement a visual calendar component for task scheduling and overview, including a grid-based month/week view with drag-and-drop rescheduling."
+}
