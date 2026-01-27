@@ -9,6 +9,7 @@ import {
     withErrorHandling,
     ValidationError,
 } from "./shared";
+import { requireUser } from "@/lib/auth";
 import { logActivity } from "./logs";
 import { cache } from "react";
 import { unstable_cache, revalidateTag } from "next/cache";
@@ -17,6 +18,8 @@ import { unstable_cache, revalidateTag } from "next/cache";
  * Retrieves all custom icons for a specific user.
  */
 export const getCustomIcons = cache(async function getCustomIcons(userId: string) {
+    await requireUser(userId);
+
     const fn = unstable_cache(
         async (id: string) => {
             return await db
@@ -35,6 +38,12 @@ export const getCustomIcons = cache(async function getCustomIcons(userId: string
  * Internal implementation for creating a new custom icon.
  */
 async function createCustomIconImpl(data: typeof customIcons.$inferInsert) {
+    if (!data.userId) {
+        throw new ValidationError("User ID is required", { userId: "User ID cannot be empty" });
+    }
+
+    await requireUser(data.userId);
+
     if (!data.name || data.name.trim().length === 0) {
         throw new ValidationError("Icon name is required", { name: "Name cannot be empty" });
     }
@@ -65,6 +74,8 @@ export const createCustomIcon: (
  * Internal implementation for deleting a custom icon.
  */
 async function deleteCustomIconImpl(id: number, userId: string) {
+    await requireUser(userId);
+
     const currentIcon = await db
         .select()
         .from(customIcons)

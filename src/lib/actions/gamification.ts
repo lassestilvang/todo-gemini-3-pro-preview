@@ -24,6 +24,7 @@ import {
   calculateLevel,
   calculateStreakUpdate,
 } from "./shared";
+import { requireUser } from "@/lib/auth";
 
 /**
  * Retrieves user stats (XP, level, streak) for a specific user.
@@ -33,6 +34,8 @@ import {
  * @returns The user's stats
  */
 export async function getUserStats(userId: string) {
+  await requireUser(userId);
+
   const stats = await db
     .select()
     .from(userStats)
@@ -65,6 +68,8 @@ export async function addXP(userId: string, amount: number) {
  * @returns Object with newXP, newLevel, leveledUp flag, and streak info
  */
 export async function updateUserProgress(userId: string, xpAmount: number) {
+  await requireUser(userId);
+
   const stats = await getUserStats(userId);
 
   // 1. Calculate Streak Update
@@ -239,6 +244,8 @@ export async function getAchievements() {
  * @returns Array of unlocked achievements with details
  */
 export async function getUserAchievements(userId: string) {
+  await requireUser(userId);
+
   const result = await db
     .select({
       achievementId: userAchievements.achievementId,
