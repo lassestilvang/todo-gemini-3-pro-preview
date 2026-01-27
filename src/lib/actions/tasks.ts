@@ -127,7 +127,6 @@ export async function getTasks(
       energyLevel: tasks.energyLevel,
       context: tasks.context,
       isHabit: tasks.isHabit,
-      blockedByCount: sql<number>`(SELECT COUNT(*) FROM ${taskDependencies} WHERE ${taskDependencies.taskId} = ${tasks.id})`,
       listName: lists.name,
       listColor: lists.color,
       listIcon: lists.icon,
@@ -142,7 +141,7 @@ export async function getTasks(
   if (taskIds.length === 0) return [];
 
   /* eslint-disable prefer-const */
-  let [labelsResult, subtasksResult] = await Promise.all([
+  let [labelsResult, subtasksResult, blockedCountsResult] = await Promise.all([
     db
       .select({
         taskId: taskLabels.taskId,
@@ -165,9 +164,22 @@ export async function getTasks(
       })
       .from(tasks)
       .where(inArray(tasks.parentId, taskIds))
-      .orderBy(asc(tasks.isCompleted), asc(tasks.createdAt))
+      .orderBy(asc(tasks.isCompleted), asc(tasks.createdAt)),
+
+    db
+      .select({
+        taskId: taskDependencies.taskId,
+        count: sql<number>`count(*)`,
+      })
+      .from(taskDependencies)
+      .where(inArray(taskDependencies.taskId, taskIds))
+      .groupBy(taskDependencies.taskId),
   ]);
   /* eslint-enable prefer-const */
+
+  const blockedCountMap = new Map(
+    blockedCountsResult.map((r) => [r.taskId, Number(r.count)])
+  );
 
   const tasksWithLabelsAndSubtasks = tasksResult.map((task) => {
     const taskLabelsList = labelsResult
@@ -188,6 +200,7 @@ export async function getTasks(
       subtasks: taskSubtasks,
       subtaskCount: taskSubtasks.length,
       completedSubtaskCount,
+      blockedByCount: blockedCountMap.get(task.id) || 0,
     };
   });
 
@@ -699,6 +712,7 @@ export async function updateSubtask(id: number, userId: string, isCompleted: boo
  *
  * @param id - The subtask ID
  * @param userId - The ID of the user who owns the subtask
+ * @returns ActionResult with void on success or error
  */
 export async function deleteSubtask(id: number, userId: string) {
   await requireUser(userId);

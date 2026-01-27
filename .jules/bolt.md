@@ -20,3 +20,7 @@
 ## 2026-01-26 - CommandDialog Performance Props
 **Learning:** `shadcn/ui` wrapper components like `CommandDialog` often swallow props needed for performance tuning (like `shouldFilter={false}` for `cmdk`).
 **Action:** Extend wrapper components to accept a `commandProps` or similar object to pass through configuration to the underlying primitive, rather than reimplementing the whole wrapper.
+
+## 2026-01-27 - Correlated Subqueries
+**Learning:** Using correlated subqueries (e.g., `(SELECT COUNT(*) ... WHERE outer.id = inner.id)`) in main `SELECT` statements scales poorly (O(N)) for large datasets.
+**Action:** Replace correlated subqueries with a separate parallel query using `GROUP BY` and merge the results in memory using a Map.
