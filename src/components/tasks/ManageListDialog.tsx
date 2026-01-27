@@ -43,10 +43,10 @@ interface ManageListDialogProps {
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
     trigger?: React.ReactNode;
-    authUserId?: string;
+    userId?: string;
 }
 
-export function ManageListDialog({ list, open, onOpenChange, trigger, authUserId }: ManageListDialogProps) {
+export function ManageListDialog({ list, open, onOpenChange, trigger, userId }: ManageListDialogProps) {
     const [internalOpen, setInternalOpen] = useState(false);
 
     const effectiveOpen = open !== undefined ? open : internalOpen;
@@ -81,18 +81,18 @@ export function ManageListDialog({ list, open, onOpenChange, trigger, authUserId
     const formKey = effectiveOpen ? (list ? `edit-${list.id}` : "create") : "closed";
 
     const onSubmit = async (data: any) => {
-        const payload = { ...data, userId: authUserId! };
+        const payload = { ...data, userId: userId! };
 
         if (list) {
-            await executeUpdate(updateList, list.id, authUserId!, data);
+            await executeUpdate(updateList, list.id, userId!, data);
         } else {
             await executeCreate(createList, payload);
         }
     };
 
     const onDelete = async () => {
-        if (list && authUserId) {
-            await deleteList(list.id, authUserId);
+        if (list && userId) {
+            await deleteList(list.id, userId);
             setEffectiveOpen(false);
         }
     };
@@ -107,7 +107,7 @@ export function ManageListDialog({ list, open, onOpenChange, trigger, authUserId
                 <ListForm
                     key={formKey}
                     list={list}
-                    authUserId={authUserId}
+                    userId={userId}
                     onSubmit={onSubmit}
                     onDelete={onDelete}
                     onCancel={() => setEffectiveOpen(false)}
@@ -126,14 +126,14 @@ interface ListFormProps {
         icon: string | null;
         description?: string | null;
     };
-    authUserId?: string;
+    userId?: string;
     onSubmit: (data: any) => Promise<void>;
     onDelete: () => Promise<void>;
     onCancel: () => void;
     isLoading: boolean;
 }
 
-function ListForm({ list, authUserId, onSubmit, onDelete, onCancel, isLoading }: ListFormProps) {
+function ListForm({ list, userId, onSubmit, onDelete, onCancel, isLoading }: ListFormProps) {
     const [name, setName] = useState(list?.name || "");
     const [color, setColor] = useState(list?.color || COLORS[0]);
     const [icon, setIcon] = useState(list?.icon || "list");
@@ -201,7 +201,7 @@ function ListForm({ list, authUserId, onSubmit, onDelete, onCancel, isLoading }:
                 <IconPicker
                     value={icon}
                     onChange={setIcon}
-                    userId={authUserId}
+                    userId={userId}
                 />
             </div>
 

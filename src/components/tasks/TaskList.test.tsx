@@ -24,7 +24,7 @@ describe("TaskList", () => {
     ];
 
     it("should render tasks", () => {
-        // @ts-ignore - Tasks don't need all fields for rendering
+        // @ts-expect-error - Tasks don't need all fields for rendering
         render(<TaskList tasks={mockTasks} userId="test_user_123" />);
         expect(screen.getByText("Task 1")).toBeDefined();
         expect(screen.getByText("Task 2")).toBeDefined();
@@ -36,7 +36,7 @@ describe("TaskList", () => {
     });
 
     it("should render title when provided", () => {
-        // @ts-ignore
+        // @ts-expect-error - Tasks don't need all fields for rendering
         render(<TaskList tasks={[]} title="My Tasks" userId="test_user_123" />);
         expect(screen.getByText("My Tasks")).toBeDefined();
     });

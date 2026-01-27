@@ -3,7 +3,7 @@
  * @description Server Actions for list management including CRUD operations.
  * Lists are used to organize tasks into categories (e.g., Inbox, Work, Personal).
  */
-// "use server";
+"use server";
 
 import {
   db,

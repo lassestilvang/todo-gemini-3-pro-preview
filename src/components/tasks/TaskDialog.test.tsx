@@ -116,7 +116,7 @@ describe("TaskDialog", () => {
     });
 
     it("should call deleteTask on delete via dispatch", async () => {
-        // @ts-ignore
+        // @ts-expect-error - Task object is simplified for testing
         render(<TaskDialog open={true} task={sampleTask} userId="test_user_123" />);
 
         const deleteBtn = screen.getByText("Delete");
