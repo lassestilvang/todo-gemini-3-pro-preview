@@ -115,14 +115,14 @@ jobs:
           project_id: ${{ secrets.NEON_PROJECT_ID }}
           api_key: ${{ secrets.NEON_API_KEY }}
           branch_name: preview/${{ github.head_ref }}
-          username: neondb_owner
+          database: neondb
           suspend_timeout: 0
 
       - name: Setup Database (PR)
         if: github.event_name == 'pull_request' && steps.neon-branch.outputs.db_url != ''
         run: bun run db:migrate:ci
         env:
-          DATABASE_URL: ${{ steps.neon-branch.outputs.db_url_with_pooler }}
+          DATABASE_URL: ${{ steps.neon-branch.outputs.db_url_pooled || steps.neon-branch.outputs.db_url }}
 
       - name: Setup Database (Main)
         if: github.event_name == 'push'
@@ -133,7 +133,7 @@ jobs:
       - name: Build
         run: bun run build
         env:
-          DATABASE_URL: ${{ steps.neon-branch.outputs.db_url_with_pooler || secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ steps.neon-branch.outputs.db_url_pooled || steps.neon-branch.outputs.db_url }}
           WORKOS_API_KEY: ${{ secrets.WORKOS_API_KEY }}
           WORKOS_CLIENT_ID: ${{ secrets.WORKOS_CLIENT_ID }}
           WORKOS_COOKIE_PASSWORD: ${{ secrets.WORKOS_COOKIE_PASSWORD }}
@@ -186,14 +186,14 @@ jobs:
           project_id: ${{ secrets.NEON_PROJECT_ID }}
           api_key: ${{ secrets.NEON_API_KEY }}
           branch_name: preview/${{ github.head_ref }}
-          username: neondb_owner
+          database: neondb
           suspend_timeout: 0
 
       - name: Setup Database (PR)
         if: github.event_name == 'pull_request' && steps.neon-branch.outputs.db_url != ''
         run: bun run db:migrate:ci
         env:
-          DATABASE_URL: ${{ steps.neon-branch.outputs.db_url_with_pooler }}
+          DATABASE_URL: ${{ steps.neon-branch.outputs.db_url_pooled || steps.neon-branch.outputs.db_url }}
 
       - name: Setup Database (Main)
         if: github.event_name == 'push'
@@ -204,7 +204,7 @@ jobs:
       - name: Run E2E Tests
         run: bunx playwright test --shard=${{ matrix.shard }}
         env:
-          DATABASE_URL: ${{ steps.neon-branch.outputs.db_url_with_pooler || secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ steps.neon-branch.outputs.db_url_pooled || steps.neon-branch.outputs.db_url }}
           E2E_TEST_MODE: "true"
           CI: true
           WORKOS_API_KEY: ${{ secrets.WORKOS_API_KEY }}
