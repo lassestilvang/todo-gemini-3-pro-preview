@@ -179,7 +179,19 @@ export async function getAnalytics(userId: string) {
             )
             .orderBy(desc(timeEntries.startedAt));
 
-        const totalTrackedMinutes = allTimeEntries.reduce((sum, e) => sum + (e.durationMinutes || 0), 0);
+        // PERF: Single-pass aggregation for time entries.
+        // Original code did 7 × O(n) filtering (one per day). This reduces to O(n) with hash map.
+        // For users with 500+ time entries, this is ~7x faster.
+        let totalTrackedMinutes = 0;
+        const minutesByDate = new Map<string, number>();
+        
+        for (const entry of allTimeEntries) {
+            const duration = entry.durationMinutes || 0;
+            totalTrackedMinutes += duration;
+            const dateKey = format(new Date(entry.startedAt), "yyyy-MM-dd");
+            minutesByDate.set(dateKey, (minutesByDate.get(dateKey) || 0) + duration);
+        }
+        
         // Use pre-computed total from single-pass loop - avoids redundant O(n) filter
         const totalEstimatedMinutes = allTasksEstimateTotal;
 
@@ -187,20 +199,12 @@ export async function getAnalytics(userId: string) {
             ? Math.round((totalTrackedMinutes / totalEstimatedMinutes) * 100)
             : 0;
 
-        // Daily tracked time (last 7 days)
+        // Daily tracked time (last 7 days) - O(7) lookups from pre-computed hash map
         const dailyTracked: { date: string; minutes: number; formatted: string }[] = [];
         for (let i = 6; i >= 0; i--) {
             const day = subDays(now, i);
-            const dayStart = startOfDay(day);
-            const dayEnd = new Date(dayStart);
-            dayEnd.setHours(23, 59, 59, 999);
-
-            const minutes = allTimeEntries
-                .filter(e => {
-                    const startedAt = new Date(e.startedAt);
-                    return startedAt >= dayStart && startedAt <= dayEnd;
-                })
-                .reduce((sum, e) => sum + (e.durationMinutes || 0), 0);
+            const dateKey = format(day, "yyyy-MM-dd");
+            const minutes = minutesByDate.get(dateKey) || 0;
 
             const hours = Math.floor(minutes / 60);
             const mins = minutes % 60;
