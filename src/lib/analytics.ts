@@ -60,6 +60,10 @@ export async function getAnalytics(userId: string) {
     let timeTrackingCount = 0;
     let totalEstimateMinutes = 0;
     let totalActualMinutes = 0;
+    
+    // Accumulator for total estimated minutes (for time tracking accuracy)
+    // Moved here to avoid redundant O(n) filter after main loop
+    let allTasksEstimateTotal = 0;
 
     // Single pass through all tasks
     for (const t of allTasks) {
@@ -87,11 +91,16 @@ export async function getAnalytics(userId: string) {
             if (t.isCompleted) energyCompleted.low++;
         }
 
-        // Time tracking averages
+        // Time tracking averages (for tasks with both estimate and actual)
         if (t.estimateMinutes && t.actualMinutes) {
             timeTrackingCount++;
             totalEstimateMinutes += t.estimateMinutes;
             totalActualMinutes += t.actualMinutes;
+        }
+        
+        // Total estimated minutes (for accuracy calculation)
+        if (t.estimateMinutes) {
+            allTasksEstimateTotal += t.estimateMinutes;
         }
 
         // Date-based aggregations (only for last 90 days to cover heatmap + 30-day chart)
@@ -171,9 +180,8 @@ export async function getAnalytics(userId: string) {
             .orderBy(desc(timeEntries.startedAt));
 
         const totalTrackedMinutes = allTimeEntries.reduce((sum, e) => sum + (e.durationMinutes || 0), 0);
-        const totalEstimatedMinutes = allTasks
-            .filter(t => t.estimateMinutes)
-            .reduce((sum, t) => sum + (t.estimateMinutes || 0), 0);
+        // Use pre-computed total from single-pass loop - avoids redundant O(n) filter
+        const totalEstimatedMinutes = allTasksEstimateTotal;
 
         const accuracyPercent = totalEstimatedMinutes > 0
             ? Math.round((totalTrackedMinutes / totalEstimatedMinutes) * 100)
