@@ -377,7 +377,7 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity absolute right-4 top-1/2 -translate-y-1/2 z-20 h-8 w-8"
+                    className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity absolute right-4 top-1/2 -translate-y-1/2 z-20 h-8 w-8"
                     onClick={(e) => {
                         e.stopPropagation();
                         e.preventDefault();
