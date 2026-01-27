@@ -133,7 +133,7 @@ jobs:
       - name: Build
         run: bun run build
         env:
-          DATABASE_URL: ${{ steps.neon-branch.outputs.db_url_pooled || steps.neon-branch.outputs.db_url }}
+          DATABASE_URL: ${{ github.event_name == 'pull_request' && (steps.neon-branch.outputs.db_url_pooled || steps.neon-branch.outputs.db_url) || secrets.DATABASE_URL }}
           WORKOS_API_KEY: ${{ secrets.WORKOS_API_KEY }}
           WORKOS_CLIENT_ID: ${{ secrets.WORKOS_CLIENT_ID }}
           WORKOS_COOKIE_PASSWORD: ${{ secrets.WORKOS_COOKIE_PASSWORD }}
@@ -204,7 +204,7 @@ jobs:
       - name: Run E2E Tests
         run: bunx playwright test --shard=${{ matrix.shard }}
         env:
-          DATABASE_URL: ${{ steps.neon-branch.outputs.db_url_pooled || steps.neon-branch.outputs.db_url }}
+          DATABASE_URL: ${{ github.event_name == 'pull_request' && (steps.neon-branch.outputs.db_url_pooled || steps.neon-branch.outputs.db_url) || secrets.DATABASE_URL }}
           E2E_TEST_MODE: "true"
           CI: true
           WORKOS_API_KEY: ${{ secrets.WORKOS_API_KEY }}

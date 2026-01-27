@@ -13,7 +13,7 @@ mock.module("sonner", () => ({
 // Mock window.confirm
 const originalConfirm = globalThis.confirm;
 
-import { db, templates } from "@/db";
+import { db, templates, users } from "@/db";
 import { setupTestDb, resetTestDb } from "@/test/setup";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -27,6 +27,14 @@ describe("TemplateManager", () => {
     await setupTestDb();
     await resetTestDb();
     globalThis.confirm = mock(() => true);
+
+    // Create user first to satisfy FK constraint
+    await db.insert(users).values({
+      id: "test_user_123",
+      email: "test@example.com",
+      firstName: "Test",
+      lastName: "User",
+    });
 
     // Seed templates
     await db.insert(templates).values([

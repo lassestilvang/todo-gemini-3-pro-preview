@@ -180,8 +180,16 @@ mock.module("next/navigation", () => ({
     notFound: mock(() => { }),
 }));
 
+// Mock next/dynamic
 mock.module("next/dynamic", () => ({
     default: (fn: any) => (props: any) => <div data-testid="dynamic-component" {...props} />
+}));
+
+// Mock next/cache
+mock.module("next/cache", () => ({
+    revalidatePath: mock(() => { }),
+    revalidateTag: mock(() => { }),
+    unstable_cache: mock((fn) => fn),
 }));
 
 // Initialize DB schema once for all tests
