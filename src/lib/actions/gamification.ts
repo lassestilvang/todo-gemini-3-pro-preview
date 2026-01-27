@@ -159,47 +159,32 @@ export async function checkAchievements(
   currentXP: number,
   currentStreak: number,
 ) {
-  // PERF: Execute all 4 queries in parallel using Promise.all.
-  // These queries are independent and can run concurrently, reducing total latency
-  // from 4 sequential roundtrips (~80-120ms each) to 1 parallel batch (~80-120ms total).
-  // This is ~4x faster for achievement checks on task completion.
+  // PERF: Execute queries in parallel.
+  // We combine total and daily counts into a single query to reduce DB roundtrips.
   const todayStart = startOfDay(new Date());
   const todayEnd = endOfDay(new Date());
 
-  const [allAchievements, unlocked, completedTasks, completedToday] =
-    await Promise.all([
-      // Get all achievements
-      db.select().from(achievements),
-
-      // Get unlocked achievements for this user
-      db
-        .select()
-        .from(userAchievements)
-        .where(eq(userAchievements.userId, userId)),
-
-      // Get total tasks completed by this user
-      db
-        .select({ count: sql<number>`count(*)` })
-        .from(tasks)
-        .where(and(eq(tasks.userId, userId), eq(tasks.isCompleted, true))),
-
-      // Get tasks completed today for "Hat Trick"
-      db
-        .select({ count: sql<number>`count(*)` })
-        .from(tasks)
-        .where(
-          and(
-            eq(tasks.userId, userId),
-            eq(tasks.isCompleted, true),
-            gte(tasks.completedAt, todayStart),
-            lte(tasks.completedAt, todayEnd),
-          ),
-        ),
-    ]);
+  const [
+    allAchievements,
+    unlocked,
+    [taskCounts]
+  ] = await Promise.all([
+    // Get all achievements
+    db.select().from(achievements),
+    // Get unlocked achievements for this user
+    db.select().from(userAchievements).where(eq(userAchievements.userId, userId)),
+    // Get total and daily completed task counts in one query
+    db.select({
+      totalCompleted: sql<number>`count(*)`,
+      dailyCompleted: sql<number>`count(case when ${and(gte(tasks.completedAt, todayStart), lte(tasks.completedAt, todayEnd))} then 1 else null end)`
+    })
+      .from(tasks)
+      .where(and(eq(tasks.userId, userId), eq(tasks.isCompleted, true)))
+  ]);
 
   const unlockedIds = new Set(unlocked.map((u) => u.achievementId));
-  const totalCompleted = completedTasks[0].count;
-  const dailyCompleted = completedToday[0].count;
+  const totalCompleted = taskCounts?.totalCompleted || 0;
+  const dailyCompleted = taskCounts?.dailyCompleted || 0;
 
   for (const achievement of allAchievements) {
     if (unlockedIds.has(achievement.id)) continue;
