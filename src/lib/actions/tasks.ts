@@ -712,7 +712,6 @@ export async function updateSubtask(id: number, userId: string, isCompleted: boo
  *
  * @param id - The subtask ID
  * @param userId - The ID of the user who owns the subtask
- * @returns ActionResult with void on success or error
  */
 export async function deleteSubtask(id: number, userId: string) {
   await requireUser(userId);
