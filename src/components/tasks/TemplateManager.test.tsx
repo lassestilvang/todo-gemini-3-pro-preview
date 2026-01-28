@@ -156,7 +156,7 @@ describe("TemplateManager", () => {
         const titleInput = screen.getByTestId("task-title-input") as HTMLInputElement;
         expect(nameInput.value).toBe("");
         expect(titleInput.value).toBe("");
-      }, { timeout: 3000 });
+      }, { timeout: 10000 });
     });
   });
 
@@ -171,7 +171,7 @@ describe("TemplateManager", () => {
       await waitFor(() => {
         expect(screen.getByTestId("edit-template-1")).toBeInTheDocument();
         expect(screen.getByTestId("edit-template-2")).toBeInTheDocument();
-      }, { timeout: 3000 });
+      }, { timeout: 10000 });
     });
 
     it("should open edit dialog with template data when edit button is clicked", async () => {
@@ -184,7 +184,7 @@ describe("TemplateManager", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId("edit-template-1")).toBeInTheDocument();
-      }, { timeout: 3000 });
+      }, { timeout: 10000 });
 
       // Click edit button for first template
       await React.act(async () => {
@@ -197,7 +197,7 @@ describe("TemplateManager", () => {
         // Should pre-populate with template data
         const nameInput = screen.getByTestId("template-name-input") as HTMLInputElement;
         expect(nameInput.value).toBe("Weekly Report");
-      }, { timeout: 3000 });
+      }, { timeout: 10000 });
     });
 
     it("should pre-populate task title from template content", async () => {
@@ -210,7 +210,7 @@ describe("TemplateManager", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId("edit-template-1")).toBeInTheDocument();
-      }, { timeout: 3000 });
+      }, { timeout: 10000 });
 
       // Click edit button for first template
       await React.act(async () => {

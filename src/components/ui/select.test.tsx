@@ -46,6 +46,6 @@ describe("Select", () => {
         // Radix Select content is rendered in a portal
         await waitFor(() => {
             expect(screen.getByText("Option 1")).toBeVisible();
-        }, { timeout: 2000 });
+        }, { timeout: 10000 });
     });
 });

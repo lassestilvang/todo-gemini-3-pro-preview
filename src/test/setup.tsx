@@ -12,6 +12,58 @@ GlobalRegistrator.register();
 // Extend expect with jest-dom matchers
 expect.extend(matchers);
 
+// Mock ResizeObserver
+global.ResizeObserver = class ResizeObserver {
+    observe() { }
+    unobserve() { }
+    disconnect() { }
+};
+
+// Mock PointerEvent
+if (!global.PointerEvent) {
+    class MockPointerEvent extends Event {
+        button: number;
+        ctrlKey: boolean;
+        shiftKey: boolean;
+        altKey: boolean;
+        metaKey: boolean;
+        key: string;
+        keyCode: number;
+        clientX: number;
+        clientY: number;
+        screenX: number;
+        screenY: number;
+        pageX: number;
+        pageY: number;
+        pointerId: number;
+        pointerType: string;
+        isPrimary: boolean;
+        pressure: number;
+
+        constructor(type: string, props: PointerEventInit = {}) {
+            super(type, props);
+            this.button = props.button || 0;
+            this.ctrlKey = props.ctrlKey || false;
+            this.shiftKey = props.shiftKey || false;
+            this.altKey = props.altKey || false;
+            this.metaKey = props.metaKey || false;
+            this.key = props.key || "";
+            this.keyCode = props.keyCode || 0;
+            this.clientX = props.clientX || 0;
+            this.clientY = props.clientY || 0;
+            this.screenX = props.screenX || 0;
+            this.screenY = props.screenY || 0;
+            this.pageX = props.pageX || 0;
+            this.pageY = props.pageY || 0;
+            this.pointerId = props.pointerId || 0;
+            this.pointerType = props.pointerType || "mouse";
+            this.isPrimary = props.isPrimary || false;
+            this.pressure = props.pressure || 0;
+        }
+    }
+    (global as any).PointerEvent = MockPointerEvent;
+}
+
 import { DEFAULT_MOCK_USER, setMockAuthUser } from "./mocks";
 
 beforeEach(() => {
