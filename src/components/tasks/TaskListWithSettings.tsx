@@ -600,18 +600,22 @@ export function TaskListWithSettings({
                                     </div>
                                 </SortableContext>
                                 <DragOverlay>
-                                    {activeId ? (
-                                        <div className="opacity-90 rotate-2 scale-105 cursor-grabbing">
-                                            <TaskItem
-                                                task={displayTasks.find(t => t.id === activeId)!}
-                                                showListInfo={!listId}
-                                                userId={userId}
-                                                disableAnimations={true}
-                                                dispatch={dispatch}
-                                                onEdit={() => handleEdit(task)}
-                                            />
-                                        </div>
-                                    ) : null}
+                                    {activeId ? (() => {
+                                        const activeTask = displayTasks.find(t => t.id === activeId);
+                                        if (!activeTask) return null;
+                                        return (
+                                            <div className="opacity-90 rotate-2 scale-105 cursor-grabbing">
+                                                <TaskItem
+                                                    task={activeTask}
+                                                    showListInfo={!listId}
+                                                    userId={userId}
+                                                    disableAnimations={true}
+                                                    dispatch={dispatch}
+                                                    onEdit={() => handleEdit(activeTask)}
+                                                />
+                                            </div>
+                                        );
+                                    })() : null}
                                 </DragOverlay>
                             </DndContext>
                         )
@@ -630,7 +634,6 @@ export function TaskListWithSettings({
                                         <div
                                             key={task.id}
                                             className="rounded-lg transition-all"
-                                            className="rounded-lg transition-all"
                                         >
                                             <TaskItem
                                                 task={task}
@@ -638,7 +641,7 @@ export function TaskListWithSettings({
                                                 userId={userId}
                                                 disableAnimations={true}
                                                 dispatch={dispatch}
-                                            onEdit={() => handleEdit(task)}
+                                                onEdit={() => handleEdit(task)}
                                             />
                                         </div>
                                     );
