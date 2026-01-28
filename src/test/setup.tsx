@@ -86,7 +86,7 @@ mock.module("@/lib/auth", () => ({
 // Mock SyncProvider with a dummy dispatch that does nothing by default
 // Individual tests can spy on it or override it if needed.
 mock.module("@/components/providers/sync-provider", () => ({
-    SyncProvider: ({ children }: any) => React.createElement(React.Fragment, null, children),
+    SyncProvider: ({ children }: any) => <>{children}</>,
     useSync: () => ({
         isOnline: true,
         lastSynced: new Date(),
@@ -112,7 +112,7 @@ mock.module("next/navigation", () => ({
 
 // Mock next/dynamic
 mock.module("next/dynamic", () => ({
-    default: (fn: any) => (props: any) => React.createElement("div", { "data-testid": "dynamic-component", ...props })
+    default: (fn: any) => (props: any) => <div data-testid="dynamic-component" {...props} />
 }));
 
 /**
