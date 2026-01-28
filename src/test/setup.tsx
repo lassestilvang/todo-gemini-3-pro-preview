@@ -152,6 +152,21 @@ mock.module("@/components/providers/sync-provider", () => ({
     }),
 }));
 
+// Mock next/navigation
+mock.module("next/navigation", () => ({
+    useRouter: () => ({ push: mock(() => { }), back: mock(() => { }), replace: mock(() => { }), refresh: mock(() => { }) }),
+    usePathname: () => "/",
+    useSearchParams: () => new URLSearchParams(),
+    redirect: mock(() => { }),
+    permanentRedirect: mock(() => { }),
+    notFound: mock(() => { }),
+}));
+
+// Mock next/dynamic
+mock.module("next/dynamic", () => ({
+    default: (fn: any) => (props: any) => <div data-testid="dynamic-component" {...props} />
+}));
+
 /**
  * Setup database schema for tests.
  */
@@ -217,36 +232,4 @@ afterEach(async () => {
     await resetTestDb();
     clearMockAuthUser();
 });
-
-// Mock sonner toast
-mock.module("sonner", () => ({
-    toast: {
-        success: mock(() => { }),
-        error: mock(() => { }),
-    },
-}));
-
-// Mock next/navigation
-mock.module("next/navigation", () => ({
-    useRouter: () => ({ push: mock(() => { }), back: mock(() => { }), replace: mock(() => { }), refresh: mock(() => { }) }),
-    usePathname: () => "/",
-    useSearchParams: () => new URLSearchParams(),
-    redirect: mock(() => { }),
-    permanentRedirect: mock(() => { }),
-    notFound: mock(() => { }),
-}));
-
-// Mock next/dynamic
-mock.module("next/dynamic", () => ({
-    default: (fn: any) => (props: any) => <div data-testid="dynamic-component" {...props} />
-}));
-
-// Mock next/cache
-mock.module("next/cache", () => ({
-    revalidatePath: mock(() => { }),
-    revalidateTag: mock(() => { }),
-    unstable_cache: mock((fn) => fn),
-}));
-
-// Initialize DB schema once for all tests
 setupTestDb();

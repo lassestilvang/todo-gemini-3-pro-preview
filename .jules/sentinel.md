@@ -12,3 +12,8 @@
 **Vulnerability:** `updateUserPreferences`, `custom-icons` actions, and `gamification` read actions were missing `requireUser` checks, allowing IDOR.
 **Learning:** Even "read-only" or "preference" actions are sensitive. The existence of `requireUser` in the codebase does not guarantee its usage.
 **Prevention:** Audit all "use server" functions. Enforce a lint rule or code review checklist that requires `requireUser` or explicit public access comment for every exported server action.
+
+## 2026-10-26 - [Critical] IDOR in Gamification Logic
+**Vulnerability:** `checkAchievements` in `src/lib/actions/gamification.ts` was a public Server Action missing `requireUser` check, allowing unauthorized users to trigger achievement checks (and potential unlocking) for arbitrary users.
+**Learning:** Logic functions exported as Server Actions must explicitly validate `userId` even if they seem like internal helpers. If it has `"use server"` at the file top, *everything* exported is public.
+**Prevention:** Audit all exported functions in `"use server"` files. Prefer keeping internal logic in separate files without `"use server"` or explicitly unexported.

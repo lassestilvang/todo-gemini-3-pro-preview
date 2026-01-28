@@ -164,6 +164,8 @@ export async function checkAchievements(
   currentXP: number,
   currentStreak: number,
 ) {
+  await requireUser(userId);
+
   // PERF: Execute queries in parallel.
   // We combine total and daily counts into a single query to reduce DB roundtrips.
   const todayStart = startOfDay(new Date());
