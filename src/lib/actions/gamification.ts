@@ -191,7 +191,7 @@ export async function checkAchievements(
   const totalCompleted = taskCounts?.totalCompleted || 0;
   const dailyCompleted = taskCounts?.dailyCompleted || 0;
 
-  const newAchievements = [];
+  const newAchievements: (typeof achievements.$inferSelect)[] = [];
   let totalXpReward = 0;
 
   for (const achievement of allAchievements) {
