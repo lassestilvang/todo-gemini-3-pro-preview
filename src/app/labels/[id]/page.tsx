@@ -1,9 +1,8 @@
-import { getLabel, getTasks, getViewSettings } from "@/lib/actions";
+import { getLabel } from "@/lib/actions";
 import { getCurrentUser } from "@/lib/auth";
 import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
 import { CreateTaskInput } from "@/components/tasks/CreateTaskInput";
 import { notFound, redirect } from "next/navigation";
-import { defaultViewSettings } from "@/lib/view-settings";
 import { ManageLabelDialog } from "@/components/tasks/ManageLabelDialog";
 import { Button } from "@/components/ui/button";
 import { Settings2 } from "lucide-react";
@@ -25,26 +24,13 @@ export default async function LabelPage({ params }: LabelPageProps) {
     const labelId = parseInt(id);
     if (isNaN(labelId)) return notFound();
 
-    const [label, tasks, savedSettings] = await Promise.all([
-        getLabel(labelId, user.id),
-        getTasks(user.id, undefined, undefined, labelId),
-        getViewSettings(user.id, `label-${labelId}`)
-    ]);
+    const label = await getLabel(labelId, user.id);
 
     if (!label) return notFound();
 
-    const initialSettings = savedSettings ? {
-        layout: savedSettings.layout || defaultViewSettings.layout,
-        showCompleted: savedSettings.showCompleted ?? defaultViewSettings.showCompleted,
-        groupBy: savedSettings.groupBy || defaultViewSettings.groupBy,
-        sortBy: savedSettings.sortBy || defaultViewSettings.sortBy,
-        sortOrder: savedSettings.sortOrder || defaultViewSettings.sortOrder,
-        filterDate: savedSettings.filterDate || defaultViewSettings.filterDate,
-        filterPriority: savedSettings.filterPriority,
-        filterLabelId: savedSettings.filterLabelId,
-        filterEnergyLevel: savedSettings.filterEnergyLevel ?? defaultViewSettings.filterEnergyLevel,
-        filterContext: savedSettings.filterContext ?? defaultViewSettings.filterContext,
-    } : undefined;
+    // OPTIM: Removed blocking task fetch
+    const tasks: any[] = [];
+    const initialSettings = undefined;
 
     return (
         <div className="container max-w-4xl py-6 lg:py-10">

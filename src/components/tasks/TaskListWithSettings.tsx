@@ -321,7 +321,7 @@ export function TaskListWithSettings({
     const { dispatch } = useSync();
 
     // Global Store Integration
-    const { tasks: storeTasksFn, setTasks, initialize } = useTaskStore();
+    const { tasks: storeTasksFn, setTasks, initialize, isInitialized } = useTaskStore();
 
     // Hydrate store from props if provided (Server Side props)
     useEffect(() => {
@@ -527,7 +527,7 @@ export function TaskListWithSettings({
     };
 
 
-    if (!mounted) {
+    if (!mounted || !isInitialized) {
         return <div className="space-y-4 animate-pulse">
             <div className="h-10 bg-muted rounded-lg w-full" />
             <div className="h-64 bg-muted rounded-lg w-full" />

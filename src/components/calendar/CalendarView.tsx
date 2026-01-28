@@ -32,6 +32,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+import { useTaskStore } from "@/lib/store/task-store";
+import { useEffect } from "react";
+
 interface Task {
   id: number;
   title: string;
@@ -46,6 +49,25 @@ interface CalendarViewProps {
 }
 
 export function CalendarView({ tasks }: CalendarViewProps) {
+  const { tasks: storeTasks, initialize, isInitialized } = useTaskStore();
+
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+
+  // Use props if provided (SSR), otherwise fallback to store (Client Hydration)
+  const displayTasks = useMemo(() => {
+    if (tasks && tasks.length > 0) return tasks;
+    // Map store tasks to Calendar Task interface
+    return Object.values(storeTasks).map(t => ({
+      id: t.id,
+      title: t.title,
+      dueDate: t.dueDate ? new Date(t.dueDate) : null,
+      isCompleted: !!t.isCompleted, // Ensure boolean
+      priority: (t.priority ?? "none") as "none" | "low" | "medium" | "high",
+      energyLevel: t.energyLevel ?? null // Ensure string | null
+    }));
+  }, [tasks, storeTasks]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const { getWeekStartDay } = useUser();
@@ -80,7 +102,7 @@ export function CalendarView({ tasks }: CalendarViewProps) {
   // resulting in O(n*days) complexity. This reduces it to O(n) total preprocessing.
   const tasksByDate = useMemo(() => {
     const map = new Map<string, Task[]>();
-    for (const task of tasks) {
+    for (const task of displayTasks) {
       if (!task.dueDate) continue;
       const dateKey = format(new Date(task.dueDate), "yyyy-MM-dd");
       const existing = map.get(dateKey);
@@ -91,11 +113,15 @@ export function CalendarView({ tasks }: CalendarViewProps) {
       }
     }
     return map;
-  }, [tasks]);
+  }, [displayTasks]);
 
   const getTasksForDay = (date: Date): Task[] => {
     return tasksByDate.get(format(date, "yyyy-MM-dd")) || [];
   };
+
+  if (!isInitialized && tasks.length === 0) {
+    return <div className="flex-1 min-h-0 w-full animate-pulse bg-muted rounded-lg" />;
+  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-100px)]">
@@ -212,17 +238,17 @@ export function CalendarView({ tasks }: CalendarViewProps) {
                                 ? "bg-muted text-muted-foreground line-through border-transparent"
                                 : "bg-background border-l-2 shadow-sm",
                               !task.isCompleted &&
-                                task.priority === "high" &&
-                                "border-l-red-500",
+                              task.priority === "high" &&
+                              "border-l-red-500",
                               !task.isCompleted &&
-                                task.priority === "medium" &&
-                                "border-l-yellow-500",
+                              task.priority === "medium" &&
+                              "border-l-yellow-500",
                               !task.isCompleted &&
-                                task.priority === "low" &&
-                                "border-l-blue-500",
+                              task.priority === "low" &&
+                              "border-l-blue-500",
                               !task.isCompleted &&
-                                task.priority === "none" &&
-                                "border-l-gray-300",
+                              task.priority === "none" &&
+                              "border-l-gray-300",
                             )}
                           >
                             {task.isCompleted ? (

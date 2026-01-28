@@ -1,4 +1,4 @@
-import { getTasks } from "@/lib/actions";
+
 import { getCurrentUser } from "@/lib/auth";
 import dynamic from "next/dynamic";
 const CalendarView = dynamic(() => import("@/components/calendar/CalendarView").then(mod => mod.CalendarView), {
@@ -15,11 +15,8 @@ export default async function CalendarPage() {
     // Fetch all tasks to display on the calendar
     // In a real app with thousands of tasks, we'd want to fetch by date range
     // But for this scale, fetching all is fine and allows for smooth client-side navigation
-    const tasks = (await getTasks(user.id, undefined, "all")).map(t => ({
-        ...t,
-        isCompleted: t.isCompleted ?? false,
-        priority: (t.priority || "none") as "none" | "low" | "medium" | "high"
-    }));
+    // OPTIM: Hydrate from client store
+    const tasks: any[] = [];
 
     return (
         <div className="container mx-auto p-6 h-full flex flex-col">

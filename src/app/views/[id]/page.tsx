@@ -31,7 +31,8 @@ export default async function SavedViewPage({ params }: { params: { id: string }
     // This is simplified; true complex filtering might need a dedicated action
     // But for now, we'll fetch all tasks and let the client-side filtering handle it
     // just like Inbox/Today does.
-    const tasks = await getTasks(user.id);
+    // OPTIM: Hydrate from client store
+    const tasks: any[] = [];
 
     return (
         <div className="container max-w-4xl py-6 lg:py-10">
