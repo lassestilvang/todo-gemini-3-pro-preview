@@ -7,6 +7,18 @@ export interface PendingAction {
     status: 'pending' | 'processing' | 'failed';
     retryCount: number;
     error?: string;
+    conflict?: {
+        serverData: any;
+        localData: any;
+    };
+}
+
+export interface ConflictInfo {
+    actionId: string;
+    actionType: string;
+    serverData: any;
+    localData: any;
+    timestamp: number;
 }
 
 export type SyncStatus = 'online' | 'offline' | 'syncing' | 'error';

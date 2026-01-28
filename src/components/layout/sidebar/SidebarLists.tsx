@@ -1,7 +1,7 @@
 "use client";
 
 
-import React, { useState, useEffect, memo } from "react";
+import React, { useState, useEffect, memo, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -30,6 +30,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { reorderLists } from "@/lib/actions";
+import { useListStore } from "@/lib/store/list-store";
 
 type List = {
     id: number;
@@ -37,6 +38,7 @@ type List = {
     color: string | null;
     icon: string | null;
     slug: string;
+    position?: number;
 };
 
 interface SidebarListsProps {
@@ -112,15 +114,23 @@ const SortableListItem = memo(function SortableListItem({
     );
 });
 
-export function SidebarLists({ lists, userId }: SidebarListsProps) {
+export function SidebarLists({ lists: ssrLists, userId }: SidebarListsProps) {
     const pathname = usePathname();
-    const [items, setItems] = useState(lists);
+    const storeLists = useListStore(state => state.lists);
+    const setStoreLists = useListStore(state => state.setLists);
     const [isReordering, setIsReordering] = useState(false);
 
-    // Sync items when props change (server update)
+    // Sync SSR props to store on mount/change (hydration)
     useEffect(() => {
-        setItems(lists);
-    }, [lists]);
+        if (ssrLists.length > 0) {
+            setStoreLists(ssrLists);
+        }
+    }, [ssrLists, setStoreLists]);
+
+    // Derive sorted items from store
+    const items = useMemo(() => {
+        return Object.values(storeLists).sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+    }, [storeLists]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -137,22 +147,23 @@ export function SidebarLists({ lists, userId }: SidebarListsProps) {
         const { active, over } = event;
 
         if (over && active.id !== over.id) {
-            setItems((items) => {
-                const oldIndex = items.findIndex((item) => item.id === active.id);
-                const newIndex = items.findIndex((item) => item.id === over.id);
+            const oldIndex = items.findIndex((item) => item.id === active.id);
+            const newIndex = items.findIndex((item) => item.id === over.id);
 
-                const newItems = arrayMove(items, oldIndex, newIndex);
+            const newItems = arrayMove(items, oldIndex, newIndex);
 
-                if (userId) {
-                    const updates = newItems.map((item, index) => ({
-                        id: item.id,
-                        position: index,
-                    }));
-                    reorderLists(userId, updates).catch(console.error);
-                }
-
-                return newItems;
+            // Optimistically update the store with new positions
+            newItems.forEach((item, index) => {
+                useListStore.getState().upsertList({ ...item, position: index });
             });
+
+            if (userId) {
+                const updates = newItems.map((item, index) => ({
+                    id: item.id,
+                    position: index,
+                }));
+                reorderLists(userId, updates).catch(console.error);
+            }
         }
     };
 

@@ -35,6 +35,10 @@ mock.module("./SidebarDataLoader", () => ({
     SidebarDataLoader: () => <div data-testid="sidebar-data-loader">Inbox</div>
 }));
 
+mock.module("@/components/sync/SyncStatus", () => ({
+    SyncStatus: () => <div data-testid="sync-status">Sync Status</div>
+}));
+
 // Mock AppSidebar to avoid next/navigation dependency
 mock.module("./AppSidebar", () => ({
     AppSidebar: ({ lists, labels }: { lists: unknown[]; labels: unknown[] }) => (

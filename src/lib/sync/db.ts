@@ -1,16 +1,8 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
 import { PendingAction } from './types';
 
-interface SyncDB extends DBSchema {
-    queue: {
-        key: string;
-        value: PendingAction;
-        indexes: { 'by-timestamp': number };
-    };
-}
-
 const DB_NAME = 'todo-gemini-sync';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 interface SyncDB extends DBSchema {
     queue: {
@@ -20,7 +12,15 @@ interface SyncDB extends DBSchema {
     };
     tasks: {
         key: number;
-        value: any; // Storing Task object
+        value: any;
+    };
+    lists: {
+        key: number;
+        value: any;
+    };
+    labels: {
+        key: number;
+        value: any;
     };
 }
 
@@ -36,6 +36,10 @@ export function getDB() {
                 }
                 if (oldVersion < 2) {
                     db.createObjectStore('tasks', { keyPath: 'id' });
+                }
+                if (oldVersion < 3) {
+                    db.createObjectStore('lists', { keyPath: 'id' });
+                    db.createObjectStore('labels', { keyPath: 'id' });
                 }
             },
         });
@@ -90,4 +94,54 @@ export async function updateActionStatus(id: string, status: PendingAction['stat
         if (error) action.error = error;
         await db.put('queue', action);
     }
+}
+
+// Lists cache functions
+export async function saveListsToCache(items: any[]) {
+    const db = await getDB();
+    const tx = db.transaction('lists', 'readwrite');
+    await Promise.all([
+        ...items.map(item => tx.store.put(item)),
+        tx.done
+    ]);
+}
+
+export async function saveListToCache(item: any) {
+    const db = await getDB();
+    await db.put('lists', item);
+}
+
+export async function deleteListFromCache(id: number) {
+    const db = await getDB();
+    await db.delete('lists', id);
+}
+
+export async function getCachedLists() {
+    const db = await getDB();
+    return db.getAll('lists');
+}
+
+// Labels cache functions
+export async function saveLabelsToCache(items: any[]) {
+    const db = await getDB();
+    const tx = db.transaction('labels', 'readwrite');
+    await Promise.all([
+        ...items.map(item => tx.store.put(item)),
+        tx.done
+    ]);
+}
+
+export async function saveLabelToCache(item: any) {
+    const db = await getDB();
+    await db.put('labels', item);
+}
+
+export async function deleteLabelFromCache(id: number) {
+    const db = await getDB();
+    await db.delete('labels', id);
+}
+
+export async function getCachedLabels() {
+    const db = await getDB();
+    return db.getAll('labels');
 }

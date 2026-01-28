@@ -31,6 +31,7 @@ import {
   calculateStreakUpdate,
   suggestMetadata,
   NotFoundError,
+  ConflictError,
   withErrorHandling,
 } from "./shared";
 import { rateLimit } from "@/lib/rate-limit";
@@ -337,14 +338,28 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
 export async function updateTask(
   id: number,
   userId: string,
-  data: Partial<Omit<typeof tasks.$inferInsert, "userId">> & { labelIds?: number[] }
+  data: Partial<Omit<typeof tasks.$inferInsert, "userId">> & { 
+    labelIds?: number[];
+    expectedUpdatedAt?: Date | string | null;
+  }
 ) {
   await requireUser(userId);
 
-  const { labelIds, ...taskData } = data;
+  const { labelIds, expectedUpdatedAt, ...taskData } = data;
 
   const currentTask = await getTask(id, userId);
   if (!currentTask) return;
+
+  // Check for conflicts if expectedUpdatedAt is provided
+  if (expectedUpdatedAt) {
+    const expected = typeof expectedUpdatedAt === 'string' ? new Date(expectedUpdatedAt) : expectedUpdatedAt;
+    if (currentTask.updatedAt && currentTask.updatedAt.getTime() > expected.getTime()) {
+      throw new ConflictError(
+        "This task was modified by another device. Please review the changes.",
+        currentTask
+      );
+    }
+  }
 
   await db
     .update(tasks)

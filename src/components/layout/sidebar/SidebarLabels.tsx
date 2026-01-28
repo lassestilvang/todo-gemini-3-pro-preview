@@ -1,7 +1,7 @@
 "use client";
 
 
-import React, { useState, useEffect, memo } from "react";
+import React, { useState, useEffect, memo, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -30,12 +30,14 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { reorderLabels } from "@/lib/actions";
+import { useLabelStore } from "@/lib/store/label-store";
 
 type Label = {
     id: number;
     name: string;
     color: string | null;
     icon: string | null;
+    position?: number;
 };
 
 interface SidebarLabelsProps {
@@ -112,15 +114,23 @@ const SortableLabelItem = memo(function SortableLabelItem({
     );
 });
 
-export function SidebarLabels({ labels, userId }: SidebarLabelsProps) {
+export function SidebarLabels({ labels: ssrLabels, userId }: SidebarLabelsProps) {
     const pathname = usePathname();
-    const [items, setItems] = useState(labels);
+    const storeLabels = useLabelStore(state => state.labels);
+    const setStoreLabels = useLabelStore(state => state.setLabels);
     const [isReordering, setIsReordering] = useState(false);
 
-    // Sync items when props change (server update)
+    // Sync SSR props to store on mount/change (hydration)
     useEffect(() => {
-        setItems(labels);
-    }, [labels]);
+        if (ssrLabels.length > 0) {
+            setStoreLabels(ssrLabels);
+        }
+    }, [ssrLabels, setStoreLabels]);
+
+    // Derive sorted items from store
+    const items = useMemo(() => {
+        return Object.values(storeLabels).sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+    }, [storeLabels]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -137,24 +147,23 @@ export function SidebarLabels({ labels, userId }: SidebarLabelsProps) {
         const { active, over } = event;
 
         if (over && active.id !== over.id) {
-            setItems((items) => {
-                const oldIndex = items.findIndex((item) => item.id === active.id);
-                const newIndex = items.findIndex((item) => item.id === over.id);
+            const oldIndex = items.findIndex((item) => item.id === active.id);
+            const newIndex = items.findIndex((item) => item.id === over.id);
 
-                const newItems = arrayMove(items, oldIndex, newIndex);
+            const newItems = arrayMove(items, oldIndex, newIndex);
 
-                // Call server action
-                if (userId) {
-                    const updates = newItems.map((item, index) => ({
-                        id: item.id,
-                        position: index,
-                    }));
-
-                    reorderLabels(userId, updates).catch(console.error);
-                }
-
-                return newItems;
+            // Optimistically update the store with new positions
+            newItems.forEach((item, index) => {
+                useLabelStore.getState().upsertLabel({ ...item, position: index });
             });
+
+            if (userId) {
+                const updates = newItems.map((item, index) => ({
+                    id: item.id,
+                    position: index,
+                }));
+                reorderLabels(userId, updates).catch(console.error);
+            }
         }
     };
 

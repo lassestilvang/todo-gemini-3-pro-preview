@@ -93,6 +93,10 @@ mock.module("@/components/providers/sync-provider", () => ({
         sync: mock(() => Promise.resolve()),
         pendingCount: 0,
         dispatch: mock(() => Promise.resolve({ success: true, data: null })),
+        pendingActions: [],
+        status: 'online' as const,
+        conflicts: [],
+        resolveConflict: mock(() => Promise.resolve()),
     }),
 }));
 

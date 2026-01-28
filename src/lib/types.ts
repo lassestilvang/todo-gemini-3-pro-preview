@@ -32,4 +32,5 @@ export interface Task {
     subtasks?: Subtask[];
     subtaskCount?: number;
     completedSubtaskCount?: number;
+    updatedAt?: Date | string | null;
 }

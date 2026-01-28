@@ -62,6 +62,7 @@ export {
   NotFoundError,
   DatabaseError,
   NetworkError,
+  ConflictError,
   isSuccess,
   isFailure,
   sanitizeError,

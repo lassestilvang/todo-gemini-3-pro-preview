@@ -145,7 +145,8 @@ src/
 │   ├── tasks/              # Task components (TaskItem, TaskList, TaskDialog)
 │   ├── gamification/       # XP bar, achievements, level-up
 │   ├── settings/           # Settings dialog and theme switcher
-│   └── providers/          # React Query provider
+│   ├── sync/               # Offline sync UI (SyncStatus, ConflictDialog)
+│   └── providers/          # React Query, SyncProvider, DataLoader
 │
 ├── db/
 │   ├── schema.ts           # Drizzle schema definitions for PostgreSQL (source of truth)
@@ -167,7 +168,15 @@ src/
 │   ├── smart-scheduler.ts  # AI task scheduling
 │   ├── smart-tags.ts       # Auto-tagging logic
 │   ├── time-export.ts      # Time tracking export functionality
-│   └── utils.ts            # Utility functions (cn helper)
+│   ├── utils.ts            # Utility functions (cn helper)
+│   ├── store/              # Zustand stores with IndexedDB persistence
+│   │   ├── task-store.ts   # Client-side task cache
+│   │   ├── list-store.ts   # Client-side list cache
+│   │   └── label-store.ts  # Client-side label cache
+│   └── sync/               # Offline-first sync system
+│       ├── db.ts           # IndexedDB queue + cache stores
+│       ├── types.ts        # PendingAction, SyncStatus, ConflictInfo
+│       └── registry.ts     # Action type → Server Action mapping
 │
 └── test/
     ├── setup.ts            # Test configuration, DB helpers, mocks
@@ -207,6 +216,26 @@ export async function createTask(data: typeof tasks.$inferInsert) {
 - UI primitives in `src/components/ui/` follow shadcn/ui patterns
 - Use `cn()` utility from `@/lib/utils` for conditional Tailwind classes
 - Tests co-located as `*.test.tsx` files
+
+### Offline-First Sync Architecture
+
+The app uses an optimistic UI pattern with background sync:
+
+1. **Zustand Stores** (`src/lib/store/`) - Client-side cache for tasks, lists, labels with IndexedDB persistence
+2. **SyncProvider** (`src/components/providers/sync-provider.tsx`) - Manages pending action queue and optimistic updates
+3. **Action Registry** (`src/lib/sync/registry.ts`) - Maps action types to Server Actions
+4. **IndexedDB** (`src/lib/sync/db.ts`) - Persists pending actions and entity caches
+
+**Flow:**
+1. User action → `dispatch(actionType, ...args)` → Optimistic update to store
+2. Action queued in IndexedDB → Background sync when online
+3. On success: Replace temp IDs with real IDs
+4. On conflict: Show `ConflictDialog` for resolution
+
+**Key components:**
+- `SyncStatus` - Shows online/offline/syncing status
+- `ConflictDialog` - Resolves conflicts with "Keep Mine", "Use Server", "Merge" options
+- `DataLoader` - Initializes stores and fetches fresh data
 
 ### Database Schema
 

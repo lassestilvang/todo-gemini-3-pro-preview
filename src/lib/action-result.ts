@@ -19,6 +19,7 @@ export type ErrorCode =
   | "FORBIDDEN"
   | "DATABASE_ERROR"
   | "NETWORK_ERROR"
+  | "CONFLICT"
   | "UNKNOWN_ERROR";
 
 /**
@@ -159,6 +160,20 @@ export class NetworkError extends Error {
 }
 
 /**
+ * Custom error class for conflict errors (optimistic concurrency)
+ */
+export class ConflictError extends Error {
+  public readonly code: ErrorCode = "CONFLICT";
+  public readonly serverData: unknown;
+
+  constructor(message: string = "The resource was modified by another client", serverData?: unknown) {
+    super(message);
+    this.name = "ConflictError";
+    this.serverData = serverData;
+  }
+}
+
+/**
  * Wrapper for Server Actions that handles try-catch and returns Result type
  * 
  * @param fn - The async function to wrap
@@ -216,6 +231,14 @@ export function withErrorHandling<T, Args extends unknown[]>(
         return failure({
           code: "NETWORK_ERROR",
           message: "A network error occurred. Please check your connection and try again.",
+        });
+      }
+
+      if (error instanceof ConflictError) {
+        return failure({
+          code: "CONFLICT",
+          message: error.message,
+          details: error.serverData ? { serverData: JSON.stringify(error.serverData) } : undefined,
         });
       }
 

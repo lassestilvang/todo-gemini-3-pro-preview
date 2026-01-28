@@ -135,37 +135,37 @@ const value = useMemo(() => ({
 |------|--------|----------|--------|
 | 1.1 Remove `useOptimisticTasks` hook, use Zustand directly | 1-2h | 🔴 Critical | ✅ Done |
 | 1.2 Fix `initialize()` race condition (merge, not replace) | 30min | 🔴 Critical | ✅ Done |
-| 1.3 Memoize SyncProvider context value | 15min | 🟡 High | ❌ Pending |
-| 1.4 Fix stale closure in event listeners | 15min | 🟢 Medium | ❌ Pending |
+| 1.3 Memoize SyncProvider context value | 15min | 🟡 High | ✅ Done |
+| 1.4 Fix stale closure in event listeners | 15min | 🟢 Medium | ✅ Done |
 
 ### Phase 2: Extend Optimistic Coverage
 
-| Task | Effort | Priority |
-|------|--------|----------|
-| 2.1 Add lists/labels to action registry | 1h | 🟡 High |
-| 2.2 Add lists/labels stores (or extend task-store) | 2h | 🟡 High |
-| 2.3 Update sidebar to use stores | 1h | 🟡 High |
+| Task | Effort | Priority | Status |
+|------|--------|----------|--------|
+| 2.1 Add lists/labels to action registry | 1h | 🟡 High | ✅ Done |
+| 2.2 Add lists/labels stores (or extend task-store) | 2h | 🟡 High | ✅ Done |
+| 2.3 Update sidebar to use stores | 1h | 🟡 High | ✅ Done |
 
 ### Phase 3: Offline Indicator
 
-| Task | Effort | Priority |
-|------|--------|----------|
-| 3.1 Create `SyncStatus.tsx` component | 1h | 🟡 High |
-| 3.2 Add to MainLayout | 15min | 🟡 High |
+| Task | Effort | Priority | Status |
+|------|--------|----------|--------|
+| 3.1 Create `SyncStatus.tsx` component | 1h | 🟡 High | ✅ Done |
+| 3.2 Add to MainLayout | 15min | 🟡 High | ✅ Done |
 
 ### Phase 4: Conflict Resolution
 
-| Task | Effort | Priority |
-|------|--------|----------|
-| 4.1 Add `updatedAt` to task payloads | 30min | 🟡 High |
-| 4.2 Handle 409 in `processQueue()` | 1h | 🟡 High |
-| 4.3 Create `ConflictDialog.tsx` | 2h | 🟡 High |
+| Task | Effort | Priority | Status |
+|------|--------|----------|--------|
+| 4.1 Add `updatedAt` to task payloads | 30min | 🟡 High | ✅ Done |
+| 4.2 Handle 409 in `processQueue()` | 1h | 🟡 High | ✅ Done |
+| 4.3 Create `ConflictDialog.tsx` | 2h | 🟡 High | ✅ Done |
 
 ### Phase 5: Service Worker Caching
 
-| Task | Effort | Priority |
-|------|--------|----------|
-| 5.1 Add custom `runtimeCaching` to next.config.ts | 30min | 🟢 Medium |
+| Task | Effort | Priority | Status |
+|------|--------|----------|--------|
+| 5.1 Add custom `runtimeCaching` to next.config.ts | 30min | 🟢 Medium | ✅ Done |
 
 ### Phase 6: Data Freshness
 
@@ -183,10 +183,10 @@ const value = useMemo(() => ({
 
 | File | Description |
 |------|-------------|
-| `src/components/sync/SyncStatus.tsx` | Visual sync indicator |
-| `src/components/sync/ConflictDialog.tsx` | Conflict resolution UI |
-| `src/lib/store/list-store.ts` | (Optional) Zustand store for lists |
-| `src/lib/store/label-store.ts` | (Optional) Zustand store for labels |
+| `src/components/sync/SyncStatus.tsx` | Visual sync indicator | ✅ Created |
+| `src/components/sync/ConflictDialog.tsx` | Conflict resolution UI | ✅ Created |
+| `src/lib/store/list-store.ts` | Zustand store for lists | ✅ Created |
+| `src/lib/store/label-store.ts` | Zustand store for labels | ✅ Created |
 
 ### Files to Modify (Priority Order)
 
@@ -196,11 +196,11 @@ const value = useMemo(() => ({
 | `src/components/tasks/TaskListWithSettings.tsx` | Remove `useOptimisticTasks`, read from store directly | ✅ Done |
 | `src/components/tasks/TaskItem.tsx` | Make `dispatch` optional with `useSync()` fallback | ✅ Done |
 | `src/lib/store/task-store.ts` | Fix `initialize()` to merge, not replace | ✅ Done |
-| `src/components/providers/sync-provider.tsx` | Memoize context, fix stale closure, add conflict handling | ❌ Pending |
+| `src/components/providers/sync-provider.tsx` | Memoize context, fix stale closure, add conflict handling | ✅ Done |
 | `src/components/providers/data-loader.tsx` | Await initialize before fetch | ✅ Done |
-| `src/lib/sync/registry.ts` | Add list/label/gamification actions | ❌ Pending |
-| `src/components/layout/MainLayout.tsx` | Add `SyncStatus` | ❌ Pending |
-| `next.config.ts` | Add Workbox `runtimeCaching` | ❌ Pending |
+| `src/lib/sync/registry.ts` | Add list/label/gamification actions | ✅ Done (lists/labels) |
+| `src/components/layout/MainLayout.tsx` | Add `SyncStatus` | ✅ Done |
+| `next.config.ts` | Add Workbox `runtimeCaching` | ✅ Done |
 
 ---
 
@@ -208,16 +208,16 @@ const value = useMemo(() => ({
 
 | Phase | Effort | Priority | Status |
 |-------|--------|----------|--------|
-| Phase 1: Fix Architecture | 2-3h | 🔴 Critical | 🟡 2/4 done |
-| Phase 2: Extend Optimistic | 4h | 🟡 High | ❌ Pending |
-| Phase 3: Offline Indicator | 1-2h | 🟡 High | ❌ Pending |
-| Phase 4: Conflict Resolution | 3-4h | 🟡 High | ❌ Pending |
-| Phase 5: SW Caching | 30min | 🟢 Medium | ❌ Pending |
+| Phase 1: Fix Architecture | 2-3h | 🔴 Critical | ✅ Done |
+| Phase 2: Extend Optimistic | 4h | 🟡 High | ✅ Done |
+| Phase 3: Offline Indicator | 1-2h | 🟡 High | ✅ Done |
+| Phase 4: Conflict Resolution | 3-4h | 🟡 High | ✅ Done |
+| Phase 5: SW Caching | 30min | 🟢 Medium | ✅ Done |
 | Phase 6: Data Freshness | 2h | 🟢 Medium | ❌ Pending |
 
 **Total: ~2-3 days** (reduced from 6-8 days due to existing foundation)
 
-**Progress: Phase 1.1 & 1.2 complete** — Duplicate optimistic state eliminated; race condition fixed.
+**Progress: Phases 1-5 complete** — Architecture fixed; stores for tasks/lists/labels; sync indicator; conflict resolution; SW caching.
 
 ---
 

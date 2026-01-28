@@ -7,6 +7,7 @@ import { QuickCapture } from "@/components/tasks/QuickCapture";
 import { OnboardingTour } from "@/components/layout/OnboardingTour";
 import { SidebarDataLoader } from "./SidebarDataLoader";
 import { getCurrentUser } from "@/lib/auth";
+import { SyncStatus } from "@/components/sync/SyncStatus";
 
 const SidebarFallback = () => (
     <div className="hidden md:flex flex-col w-64 h-full border-r bg-card/50 backdrop-blur-xl shrink-0">
@@ -50,8 +51,14 @@ export async function MainLayout({ children }: { children: React.ReactNode }) {
                                 <SidebarDataLoader user={user} className="w-full h-full border-none shadow-none" />
                             </Suspense>
                         </MobileNav>
-                        <div className="ml-4 font-semibold text-lg">Todo Gemini</div>
+                        <div className="ml-4 font-semibold text-lg flex-1">Todo Gemini</div>
+                        <SyncStatus />
                     </header>
+
+                    {/* Desktop Sync Status - Fixed position */}
+                    <div className="hidden md:block fixed top-4 right-4 z-50">
+                        <SyncStatus />
+                    </div>
 
                     <main className="flex-1 overflow-y-auto px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] md:pl-10 md:pr-10" data-testid="main-content">
                         {children}
