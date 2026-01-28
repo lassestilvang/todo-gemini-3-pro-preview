@@ -527,13 +527,6 @@ export function TaskListWithSettings({
     };
 
 
-    if (!mounted || !isInitialized) {
-        return <div className="space-y-4 animate-pulse">
-            <div className="h-10 bg-muted rounded-lg w-full" />
-            <div className="h-64 bg-muted rounded-lg w-full" />
-        </div>;
-    }
-
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -547,7 +540,12 @@ export function TaskListWithSettings({
                 </div>
             </div>
 
-            {processedTasks.length === 0 ? (
+            {(!mounted || !isInitialized) ? (
+                <div className="space-y-4 animate-pulse">
+                    <div className="h-10 bg-muted rounded-lg w-full" />
+                    <div className="h-64 bg-muted rounded-lg w-full" />
+                </div>
+            ) : processedTasks.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground border rounded-lg border-dashed">
                     <p>No tasks found</p>
                 </div>
@@ -704,8 +702,7 @@ export function TaskListWithSettings({
                         );
                     })}
                 </div>
-            )
-            }
+            )}
 
             <Suspense fallback={null}>
                 <TaskDialog
