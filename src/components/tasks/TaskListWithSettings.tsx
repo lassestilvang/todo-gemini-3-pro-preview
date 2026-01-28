@@ -285,6 +285,7 @@ const SortableTaskItem = memo(function SortableTaskItem({
                 disableAnimations={isDragEnabled}
                 dragHandleProps={isDragEnabled ? listeners : undefined}
                 dispatch={dispatch}
+                onEdit={() => handleEdit(task)}
             />
         </div>
     );
@@ -571,6 +572,7 @@ export function TaskListWithSettings({
                                             userId={userId}
                                             disableAnimations={true}
                                             dispatch={dispatch}
+                                            onEdit={() => handleEdit(task)}
                                         />
                                     </div>
                                 )}
@@ -612,6 +614,7 @@ export function TaskListWithSettings({
                                                 userId={userId}
                                                 disableAnimations={true}
                                                 dispatch={dispatch}
+                                                onEdit={() => handleEdit(task)}
                                             />
                                         </div>
                                     ) : null}
@@ -674,7 +677,7 @@ export function TaskListWithSettings({
                                             }}
                                             className="cursor-pointer rounded-lg transition-all"
                                         >
-                                            <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} />
+                                            <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={() => handleEdit(task)} />
                                         </div>
                                     );
                                 })}
@@ -694,7 +697,7 @@ export function TaskListWithSettings({
                                                     }}
                                                     className="cursor-pointer rounded-lg transition-all"
                                                 >
-                                                    <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} />
+                                                    <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={() => handleEdit(task)} />
                                                 </div>
                                             );
                                         })}

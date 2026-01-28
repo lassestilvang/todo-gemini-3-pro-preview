@@ -133,4 +133,15 @@ describe("TaskItem", () => {
             expect(screen.getByLabelText("Mark subtask as complete")).toBeInTheDocument();
         });
     });
+
+    it("should render edit button when onEdit is provided", () => {
+        const handleEdit = mock(() => {});
+        render(<TaskItem task={sampleTask} onEdit={handleEdit} />);
+
+        const editButton = screen.getByLabelText("Edit task");
+        expect(editButton).toBeInTheDocument();
+
+        fireEvent.click(editButton);
+        expect(handleEdit).toHaveBeenCalledTimes(1);
+    });
 });
