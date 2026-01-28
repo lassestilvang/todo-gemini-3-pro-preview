@@ -193,6 +193,9 @@ export async function checkAchievements(
   const totalCompleted = taskCounts?.totalCompleted || 0;
   const dailyCompleted = taskCounts?.dailyCompleted || 0;
 
+  const newAchievements: (typeof achievements.$inferSelect)[] = [];
+  let totalXpReward = 0;
+
   for (const achievement of allAchievements) {
     if (unlockedIds.has(achievement.id)) continue;
 
@@ -211,21 +214,36 @@ export async function checkAchievements(
     }
 
     if (isUnlocked) {
-      await db.insert(userAchievements).values({
+      newAchievements.push(achievement);
+      totalXpReward += achievement.xpReward;
+    }
+  }
+
+  if (newAchievements.length > 0) {
+    // Batch insert new achievements
+    await db.insert(userAchievements).values(
+      newAchievements.map((a) => ({
         userId,
-        achievementId: achievement.id,
-      });
+        achievementId: a.id,
+      }))
+    );
 
-      // Award XP for achievement
-      await addXP(userId, achievement.xpReward);
-
-      // Log it
-      await db.insert(taskLogs).values({
+    // Batch insert logs
+    await db.insert(taskLogs).values(
+      newAchievements.map((a) => ({
         userId,
         taskId: null, // System log
         action: "achievement_unlocked",
-        details: `Unlocked achievement: ${achievement.name} (+${achievement.xpReward} XP)`,
-      });
+        details: `Unlocked achievement: ${a.name} (+${a.xpReward} XP)`,
+      }))
+    );
+
+    // Award total XP in one go
+    // This will trigger a recursive call to updateUserProgress -> checkAchievements.
+    // However, since we've already inserted the achievements above, the recursive call
+    // will see them as unlocked and return immediately, preventing infinite loops or N+1 queries.
+    if (totalXpReward !== 0) {
+      await addXP(userId, totalXpReward);
     }
   }
 }
