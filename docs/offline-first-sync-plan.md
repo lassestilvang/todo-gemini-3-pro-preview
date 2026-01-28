@@ -134,7 +134,7 @@ const value = useMemo(() => ({
 | Task | Effort | Priority | Status |
 |------|--------|----------|--------|
 | 1.1 Remove `useOptimisticTasks` hook, use Zustand directly | 1-2h | 🔴 Critical | ✅ Done |
-| 1.2 Fix `initialize()` race condition (merge, not replace) | 30min | 🔴 Critical | ❌ Pending |
+| 1.2 Fix `initialize()` race condition (merge, not replace) | 30min | 🔴 Critical | ✅ Done |
 | 1.3 Memoize SyncProvider context value | 15min | 🟡 High | ❌ Pending |
 | 1.4 Fix stale closure in event listeners | 15min | 🟢 Medium | ❌ Pending |
 
@@ -195,9 +195,9 @@ const value = useMemo(() => ({
 | `src/hooks/use-optimistic-tasks.ts` | Deprecated with JSDoc | ✅ Done |
 | `src/components/tasks/TaskListWithSettings.tsx` | Remove `useOptimisticTasks`, read from store directly | ✅ Done |
 | `src/components/tasks/TaskItem.tsx` | Make `dispatch` optional with `useSync()` fallback | ✅ Done |
-| `src/lib/store/task-store.ts` | Fix `initialize()` to merge, not replace | ❌ Pending |
+| `src/lib/store/task-store.ts` | Fix `initialize()` to merge, not replace | ✅ Done |
 | `src/components/providers/sync-provider.tsx` | Memoize context, fix stale closure, add conflict handling | ❌ Pending |
-| `src/components/providers/data-loader.tsx` | Await initialize before fetch | ❌ Pending |
+| `src/components/providers/data-loader.tsx` | Await initialize before fetch | ✅ Done |
 | `src/lib/sync/registry.ts` | Add list/label/gamification actions | ❌ Pending |
 | `src/components/layout/MainLayout.tsx` | Add `SyncStatus` | ❌ Pending |
 | `next.config.ts` | Add Workbox `runtimeCaching` | ❌ Pending |
@@ -208,7 +208,7 @@ const value = useMemo(() => ({
 
 | Phase | Effort | Priority | Status |
 |-------|--------|----------|--------|
-| Phase 1: Fix Architecture | 2-3h | 🔴 Critical | 🟡 1/4 done |
+| Phase 1: Fix Architecture | 2-3h | 🔴 Critical | 🟡 2/4 done |
 | Phase 2: Extend Optimistic | 4h | 🟡 High | ❌ Pending |
 | Phase 3: Offline Indicator | 1-2h | 🟡 High | ❌ Pending |
 | Phase 4: Conflict Resolution | 3-4h | 🟡 High | ❌ Pending |
@@ -217,7 +217,7 @@ const value = useMemo(() => ({
 
 **Total: ~2-3 days** (reduced from 6-8 days due to existing foundation)
 
-**Progress: Phase 1.1 complete** — Duplicate optimistic state eliminated.
+**Progress: Phase 1.1 & 1.2 complete** — Duplicate optimistic state eliminated; race condition fixed.
 
 ---
 

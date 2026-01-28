@@ -20,11 +20,16 @@ export const useTaskStore = create<TaskState>((set, get) => ({
 
         try {
             const cached = await getCachedTasks();
-            const taskMap: Record<number, Task> = {};
+            const cachedMap: Record<number, Task> = {};
             cached.forEach((t: any) => {
-                taskMap[t.id] = t;
+                cachedMap[t.id] = t;
             });
-            set({ tasks: taskMap, isInitialized: true });
+
+            set(state => ({
+                // Merge: prefer state.tasks (SSR/fresh) over cachedMap (stale IDB)
+                tasks: { ...cachedMap, ...state.tasks },
+                isInitialized: true,
+            }));
         } catch (e) {
             console.error("Failed to load tasks from cache", e);
             set({ isInitialized: true });
