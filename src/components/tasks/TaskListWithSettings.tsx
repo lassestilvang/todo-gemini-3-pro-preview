@@ -260,12 +260,8 @@ const SortableTaskItem = memo(function SortableTaskItem({
             // Better: Render Drag Handle in SortableTaskItem and pass it the listeners.
             // Or: Pass listeners to TaskItem and attach to handle.
             // Let's pass dragHandleProps to TaskItem.
-            onClick={(e) => {
-                if (e.defaultPrevented) return;
-                handleEdit(task);
-            }}
             className={cn(
-                "cursor-pointer rounded-lg transition-all",
+                "rounded-lg transition-all",
                 isDragging ? "opacity-0" : ""
             )}
         >
@@ -285,6 +281,7 @@ const SortableTaskItem = memo(function SortableTaskItem({
                 disableAnimations={isDragEnabled}
                 dragHandleProps={isDragEnabled ? listeners : undefined}
                 dispatch={dispatch}
+                onEdit={() => handleEdit(task)}
             />
         </div>
     );
@@ -569,6 +566,7 @@ export function TaskListWithSettings({
                                             userId={userId}
                                             disableAnimations={true}
                                             dispatch={dispatch}
+                                            onEdit={() => handleEdit(task)}
                                         />
                                     </div>
                                 )}
@@ -610,6 +608,7 @@ export function TaskListWithSettings({
                                                 userId={userId}
                                                 disableAnimations={true}
                                                 dispatch={dispatch}
+                                                onEdit={() => handleEdit(task)}
                                             />
                                         </div>
                                     ) : null}
@@ -630,11 +629,8 @@ export function TaskListWithSettings({
                                     return (
                                         <div
                                             key={task.id}
-                                            onClick={(e) => {
-                                                if (e.defaultPrevented) return;
-                                                handleEdit(task);
-                                            }}
-                                            className="cursor-pointer rounded-lg transition-all"
+                                            className="rounded-lg transition-all"
+                                            className="rounded-lg transition-all"
                                         >
                                             <TaskItem
                                                 task={task}
@@ -642,6 +638,7 @@ export function TaskListWithSettings({
                                                 userId={userId}
                                                 disableAnimations={true}
                                                 dispatch={dispatch}
+                                            onEdit={() => handleEdit(task)}
                                             />
                                         </div>
                                     );
@@ -666,13 +663,9 @@ export function TaskListWithSettings({
                                     return (
                                         <div
                                             key={task.id}
-                                            onClick={(e) => {
-                                                if (e.defaultPrevented) return;
-                                                handleEdit(task);
-                                            }}
-                                            className="cursor-pointer rounded-lg transition-all"
+                                            className="rounded-lg transition-all"
                                         >
-                                            <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} />
+                                            <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={() => handleEdit(task)} />
                                         </div>
                                     );
                                 })}
@@ -686,13 +679,9 @@ export function TaskListWithSettings({
                                             return (
                                                 <div
                                                     key={task.id}
-                                                    onClick={(e) => {
-                                                        if (e.defaultPrevented) return;
-                                                        handleEdit(task);
-                                                    }}
-                                                    className="cursor-pointer rounded-lg transition-all"
+                                                    className="rounded-lg transition-all"
                                                 >
-                                                    <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} />
+                                                    <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={() => handleEdit(task)} />
                                                 </div>
                                             );
                                         })}

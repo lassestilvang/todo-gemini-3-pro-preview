@@ -71,14 +71,33 @@ export async function addXP(userId: string, amount: number) {
 export async function updateUserProgress(userId: string, xpAmount: number) {
   await requireUser(userId);
 
-  // 1. Fetch initial state
-  const stats = await getUserStats(userId);
+  // 1. Fetch all dependencies in parallel for maximum performance
+  const todayStart = startOfDay(new Date());
+  const todayEnd = endOfDay(new Date());
+
+  const [stats, allAchievements, [taskCounts], unlockedEntries] = await Promise.all([
+    getUserStats(userId),
+    db.select().from(achievements),
+    db.select({
+      totalCompleted: sql<number>`count(*)`,
+      dailyCompleted: sql<number>`count(case when ${and(gte(tasks.completedAt, todayStart), lte(tasks.completedAt, todayEnd))} then 1 else null end)`
+    })
+      .from(tasks)
+      .where(and(eq(tasks.userId, userId), eq(tasks.isCompleted, true))),
+    db.select({ id: userAchievements.achievementId })
+      .from(userAchievements)
+      .where(eq(userAchievements.userId, userId))
+  ]);
+
+  const totalCompleted = taskCounts?.totalCompleted || 0;
+  const dailyCompleted = taskCounts?.dailyCompleted || 0;
+  const alreadyUnlockedIds = new Set(unlockedEntries.map((u) => u.id));
+
   let currentXP = stats.xp;
   let currentStreak = stats.currentStreak;
   let pendingXP = xpAmount;
 
   // Track unlocked achievements to avoid re-checking/re-awarding in the same transaction
-  // and to bulk insert them at the end.
   const newlyUnlockedAchievements: {
     id: string;
     name: string;
@@ -100,40 +119,28 @@ export async function updateUserProgress(userId: string, xpAmount: number) {
     currentStreak = newStreak;
   }
 
-  // 2. Iterative Loop for XP and Achievements
-  // We loop because unlocking an achievement gives XP, which might unlock another achievement (e.g., reaching level X).
+  // 2. Iterative Loop for XP and Achievements (In-memory)
   let stabilizing = false;
-  let alreadyUnlockedIds: Set<string> | null = null; // Lazy load
 
   while (!stabilizing) {
     // Apply pending XP
     currentXP += pendingXP;
     pendingXP = 0;
 
-    // Check for achievements with NEW state
-    // We pass a reference to alreadyUnlockedIds to allow the function to populate it once 
-    // and respect previously unlocked achievements in this session.
-    if (!alreadyUnlockedIds) {
-      const unlockedEntries = await db
-        .select({ id: userAchievements.achievementId })
-        .from(userAchievements)
-        .where(eq(userAchievements.userId, userId));
-      alreadyUnlockedIds = new Set(unlockedEntries.map((u) => u.id));
-    }
-
-    // Add newly unlocked in this session to the set so we don't double count
-    newlyUnlockedAchievements.forEach(a => alreadyUnlockedIds!.add(a.id));
-
-    const { unlocked, totalReward } = await checkAchievementsPure(
-      userId,
+    // Check for achievements with CURRENT state in-memory
+    const { unlocked, totalReward } = checkAchievementsPure(
       currentXP,
       currentStreak,
-      alreadyUnlockedIds!
+      totalCompleted,
+      dailyCompleted,
+      allAchievements,
+      alreadyUnlockedIds
     );
 
     if (unlocked.length > 0) {
       // Found new achievements!
       newlyUnlockedAchievements.push(...unlocked);
+      unlocked.forEach(a => alreadyUnlockedIds.add(a.id));
       pendingXP += totalReward;
       // Loop again to see if this new XP unlocks anything else
     } else {
@@ -146,8 +153,7 @@ export async function updateUserProgress(userId: string, xpAmount: number) {
   const finalLevel = calculateLevel(finalXP);
   const leveledUp = finalLevel > stats.level;
 
-  // 3. Perform Updates
-
+  // 3. Perform Updates sequentially (or in a transaction if preferred)
   // A. Update User Stats
   const updateData: Partial<typeof userStats.$inferSelect> = {
     xp: finalXP,
@@ -223,91 +229,29 @@ export async function updateUserProgress(userId: string, xpAmount: number) {
 }
 
 /**
- * Checks and unlocks achievements for a user based on their progress.
- * This is a wrapper for the pure function to maintain backward compatibility if needed,
- * or acts as the "Side Effect" version if called directly.
- * 
- * However, with the new recursive-safe design, we prefer using updateUserProgress.
- * This function now just logs a warning if called directly for state updates, or performs the check.
- *
- * @param userId - The ID of the user
- * @param currentXP - The user's current XP
- * @param currentStreak - The user's current streak
+ * Legacy wrapper for backward compatibility.
  */
 export async function checkAchievements(
   userId: string,
   currentXP: number,
   currentStreak: number,
 ) {
-  // Legacy support: Just run the pure check and insert if anything found.
-  // NOTE: This will NOT trigger XP recursions safely if called standalone without the loop from updateUserProgress.
-  // It is safer to use updateUserProgress(userId, 0) to trigger checks.
-
-  const unlockedEntries = await db
-    .select({ id: userAchievements.achievementId })
-    .from(userAchievements)
-    .where(eq(userAchievements.userId, userId));
-  const alreadyUnlockedIds = new Set(unlockedEntries.map((u) => u.id));
-
-  const { unlocked, totalReward } = await checkAchievementsPure(userId, currentXP, currentStreak, alreadyUnlockedIds);
-
-  if (unlocked.length > 0) {
-    // Insert unlocked
-    await db.insert(userAchievements).values(
-      unlocked.map(a => ({
-        userId,
-        achievementId: a.id
-      }))
-    );
-
-    // Log
-    const logs = unlocked.map(a => ({
-      userId,
-      taskId: null,
-      action: "achievement_unlocked",
-      details: `Unlocked achievement: ${a.name} (+${a.xpReward} XP)`,
-    }));
-    await db.insert(taskLogs).values(logs);
-
-    // Recursive Award XP (DANGEROUS if not controlled, but needed for legacy behavior)
-    // To avoiding infinite loop here, we should ideally call updateUserProgress, but that would be circular.
-    // Instead, we just AWARD the XP directly here without re-checking achievements if this function is called directly.
-    // But better: invoke updateUserProgress which NOW handles the recursion safely.
-    if (totalReward > 0) {
-      await updateUserProgress(userId, totalReward);
-    }
-  }
+  // Now simply triggers the iterative logic correctly
+  return await updateUserProgress(userId, 0);
 }
 
 /**
- * Pure version of checkAchievements that returns what WOULD be unlocked.
- * Does not perform DB writes.
+ * Truly pure version of achievement check.
+ * No async, no side effects.
  */
-async function checkAchievementsPure(
-  userId: string,
+function checkAchievementsPure(
   currentXP: number,
   currentStreak: number,
+  totalCompleted: number,
+  dailyCompleted: number,
+  allAchievements: (typeof achievements.$inferSelect)[],
   alreadyUnlockedIds: Set<string>
 ) {
-  const todayStart = startOfDay(new Date());
-  const todayEnd = endOfDay(new Date());
-
-  const [
-    allAchievements,
-    [taskCounts]
-  ] = await Promise.all([
-    db.select().from(achievements),
-    db.select({
-      totalCompleted: sql<number>`count(*)`,
-      dailyCompleted: sql<number>`count(case when ${and(gte(tasks.completedAt, todayStart), lte(tasks.completedAt, todayEnd))} then 1 else null end)`
-    })
-      .from(tasks)
-      .where(and(eq(tasks.userId, userId), eq(tasks.isCompleted, true)))
-  ]);
-
-  const totalCompleted = taskCounts?.totalCompleted || 0;
-  const dailyCompleted = taskCounts?.dailyCompleted || 0;
-
   const newlyUnlocked: { id: string, name: string, xpReward: number }[] = [];
   let totalReward = 0;
 
