@@ -76,6 +76,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       user: userToSync,
+      cookie: JSON.stringify({
+        user: userToSync,
+        accessToken: 'test-access-token',
+        refreshToken: 'test-refresh-token',
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+      }),
       message: 'Test session created'
     });
   } catch (error) {

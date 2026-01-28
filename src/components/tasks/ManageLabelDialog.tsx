@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -79,6 +80,8 @@ function LabelForm({ label, userId, onClose }: { label?: { id: number; name: str
 
     const isEdit = !!label;
 
+    const router = useRouter();
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!userId) {
@@ -91,6 +94,7 @@ function LabelForm({ label, userId, onClose }: { label?: { id: number; name: str
             } else {
                 await createLabel({ name, color, icon, description, userId });
             }
+            router.refresh();
             onClose();
         } catch (error) {
             console.error("Failed to save label:", error);
@@ -105,6 +109,7 @@ function LabelForm({ label, userId, onClose }: { label?: { id: number; name: str
         if (confirm("Are you sure you want to delete this label?")) {
             try {
                 await deleteLabel(label.id, userId);
+                router.refresh();
                 onClose();
             } catch (error) {
                 console.error("Failed to delete label:", error);

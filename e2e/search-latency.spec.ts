@@ -1,13 +1,12 @@
 import { test, expect } from './fixtures';
 
 test.describe('Search Task Latency', () => {
-    test.beforeEach(async ({ page }) => {
-        // await authenticateTestUser(page); // Unused, authenticate via fixture if needed
-        await page.goto('/today');
-        await page.waitForLoadState('load');
+    test.beforeEach(async ({ authenticatedPage }) => {
+        await authenticatedPage.goto('/inbox');
+        await authenticatedPage.waitForLoadState('load');
     });
 
-    test('newly created task should immediately appear in search results', async ({ page }) => {
+    test('newly created task should immediately appear in search results', async ({ authenticatedPage: page }) => {
         const uniqueId = Date.now();
         const taskTitle = `Search Latency Test ${uniqueId}`;
 

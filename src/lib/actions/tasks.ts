@@ -338,7 +338,7 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
 export async function updateTask(
   id: number,
   userId: string,
-  data: Partial<Omit<typeof tasks.$inferInsert, "userId">> & { 
+  data: Partial<Omit<typeof tasks.$inferInsert, "userId">> & {
     labelIds?: number[];
     expectedUpdatedAt?: Date | string | null;
   }

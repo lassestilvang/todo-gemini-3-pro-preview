@@ -28,15 +28,20 @@ export async function authenticateTestUser(page: Page): Promise<boolean> {
   try {
     // Generate a unique ID for this test to ensure database isolation
     const uniqueId = Math.random().toString(36).substring(7);
-    const response = await page.request.post('/api/test-auth', {
-      data: {
-        id: `test-user-${uniqueId}`,
-        email: `test-${uniqueId}@example.com`,
-        firstName: 'E2E',
-        lastName: 'Test User', // Keep the name consistent for tests that look for it
-      }
+    const data = await page.evaluate(async (userData) => {
+      const response = await fetch('/api/test-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData),
+      });
+      return response.json();
+    }, {
+      id: `test-user-${uniqueId}`,
+      email: `test-${uniqueId}@example.com`,
+      firstName: 'E2E',
+      lastName: 'Test User',
     });
-    const data = await response.json();
+
     return data.success === true;
   } catch (error) {
     console.error('Failed to authenticate test user:', error);
@@ -63,16 +68,28 @@ export async function clearTestSession(page: Page): Promise<boolean> {
  */
 export const test = base.extend<{ authenticatedPage: Page }>({
   authenticatedPage: async ({ page }, use) => {
+    // Navigate to a page first to establish origin for fetch
+    await page.goto('/');
     // Authenticate before the test
     const authenticated = await authenticateTestUser(page);
     if (!authenticated) {
       throw new Error('Failed to authenticate test user. Make sure E2E_TEST_MODE=true is set.');
     }
 
+    // Verify authentication by checking if we can access a protected route without redirect
+    await page.goto('/inbox');
+    const redirectedToLogin = await isOnLoginPage(page);
+    if (redirectedToLogin) {
+      console.error('[E2E] Authentication verification failed: redirected to login after auth');
+      throw new Error('Authentication failed: redirected to login even after calling test-auth endpoint.');
+    }
+
     // Disable onboarding tour for tests
     await page.addInitScript(() => {
       window.localStorage.setItem('onboarding_completed', 'true');
     });
+
+    console.log(`[E2E] Authenticated page ready for test at ${page.url()}`);
 
     // eslint-disable-next-line react-hooks/rules-of-hooks
     await use(page);

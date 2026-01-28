@@ -16,6 +16,7 @@ const SidebarFallback = () => (
 );
 
 import { UserProvider } from "@/components/providers/UserProvider";
+import { DataLoader } from "@/components/providers/data-loader";
 
 export async function MainLayout({ children }: { children: React.ReactNode }) {
     const user = await getCurrentUser();
@@ -34,6 +35,7 @@ export async function MainLayout({ children }: { children: React.ReactNode }) {
 
     return (
         <UserProvider userId={userId} use24HourClock={user.use24HourClock ?? null} weekStartsOnMonday={user.weekStartsOnMonday ?? null}>
+            <DataLoader userId={userId} />
             <div className="flex h-[100dvh] overflow-hidden bg-background" data-testid="app-container">
                 {/* Desktop Sidebar - Hidden on mobile */}
                 <Suspense fallback={<SidebarFallback />}>

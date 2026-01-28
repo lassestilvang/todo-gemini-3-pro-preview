@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -49,6 +50,7 @@ interface ManageListDialogProps {
 export function ManageListDialog({ list, open, onOpenChange, trigger, userId }: ManageListDialogProps) {
     const [internalOpen, setInternalOpen] = useState(false);
 
+    const router = useRouter();
     const effectiveOpen = open !== undefined ? open : internalOpen;
     const setEffectiveOpen = (val: boolean) => {
         if (onOpenChange) onOpenChange(val);
@@ -59,6 +61,7 @@ export function ManageListDialog({ list, open, onOpenChange, trigger, userId }: 
         onSuccess: () => {
             setEffectiveOpen(false);
             toast.success("List created successfully");
+            router.refresh();
         }
     });
 
@@ -66,6 +69,7 @@ export function ManageListDialog({ list, open, onOpenChange, trigger, userId }: 
         onSuccess: () => {
             setEffectiveOpen(false);
             toast.success("List updated successfully");
+            router.refresh();
         }
     });
 
@@ -73,6 +77,7 @@ export function ManageListDialog({ list, open, onOpenChange, trigger, userId }: 
         onSuccess: () => {
             setEffectiveOpen(false);
             toast.success("List deleted successfully");
+            router.refresh();
         }
     });
 

@@ -100,7 +100,6 @@ export default function RootLayout({
                   <LazyMotionProvider>
                     <OnboardingProvider>
                       <PwaRegister />
-                      <DataLoader />
                       <WebVitals />
                       <LevelUpWatcher />
                       <MainLayout>{children}</MainLayout>

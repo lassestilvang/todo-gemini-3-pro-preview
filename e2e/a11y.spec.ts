@@ -1,12 +1,9 @@
-
-import { expect, test } from "@playwright/test";
-import { authenticateTestUser } from './fixtures';
+import { expect, test } from "./fixtures";
 import AxeBuilder from '@axe-core/playwright';
 
 test.describe('Accessibility', () => {
-    test('should not have any automatically detectable accessibility issues on landing page', async ({ page }) => {
+    test('should not have any automatically detectable accessibility issues on landing page', async ({ authenticatedPage: page }) => {
         // Authenticate and go to landing/today page
-        await authenticateTestUser(page);
         await page.goto('/today');
         await page.waitForLoadState('networkidle');
 
@@ -21,8 +18,7 @@ test.describe('Accessibility', () => {
         expect(accessibilityScanResults.violations).toEqual([]);
     });
 
-    test('should not have any automatically detectable accessibility issues on inbox page', async ({ page }) => {
-        await authenticateTestUser(page);
+    test('should not have any automatically detectable accessibility issues on inbox page', async ({ authenticatedPage: page }) => {
         await page.goto('/inbox');
         await page.waitForLoadState('networkidle');
 
@@ -37,8 +33,7 @@ test.describe('Accessibility', () => {
         expect(accessibilityScanResults.violations).toEqual([]);
     });
 
-    test('should not have any automatically detectable accessibility issues on upcoming page', async ({ page }) => {
-        await authenticateTestUser(page);
+    test('should not have any automatically detectable accessibility issues on upcoming page', async ({ authenticatedPage: page }) => {
         await page.goto('/upcoming');
         await page.waitForLoadState('networkidle');
 

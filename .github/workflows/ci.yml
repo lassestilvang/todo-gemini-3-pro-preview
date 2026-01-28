@@ -76,7 +76,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Run Tests with Coverage
-        run: bun test --coverage
+        run: bun test --coverage --max-concurrency=1
         env:
           NODE_ENV: test
           CI: true
