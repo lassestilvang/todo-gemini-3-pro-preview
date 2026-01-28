@@ -647,6 +647,7 @@ export function TaskListWithSettings({
                                                 userId={userId}
                                                 disableAnimations={true}
                                                 dispatch={dispatch}
+                                            onEdit={() => handleEdit(task)}
                                             />
                                         </div>
                                     );
