@@ -141,7 +141,7 @@ export async function getTasks(
   if (taskIds.length === 0) return [];
 
   /* eslint-disable prefer-const */
-  let [labelsResult, subtasksResult, blockedCountsResult] = await Promise.all([
+  const [labelsResult, subtasksResult, blockedCountsResult] = await Promise.all([
     db
       .select({
         taskId: taskLabels.taskId,
