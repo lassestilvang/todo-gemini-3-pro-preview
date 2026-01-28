@@ -14,7 +14,6 @@
   - **Responsive Design**: Ensure Board and Calendar views are usable on mobile with horizontal scrolling or simplified layouts.
 - [ ] **[Feature] AI-Powered Task Suggestions**: Leverage Gemini to suggest next tasks based on user habits and patterns.
 - [ ] **[Feature] Internationalization (i18n)**: Add language files, locale-switcher, and Next.js i18n routing.
-- [ ] **[Infra] Offline-First Background Sync**: Implement a sync queue (e.g., Workbox or IndexedDB) for offline reliability.
 - [ ] **[UX] Task List Density Options**: Introduce selectable density views for task lists to improve visibility and focus.
   - **Compact**: Minimal padding and margin, optimized for power users with many tasks.
   - **Standard**: The current default layout and spacing.
@@ -50,6 +49,7 @@
 
 ## ✅ Completed
 
+- [x] **[Infra] Offline-First Background Sync**: Implement a sync queue (e.g., Workbox or IndexedDB) for offline reliability.
 - [x] **[Perf] Fix CSP blocking `react-grab`**: Resolve content security policy violation.
   - *Status*: **RESOLVED** - Loading `react-grab` via HTTPS to align with CSP.
 - [x] **[Perf] Optimize Initial Load**: Investigate and improve TTFB/FCP (~2.5s).

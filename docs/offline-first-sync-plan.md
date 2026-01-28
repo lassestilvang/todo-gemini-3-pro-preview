@@ -169,11 +169,11 @@ const value = useMemo(() => ({
 
 ### Phase 6: Data Freshness
 
-| Task | Effort | Priority |
-|------|--------|----------|
-| 6.1 Add `lastFetched` to IDB meta store | 30min | 🟢 Medium |
-| 6.2 Implement staleness checks in DataLoader | 1h | 🟢 Medium |
-| 6.3 Background refresh on focus/online | 30min | 🟢 Medium |
+| Task | Effort | Priority | Status |
+|------|--------|----------|--------|
+| 6.1 Add `lastFetched` to IDB meta store | 30min | 🟢 Medium | ✅ Done |
+| 6.2 Implement staleness checks in DataLoader | 1h | 🟢 Medium | ✅ Done |
+| 6.3 Background refresh on focus/online | 30min | 🟢 Medium | ✅ Done |
 
 ---
 
@@ -213,11 +213,11 @@ const value = useMemo(() => ({
 | Phase 3: Offline Indicator | 1-2h | 🟡 High | ✅ Done |
 | Phase 4: Conflict Resolution | 3-4h | 🟡 High | ✅ Done |
 | Phase 5: SW Caching | 30min | 🟢 Medium | ✅ Done |
-| Phase 6: Data Freshness | 2h | 🟢 Medium | ❌ Pending |
+| Phase 6: Data Freshness | 2h | 🟢 Medium | ✅ Done |
 
 **Total: ~2-3 days** (reduced from 6-8 days due to existing foundation)
 
-**Progress: Phases 1-5 complete** — Architecture fixed; stores for tasks/lists/labels; sync indicator; conflict resolution; SW caching.
+**Progress: All phases complete** — Architecture fixed; stores for tasks/lists/labels; sync indicator; conflict resolution; SW caching; data freshness with SWR-like pattern.
 
 ---
 

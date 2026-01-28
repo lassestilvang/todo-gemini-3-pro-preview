@@ -2,7 +2,12 @@ import { openDB, DBSchema, IDBPDatabase } from 'idb';
 import { PendingAction } from './types';
 
 const DB_NAME = 'todo-gemini-sync';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
+
+interface MetaValue {
+    key: string;
+    value: number | string | boolean;
+}
 
 interface SyncDB extends DBSchema {
     queue: {
@@ -22,6 +27,10 @@ interface SyncDB extends DBSchema {
         key: number;
         value: any;
     };
+    meta: {
+        key: string;
+        value: MetaValue;
+    };
 }
 
 let dbPromise: Promise<IDBPDatabase<SyncDB>> | null = null;
@@ -40,6 +49,9 @@ export function getDB() {
                 if (oldVersion < 3) {
                     db.createObjectStore('lists', { keyPath: 'id' });
                     db.createObjectStore('labels', { keyPath: 'id' });
+                }
+                if (oldVersion < 4) {
+                    db.createObjectStore('meta', { keyPath: 'key' });
                 }
             },
         });
@@ -144,4 +156,38 @@ export async function deleteLabelFromCache(id: number) {
 export async function getCachedLabels() {
     const db = await getDB();
     return db.getAll('labels');
+}
+
+// Meta store functions for data freshness tracking
+export type EntityType = 'tasks' | 'lists' | 'labels';
+
+const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+
+export async function setLastFetched(entity: EntityType): Promise<void> {
+    const db = await getDB();
+    await db.put('meta', { key: `lastFetched:${entity}`, value: Date.now() });
+}
+
+export async function getLastFetched(entity: EntityType): Promise<number | null> {
+    const db = await getDB();
+    const record = await db.get('meta', `lastFetched:${entity}`);
+    return record?.value as number | null ?? null;
+}
+
+export async function isDataStale(entity: EntityType, thresholdMs: number = STALE_THRESHOLD_MS): Promise<boolean> {
+    const lastFetched = await getLastFetched(entity);
+    if (lastFetched === null) return true;
+    return Date.now() - lastFetched > thresholdMs;
+}
+
+export async function setAllLastFetched(): Promise<void> {
+    const db = await getDB();
+    const now = Date.now();
+    const tx = db.transaction('meta', 'readwrite');
+    await Promise.all([
+        tx.store.put({ key: 'lastFetched:tasks', value: now }),
+        tx.store.put({ key: 'lastFetched:lists', value: now }),
+        tx.store.put({ key: 'lastFetched:labels', value: now }),
+        tx.done
+    ]);
 }
