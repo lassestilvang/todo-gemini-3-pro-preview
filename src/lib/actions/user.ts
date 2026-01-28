@@ -5,6 +5,7 @@
 "use server";
 
 import { db, users, eq, revalidatePath, withErrorHandling, type ActionResult } from "./shared";
+import { requireUser } from "@/lib/auth";
 
 /**
  * Updates user preferences.
@@ -16,6 +17,8 @@ async function updateUserPreferencesImpl(
     userId: string,
     data: { use24HourClock?: boolean | null; weekStartsOnMonday?: boolean | null }
 ) {
+    await requireUser(userId);
+
     await db
         .update(users)
         .set(data)
