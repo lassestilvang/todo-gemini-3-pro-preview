@@ -6,7 +6,7 @@ import { useState, useEffect, memo } from "react";
 import { format } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { Calendar, Flag, Clock, Repeat, AlertCircle, Lock, ChevronDown, GitBranch, GripVertical } from "lucide-react";
+import { Calendar, Flag, Clock, Repeat, AlertCircle, Lock, ChevronDown, GitBranch, GripVertical, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FocusMode } from "./FocusMode";
@@ -31,6 +31,7 @@ interface TaskItemProps {
     dragHandleProps?: DraggableSyntheticListeners;
     // Optional: if not provided, will use useSync() internally
     dispatch?: (type: any, ...args: any[]) => Promise<any>;
+    onEdit?: () => void;
 }
 
 
@@ -54,7 +55,7 @@ const priorityColors = {
 // React.memo prevents re-renders when parent state changes (e.g., dialog open/close)
 // but the task props remain unchanged. In lists with 50+ tasks, this reduces
 // unnecessary re-renders by ~95% when opening the task edit dialog.
-export const TaskItem = memo(function TaskItem({ task, showListInfo = true, userId, disableAnimations = false, dragHandleProps, dispatch: dispatchProp }: TaskItemProps) {
+export const TaskItem = memo(function TaskItem({ task, showListInfo = true, userId, disableAnimations = false, dragHandleProps, dispatch: dispatchProp, onEdit }: TaskItemProps) {
     const [isCompleted, setIsCompleted] = useState(task.isCompleted || false);
     const [isExpanded, setIsExpanded] = useState(false);
     const [subtaskStates, setSubtaskStates] = useState<Record<number, boolean>>(
@@ -340,21 +341,39 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                     )}
                 </div>
 
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity absolute right-4 top-1/2 -translate-y-1/2 z-20 h-8 w-8"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        e.nativeEvent.stopImmediatePropagation();
-                        setShowFocusMode(true);
-                    }}
-                    type="button"
-                    aria-label="Start focus mode"
-                >
-                    <Target className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                </Button>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+                    {onEdit && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                onEdit();
+                            }}
+                            type="button"
+                            aria-label="Edit task"
+                        >
+                            <Pencil className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                        </Button>
+                    )}
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            e.nativeEvent.stopImmediatePropagation();
+                            setShowFocusMode(true);
+                        }}
+                        type="button"
+                        aria-label="Start focus mode"
+                    >
+                        <Target className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                    </Button>
+                </div>
             </div>
 
             {/* Subtasks Section */}
