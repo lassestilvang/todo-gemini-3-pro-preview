@@ -240,7 +240,7 @@ export async function checkAchievements(
     // This will trigger a recursive call to updateUserProgress -> checkAchievements.
     // However, since we've already inserted the achievements above, the recursive call
     // will see them as unlocked and return immediately, preventing infinite loops or N+1 queries.
-    if (totalXpReward > 0) {
+    if (totalXpReward !== 0) {
       await addXP(userId, totalXpReward);
     }
   }
