@@ -84,13 +84,12 @@ test.describe('Data Persistence (Export/Import)', () => {
         // Or at least we should find the list again.
         // Since we imported, we expect a NEW list with same name.
 
-        // Count lists with that name
-        const lists = page.getByRole('link', { name: listName });
-        const count = await lists.count();
-        expect(count).toBeGreaterThanOrEqual(2);
+        // Check for the new imported list
+        const importedListName = `${listName} (Imported)`;
+        await expect(page.getByRole('link', { name: importedListName })).toBeVisible();
 
-        // Click the second one (likely the imported one)
-        await lists.nth(1).click();
+        // Navigate to imported list
+        await page.getByRole('link', { name: importedListName }).click();
 
         // Wait for navigation
         await page.waitForURL(/\/lists\/\d+/);
