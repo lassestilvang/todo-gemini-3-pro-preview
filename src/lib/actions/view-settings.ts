@@ -58,8 +58,6 @@ export async function getViewSettings(userId: string, viewId: string) {
  * @throws {ValidationError} When required fields are missing
  */
 async function saveViewSettingsImpl(userId: string, viewId: string, settings: ViewSettingsConfig) {
-  await requireUser(userId);
-
   if (!userId) {
     throw new ValidationError("User ID is required", { userId: "User ID cannot be empty" });
   }
