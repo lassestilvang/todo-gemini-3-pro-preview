@@ -17,6 +17,7 @@ import { Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { VoiceInput } from "./VoiceInput";
 import { TaskDialog } from "./TaskDialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 import { useSync } from "@/components/providers/sync-provider";
@@ -251,21 +252,28 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                             </div>
 
                             <div className="flex items-center gap-2">
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={handleAiEnhance}
-                                    disabled={isAiLoading || !title.trim()}
-                                    className="text-purple-500 hover:text-purple-600 hover:bg-purple-50"
-                                >
-                                    {isAiLoading ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <Sparkles className="h-4 w-4" />
-                                    )}
-                                    <span className="ml-2 sr-only">AI Detect</span>
-                                </Button>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={handleAiEnhance}
+                                            disabled={isAiLoading || !title.trim()}
+                                            className="text-purple-500 hover:text-purple-600 hover:bg-purple-50"
+                                        >
+                                            {isAiLoading ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <Sparkles className="h-4 w-4" />
+                                            )}
+                                            <span className="ml-2 sr-only">AI Detect</span>
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Auto-detect details from text</p>
+                                    </TooltipContent>
+                                </Tooltip>
                                 <VoiceInput onTranscript={(text) => {
                                     setTitle(prev => prev ? `${prev} ${text}` : text);
                                     setIsExpanded(true);
