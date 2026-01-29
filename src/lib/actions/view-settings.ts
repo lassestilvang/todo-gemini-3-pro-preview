@@ -15,6 +15,7 @@ import {
   withErrorHandling,
   ValidationError,
 } from "./shared";
+import { requireUser } from "@/lib/auth";
 
 /**
  * View settings configuration type.
@@ -40,6 +41,7 @@ export type ViewSettingsConfig = {
  * @returns The view settings if found, null otherwise
  */
 export async function getViewSettings(userId: string, viewId: string) {
+  await requireUser(userId);
   const result = await db
     .select()
     .from(viewSettings)
@@ -56,6 +58,8 @@ export async function getViewSettings(userId: string, viewId: string) {
  * @throws {ValidationError} When required fields are missing
  */
 async function saveViewSettingsImpl(userId: string, viewId: string, settings: ViewSettingsConfig) {
+  await requireUser(userId);
+
   if (!userId) {
     throw new ValidationError("User ID is required", { userId: "User ID cannot be empty" });
   }
@@ -104,6 +108,7 @@ export const saveViewSettings: (
  * @param viewId - The ID of the view
  */
 async function resetViewSettingsImpl(userId: string, viewId: string) {
+  await requireUser(userId);
   await db
     .delete(viewSettings)
     .where(and(eq(viewSettings.userId, userId), eq(viewSettings.viewId, viewId)));
