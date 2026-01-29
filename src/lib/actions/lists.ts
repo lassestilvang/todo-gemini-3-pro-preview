@@ -14,6 +14,8 @@ import {
   type ActionResult,
   withErrorHandling,
   ValidationError,
+  inArray,
+  sql,
 } from "./shared";
 import { logActivity } from "./logs";
 import { getCurrentUser } from "@/lib/auth";
@@ -72,17 +74,24 @@ async function reorderListsImpl(userId: string, items: { id: number; position: n
     throw new ForbiddenError("You are not authorized to access this user's data");
   }
 
-  // Update updates in a transaction or batch would be ideal, 
-  // but for now we'll do promise.all since Drizzle standard batching varies by driver
-  // and Neon driver supports valid connection pooling.
-  await Promise.all(
-    items.map((item) =>
-      db
-        .update(lists)
-        .set({ position: item.position })
-        .where(and(eq(lists.id, item.id), eq(lists.userId, userId)))
-    )
+  if (items.length === 0) {
+    return;
+  }
+
+  // Build a single batched UPDATE using SQL CASE/WHEN
+  // This reduces N database roundtrips to 1
+  const ids = items.map((i) => i.id);
+  const caseWhen = sql.join(
+    items.map((item) => sql`WHEN ${lists.id} = ${item.id} THEN ${item.position}`),
+    sql` `
   );
+
+  await db
+    .update(lists)
+    .set({
+      position: sql`CASE ${caseWhen} ELSE ${lists.position} END`,
+    })
+    .where(and(inArray(lists.id, ids), eq(lists.userId, userId)));
 
   await logActivity({
     userId,
