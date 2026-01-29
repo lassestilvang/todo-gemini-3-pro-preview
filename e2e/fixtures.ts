@@ -27,8 +27,10 @@ export const TEST_USER = {
 export async function authenticateTestUser(page: Page): Promise<boolean> {
   try {
     // Ensure we are on the app origin before making fetch requests
+    // We wait for networkidle to ensure hydration/route handling is ready
     if (page.url() === 'about:blank') {
       await page.goto('/');
+      await page.waitForLoadState('domcontentloaded');
     }
 
     // Generate a unique ID for this test to ensure database isolation

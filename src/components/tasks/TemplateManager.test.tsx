@@ -18,6 +18,17 @@ import { db, templates, users } from "@/db";
 import { setupTestDb, resetTestDb } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
 
+// Mock PointerEvent methods for Radix UI
+if (!Element.prototype.setPointerCapture) {
+  Element.prototype.setPointerCapture = () => {};
+}
+if (!Element.prototype.releasePointerCapture) {
+  Element.prototype.releasePointerCapture = () => {};
+}
+if (!Element.prototype.hasPointerCapture) {
+  Element.prototype.hasPointerCapture = () => false;
+}
+
 describe("TemplateManager", () => {
   beforeEach(async () => {
     await setupTestDb();
