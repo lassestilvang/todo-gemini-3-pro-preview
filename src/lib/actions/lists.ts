@@ -14,9 +14,8 @@ import {
   type ActionResult,
   withErrorHandling,
   ValidationError,
-  inArray,
-  sql,
 } from "./shared";
+import { inArray, sql } from "drizzle-orm";
 import { logActivity } from "./logs";
 import { getCurrentUser } from "@/lib/auth";
 import { ForbiddenError, UnauthorizedError } from "@/lib/auth-errors";
