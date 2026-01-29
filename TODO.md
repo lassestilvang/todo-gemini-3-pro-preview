@@ -2,10 +2,10 @@
 
 ## 🚨 High Priority (Bugs & Core Issues)
 
-<!-- No active items -->
 
 ## 🚀 Features & Enhancements
 
+- [ ] **[Feature] View Setting Indicator**: Show indicator/text next to the view button in the top-right corner of the task list to indicate settings have been applied. For example, if the user has sorted the tasks by "Created" then show a "Sort: Created" indicator next to the view button.
 - [ ] **[Feature] Calendar View**: Add a visual calendar component for task scheduling and overview.
 - [ ] **[Feature] Board/Calendar View on Lists**: Enable different layouts for task lists, selectable via the "View" settings modal.
   - **Board View**: A Trello-style Kanban board grouping tasks by status (To Do, In Progress, Done) or priority.
@@ -25,7 +25,6 @@
   - **Combined View**: Display all favorited items in a new "Favorites" section at the top of the sidebar.
   - **Reordering**: Allow manual reordering within the Favorites section.
   - **UX**: This is especially helpful for users with many lists and labels, providing a way to pin the most important ones.
-- [ ] **[Feature] Sidebar Task Counts**: Add a count of tasks in each list/label to the sidebar.
 - [ ] **[Feature] Sidebar Visibility Toggle**: Add a toggle to the sidebar to hide and show the sidebar.
 - [ ] **[Infra] Privacy-Friendly Analytics**: Connect WebVitals/page-events to a provider (Plausible/PostHog) with opt-out.
 - [ ] **[Infra] Real-User Monitoring (RUM) Dashboard**: Dashboard for Web Vitals metrics.
@@ -34,6 +33,7 @@
 ## 🎨 UI/UX Polish
 
 - [ ] **[UX] Sidebar Resize**: Make the sidebar resizable.
+- [ ] **[UX] Performance Theme**: Should have no CSS animations or transitions anywhere - just instant rendering. Pure speed!
 
 ## 🛠 Engineering & Quality
 
@@ -49,6 +49,13 @@
 
 ## ✅ Completed
 
+- [x] **[Feature] Task Sorting**: Add a "Created" option to the sorting dropdown - newest on top.
+  - **Logic**: Implemented "Created" sort option in `TaskListWithSettings`, updated `ViewOptionsPopover`, and set "Created" descending as default for Lists via `src/app/lists/[id]/page.tsx`.
+  - **Manual Sort**: Updated `createTask` server action to insert new tasks at the top (min position - 1024) when manual sorting is active.
+  - *Status*: **RESOLVED** - Verified logic ensuring new tasks appear at top in both "Created" and "Manual" modes.
+- [x] **[Bug] Task Sorting**: If sorting is applied then the task list is first rendered with tasks in the wrong order, then they are sorted. So a flash of wrong order is visible.
+    - *Status*: **RESOLVED** - Fetched view settings server-side in all pagesto prevent hydration mismatch flash.
+- [x] **[Feature] Sidebar Task Counts**: Add a count of tasks in each list/label to the sidebar.
 - [x] **[Infra] Offline-First Background Sync**: Implement a sync queue (e.g., Workbox or IndexedDB) for offline reliability.
 - [x] **[Perf] Fix CSP blocking `react-grab`**: Resolve content security policy violation.
   - *Status*: **RESOLVED** - Loading `react-grab` via HTTPS to align with CSP.

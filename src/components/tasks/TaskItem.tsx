@@ -129,8 +129,8 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
     return (
         <m.div
             layout={!effectiveDisableAnimations ? true : undefined}
-            initial={!effectiveDisableAnimations ? { opacity: 0, y: 10 } : undefined}
-            animate={!effectiveDisableAnimations ? { opacity: 1, y: 0 } : undefined}
+            initial={!effectiveDisableAnimations ? { opacity: 0, y: 10 } : { opacity: 1, y: 0 }}
+            animate={!effectiveDisableAnimations ? { opacity: 1, y: 0 } : { opacity: 1, y: 0 }}
             exit={!effectiveDisableAnimations ? { opacity: 0, height: 0 } : undefined}
             className="mb-2" // Add margin bottom here to separate items when animating
         >

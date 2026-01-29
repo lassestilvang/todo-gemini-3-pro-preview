@@ -248,7 +248,7 @@ export const viewSettings = pgTable("view_settings", {
     layout: text("layout", { enum: ["list", "board", "calendar"] }).default("list"),
     showCompleted: boolean("show_completed").default(true),
     groupBy: text("group_by", { enum: ["none", "dueDate", "priority", "label"] }).default("none"),
-    sortBy: text("sort_by", { enum: ["manual", "dueDate", "priority", "name"] }).default("manual"),
+    sortBy: text("sort_by", { enum: ["manual", "dueDate", "priority", "name", "created"] }).default("manual"),
     sortOrder: text("sort_order", { enum: ["asc", "desc"] }).default("asc"),
     filterDate: text("filter_date", { enum: ["all", "hasDate", "noDate"] }).default("all"),
     filterPriority: text("filter_priority"), // null = all, or "high", "medium", "low", "none"

@@ -58,7 +58,9 @@ export async function getTasks(
   labelId?: number,
   showCompleted: boolean = true
 ) {
+
   await requireUser(userId);
+
 
   const conditions = [];
 
@@ -321,6 +323,29 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
     if (suggestions.listId) taskData.listId = suggestions.listId;
     if (suggestions.labelIds.length > 0) finalLabelIds = suggestions.labelIds;
   }
+
+  // Calculate position to ensure task is added to the top
+  const conditions = [
+    eq(tasks.userId, taskData.userId),
+    taskData.parentId
+      ? eq(tasks.parentId, taskData.parentId)
+      : and(
+        isNull(tasks.parentId),
+        taskData.listId ? eq(tasks.listId, taskData.listId) : isNull(tasks.listId)
+      ),
+  ];
+
+  const [minPosResult] = await db
+    .select({ min: sql<number>`min(${tasks.position})` })
+    .from(tasks)
+    .where(and(...conditions));
+
+  // Subtract 1024 to leave space and ensure it's at the top
+  // If no tasks exist (min is null), start at -1024 or 0? 
+  // If we start at 0, and user drags, it works.
+  // If we start at -1024, it helps if existing tasks are at 0.
+  const currentMin = minPosResult?.min ?? 0;
+  taskData.position = currentMin - 1024;
 
   const result = await db.insert(tasks).values(taskData).returning();
   const task = Array.isArray(result) ? result[0] : null;

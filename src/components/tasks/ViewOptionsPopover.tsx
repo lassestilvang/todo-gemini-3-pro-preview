@@ -17,6 +17,7 @@ import { toast } from "sonner";
 interface ViewOptionsPopoverProps {
     viewId: string;
     userId?: string;
+    settings?: ViewSettings;
     onSettingsChange?: (settings: ViewSettings) => void;
 }
 
@@ -26,9 +27,14 @@ interface LabelOption {
     color: string | null;
 }
 
-export function ViewOptionsPopover({ viewId, userId, onSettingsChange }: ViewOptionsPopoverProps) {
+export function ViewOptionsPopover({ viewId, userId, settings: propSettings, onSettingsChange }: ViewOptionsPopoverProps) {
     const [open, setOpen] = useState(false);
-    const [settings, setSettings] = useState<ViewSettings>(defaultViewSettings);
+    // Use prop settings or default. Internal state is only needed if props update slower than UI?
+    // But onSettingsChange updates parent state.
+    // However, we need to handle "optimistic" updates here if parent is slow.
+    // Usually standard controlled patterns use props.
+    const settings = propSettings || defaultViewSettings;
+
     const [sortExpanded, setSortExpanded] = useState(true);
     const [filterExpanded, setFilterExpanded] = useState(true);
     const [labels, setLabels] = useState<LabelOption[]>([]);
@@ -37,31 +43,12 @@ export function ViewOptionsPopover({ viewId, userId, onSettingsChange }: ViewOpt
     const [viewName, setViewName] = useState("");
     const [isSaving, setIsSaving] = useState(false);
 
-    // Load settings and labels on mount
+    // Load labels on mount (removed settings fetch)
     useEffect(() => {
         setMounted(true);
         async function loadData() {
             if (!userId) return;
-            const [savedSettings, allLabels] = await Promise.all([
-                getViewSettings(userId, viewId),
-                getLabels(userId)
-            ]);
-
-            if (savedSettings) {
-                setSettings({
-                    layout: savedSettings.layout || defaultViewSettings.layout,
-                    showCompleted: savedSettings.showCompleted ?? defaultViewSettings.showCompleted,
-                    groupBy: savedSettings.groupBy || defaultViewSettings.groupBy,
-                    sortBy: savedSettings.sortBy || defaultViewSettings.sortBy,
-                    sortOrder: savedSettings.sortOrder || defaultViewSettings.sortOrder,
-                    filterDate: savedSettings.filterDate || defaultViewSettings.filterDate,
-                    filterPriority: savedSettings.filterPriority,
-                    filterLabelId: savedSettings.filterLabelId,
-                    filterEnergyLevel: savedSettings.filterEnergyLevel as ViewSettings["filterEnergyLevel"],
-                    filterContext: savedSettings.filterContext as ViewSettings["filterContext"],
-                });
-            }
-
+            const allLabels = await getLabels(userId);
             setLabels(allLabels);
         }
 
@@ -70,7 +57,9 @@ export function ViewOptionsPopover({ viewId, userId, onSettingsChange }: ViewOpt
 
     const updateSetting = <K extends keyof ViewSettings>(key: K, value: ViewSettings[K]) => {
         const newSettings = { ...settings, [key]: value };
-        setSettings(newSettings);
+        // We don't have local setSettings anymore, we rely on parent update via onSettingsChange
+        // But for smooth UI, parent should update immediately. `TaskListWithSettings` does flushSync? No.
+        // But `setSettings` in parent triggers re-render.
 
         startTransition(async () => {
             if (userId) {
@@ -251,6 +240,7 @@ export function ViewOptionsPopover({ viewId, userId, onSettingsChange }: ViewOpt
                                             <SelectItem value="dueDate">Due Date</SelectItem>
                                             <SelectItem value="priority">Priority</SelectItem>
                                             <SelectItem value="name">Name</SelectItem>
+                                            <SelectItem value="created">Created</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>

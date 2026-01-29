@@ -33,4 +33,5 @@ export interface Task {
     subtaskCount?: number;
     completedSubtaskCount?: number;
     updatedAt?: Date | string | null;
+    createdAt: Date | string; // Made required as per schema
 }

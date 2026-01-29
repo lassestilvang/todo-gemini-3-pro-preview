@@ -74,7 +74,7 @@ export default function RootLayout({
       className={`${inter.variable} ${quicksand.variable} ${spaceGrotesk.variable} ${orbitron.variable} ${sora.variable}`}
     >
       <head>
-        {process.env.NODE_ENV === "development" && (
+        {/*process.env.NODE_ENV === "development" && (
           <>
             <Script
               src="https://unpkg.com/react-grab/dist/index.global.js"
@@ -82,7 +82,7 @@ export default function RootLayout({
               strategy="beforeInteractive"
             />
           </>
-        )}
+        )*/}
       </head>
       <body className="font-sans antialiased" suppressHydrationWarning>
         <QueryProvider>

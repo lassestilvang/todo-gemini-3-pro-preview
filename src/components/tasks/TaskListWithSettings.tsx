@@ -101,6 +101,11 @@ function applyViewSettings(tasks: Task[], settings: ViewSettings): Task[] {
                     case "name":
                         comparison = a.title.localeCompare(b.title);
                         break;
+                    case "created":
+                        const aTime = new Date(a.createdAt).getTime();
+                        const bTime = new Date(b.createdAt).getTime();
+                        comparison = aTime - bTime;
+                        break;
                 }
 
                 return comparison * sortMultiplier;
@@ -597,6 +602,7 @@ export function TaskListWithSettings({
                     <ViewOptionsPopover
                         viewId={viewId}
                         userId={userId}
+                        settings={settings}
                         onSettingsChange={setSettings}
                     />
                 </div>

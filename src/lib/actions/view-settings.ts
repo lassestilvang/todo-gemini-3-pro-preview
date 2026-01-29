@@ -23,7 +23,7 @@ export type ViewSettingsConfig = {
   layout?: "list" | "board" | "calendar";
   showCompleted?: boolean;
   groupBy?: "none" | "dueDate" | "priority" | "label";
-  sortBy?: "manual" | "dueDate" | "priority" | "name";
+  sortBy?: "manual" | "dueDate" | "priority" | "name" | "created";
   sortOrder?: "asc" | "desc";
   filterDate?: "all" | "hasDate" | "noDate";
   filterPriority?: string | null;

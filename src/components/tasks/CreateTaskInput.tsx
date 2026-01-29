@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Calendar, Flag, Zap, MapPin, Smile, X } from "lucide-react";
 import { ResolvedIcon } from "@/components/ui/resolved-icon";
-import { createTask } from "@/lib/actions";
 import { IconPicker } from "@/components/ui/icon-picker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -20,7 +19,10 @@ import { VoiceInput } from "./VoiceInput";
 import { TaskDialog } from "./TaskDialog";
 
 
+import { useSync } from "@/components/providers/sync-provider";
+
 export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelIds }: { listId?: number, defaultDueDate?: Date | string, userId: string, defaultLabelIds?: number[] }) {
+    const { dispatch } = useSync();
     const [title, setTitle] = useState("");
     const [dueDate, setDueDate] = useState<Date | undefined>(
         defaultDueDate ? new Date(defaultDueDate) : undefined
@@ -76,25 +78,35 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
             toast.error("Unable to create task: missing user ID");
             return;
         }
-        await createTask({
-            userId,
-            title: parsed.title || title,
-            listId: listId || null,
-            priority: priority !== "none" ? priority : (parsed.priority || "none"),
-            energyLevel: energyLevel || parsed.energyLevel || null,
-            context: context || parsed.context || null,
-            dueDate: dueDate || parsed.dueDate || null,
-            labelIds: defaultLabelIds,
-            icon: icon || null,
-        });
 
-        setTitle("");
-        setDueDate(defaultDueDate ? new Date(defaultDueDate) : undefined);
-        setPriority("none");
-        setEnergyLevel(undefined);
-        setContext(undefined);
-        setIcon(undefined);
-        setIsExpanded(false);
+        try {
+            // Use SyncProvider dispatch instead of direct server action
+            await dispatch('createTask', {
+                userId,
+                title: parsed.title || title,
+                listId: listId || null,
+                priority: priority !== "none" ? priority : (parsed.priority || "none"),
+                energyLevel: energyLevel || parsed.energyLevel || null,
+                context: context || parsed.context || null,
+                dueDate: dueDate || parsed.dueDate || null,
+                labelIds: defaultLabelIds,
+                icon: icon || null,
+            });
+
+            setTitle("");
+            setDueDate(defaultDueDate ? new Date(defaultDueDate) : undefined);
+            setPriority("none");
+            setEnergyLevel(undefined);
+            setContext(undefined);
+            setIcon(undefined);
+            setIsExpanded(false);
+
+            // Optional: toast can be handled by the optimistic update logic if desired, 
+            // but a reassuring message here is fine too.
+        } catch (error) {
+            console.error("Failed to create task:", error);
+            toast.error("Failed to create task");
+        }
     };
 
     const handleFullDetails = () => {

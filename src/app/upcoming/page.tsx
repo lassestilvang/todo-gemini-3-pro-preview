@@ -2,9 +2,10 @@ import { getCurrentUser } from "@/lib/auth";
 import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
 import { CreateTaskInput } from "@/components/tasks/CreateTaskInput";
 import { redirect } from "next/navigation";
-
-
 import { type Task } from "@/lib/types";
+import { getViewSettings } from "@/lib/actions/view-settings";
+import { mapDbSettingsToViewSettings } from "@/lib/view-settings";
+import { getTasks } from "@/lib/actions/tasks";
 
 export default async function UpcomingPage() {
     const user = await getCurrentUser();
@@ -12,8 +13,12 @@ export default async function UpcomingPage() {
         redirect("/login");
     }
 
-    // OPTIM: Removed blocking data fetch to solve "Slow Navigation"
-    const tasks: Task[] = [];
+    // Restore blocking data fetch
+    const tasks = await getTasks(user.id, null, "upcoming");
+
+    // Fetch view settings on server to prevent flash
+    const dbSettings = await getViewSettings(user.id, "upcoming");
+    const initialSettings = mapDbSettingsToViewSettings(dbSettings);
 
     return (
         <div className="container max-w-4xl py-6 lg:py-10">
@@ -32,6 +37,7 @@ export default async function UpcomingPage() {
                     viewId="upcoming"
                     userId={user.id}
                     filterType="upcoming"
+                    initialSettings={initialSettings}
                 />
             </div>
         </div>

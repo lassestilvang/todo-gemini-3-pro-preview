@@ -2,9 +2,11 @@ import { getCurrentUser } from "@/lib/auth";
 import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
 import { CreateTaskInput } from "@/components/tasks/CreateTaskInput";
 import { redirect } from "next/navigation";
-
-
 import { type Task } from "@/lib/types";
+import { getViewSettings } from "@/lib/actions/view-settings";
+import { mapDbSettingsToViewSettings } from "@/lib/view-settings";
+
+import { getTasks } from "@/lib/actions/tasks";
 
 export default async function InboxPage() {
     const user = await getCurrentUser();
@@ -12,10 +14,13 @@ export default async function InboxPage() {
         redirect("/login");
     }
 
-    // OPTIM: Removed blocking data fetch to solve "Slow Navigation"
-    // The data is now hydrated by DataLoader (root) or cached in Global Store.
-    // We pass [] to allow instant mount, then Store hydrates.
-    const tasks: Task[] = [];
+    // Restore blocking fetch to ensure tasks appear.
+    // Optimization can be revisited if navigation is too slow.
+    const tasks = await getTasks(user.id, null);
+
+    // Fetch view settings on server to prevent flash
+    const dbSettings = await getViewSettings(user.id, "inbox");
+    const initialSettings = mapDbSettingsToViewSettings(dbSettings);
 
     return (
         <div className="container max-w-4xl py-6 lg:py-10">
@@ -34,6 +39,7 @@ export default async function InboxPage() {
                     viewId="inbox"
                     userId={user.id}
                     filterType="inbox"
+                    initialSettings={initialSettings}
                 />
             </div>
         </div>
