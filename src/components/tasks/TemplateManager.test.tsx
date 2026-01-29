@@ -16,17 +16,22 @@ const originalConfirm = globalThis.confirm;
 
 import { db, templates, users } from "@/db";
 import { setupTestDb, resetTestDb } from "@/test/setup";
-import { getCurrentUser } from "@/lib/auth";
-
-// Mock auth
-mock.module("@/lib/auth", () => ({
-  getCurrentUser: mock(() => Promise.resolve({ id: "test_user_123" })),
-}));
+import { setMockAuthUser } from "@/test/mocks";
 
 describe("TemplateManager", () => {
   beforeEach(async () => {
     await setupTestDb();
     await resetTestDb();
+
+    // Set mock user to match the one expected by tests
+    setMockAuthUser({
+      id: "test_user_123",
+      email: "test@example.com",
+      firstName: "Test",
+      lastName: "User",
+      profilePictureUrl: null
+    });
+
     globalThis.confirm = mock(() => true);
 
     // Create user first to satisfy FK constraint

@@ -19,7 +19,7 @@ global.ResizeObserver = class ResizeObserver {
     disconnect() { }
 };
 
-// Mock PointerEvent
+// Mock PointerEvent and Element pointer methods
 if (!global.PointerEvent) {
     class MockPointerEvent extends Event {
         button: number;
@@ -62,6 +62,20 @@ if (!global.PointerEvent) {
         }
     }
     (global as any).PointerEvent = MockPointerEvent;
+}
+
+if (!global.Element.prototype.setPointerCapture) {
+    global.Element.prototype.setPointerCapture = () => {};
+}
+if (!global.Element.prototype.releasePointerCapture) {
+    global.Element.prototype.releasePointerCapture = () => {};
+}
+if (!global.Element.prototype.hasPointerCapture) {
+    global.Element.prototype.hasPointerCapture = () => false;
+}
+// Mock scrollIntoView
+if (!global.Element.prototype.scrollIntoView) {
+    global.Element.prototype.scrollIntoView = () => {};
 }
 
 import { DEFAULT_MOCK_USER, setMockAuthUser } from "./mocks";

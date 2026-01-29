@@ -26,6 +26,11 @@ export const TEST_USER = {
  */
 export async function authenticateTestUser(page: Page): Promise<boolean> {
   try {
+    // Ensure we are on the app origin before making fetch requests
+    if (page.url() === 'about:blank') {
+      await page.goto('/');
+    }
+
     // Generate a unique ID for this test to ensure database isolation
     const uniqueId = Math.random().toString(36).substring(7);
     const data = await page.evaluate(async (userData) => {
