@@ -20,7 +20,7 @@ import {
 } from '@/lib/actions/labels';
 
 // Map of action names to their implementation
-export const actionRegistry: Record<string, (...args: any[]) => Promise<any>> = {
+export const actionRegistry = {
     createTask,
     updateTask,
     deleteTask,
@@ -35,6 +35,6 @@ export const actionRegistry: Record<string, (...args: any[]) => Promise<any>> = 
     updateLabel,
     deleteLabel,
     reorderLabels,
-};
+} as const;
 
 export type ActionType = keyof typeof actionRegistry;

@@ -9,6 +9,7 @@ import { ViewSettings, defaultViewSettings } from "@/lib/view-settings";
 import { getViewSettings } from "@/lib/actions/view-settings";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
+import { ActionType, actionRegistry } from "@/lib/sync/registry";
 
 const TaskDialog = dynamic(() => import("./TaskDialog").then(mod => mod.TaskDialog), {
     ssr: false,
@@ -32,7 +33,7 @@ interface TaskListWithSettingsProps {
 function applyViewSettings(tasks: Task[], settings: ViewSettings): Task[] {
     // Perf: single-pass filters avoid multiple O(n) array scans per settings change.
     // On 1k tasks, this removes ~5-6 extra passes while preserving exact filter behavior.
-    const result: Task[] = [];
+    let result: Task[] = [];
     for (const task of tasks) {
         // Filter: showCompleted
         if (!settings.showCompleted && task.isCompleted) {
@@ -252,7 +253,7 @@ const SortableTaskItem = memo(function SortableTaskItem({
     listId?: number | null;
     userId?: string;
     isDragEnabled: boolean;
-    dispatch: (type: any, ...args: any[]) => Promise<any>;
+    dispatch: <T extends ActionType>(type: T, ...args: Parameters<typeof actionRegistry[T]>) => Promise<any>;
 }) {
     const {
         attributes,
@@ -405,7 +406,7 @@ export function TaskListWithSettings({
         }
 
         return filtered;
-    }, [allStoreTasks, listId, labelId, filterType, tasks, viewId]);
+    }, [allStoreTasks, listId, labelId, filterType, tasks]);
 
     // Zustand store already has optimistic updates applied via SyncProvider.dispatch()
     // No need for a separate optimistic layer

@@ -14,6 +14,8 @@ interface LabelPageProps {
     }>;
 }
 
+import { type Task } from "@/lib/types";
+
 export default async function LabelPage({ params }: LabelPageProps) {
     const user = await getCurrentUser();
     if (!user) {
@@ -29,7 +31,7 @@ export default async function LabelPage({ params }: LabelPageProps) {
     if (!label) return notFound();
 
     // OPTIM: Removed blocking task fetch
-    const tasks: any[] = [];
+    const tasks: Task[] = [];
     const initialSettings = undefined;
 
     return (

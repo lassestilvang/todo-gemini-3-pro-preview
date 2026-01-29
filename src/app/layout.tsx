@@ -58,7 +58,6 @@ import { ZenModeProvider } from "@/components/providers/ZenModeProvider";
 import { LazyMotionProvider } from "@/components/providers/LazyMotionProvider";
 import { PerformanceProvider } from "@/components/providers/PerformanceContext";
 import { SyncProvider } from "@/components/providers/sync-provider";
-import { DataLoader } from "@/components/providers/data-loader";
 
 // Validate env vars at startup
 validateEnv();

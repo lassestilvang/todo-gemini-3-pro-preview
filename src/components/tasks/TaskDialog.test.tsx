@@ -7,31 +7,31 @@ import * as syncProvider from "@/components/providers/sync-provider";
 
 // Local UI Mocks to avoid Portals issues in Happy-dom
 mock.module("@/components/ui/dialog", () => ({
-    Dialog: ({ children, open }: any) => <div data-testid="dialog-root" data-open={open}>{children}</div>,
-    DialogContent: ({ children }: any) => <div data-testid="dialog-content">{children}</div>,
-    DialogHeader: ({ children }: any) => <div data-testid="dialog-header">{children}</div>,
-    DialogFooter: ({ children }: any) => <div data-testid="dialog-footer">{children}</div>,
-    DialogTitle: ({ children }: any) => <h2>{children}</h2>,
-    DialogDescription: ({ children }: any) => <p>{children}</p>,
-    DialogTrigger: ({ children, asChild }: any) => asChild ? children : <button>{children}</button>,
+    Dialog: ({ children, open }: { children: React.ReactNode; open?: boolean }) => <div data-testid="dialog-root" data-open={open}>{children}</div>,
+    DialogContent: ({ children }: { children: React.ReactNode }) => <div data-testid="dialog-content">{children}</div>,
+    DialogHeader: ({ children }: { children: React.ReactNode }) => <div data-testid="dialog-header">{children}</div>,
+    DialogFooter: ({ children }: { children: React.ReactNode }) => <div data-testid="dialog-footer">{children}</div>,
+    DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
+    DialogDescription: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
+    DialogTrigger: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => asChild ? children : <button>{children}</button>,
 }));
 
 mock.module("@/components/ui/popover", () => ({
-    Popover: ({ children, open }: any) => <div data-testid="popover-root" data-open={open}>{children}</div>,
-    PopoverContent: ({ children }: any) => <div data-testid="popover-content">{children}</div>,
-    PopoverTrigger: ({ children, asChild }: any) => asChild ? children : <button>{children}</button>,
+    Popover: ({ children, open }: { children: React.ReactNode; open?: boolean }) => <div data-testid="popover-root" data-open={open}>{children}</div>,
+    PopoverContent: ({ children }: { children: React.ReactNode }) => <div data-testid="popover-content">{children}</div>,
+    PopoverTrigger: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => asChild ? children : <button>{children}</button>,
 }));
 
 mock.module("@/components/ui/select", () => ({
-    Select: ({ children, value }: any) => <div data-testid="select-root" data-value={value}>{children}</div>,
-    SelectTrigger: ({ children }: any) => <button>{children}</button>,
-    SelectValue: ({ children, placeholder }: any) => <span>{children || placeholder}</span>,
-    SelectContent: ({ children }: any) => <div data-testid="select-content">{children}</div>,
-    SelectItem: ({ children, value }: any) => <div data-testid={`select-item-${value}`} role="option">{children}</div>,
+    Select: ({ children, value }: { children: React.ReactNode; value?: string }) => <div data-testid="select-root" data-value={value}>{children}</div>,
+    SelectTrigger: ({ children }: { children: React.ReactNode }) => <button>{children}</button>,
+    SelectValue: ({ children, placeholder }: { children?: React.ReactNode; placeholder?: string }) => <span>{children || placeholder}</span>,
+    SelectContent: ({ children }: { children: React.ReactNode }) => <div data-testid="select-content">{children}</div>,
+    SelectItem: ({ children, value }: { children: React.ReactNode; value: string }) => <div data-testid={`select-item-${value}`} role="option">{children}</div>,
 }));
 
 mock.module("@/components/ui/icon-picker", () => ({
-    IconPicker: ({ value, onChange, trigger }: any) => (
+    IconPicker: ({ value, onChange, trigger }: { value: string | null; onChange: (v: string) => void; trigger: React.ReactNode }) => (
         <div data-testid="icon-picker">
             {trigger}
             <input

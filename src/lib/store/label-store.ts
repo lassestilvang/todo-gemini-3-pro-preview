@@ -28,7 +28,7 @@ export const useLabelStore = create<LabelState>((set, get) => ({
         try {
             const cached = await getCachedLabels();
             const cachedMap: Record<number, Label> = {};
-            cached.forEach((item: any) => {
+            cached.forEach((item: Label) => {
                 cachedMap[item.id] = item;
             });
 

@@ -2,7 +2,7 @@ import { useState, FormEvent, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useSync } from "@/components/providers/sync-provider";
-import type { ActionResult, ActionError } from "@/lib/action-result";
+
 
 export type TaskType = {
     id: number;
@@ -37,41 +37,6 @@ interface UseTaskFormProps {
     initialContext?: "computer" | "phone" | "errands" | "meeting" | "home" | "anywhere";
 }
 
-/**
- * Helper to check if a result is an ActionResult
- */
-function isActionResult<T>(result: unknown): result is ActionResult<T> {
-    return (
-        typeof result === "object" &&
-        result !== null &&
-        "success" in result &&
-        typeof (result as ActionResult<T>).success === "boolean"
-    );
-}
-
-/**
- * Handle ActionResult or legacy error patterns
- */
-function handleActionError(
-    error: ActionError,
-    router: ReturnType<typeof useRouter>,
-    setFieldErrors: (errors: Record<string, string>) => void
-): void {
-    // Handle field-level validation errors
-    if (error.code === "VALIDATION_ERROR" && error.details) {
-        setFieldErrors(error.details);
-    }
-
-    // Handle authentication errors - redirect to login
-    if (error.code === "UNAUTHORIZED") {
-        toast.error("Session expired. Please log in again.");
-        router.push("/login?message=session_expired");
-        return;
-    }
-
-    // Show error toast
-    toast.error(error.message);
-}
 
 /**
  * Hook to manage the form state for creating and editing tasks.

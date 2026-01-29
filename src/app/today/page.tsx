@@ -4,6 +4,8 @@ import { CreateTaskInput } from "@/components/tasks/CreateTaskInput";
 import { redirect } from "next/navigation";
 
 
+import { type Task } from "@/lib/types";
+
 export default async function TodayPage() {
     const user = await getCurrentUser();
     if (!user) {
@@ -11,7 +13,7 @@ export default async function TodayPage() {
     }
 
     // OPTIM: Removed blocking data fetch to solve "Slow Navigation"
-    const tasks: any[] = [];
+    const tasks: Task[] = [];
 
     return (
         <div className="container max-w-4xl py-6 lg:py-10">

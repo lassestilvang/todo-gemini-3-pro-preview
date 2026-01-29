@@ -14,6 +14,8 @@ interface ListPageProps {
     }>;
 }
 
+import { type Task } from "@/lib/types";
+
 export default async function ListPage({ params }: ListPageProps) {
     const user = await getCurrentUser();
     if (!user) {
@@ -29,7 +31,7 @@ export default async function ListPage({ params }: ListPageProps) {
     if (!list) return notFound();
 
     // OPTIM: Removed blocking task fetch
-    const tasks: any[] = [];
+    const tasks: Task[] = [];
 
     // We can't easily skip getViewSettings if we want initialSettings passed.
     // BUT we can make it hydrating too.

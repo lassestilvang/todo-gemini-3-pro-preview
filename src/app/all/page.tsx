@@ -3,6 +3,8 @@ import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
 import { CreateTaskInput } from "@/components/tasks/CreateTaskInput";
 import { redirect } from "next/navigation";
 
+import { type Task } from "@/lib/types";
+
 export default async function AllTasksPage() {
     const user = await getCurrentUser();
     if (!user) {
@@ -11,7 +13,7 @@ export default async function AllTasksPage() {
 
     // OPTIM: Removed blocking data fetch to solve "Slow Navigation"
     // The data is now hydrated by DataLoader (root) or cached in Global Store.
-    const tasks: any[] = [];
+    const tasks: Task[] = [];
     const initialSettings = undefined;
 
     return (

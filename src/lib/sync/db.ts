@@ -17,15 +17,15 @@ interface SyncDB extends DBSchema {
     };
     tasks: {
         key: number;
-        value: any;
+        value: Record<string, unknown>;
     };
     lists: {
         key: number;
-        value: any;
+        value: Record<string, unknown>;
     };
     labels: {
         key: number;
-        value: any;
+        value: Record<string, unknown>;
     };
     meta: {
         key: string;
@@ -38,7 +38,7 @@ let dbPromise: Promise<IDBPDatabase<SyncDB>> | null = null;
 export function getDB() {
     if (!dbPromise) {
         dbPromise = openDB<SyncDB>(DB_NAME, DB_VERSION, {
-            upgrade(db, oldVersion, newVersion, transaction) {
+            upgrade(db, oldVersion) {
                 if (oldVersion < 1) {
                     const store = db.createObjectStore('queue', { keyPath: 'id' });
                     store.createIndex('by-timestamp', 'timestamp');
@@ -80,7 +80,7 @@ export async function deleteTaskFromCache(id: number) {
 
 export async function getCachedTasks() {
     const db = await getDB();
-    return db.getAll('tasks');
+    return db.getAll('tasks') as Promise<any[]>;
 }
 
 export async function addToQueue(action: PendingAction) {
@@ -130,7 +130,7 @@ export async function deleteListFromCache(id: number) {
 
 export async function getCachedLists() {
     const db = await getDB();
-    return db.getAll('lists');
+    return db.getAll('lists') as Promise<any[]>;
 }
 
 // Labels cache functions
@@ -155,7 +155,7 @@ export async function deleteLabelFromCache(id: number) {
 
 export async function getCachedLabels() {
     const db = await getDB();
-    return db.getAll('labels');
+    return db.getAll('labels') as Promise<any[]>;
 }
 
 // Meta store functions for data freshness tracking

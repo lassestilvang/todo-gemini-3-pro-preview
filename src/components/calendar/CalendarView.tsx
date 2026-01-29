@@ -34,8 +34,10 @@ import {
 
 import { useTaskStore } from "@/lib/store/task-store";
 import { useEffect } from "react";
+import { type Task } from "@/lib/types";
 
-interface Task {
+// Internal interface for the calendar display logic
+interface CalendarTask {
   id: number;
   title: string;
   dueDate: Date | null;
@@ -56,10 +58,10 @@ export function CalendarView({ tasks }: CalendarViewProps) {
   }, [initialize]);
 
   // Use props if provided (SSR), otherwise fallback to store (Client Hydration)
-  const displayTasks = useMemo(() => {
-    if (tasks && tasks.length > 0) return tasks;
-    // Map store tasks to Calendar Task interface
-    return Object.values(storeTasks).map(t => ({
+  const displayTasks = useMemo((): CalendarTask[] => {
+    const sourceTasks = (tasks && tasks.length > 0) ? tasks : Object.values(storeTasks);
+    // Map tasks to CalendarTask interface to ensure boolean completion and typed priority
+    return sourceTasks.map(t => ({
       id: t.id,
       title: t.title,
       dueDate: t.dueDate ? new Date(t.dueDate) : null,
@@ -68,6 +70,7 @@ export function CalendarView({ tasks }: CalendarViewProps) {
       energyLevel: t.energyLevel ?? null // Ensure string | null
     }));
   }, [tasks, storeTasks]);
+
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const { getWeekStartDay } = useUser();
@@ -101,7 +104,7 @@ export function CalendarView({ tasks }: CalendarViewProps) {
   // Without this, each of the 35-42 calendar cells would iterate all tasks O(n),
   // resulting in O(n*days) complexity. This reduces it to O(n) total preprocessing.
   const tasksByDate = useMemo(() => {
-    const map = new Map<string, Task[]>();
+    const map = new Map<string, CalendarTask[]>();
     for (const task of displayTasks) {
       if (!task.dueDate) continue;
       const dateKey = format(new Date(task.dueDate), "yyyy-MM-dd");
@@ -115,7 +118,7 @@ export function CalendarView({ tasks }: CalendarViewProps) {
     return map;
   }, [displayTasks]);
 
-  const getTasksForDay = (date: Date): Task[] => {
+  const getTasksForDay = (date: Date): CalendarTask[] => {
     return tasksByDate.get(format(date, "yyyy-MM-dd")) || [];
   };
 

@@ -6,6 +6,8 @@ const CalendarView = dynamic(() => import("@/components/calendar/CalendarView").
 });
 import { redirect } from "next/navigation";
 
+import { type Task } from "@/lib/types";
+
 export default async function CalendarPage() {
     const user = await getCurrentUser();
     if (!user) {
@@ -16,7 +18,7 @@ export default async function CalendarPage() {
     // In a real app with thousands of tasks, we'd want to fetch by date range
     // But for this scale, fetching all is fine and allows for smooth client-side navigation
     // OPTIM: Hydrate from client store
-    const tasks: any[] = [];
+    const tasks: Task[] = [];
 
     return (
         <div className="container mx-auto p-6 h-full flex flex-col">

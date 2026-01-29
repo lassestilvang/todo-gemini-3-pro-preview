@@ -21,7 +21,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         try {
             const cached = await getCachedTasks();
             const cachedMap: Record<number, Task> = {};
-            cached.forEach((t: any) => {
+            cached.forEach((t: Task) => {
                 cachedMap[t.id] = t;
             });
 

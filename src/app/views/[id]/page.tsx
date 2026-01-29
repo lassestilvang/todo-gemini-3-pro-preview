@@ -3,8 +3,8 @@ import { eq, and } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
 import { redirect, notFound } from "next/navigation";
-import { getTasks } from "@/lib/actions";
 import { type ViewSettings } from "@/lib/view-settings";
+import { Task } from "@/lib/types";
 
 export default async function SavedViewPage({ params }: { params: { id: string } }) {
     const user = await getCurrentUser();
@@ -32,7 +32,7 @@ export default async function SavedViewPage({ params }: { params: { id: string }
     // But for now, we'll fetch all tasks and let the client-side filtering handle it
     // just like Inbox/Today does.
     // OPTIM: Hydrate from client store
-    const tasks: any[] = [];
+    const tasks: Task[] = [];
 
     return (
         <div className="container max-w-4xl py-6 lg:py-10">

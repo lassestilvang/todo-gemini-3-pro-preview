@@ -13,11 +13,11 @@ import { ConflictDialog } from "@/components/sync/ConflictDialog";
 
 interface SyncContextType {
     pendingActions: PendingAction[];
-    dispatch: (type: ActionType, ...args: any[]) => Promise<any>;
+    dispatch: <T extends ActionType>(type: T, ...args: Parameters<typeof actionRegistry[T]>) => Promise<any>;
     status: SyncStatus;
     isOnline: boolean;
     conflicts: ConflictInfo[];
-    resolveConflict: (actionId: string, resolution: 'local' | 'server' | 'merge', mergedData?: any) => Promise<void>;
+    resolveConflict: (actionId: string, resolution: 'local' | 'server' | 'merge', mergedData?: unknown) => Promise<void>;
 }
 
 const SyncContext = createContext<SyncContextType | null>(null);
@@ -28,13 +28,14 @@ export const useSync = () => {
     return context;
 };
 
-function replaceIdsInPayload(payload: any, oldId: number, newId: number): any {
+function replaceIdsInPayload(payload: unknown, oldId: number, newId: number): unknown {
     if (payload === oldId) return newId;
     if (Array.isArray(payload)) return payload.map(item => replaceIdsInPayload(item, oldId, newId));
     if (typeof payload === 'object' && payload !== null) {
-        const newObj: any = {};
-        for (const key in payload) {
-            newObj[key] = replaceIdsInPayload(payload[key], oldId, newId);
+        const obj = payload as Record<string, unknown>;
+        const newObj: Record<string, unknown> = {};
+        for (const key in obj) {
+            newObj[key] = replaceIdsInPayload(obj[key], oldId, newId);
         }
         return newObj;
     }
@@ -49,63 +50,24 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     const processingRef = useRef(false);
     const processQueueRef = useRef<(() => Promise<void>) | undefined>(undefined);
 
-    // Initial load
-    useEffect(() => {
-        setIsOnline(navigator.onLine);
-
-        const loadQueue = async () => {
-            const queue = await getQueue();
-            setPendingActions(queue);
-        };
-        loadQueue();
-
-        const handleOnline = () => {
-            setIsOnline(true);
-            setStatus('online');
-            toast.success("Back online");
-            processQueueRef.current?.();
-        };
-
-        const handleOffline = () => {
-            setIsOnline(false);
-            setStatus('offline');
-            toast.message("You are offline. Changes saved locally.");
-        };
-
-        window.addEventListener('online', handleOnline);
-        window.addEventListener('offline', handleOffline);
-
-        return () => {
-            window.removeEventListener('online', handleOnline);
-            window.removeEventListener('offline', handleOffline);
-        };
-    }, []);
-
-    // Also try to process queue on mount if online
-    useEffect(() => {
-        if (isOnline) {
-            processQueue();
-        }
-    }, [isOnline]);
-
-    const fixupQueueIds = async (oldId: number, newId: number) => {
-        const db = await getDB();
+    const fixupQueueIds = useCallback(async (oldId: number, newId: number) => {
+        const dbCurrent = await getDB();
         const queue = await getQueue();
 
         for (const action of queue) {
             // Check if this action uses the old ID
             const newPayload = replaceIdsInPayload(action.payload, oldId, newId);
             if (JSON.stringify(newPayload) !== JSON.stringify(action.payload)) {
-                action.payload = newPayload;
-                await db.put('queue', action);
+                action.payload = newPayload as any[];
+                await dbCurrent.put('queue', action);
             }
         }
 
         // Refresh local state
         setPendingActions(await getQueue());
-    };
+    }, []);
 
-    const processQueue = async () => {
+    const processQueue = useCallback(async () => {
         if (processingRef.current || !navigator.onLine) return;
 
         const queue = await getQueue();
@@ -117,7 +79,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         try {
             // Process sequentially
             for (const action of queue) {
-                const fn = actionRegistry[action.type];
+                const fn = actionRegistry[action.type as ActionType];
                 if (!fn) {
                     console.error(`Unknown action type: ${action.type}`);
                     await removeFromQueue(action.id);
@@ -128,7 +90,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
                     await updateActionStatus(action.id, 'processing');
 
                     // Execute Server Action
-                    const result = await fn(...action.payload);
+                    const result = await (fn as (...args: any[]) => Promise<any>)(...(action.payload as any[]));
 
                     // If this action created a temp ID, we need to fix up future actions
                     if (action.tempId && result && result.id) {
@@ -150,12 +112,13 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
                         }
                     } else if (result) {
                         // Generic update to store
+                        const payload = action.payload as any[];
                         if (action.type === 'deleteTask') {
-                            useTaskStore.getState().deleteTask(action.payload[0]);
+                            useTaskStore.getState().deleteTask(payload[0]);
                         } else if (action.type === 'deleteList') {
-                            useListStore.getState().deleteList(action.payload[0]);
+                            useListStore.getState().deleteList(payload[0]);
                         } else if (action.type === 'deleteLabel') {
-                            useLabelStore.getState().deleteLabel(action.payload[0]);
+                            useLabelStore.getState().deleteLabel(payload[0]);
                         } else if (action.type.includes('Task') && typeof result === 'object' && 'id' in result) {
                             useTaskStore.getState().upsertTask(result);
                         } else if (action.type.includes('List') && typeof result === 'object' && 'id' in result) {
@@ -168,27 +131,29 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
                     await removeFromQueue(action.id);
                     setPendingActions(prev => prev.filter(p => p.id !== action.id));
 
-                } catch (error: any) {
+                } catch (error: unknown) {
                     console.error(`Failed to process action ${action.id}:`, error);
-                    
+
                     // Check if it's a conflict error (from ActionResult)
-                    const isConflict = error?.code === 'CONFLICT' || 
-                                       (typeof error === 'object' && error?.error?.code === 'CONFLICT');
-                    
+                    const err = error as any;
+                    const isConflict = err?.code === 'CONFLICT' ||
+                        (typeof err === 'object' && err?.error?.code === 'CONFLICT');
+
                     if (isConflict) {
-                        const serverData = error?.serverData || error?.error?.details?.serverData;
+                        const serverData = err?.serverData || err?.error?.details?.serverData;
+                        const payload = action.payload as any[];
                         setConflicts(prev => [...prev, {
                             actionId: action.id,
                             actionType: action.type,
                             serverData: serverData ? (typeof serverData === 'string' ? JSON.parse(serverData) : serverData) : null,
-                            localData: action.payload[2], // For updateTask, payload is [id, userId, data]
+                            localData: payload[2], // For updateTask, payload is [id, userId, data]
                             timestamp: Date.now(),
                         }]);
                         // Mark as conflict, don't block queue
                         await updateActionStatus(action.id, 'failed', 'CONFLICT');
                         continue; // Skip to next action instead of breaking
                     }
-                    
+
                     // If network error, stop processing and retry later
                     // If logical error (400/500), maybe remove or stash?
                     await updateActionStatus(action.id, 'failed', String(error));
@@ -201,15 +166,54 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             processingRef.current = false;
             setStatus('online');
         }
-    };
+    }, [fixupQueueIds]);
+
+    // Initial load
+    useEffect(() => {
+        setIsOnline(navigator.onLine);
+
+        const loadQueue = async () => {
+            const queue = await getQueue();
+            setPendingActions(queue);
+        };
+        loadQueue();
+
+        const handleOnline = () => {
+            setIsOnline(true);
+            setStatus('online');
+            toast.success("Back online");
+            processQueue();
+        };
+
+        const handleOffline = () => {
+            setIsOnline(false);
+            setStatus('offline');
+            toast.message("You are offline. Changes saved locally.");
+        };
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, [processQueue]);
+
+    // Also try to process queue on mount if online
+    useEffect(() => {
+        if (isOnline) {
+            processQueue();
+        }
+    }, [isOnline, processQueue]);
 
     // Keep ref updated with latest processQueue to avoid stale closures in event listeners
     processQueueRef.current = processQueue;
 
     const resolveConflict = useCallback(async (
-        actionId: string, 
+        actionId: string,
         resolution: 'local' | 'server' | 'merge',
-        mergedData?: any
+        mergedData?: unknown
     ) => {
         const action = pendingActions.find(a => a.id === actionId);
         if (!action) return;
@@ -221,29 +225,31 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             // Update store with server data
             const conflict = conflicts.find(c => c.actionId === actionId);
             if (conflict?.serverData && action.type.includes('Task')) {
-                useTaskStore.getState().upsertTask(conflict.serverData);
+                useTaskStore.getState().upsertTask(conflict.serverData as any);
             }
         } else if (resolution === 'local') {
             // Retry with force flag (remove expectedUpdatedAt check)
-            const newPayload = [...action.payload];
+            const newPayload = [...(action.payload as any[])];
             if (newPayload[2] && typeof newPayload[2] === 'object') {
-                delete newPayload[2].expectedUpdatedAt;
+                delete (newPayload[2] as any).expectedUpdatedAt;
             }
             action.payload = newPayload;
             await updateActionStatus(actionId, 'pending');
-            processQueueRef.current?.();
+            processQueue();
         } else if (resolution === 'merge' && mergedData) {
             // Update payload with merged data and retry
-            action.payload[2] = { ...action.payload[2], ...mergedData };
-            delete action.payload[2].expectedUpdatedAt;
+            const payload = action.payload as any[];
+            payload[2] = { ...payload[2], ...(mergedData as any) };
+            delete payload[2].expectedUpdatedAt;
+            action.payload = payload;
             await updateActionStatus(actionId, 'pending');
-            processQueueRef.current?.();
+            processQueue();
         }
 
         setConflicts(prev => prev.filter(c => c.actionId !== actionId));
-    }, [pendingActions, conflicts]);
+    }, [pendingActions, conflicts, processQueue]);
 
-    const dispatch = useCallback(async (type: ActionType, ...args: any[]) => {
+    const dispatch = useCallback(async <T extends ActionType>(type: T, ...args: Parameters<typeof actionRegistry[T]>) => {
         const id = uuidv4();
 
         // Check if this is a creation action that needs a temp ID
@@ -281,8 +287,9 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         const listStore = useListStore.getState();
         const labelStore = useLabelStore.getState();
         try {
+            const a = args as any;
             if (type === 'createTask') {
-                const data = args[0];
+                const data = a[0];
                 taskStore.upsertTask({
                     id: tempId!,
                     ...data,
@@ -298,33 +305,33 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
                     title: data.title
                 } as any);
             } else if (type === 'updateTask') {
-                const [id, , data] = args;
+                const [id, , data] = a;
                 const existing = taskStore.tasks[id];
                 if (existing) {
                     // Add expectedUpdatedAt for conflict detection
                     if (existing.updatedAt) {
-                        args[2] = { ...data, expectedUpdatedAt: existing.updatedAt };
-                        action.payload = args;
+                        a[2] = { ...data, expectedUpdatedAt: existing.updatedAt };
+                        action.payload = a;
                     }
                     taskStore.upsertTask({ ...existing, ...data });
                 }
             } else if (type === 'deleteTask') {
-                taskStore.deleteTask(args[0]);
+                taskStore.deleteTask(a[0]);
             } else if (type === 'toggleTaskCompletion') {
-                const [id, , isCompleted] = args;
+                const [id, , isCompleted] = a;
                 const existing = taskStore.tasks[id];
                 if (existing) {
                     taskStore.upsertTask({ ...existing, isCompleted });
                 }
             } else if (type === 'updateSubtask') {
-                const [id, , isCompleted] = args;
+                const [id, , isCompleted] = a;
                 const task = Object.values(taskStore.tasks).find((t: any) => t.subtasks?.some((s: any) => s.id === id));
                 if (task) {
                     const newSubtasks = task.subtasks!.map((s: any) => s.id === id ? { ...s, isCompleted } : s);
                     taskStore.upsertTask({ ...task, subtasks: newSubtasks });
                 }
             } else if (type === 'createList') {
-                const data = args[0];
+                const data = a[0];
                 listStore.upsertList({
                     id: tempId!,
                     name: data.name,
@@ -334,15 +341,15 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
                     position: data.position || 0,
                 });
             } else if (type === 'updateList') {
-                const [id, , data] = args;
+                const [id, , data] = a;
                 const existing = listStore.lists[id];
                 if (existing) {
                     listStore.upsertList({ ...existing, ...data });
                 }
             } else if (type === 'deleteList') {
-                listStore.deleteList(args[0]);
+                listStore.deleteList(a[0]);
             } else if (type === 'createLabel') {
-                const data = args[0];
+                const data = a[0];
                 labelStore.upsertLabel({
                     id: tempId!,
                     name: data.name,
@@ -351,13 +358,13 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
                     position: data.position || 0,
                 });
             } else if (type === 'updateLabel') {
-                const [id, , data] = args;
+                const [id, , data] = a;
                 const existing = labelStore.labels[id];
                 if (existing) {
                     labelStore.upsertLabel({ ...existing, ...data });
                 }
             } else if (type === 'deleteLabel') {
-                labelStore.deleteLabel(args[0]);
+                labelStore.deleteLabel(a[0]);
             }
         } catch (e) { console.error("Optimistic store update failed", e); }
 
@@ -366,8 +373,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             processQueue();
         }
 
-        return { id: tempId, ...args[0] }; // Approximate optimistic result
-    }, []);
+        return { id: tempId, ...(args[0] as any) }; // Approximate optimistic result
+    }, [processQueue]);
 
     const value = useMemo(() => ({
         pendingActions,
@@ -379,7 +386,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     }), [pendingActions, dispatch, status, isOnline, conflicts, resolveConflict]);
 
     const currentConflict = conflicts.length > 0 ? conflicts[0] : null;
-    
+
     const handleConflictClose = useCallback(() => {
         if (currentConflict) {
             setConflicts(prev => prev.filter(c => c.actionId !== currentConflict.actionId));

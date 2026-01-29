@@ -16,24 +16,27 @@ import { AlertTriangle, Check } from "lucide-react";
 
 interface ConflictDialogProps {
   conflict: ConflictInfo | null;
-  onResolve: (actionId: string, resolution: 'local' | 'server' | 'merge', mergedData?: any) => void;
+  onResolve: (actionId: string, resolution: 'local' | 'server' | 'merge', mergedData?: unknown) => void;
   onClose: () => void;
 }
 
 interface FieldDiff {
   field: string;
-  local: any;
-  server: any;
+  local: unknown;
+  server: unknown;
 }
 
-function getFieldDiffs(localData: any, serverData: any): FieldDiff[] {
+function getFieldDiffs(localData: unknown, serverData: unknown): FieldDiff[] {
   const diffs: FieldDiff[] = [];
   const fields = ['title', 'description', 'priority', 'dueDate', 'deadline', 'isCompleted', 'listId'];
-  
+
+  const local = localData as Record<string, unknown>;
+  const server = serverData as Record<string, unknown>;
+
   for (const field of fields) {
-    const localVal = localData?.[field];
-    const serverVal = serverData?.[field];
-    
+    const localVal = local?.[field];
+    const serverVal = server?.[field];
+
     if (localVal !== undefined && JSON.stringify(localVal) !== JSON.stringify(serverVal)) {
       diffs.push({
         field,
@@ -42,11 +45,11 @@ function getFieldDiffs(localData: any, serverData: any): FieldDiff[] {
       });
     }
   }
-  
+
   return diffs;
 }
 
-function formatValue(value: any): string {
+function formatValue(value: unknown): string {
   if (value === null || value === undefined) return "(empty)";
   if (value instanceof Date) return format(value, "PPp");
   if (typeof value === "string" && !isNaN(Date.parse(value))) {
@@ -71,24 +74,25 @@ function formatFieldName(field: string): string {
 
 export function ConflictDialog({ conflict, onResolve, onClose }: ConflictDialogProps) {
   const [selectedFields, setSelectedFields] = useState<Record<string, 'local' | 'server'>>({});
-  
+
   if (!conflict) return null;
-  
+
   const diffs = getFieldDiffs(conflict.localData, conflict.serverData);
-  const serverTitle = conflict.serverData?.title || "Task";
-  const serverUpdatedAt = conflict.serverData?.updatedAt;
-  
+  const serverData = conflict.serverData as Record<string, unknown>;
+  const serverTitle = (serverData?.title as string) || "Task";
+  const serverUpdatedAt = serverData?.updatedAt as string | number | Date | undefined;
+
   const handleMerge = () => {
-    const mergedData: any = {};
+    const mergedData: Record<string, unknown> = {};
     for (const diff of diffs) {
       const choice = selectedFields[diff.field] || 'server';
       mergedData[diff.field] = choice === 'local' ? diff.local : diff.server;
     }
     onResolve(conflict.actionId, 'merge', mergedData);
   };
-  
+
   const allFieldsSelected = diffs.every(d => selectedFields[d.field] !== undefined);
-  
+
   return (
     <Dialog open={!!conflict} onOpenChange={() => onClose()}>
       <DialogContent className="max-w-2xl">
@@ -112,18 +116,17 @@ export function ConflictDialog({ conflict, onResolve, onClose }: ConflictDialogP
               <div>Your Changes</div>
               <div>Server Version</div>
             </div>
-            
+
             {diffs.map((diff) => (
               <div key={diff.field} className="grid grid-cols-3 gap-2 text-sm items-start">
                 <div className="font-medium">{formatFieldName(diff.field)}</div>
                 <button
                   type="button"
                   onClick={() => setSelectedFields(prev => ({ ...prev, [diff.field]: 'local' }))}
-                  className={`text-left p-2 rounded border transition-colors ${
-                    selectedFields[diff.field] === 'local'
+                  className={`text-left p-2 rounded border transition-colors ${selectedFields[diff.field] === 'local'
                       ? 'border-primary bg-primary/10'
                       : 'border-border hover:border-primary/50'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="truncate">{formatValue(diff.local)}</span>
@@ -135,11 +138,10 @@ export function ConflictDialog({ conflict, onResolve, onClose }: ConflictDialogP
                 <button
                   type="button"
                   onClick={() => setSelectedFields(prev => ({ ...prev, [diff.field]: 'server' }))}
-                  className={`text-left p-2 rounded border transition-colors ${
-                    selectedFields[diff.field] === 'server'
+                  className={`text-left p-2 rounded border transition-colors ${selectedFields[diff.field] === 'server'
                       ? 'border-primary bg-primary/10'
                       : 'border-border hover:border-primary/50'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="truncate">{formatValue(diff.server)}</span>

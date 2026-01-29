@@ -19,6 +19,7 @@ import type { DraggableSyntheticListeners } from "@dnd-kit/core";
 
 import { ResolvedIcon } from "@/components/ui/resolved-icon";
 import { useSync } from "@/components/providers/sync-provider";
+import { ActionType, actionRegistry } from "@/lib/sync/registry";
 
 import { Task } from "@/lib/types";
 
@@ -30,7 +31,7 @@ interface TaskItemProps {
     // Typed for @dnd-kit stability - ensures memo works correctly with drag-and-drop
     dragHandleProps?: DraggableSyntheticListeners;
     // Optional: if not provided, will use useSync() internally
-    dispatch?: (type: any, ...args: any[]) => Promise<any>;
+    dispatch?: <T extends ActionType>(type: T, ...args: Parameters<typeof actionRegistry[T]>) => Promise<any>;
     // Perf: Receives task as argument to allow parent to use a stable useCallback reference
     // instead of creating a new arrow function per task, enabling React.memo to work effectively
     onEdit?: (task: Task) => void;

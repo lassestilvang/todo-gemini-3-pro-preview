@@ -197,6 +197,7 @@ export async function getTasks(
   const subtasksByParentId = new Map<number, typeof subtasksResult>();
   const completedSubtaskCountByParentId = new Map<number, number>();
   for (const subtask of subtasksResult) {
+    if (!subtask.parentId) continue;
     const list = subtasksByParentId.get(subtask.parentId) ?? [];
     list.push(subtask);
     subtasksByParentId.set(subtask.parentId, list);

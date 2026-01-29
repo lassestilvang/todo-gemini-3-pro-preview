@@ -29,7 +29,7 @@ export const useListStore = create<ListState>((set, get) => ({
         try {
             const cached = await getCachedLists();
             const cachedMap: Record<number, List> = {};
-            cached.forEach((item: any) => {
+            cached.forEach((item: List) => {
                 cachedMap[item.id] = item;
             });
 

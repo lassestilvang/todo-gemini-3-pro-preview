@@ -233,8 +233,6 @@ export async function updateUserProgress(userId: string, xpAmount: number) {
  */
 export async function checkAchievements(
   userId: string,
-  currentXP: number,
-  currentStreak: number,
 ) {
   // Now simply triggers the iterative logic correctly
   return await updateUserProgress(userId, 0);

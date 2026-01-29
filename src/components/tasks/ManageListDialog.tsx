@@ -85,20 +85,22 @@ export function ManageListDialog({ list, open, onOpenChange, trigger, userId }: 
 
     const formKey = effectiveOpen ? (list ? `edit-${list.id}` : "create") : "closed";
 
-    const onSubmit = async (data: any) => {
-        const payload = { ...data, userId: userId! };
-
+    const onSubmit = async (data: { name: string; color: string | null; icon: string | null; description?: string | null }) => {
         if (list) {
             await executeUpdate(updateList, list.id, userId!, data);
         } else {
+            const slug = data.name.toLowerCase().trim()
+                .replace(/[^\w\s-]/g, '')
+                .replace(/[\s_-]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+            const payload = { ...data, userId: userId!, slug };
             await executeCreate(createList, payload);
         }
     };
 
     const onDelete = async () => {
         if (list && userId) {
-            await deleteList(list.id, userId);
-            setEffectiveOpen(false);
+            await executeDelete(deleteList, list.id, userId);
         }
     };
 
@@ -132,7 +134,7 @@ interface ListFormProps {
         description?: string | null;
     };
     userId?: string;
-    onSubmit: (data: any) => Promise<void>;
+    onSubmit: (data: { name: string; color: string; icon: string; description: string }) => Promise<void>;
     onDelete: () => Promise<void>;
     onCancel: () => void;
     isLoading: boolean;
