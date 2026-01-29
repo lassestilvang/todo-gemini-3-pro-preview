@@ -96,7 +96,9 @@ test.describe('Data Persistence (Export/Import)', () => {
         await page.waitForURL(/\/lists\/\d+/);
 
         // Check for task
-        await expect(page.getByText(taskName)).toBeVisible();
+        // Add a retry loop or wait for the list to be fully loaded
+        await page.waitForLoadState('networkidle');
+        await expect(page.getByText(taskName)).toBeVisible({ timeout: 10000 });
 
         // Cleanup (optional, but good for local runs)
         // unlinkSync(downloadPath); // Playwright handles temp file cleanup
