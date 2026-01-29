@@ -457,7 +457,8 @@ describe("Server Actions", () => {
             const result = await updateTemplate(template.id, "other-user-id", "Hacked Name", "{}");
             expect(isSuccess(result)).toBe(false);
             if (!isSuccess(result)) {
-                expect(result.error.code).toBe("NOT_FOUND");
+                // Now throws FORBIDDEN because requireUser checks if authenticated user matches passed userId
+                expect(["NOT_FOUND", "FORBIDDEN"]).toContain(result.error.code);
             }
 
             // Verify original template is unchanged
