@@ -26,29 +26,20 @@ export const TEST_USER = {
  */
 export async function authenticateTestUser(page: Page): Promise<boolean> {
   try {
-    // Ensure we are on the app origin before making fetch requests
-    // We wait for networkidle to ensure hydration/route handling is ready
-    if (page.url() === 'about:blank') {
-      await page.goto('/');
-      await page.waitForLoadState('domcontentloaded');
-    }
-
     // Generate a unique ID for this test to ensure database isolation
     const uniqueId = Math.random().toString(36).substring(7);
-    const data = await page.evaluate(async (userData) => {
-      const response = await fetch('/api/test-auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData),
-      });
-      return response.json();
-    }, {
-      id: `test-user-${uniqueId}`,
-      email: `test-${uniqueId}@example.com`,
-      firstName: 'E2E',
-      lastName: 'Test User',
+
+    // Use Playwright's API request context to avoid browser origin issues
+    const response = await page.request.post('/api/test-auth', {
+      data: {
+        id: `test-user-${uniqueId}`,
+        email: `test-${uniqueId}@example.com`,
+        firstName: 'E2E',
+        lastName: 'Test User',
+      }
     });
 
+    const data = await response.json();
     return data.success === true;
   } catch (error) {
     console.error('Failed to authenticate test user:', error);

@@ -245,5 +245,6 @@ export async function resetTestDb() {
 afterEach(async () => {
     await resetTestDb();
     clearMockAuthUser();
+    document.body.innerHTML = "";
 });
 setupTestDb();
