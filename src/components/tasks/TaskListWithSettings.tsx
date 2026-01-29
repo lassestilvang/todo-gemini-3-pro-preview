@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, memo, Suspense } from "react";
 import { TaskItem } from "./TaskItem";
 import { Task } from "@/lib/types";
-import { format, isToday, isTomorrow, isThisYear } from "date-fns";
+import { format, isToday, isTomorrow, isThisYear, startOfDay, endOfDay } from "date-fns";
 import { ViewOptionsPopover } from "./ViewOptionsPopover";
 import { ViewSettings, defaultViewSettings } from "@/lib/view-settings";
 import { getViewSettings } from "@/lib/actions/view-settings";
@@ -30,40 +30,46 @@ interface TaskListWithSettingsProps {
  * Applies view settings (filtering and sorting) to a list of tasks.
  */
 function applyViewSettings(tasks: Task[], settings: ViewSettings): Task[] {
-    let result = [...tasks];
+    // Perf: single-pass filters avoid multiple O(n) array scans per settings change.
+    // On 1k tasks, this removes ~5-6 extra passes while preserving exact filter behavior.
+    const result: Task[] = [];
+    for (const task of tasks) {
+        // Filter: showCompleted
+        if (!settings.showCompleted && task.isCompleted) {
+            continue;
+        }
 
-    // Filter: showCompleted
-    if (!settings.showCompleted) {
-        result = result.filter(task => !task.isCompleted);
-    }
+        // Filter: date
+        if (settings.filterDate === "hasDate") {
+            if (task.dueDate === null) continue;
+        } else if (settings.filterDate === "noDate") {
+            if (task.dueDate !== null) continue;
+        }
 
-    // Filter: date
-    if (settings.filterDate === "hasDate") {
-        result = result.filter(task => task.dueDate !== null);
-    } else if (settings.filterDate === "noDate") {
-        result = result.filter(task => task.dueDate === null);
-    }
+        // Filter: priority
+        if (settings.filterPriority && task.priority !== settings.filterPriority) {
+            continue;
+        }
 
-    // Filter: priority
-    if (settings.filterPriority) {
-        result = result.filter(task => task.priority === settings.filterPriority);
-    }
+        // Filter: label
+        if (
+            settings.filterLabelId !== null &&
+            !task.labels?.some(label => label.id === settings.filterLabelId)
+        ) {
+            continue;
+        }
 
-    // Filter: label
-    if (settings.filterLabelId !== null) {
-        result = result.filter(task =>
-            task.labels?.some(label => label.id === settings.filterLabelId)
-        );
-    }
+        // Filter: energyLevel
+        if (settings.filterEnergyLevel && task.energyLevel !== settings.filterEnergyLevel) {
+            continue;
+        }
 
-    // Filter: energyLevel
-    if (settings.filterEnergyLevel) {
-        result = result.filter(task => task.energyLevel === settings.filterEnergyLevel);
-    }
+        // Filter: context
+        if (settings.filterContext && task.context !== settings.filterContext) {
+            continue;
+        }
 
-    // Filter: context
-    if (settings.filterContext) {
-        result = result.filter(task => task.context === settings.filterContext);
+        result.push(task);
     }
 
     // Sort
@@ -134,9 +140,13 @@ function groupTasks(tasks: Task[], groupBy: ViewSettings["groupBy"]): Map<string
         switch (groupBy) {
             case "dueDate":
                 if (task.dueDate) {
+                    // Perf: avoid date-fns format per task; build ISO date key directly.
+                    // This removes repeated formatting calls while preserving sorting behavior.
                     const date = new Date(task.dueDate);
-                    // Use ISO date as key for sorting groups later, but we'll format it for display
-                    key = format(date, "yyyy-MM-dd");
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, "0");
+                    const day = String(date.getDate()).padStart(2, "0");
+                    key = `${year}-${month}-${day}`;
                 } else {
                     key = "No Date";
                 }
@@ -153,7 +163,19 @@ function groupTasks(tasks: Task[], groupBy: ViewSettings["groupBy"]): Map<string
                     // Duplicating tasks is complex for ID tracking.
                     // Let's use the first label for now or a primary label if we had one.
                     // Or "Labels: A, B"
-                    key = task.labels.map(l => l.name).sort().join(", ");
+                    // Perf: avoid allocating/sorting arrays for the common 1-2 label cases.
+                    // This keeps grouping stable while reducing work on large task sets.
+                    if (task.labels.length === 1) {
+                        key = task.labels[0].name;
+                    } else if (task.labels.length === 2) {
+                        const [first, second] = task.labels;
+                        key = first.name <= second.name
+                            ? `${first.name}, ${second.name}`
+                            : `${second.name}, ${first.name}`;
+                    } else {
+                        const labelNames = task.labels.map(label => label.name).sort();
+                        key = labelNames.join(", ");
+                    }
                 } else {
                     key = "No Label";
                 }
@@ -281,7 +303,7 @@ const SortableTaskItem = memo(function SortableTaskItem({
                 disableAnimations={isDragEnabled}
                 dragHandleProps={isDragEnabled ? listeners : undefined}
                 dispatch={dispatch}
-                onEdit={() => handleEdit(task)}
+                onEdit={handleEdit}
             />
         </div>
     );
@@ -333,7 +355,12 @@ export function TaskListWithSettings({
 
     // Derive display tasks using Client-Side Logic
     const derivedTasks = useMemo(() => {
-        let result = allStoreTasks;
+        // Perf: single-pass filter avoids multiple O(n) passes and repeated Date parsing.
+        // For 1k tasks, this cuts 3-4 full-array scans and reduces Date allocations per render.
+        const result = allStoreTasks;
+        const now = new Date();
+        const todayStart = startOfDay(now);
+        const todayEnd = endOfDay(now);
 
         // 0. Initial Server Filter Override (if tasks prop exists and we didn't specify filterType)
         // If we still use server-side fetching for some routes, we might rely on prop IDs.
@@ -344,31 +371,40 @@ export function TaskListWithSettings({
             return allStoreTasks.filter(t => propIds.has(t.id) || t.id < 0);
         }
 
-        // 1. Filter by List
-        if (listId !== undefined) {
-            if (listId === null) {
-                result = result.filter(t => t.listId === null);
-            } else {
-                result = result.filter(t => t.listId === listId);
+        // Single pass filters (list, label, filterType)
+        const filtered: Task[] = [];
+        for (const task of result) {
+            // 1. Filter by List
+            if (listId !== undefined) {
+                if (listId === null) {
+                    if (task.listId !== null) continue;
+                } else if (task.listId !== listId) {
+                    continue;
+                }
             }
+
+            // 2. Filter by Label
+            if (labelId && !task.labels?.some(l => l.id === labelId)) {
+                continue;
+            }
+
+            // 3. Filter by FilterType (today, upcoming, etc)
+            // Logic mirrored from src/lib/actions/tasks.ts
+            if (filterType === "inbox") {
+                if (task.listId !== null) continue;
+            } else if (filterType === "today") {
+                if (!task.dueDate) continue;
+                const dueTime = new Date(task.dueDate).getTime();
+                if (dueTime < todayStart.getTime() || dueTime > todayEnd.getTime()) continue;
+            } else if (filterType === "upcoming") {
+                if (!task.dueDate) continue;
+                if (new Date(task.dueDate).getTime() <= now.getTime()) continue;
+            }
+
+            filtered.push(task);
         }
 
-        // 2. Filter by Label
-        if (labelId) {
-            result = result.filter(t => t.labels?.some(l => l.id === labelId));
-        }
-
-        // 3. Filter by FilterType (today, upcoming, etc)
-        // Logic mirrored from src/lib/actions/tasks.ts
-        if (filterType === 'inbox') {
-            result = result.filter(t => t.listId === null);
-        } else if (filterType === 'today') {
-            result = result.filter(t => t.dueDate && isToday(new Date(t.dueDate)));
-        } else if (filterType === 'upcoming') {
-            result = result.filter(t => t.dueDate && new Date(t.dueDate) > new Date());
-        }
-
-        return result;
+        return filtered;
     }, [allStoreTasks, listId, labelId, filterType, tasks, viewId]);
 
     // Zustand store already has optimistic updates applied via SyncProvider.dispatch()
@@ -423,10 +459,14 @@ export function TaskListWithSettings({
         if (!settings.showCompleted) {
             return { activeTasks: processedTasks, completedTasks: [] };
         }
-        return {
-            activeTasks: processedTasks.filter(t => !t.isCompleted),
-            completedTasks: processedTasks.filter(t => t.isCompleted)
-        };
+
+        // Perf: single-pass partition avoids two filter scans.
+        const active: Task[] = [];
+        const completed: Task[] = [];
+        for (const task of processedTasks) {
+            (task.isCompleted ? completed : active).push(task);
+        }
+        return { activeTasks: active, completedTasks: completed };
     }, [processedTasks, settings.showCompleted]);
 
     // Group tasks
@@ -469,13 +509,37 @@ export function TaskListWithSettings({
         return groups;
     }, [activeTasks, processedTasks, settings.groupBy]);
 
-    const formatGroupName = (name: string, type: ViewSettings["groupBy"]) => {
-        if (type !== "dueDate" || name === "No Date") return name;
-        const date = new Date(name);
-        if (isToday(date)) return "Today";
-        if (isTomorrow(date)) return "Tomorrow";
-        return format(date, isThisYear(date) ? "EEEE, MMM do" : "EEEE, MMM do, yyyy");
-    };
+    const formattedGroupNames = useMemo(() => {
+        // Perf: cache formatted group labels to avoid re-parsing dates per render.
+        // For many groups, this avoids repeated Date construction and formatting calls.
+        if (settings.groupBy !== "dueDate") return new Map<string, string>();
+
+        const formatted = new Map<string, string>();
+        for (const [groupName] of groupedTasks.entries()) {
+            if (groupName === "No Date") {
+                formatted.set(groupName, groupName);
+                continue;
+            }
+            const date = new Date(groupName);
+            if (isToday(date)) {
+                formatted.set(groupName, "Today");
+            } else if (isTomorrow(date)) {
+                formatted.set(groupName, "Tomorrow");
+            } else {
+                formatted.set(
+                    groupName,
+                    format(date, isThisYear(date) ? "EEEE, MMM do" : "EEEE, MMM do, yyyy")
+                );
+            }
+        }
+
+        return formatted;
+    }, [groupedTasks, settings.groupBy]);
+
+    const groupedEntries = useMemo(() => {
+        // Perf: memoize grouped entries array to avoid rebuilding on every render.
+        return Array.from(groupedTasks.entries());
+    }, [groupedTasks]);
 
     // Drag and Drop Logic
     const isDragEnabled = settings.sortBy === "manual" && settings.groupBy === "none" && !!userId;
@@ -566,7 +630,7 @@ export function TaskListWithSettings({
                                             userId={userId}
                                             disableAnimations={true}
                                             dispatch={dispatch}
-                                            onEdit={() => handleEdit(task)}
+                                            onEdit={handleEdit}
                                         />
                                     </div>
                                 )}
@@ -611,7 +675,7 @@ export function TaskListWithSettings({
                                                     userId={userId}
                                                     disableAnimations={true}
                                                     dispatch={dispatch}
-                                                    onEdit={() => handleEdit(activeTask)}
+                                                    onEdit={handleEdit}
                                                 />
                                             </div>
                                         );
@@ -641,7 +705,7 @@ export function TaskListWithSettings({
                                                 userId={userId}
                                                 disableAnimations={true}
                                                 dispatch={dispatch}
-                                                onEdit={() => handleEdit(task)}
+                                                onEdit={handleEdit}
                                             />
                                         </div>
                                     );
@@ -652,14 +716,18 @@ export function TaskListWithSettings({
                 </div>
             ) : (
                 <div className="space-y-6">
-                    {Array.from(groupedTasks.entries()).map(([groupName, groupTasks]) => {
-                        const groupActiveTasks = groupTasks.filter(t => !t.isCompleted);
-                        const groupCompletedTasks = groupTasks.filter(t => t.isCompleted);
+                    {groupedEntries.map(([groupName, groupTasks]) => {
+                        // Perf: partition once per group to avoid two filter scans.
+                        const groupActiveTasks: Task[] = [];
+                        const groupCompletedTasks: Task[] = [];
+                        for (const task of groupTasks) {
+                            (task.isCompleted ? groupCompletedTasks : groupActiveTasks).push(task);
+                        }
 
                         return (
                             <div key={groupName} className="space-y-2">
                                 <h3 className="text-sm font-semibold text-muted-foreground bg-background/95 backdrop-blur-md sticky top-0 py-2 z-10 border-b flex items-center justify-between px-2 -mx-2">
-                                    <span>{formatGroupName(groupName, settings.groupBy)}</span>
+                                    <span>{formattedGroupNames.get(groupName) ?? groupName}</span>
                                     <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{groupTasks.length}</span>
                                 </h3>
                                 {groupActiveTasks.map((task) => {
@@ -668,7 +736,7 @@ export function TaskListWithSettings({
                                             key={task.id}
                                             className="rounded-lg transition-all"
                                         >
-                                            <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={() => handleEdit(task)} />
+                                            <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={handleEdit} />
                                         </div>
                                     );
                                 })}
@@ -684,7 +752,7 @@ export function TaskListWithSettings({
                                                     key={task.id}
                                                     className="rounded-lg transition-all"
                                                 >
-                                                    <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={() => handleEdit(task)} />
+                                                    <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={handleEdit} />
                                                 </div>
                                             );
                                         })}

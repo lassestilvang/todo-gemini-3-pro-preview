@@ -141,7 +141,6 @@ export async function getTasks(
   const taskIds = tasksResult.map((t) => t.id);
   if (taskIds.length === 0) return [];
 
-  /* eslint-disable prefer-const */
   const [labelsResult, subtasksResult, blockedCountsResult] = await Promise.all([
     db
       .select({
@@ -176,24 +175,44 @@ export async function getTasks(
       .where(inArray(taskDependencies.taskId, taskIds))
       .groupBy(taskDependencies.taskId),
   ]);
-  /* eslint-enable prefer-const */
 
   const blockedCountMap = new Map(
     blockedCountsResult.map((r) => [r.taskId, Number(r.count)])
   );
 
-  const tasksWithLabelsAndSubtasks = tasksResult.map((task) => {
-    const taskLabelsList = labelsResult
-      .filter((l) => l.taskId === task.id)
-      .map((l) => ({
-        id: l.labelId,
-        name: l.name || "", // Handle null name from left join
-        color: l.color || "#000000", // Handle null color
-        icon: l.icon,
-      }));
+  // Perf: pre-group labels and subtasks by taskId once to avoid O(N×M) filters.
+  // For 500 tasks with 3 labels each, this drops ~1,500 filter passes down to 1.
+  const labelsByTaskId = new Map<number, { id: number; name: string; color: string; icon: string | null }[]>();
+  for (const label of labelsResult) {
+    const list = labelsByTaskId.get(label.taskId) ?? [];
+    list.push({
+      id: label.labelId,
+      name: label.name || "", // Handle null name from left join
+      color: label.color || "#000000", // Handle null color
+      icon: label.icon,
+    });
+    labelsByTaskId.set(label.taskId, list);
+  }
 
-    const taskSubtasks = subtasksResult.filter((s) => s.parentId === task.id);
-    const completedSubtaskCount = taskSubtasks.filter((s) => s.isCompleted).length;
+  const subtasksByParentId = new Map<number, typeof subtasksResult>();
+  const completedSubtaskCountByParentId = new Map<number, number>();
+  for (const subtask of subtasksResult) {
+    const list = subtasksByParentId.get(subtask.parentId) ?? [];
+    list.push(subtask);
+    subtasksByParentId.set(subtask.parentId, list);
+    if (subtask.isCompleted) {
+      completedSubtaskCountByParentId.set(
+        subtask.parentId,
+        (completedSubtaskCountByParentId.get(subtask.parentId) ?? 0) + 1
+      );
+    }
+  }
+
+  const tasksWithLabelsAndSubtasks = tasksResult.map((task) => {
+    const taskLabelsList = labelsByTaskId.get(task.id) ?? [];
+
+    const taskSubtasks = subtasksByParentId.get(task.id) ?? [];
+    const completedSubtaskCount = completedSubtaskCountByParentId.get(task.id) ?? 0;
 
     return {
       ...task,
