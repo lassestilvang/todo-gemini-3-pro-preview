@@ -594,11 +594,48 @@ export function TaskListWithSettings({
     };
 
 
+    const viewIndicator = useMemo(() => {
+        if (settings.sortBy !== "manual") {
+            const label = {
+                dueDate: "Due Date",
+                priority: "Priority",
+                name: "Name",
+                created: "Created"
+            }[settings.sortBy];
+            return `Sort: ${label}`;
+        }
+        if (settings.groupBy !== "none") {
+            const label = {
+                dueDate: "Due Date",
+                priority: "Priority",
+                label: "Label",
+                list: "List",
+                estimate: "Estimate"
+            }[settings.groupBy];
+            return `Group: ${label}`;
+        }
+        if (
+            settings.filterPriority ||
+            settings.filterLabelId !== null ||
+            settings.filterDate !== "all" ||
+            settings.filterEnergyLevel ||
+            settings.filterContext
+        ) {
+            return "Filter: Active";
+        }
+        return null;
+    }, [settings]);
+
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 {title && <h2 className="text-xl font-semibold">{title}</h2>}
                 <div className="flex items-center gap-2 ml-auto">
+                    {viewIndicator && (
+                        <span className="text-xs text-muted-foreground font-medium animate-in fade-in slide-in-from-right-2 duration-300">
+                            {viewIndicator}
+                        </span>
+                    )}
                     <ViewOptionsPopover
                         viewId={viewId}
                         userId={userId}

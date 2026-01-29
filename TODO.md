@@ -5,7 +5,6 @@
 
 ## 🚀 Features & Enhancements
 
-- [ ] **[Feature] View Setting Indicator**: Show indicator/text next to the view button in the top-right corner of the task list to indicate settings have been applied. For example, if the user has sorted the tasks by "Created" then show a "Sort: Created" indicator next to the view button.
 - [ ] **[Feature] Calendar View**: Add a visual calendar component for task scheduling and overview.
 - [ ] **[Feature] Board/Calendar View on Lists**: Enable different layouts for task lists, selectable via the "View" settings modal.
   - **Board View**: A Trello-style Kanban board grouping tasks by status (To Do, In Progress, Done) or priority.
@@ -49,6 +48,9 @@
 
 ## ✅ Completed
 
+- [x] **[Feature] View Setting Indicator**: Show indicator/text next to the view button to indicate active settings.
+  - **Logic**: Implemented in `TaskListWithSettings` to show "Sort: [Value]", "Group: [Value]", or "Filter: Active", prioritized in that order.
+  - *Status*: **RESOLVED** - Verified "Sort: Created" appears when sorted by creation date.
 - [x] **[Feature] Task Sorting**: Add a "Created" option to the sorting dropdown - newest on top.
   - **Logic**: Implemented "Created" sort option in `TaskListWithSettings`, updated `ViewOptionsPopover`, and set "Created" descending as default for Lists via `src/app/lists/[id]/page.tsx`.
   - **Manual Sort**: Updated `createTask` server action to insert new tasks at the top (min position - 1024) when manual sorting is active.
