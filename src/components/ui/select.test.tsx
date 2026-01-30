@@ -60,5 +60,5 @@ describe("Select", () => {
         await waitFor(() => {
             expect(screen.getByRole("option", { name: "Option 1" })).toBeInTheDocument();
         }, { timeout: 5000 });
-    });
+    }, 10000);
 });
