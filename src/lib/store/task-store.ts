@@ -7,7 +7,9 @@ interface TaskState {
     isInitialized: boolean;
     initialize: () => Promise<void>;
     setTasks: (tasks: Task[]) => void;
+    upsertTasks: (tasks: Task[]) => void;
     upsertTask: (task: Task) => void;
+    deleteTasks: (ids: number[]) => void;
     deleteTask: (id: number) => void;
 }
 
@@ -49,6 +51,19 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         saveTasksToCache(newTasks).catch(console.error);
     },
 
+    upsertTasks: (tasks: Task[]) => {
+        if (tasks.length === 0) return;
+        // Perf: batch upserts to reduce Zustand set() calls during sync drains.
+        set(state => {
+            const updatedTasks = { ...state.tasks };
+            tasks.forEach(task => {
+                updatedTasks[task.id] = task;
+            });
+            return { tasks: updatedTasks };
+        });
+        saveTasksToCache(tasks).catch(console.error);
+    },
+
     upsertTask: (task: Task) => {
         // Update State
         set(state => ({
@@ -56,6 +71,19 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         }));
         // Persist
         saveTaskToCache(task).catch(console.error);
+    },
+
+    deleteTasks: (ids: number[]) => {
+        if (ids.length === 0) return;
+        // Perf: batch deletes to reduce Zustand set() calls during sync drains.
+        set(state => {
+            const newTasks = { ...state.tasks };
+            ids.forEach(id => {
+                delete newTasks[id];
+            });
+            return { tasks: newTasks };
+        });
+        Promise.all(ids.map(id => deleteTaskFromCache(id))).catch(console.error);
     },
 
     deleteTask: (id: number) => {

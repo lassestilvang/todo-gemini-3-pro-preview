@@ -88,9 +88,32 @@ export async function addToQueue(action: PendingAction) {
     await db.put('queue', action);
 }
 
+export async function addToQueueBatch(actions: PendingAction[]) {
+    if (actions.length === 0) return;
+    const db = await getDB();
+    const tx = db.transaction('queue', 'readwrite');
+    // Perf: batch queue inserts to reduce IndexedDB overhead during rapid dispatch bursts.
+    await Promise.all([
+        ...actions.map(action => tx.store.put(action)),
+        tx.done
+    ]);
+}
+
 export async function removeFromQueue(id: string) {
     const db = await getDB();
     await db.delete('queue', id);
+}
+
+export async function removeFromQueueBatch(ids: string[]) {
+    if (ids.length === 0) return;
+    const db = await getDB();
+    const tx = db.transaction('queue', 'readwrite');
+    // Perf: batch deletes in a single transaction to reduce IndexedDB overhead
+    // when draining large sync queues.
+    await Promise.all([
+        ...ids.map(id => tx.store.delete(id)),
+        tx.done
+    ]);
 }
 
 export async function getQueue(): Promise<PendingAction[]> {
@@ -106,6 +129,26 @@ export async function updateActionStatus(id: string, status: PendingAction['stat
         if (error) action.error = error;
         await db.put('queue', action);
     }
+}
+
+export async function updateActionStatusBatch(
+    updates: Array<{ id: string; status: PendingAction['status']; error?: string }>
+) {
+    if (updates.length === 0) return;
+    const db = await getDB();
+    const tx = db.transaction('queue', 'readwrite');
+    // Perf: batch status updates to reduce per-action IndexedDB writes during sync.
+    await Promise.all([
+        ...updates.map(async ({ id, status, error }) => {
+            const action = await tx.store.get(id);
+            if (action) {
+                action.status = status;
+                if (error) action.error = error;
+                await tx.store.put(action);
+            }
+        }),
+        tx.done
+    ]);
 }
 
 // Lists cache functions

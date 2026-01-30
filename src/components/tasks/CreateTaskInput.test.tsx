@@ -20,6 +20,23 @@ mock.module("@/components/ui/dialog", () => ({
     DialogTrigger: ({ children, asChild }: any) => asChild ? children : <button>{children}</button>,
 }));
 
+mock.module("@/components/providers/sync-provider", () => ({
+    SyncProvider: ({ children }: any) => <>{children}</>,
+    useSync: () => ({
+        dispatch: mock((type: string, ...args: any[]) => {
+            if (type === 'createTask') {
+                return mockCreateTask(...args);
+            }
+            return Promise.resolve({ success: true, data: { id: 1 } });
+        }),
+        isOnline: true,
+        status: 'online',
+        pendingActions: [],
+        conflicts: [],
+        resolveConflict: mock(() => Promise.resolve()),
+    }),
+}));
+
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CreateTaskInput } from "./CreateTaskInput";

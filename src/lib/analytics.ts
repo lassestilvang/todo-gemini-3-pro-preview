@@ -33,8 +33,20 @@ export async function getAnalytics(userId: string) {
 
     const now = new Date();
 
-    // Total tasks for this user
-    const allTasks = await db.select().from(tasks).where(eq(tasks.userId, userId));
+    // Perf: select only columns used for analytics to reduce payload size and memory churn.
+    // For large task tables, this avoids transferring unused text fields like descriptions.
+    const allTasks = await db
+        .select({
+            isCompleted: tasks.isCompleted,
+            priority: tasks.priority,
+            energyLevel: tasks.energyLevel,
+            estimateMinutes: tasks.estimateMinutes,
+            actualMinutes: tasks.actualMinutes,
+            createdAt: tasks.createdAt,
+            completedAt: tasks.completedAt,
+        })
+        .from(tasks)
+        .where(eq(tasks.userId, userId));
     const totalTasks = allTasks.length;
 
     // PERFORMANCE: Single-pass aggregation instead of multiple .filter() calls.
@@ -168,8 +180,12 @@ export async function getAnalytics(userId: string) {
 
     try {
         const thirtyDaysAgo = subDays(now, 30);
+        // Perf: select only columns used in aggregation (duration + timestamp).
         const allTimeEntries = await db
-            .select()
+            .select({
+                durationMinutes: timeEntries.durationMinutes,
+                startedAt: timeEntries.startedAt,
+            })
             .from(timeEntries)
             .where(
                 and(

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useTaskStore } from "@/lib/store/task-store";
-import { isToday, isFuture, parseISO, startOfDay } from "date-fns";
+import { addDays, startOfDay } from "date-fns";
 
 export interface TaskCounts {
     total: number;
@@ -25,7 +25,9 @@ export function useTaskCounts(): TaskCounts {
         };
 
         const now = new Date();
-        const todayStart = startOfDay(now);
+        const nowTime = now.getTime();
+        const todayStart = startOfDay(now).getTime();
+        const tomorrowStart = addDays(new Date(todayStart), 1).getTime();
 
         Object.values(tasks).forEach(task => {
             // Only count incomplete tasks
@@ -52,16 +54,22 @@ export function useTaskCounts(): TaskCounts {
 
             // Date Checks
             if (task.dueDate) {
-                const date = typeof task.dueDate === 'string' ? parseISO(task.dueDate) : task.dueDate;
+                // Perf: avoid per-task date-fns helpers by comparing timestamps once.
+                // This removes extra Date allocations and reduces helper calls for large lists.
+                const dueTime = typeof task.dueDate === "string"
+                    ? Date.parse(task.dueDate)
+                    : task.dueDate.getTime();
 
-                if (isToday(date)) {
-                    counts.today++;
-                } else if (isFuture(date)) {
-                    // Note: 'Upcoming' typically means everything in the future, 
-                    // or sometimes specifically "next 7 days". 
-                    // Based on typical todo apps, Upcoming usually means "Scheduled for future".
-                    // Let's count strictly future dates.
-                    counts.upcoming++;
+                if (!Number.isNaN(dueTime)) {
+                    if (dueTime >= todayStart && dueTime < tomorrowStart) {
+                        counts.today++;
+                    } else if (dueTime > nowTime) {
+                        // Note: 'Upcoming' typically means everything in the future,
+                        // or sometimes specifically "next 7 days".
+                        // Based on typical todo apps, Upcoming usually means "Scheduled for future".
+                        // Let's count strictly future dates.
+                        counts.upcoming++;
+                    }
                 }
             }
         });
