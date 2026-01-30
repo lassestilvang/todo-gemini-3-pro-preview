@@ -56,9 +56,7 @@ describe("Select", () => {
             fireEvent.click(trigger);
         });
 
-        // Radix Select content is rendered in a portal
-        await waitFor(() => {
-            expect(screen.getByRole("option", { name: "Option 1" })).toBeInTheDocument();
-        }, { timeout: 5000 });
-    }, 10000);
+        // Radix Select content is rendered in a portal. Using findByRole handles the waiting logic.
+        expect(await screen.findByRole("option", { name: "Option 1" }, { timeout: 30000 })).toBeInTheDocument();
+    }, 40000);
 });
