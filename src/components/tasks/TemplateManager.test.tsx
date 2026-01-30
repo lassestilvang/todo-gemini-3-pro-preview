@@ -93,7 +93,7 @@ describe("TemplateManager", () => {
 
       await waitFor(() => {
         expect(screen.getByText("Task Templates")).toBeInTheDocument();
-      }, { timeout: 3000 });
+      }, { timeout: 10000 });
     });
 
     it("should load and display templates when dialog opens", async () => {
@@ -107,7 +107,7 @@ describe("TemplateManager", () => {
         // expect(mockGetTemplates).toHaveBeenCalledWith("test_user_123"); // Removed action spy
         expect(screen.getByText("Weekly Report")).toBeInTheDocument();
         expect(screen.getByText("Daily Standup")).toBeInTheDocument();
-      }, { timeout: 3000 });
+      }, { timeout: 10000 });
     });
 
     it("should show empty state when no templates exist", async () => {
@@ -121,7 +121,7 @@ describe("TemplateManager", () => {
 
       await waitFor(() => {
         expect(screen.getByText("No templates found. Create one to get started.")).toBeInTheDocument();
-      }, { timeout: 3000 });
+      }, { timeout: 10000 });
     });
   });
 
@@ -136,7 +136,7 @@ describe("TemplateManager", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId("new-template-button")).toBeInTheDocument();
-      }, { timeout: 3000 });
+      }, { timeout: 10000 });
 
       // Click New Template button
       await React.act(async () => {
@@ -147,7 +147,7 @@ describe("TemplateManager", () => {
         // Should show the TemplateFormDialog in create mode
         expect(screen.getByRole("heading", { name: "Create Template" })).toBeInTheDocument();
         expect(screen.getByTestId("template-name-input")).toBeInTheDocument();
-      }, { timeout: 3000 });
+      }, { timeout: 10000 });
     });
 
     it("should show empty form fields in create mode", async () => {
@@ -160,7 +160,7 @@ describe("TemplateManager", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId("new-template-button")).toBeInTheDocument();
-      }, { timeout: 3000 });
+      }, { timeout: 10000 });
 
       // Click New Template button
       await React.act(async () => {
@@ -236,7 +236,7 @@ describe("TemplateManager", () => {
       await waitFor(() => {
         const titleInput = screen.getByTestId("task-title-input") as HTMLInputElement;
         expect(titleInput.value).toBe("Weekly Report Task");
-      }, { timeout: 3000 });
+      }, { timeout: 10000 });
     });
   });
 
@@ -251,7 +251,7 @@ describe("TemplateManager", () => {
       await waitFor(() => {
         expect(screen.getByTestId("use-template-1")).toBeInTheDocument();
         expect(screen.getByTestId("use-template-2")).toBeInTheDocument();
-      }, { timeout: 3000 });
+      }, { timeout: 10000 });
     });
 
     it("should render delete button for each template", async () => {
@@ -264,7 +264,7 @@ describe("TemplateManager", () => {
       await waitFor(() => {
         expect(screen.getByTestId("delete-template-1")).toBeInTheDocument();
         expect(screen.getByTestId("delete-template-2")).toBeInTheDocument();
-      }, { timeout: 3000 });
+      }, { timeout: 10000 });
     });
   });
 

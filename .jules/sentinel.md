@@ -27,3 +27,8 @@
 **Vulnerability:** `src/lib/actions/labels.ts` server actions (`getLabels`, `createLabel`, etc.) accepted `userId` but failed to validate it against the authenticated session, allowing IDOR.
 **Learning:** Systematic checks (e.g., `grep` for "userId" without "requireUser") reveal vulnerabilities that manual review might miss.
 **Prevention:** Added `await requireUser(userId)` to all exported functions in `labels.ts`. Created `labels.security.test.ts` to prevent regression.
+
+## 2026-10-29 - [Testing] CI Timeouts on Radix Primitives
+**Vulnerability:** CI checks failed sporadically or consistently on `TemplateManager` and `Select` tests due to timeouts (3000ms), while passing locally.
+**Learning:** CI environments (especially with database setup) are significantly slower than local dev machines. Default timeouts for `waitFor` involving Radix UI portals or async data fetching are insufficient.
+**Prevention:** Increased timeouts to 5000ms-10000ms for robust CI execution when testing complex UI interactions or async flows.
