@@ -16,6 +16,7 @@ import {
   ValidationError,
 } from "./shared";
 import { logActivity } from "./logs";
+import { requireUser } from "@/lib/auth";
 
 /**
  * Retrieves all labels for a specific user.
@@ -33,6 +34,8 @@ import { unstable_cache, revalidateTag } from "next/cache";
  * @returns Array of labels
  */
 export const getLabels = cache(async function getLabels(userId: string) {
+  await requireUser(userId);
+
   const fn = unstable_cache(
     async (id: string) => {
       return await db
@@ -54,6 +57,8 @@ export const getLabels = cache(async function getLabels(userId: string) {
  * @param items - Array of label IDs and their new positions
  */
 async function reorderLabelsImpl(userId: string, items: { id: number; position: number }[]) {
+  await requireUser(userId);
+
   await Promise.all(
     items.map((item) =>
       db
@@ -92,6 +97,8 @@ export const reorderLabels: (
  * @returns The label if found, undefined otherwise
  */
 export async function getLabel(id: number, userId: string) {
+  await requireUser(userId);
+
   const result = await db
     .select()
     .from(labels)
@@ -113,6 +120,8 @@ async function createLabelImpl(data: typeof labels.$inferInsert) {
   if (!data.userId) {
     throw new ValidationError("User ID is required", { userId: "User ID cannot be empty" });
   }
+
+  await requireUser(data.userId);
 
   const result = await db.insert(labels).values(data).returning();
 
@@ -152,6 +161,8 @@ async function updateLabelImpl(
   userId: string,
   data: Partial<Omit<typeof labels.$inferInsert, "userId">>
 ) {
+  await requireUser(userId);
+
   if (data.name !== undefined && data.name.trim().length === 0) {
     throw new ValidationError("Label name cannot be empty", { name: "Name cannot be empty" });
   }
@@ -199,6 +210,8 @@ export const updateLabel: (
  * @param userId - The ID of the user who owns the label
  */
 async function deleteLabelImpl(id: number, userId: string) {
+  await requireUser(userId);
+
   const currentLabel = await getLabel(id, userId);
 
   await db.delete(labels).where(and(eq(labels.id, id), eq(labels.userId, userId)));
