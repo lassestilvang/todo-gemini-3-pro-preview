@@ -5,6 +5,7 @@ import { Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface VoiceInputProps {
     onTranscript: (text: string) => void;
@@ -71,24 +72,31 @@ export function VoiceInput({ onTranscript, className }: VoiceInputProps) {
     if (!isSupported) return null;
 
     return (
-        <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className={cn(
-                "transition-all duration-300",
-                isListening && "bg-red-100 text-red-600 hover:bg-red-200 animate-pulse",
-                className
-            )}
-            onClick={toggleListening}
-            title={isListening ? "Stop listening" : "Voice input"}
-        >
-            {isListening ? (
-                <MicOff className="h-4 w-4" />
-            ) : (
-                <Mic className="h-4 w-4" />
-            )}
-        </Button>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                        "transition-all duration-300",
+                        isListening && "bg-red-100 text-red-600 hover:bg-red-200 animate-pulse",
+                        className
+                    )}
+                    onClick={toggleListening}
+                    aria-label={isListening ? "Stop listening" : "Start voice input"}
+                >
+                    {isListening ? (
+                        <MicOff className="h-4 w-4" />
+                    ) : (
+                        <Mic className="h-4 w-4" />
+                    )}
+                </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+                <p>{isListening ? "Stop listening" : "Voice input"}</p>
+            </TooltipContent>
+        </Tooltip>
     );
 }
 
