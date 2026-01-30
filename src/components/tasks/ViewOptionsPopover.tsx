@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { ChevronDown, ChevronUp, Settings2, List, LayoutGrid, Calendar, RotateCcw } from "lucide-react";
 import { ViewSettings, defaultViewSettings } from "@/lib/view-settings";
-import { getViewSettings, saveViewSettings, resetViewSettings } from "@/lib/actions/view-settings";
+import { saveViewSettings, resetViewSettings } from "@/lib/actions/view-settings";
 import { getLabels } from "@/lib/actions/labels";
 import { createSavedView } from "@/lib/actions/views";
 import { cn } from "@/lib/utils";
@@ -71,7 +71,7 @@ export function ViewOptionsPopover({ viewId, userId, settings: propSettings, onS
 
     const handleReset = () => {
         const previousSettings = settings;
-        setSettings(defaultViewSettings);
+        onSettingsChange?.(defaultViewSettings);
 
         startTransition(async () => {
             if (userId) {
@@ -80,7 +80,7 @@ export function ViewOptionsPopover({ viewId, userId, settings: propSettings, onS
                     onSettingsChange?.(defaultViewSettings);
                 } catch {
                     // Fail silently
-                    setSettings(previousSettings);
+                    onSettingsChange?.(previousSettings);
                     toast.error("Failed to reset view settings");
                 }
             } else {
