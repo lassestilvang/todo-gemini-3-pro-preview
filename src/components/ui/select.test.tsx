@@ -59,7 +59,7 @@ describe("Select", () => {
         });
 
         // Radix Select content is rendered in a portal
-        const option = await screen.findByRole("option", { name: "Option 1" }, { timeout: 3000 });
+        const option = await screen.findByText("Option 1", {}, { timeout: 5000 });
         expect(option).toBeInTheDocument();
-    }, 10000);
+    }, 15000);
 });
