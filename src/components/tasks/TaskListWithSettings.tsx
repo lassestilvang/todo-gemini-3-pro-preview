@@ -365,8 +365,11 @@ export function TaskListWithSettings({
         // For 1k tasks, this cuts 3-4 full-array scans and reduces Date allocations per render.
         const result = allStoreTasks;
         const now = new Date();
+        const nowTime = now.getTime();
         const todayStart = startOfDay(now);
         const todayEnd = endOfDay(now);
+        const todayStartTime = todayStart.getTime();
+        const todayEndTime = todayEnd.getTime();
 
         // 0. Initial Server Filter Override (if tasks prop exists and we didn't specify filterType)
         // If we still use server-side fetching for some routes, we might rely on prop IDs.
@@ -396,15 +399,17 @@ export function TaskListWithSettings({
 
             // 3. Filter by FilterType (today, upcoming, etc)
             // Logic mirrored from src/lib/actions/tasks.ts
+            // PERF: Pre-compute timestamps outside loop to avoid repeated Date allocations.
+            // For 1k tasks with "today" filter, this eliminates 1k Date object creations per render.
             if (filterType === "inbox") {
                 if (task.listId !== null) continue;
             } else if (filterType === "today") {
                 if (!task.dueDate) continue;
-                const dueTime = new Date(task.dueDate).getTime();
-                if (dueTime < todayStart.getTime() || dueTime > todayEnd.getTime()) continue;
+                const dueTime = task.dueDate.getTime();
+                if (dueTime < todayStartTime || dueTime > todayEndTime) continue;
             } else if (filterType === "upcoming") {
                 if (!task.dueDate) continue;
-                if (new Date(task.dueDate).getTime() <= now.getTime()) continue;
+                if (task.dueDate.getTime() <= nowTime) continue;
             }
 
             filtered.push(task);

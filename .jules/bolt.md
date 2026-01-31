@@ -28,3 +28,7 @@
 ## 2026-01-31 - Redundant Array Filtering in Render
 **Learning:** Filtering the same array multiple times in a component's render function (e.g., `pendingActions.filter(a => a.status === 'pending')` and `pendingActions.filter(a => a.status === 'failed')`) causes redundant O(n) iterations on every render.
 **Action:** Use `useMemo` with a single loop to compute all derived counts at once, reducing O(2n) to O(n) and preventing recalculation when dependencies haven't changed.
+
+## 2026-01-31 - Date Object Allocation in Filter Loops
+**Learning:** Creating `new Date()` objects inside filter loops (e.g., `new Date(task.dueDate).getTime()` for each task) causes unnecessary allocations. For 1k tasks, this creates 1k+ Date objects per render.
+**Action:** Pre-compute timestamps outside the loop and use `.getTime()` directly on Date properties. Since `task.dueDate` is already a Date object, call `.getTime()` on it directly instead of wrapping in `new Date()`.
