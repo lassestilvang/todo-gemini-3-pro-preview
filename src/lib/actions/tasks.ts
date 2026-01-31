@@ -646,7 +646,7 @@ export async function toggleTaskCompletion(id: number, userId: string, isComplet
 
   const gamificationPromise = updateUserProgress(userId, baseXP + bonusXP);
 
-  const [_, __, progressResult] = await Promise.all([
+  const [, , progressResult] = await Promise.all([
     logPromise,
     blockedTasksPromise,
     gamificationPromise,
