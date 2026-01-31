@@ -1,10 +1,16 @@
-import { describe, expect, it, beforeAll, beforeEach } from "bun:test";
+import { describe, expect, it, beforeAll, beforeEach, mock } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
 import { createLabel, getLabels, reorderLabels } from "./labels";
 import { isSuccess } from "../action-result";
 
-// Note: next/cache is globally mocked in src/test/mocks.ts, so we don't need to mock it here.
+// Explicitly mock next/cache to match other test files and ensure isolation
+mock.module("next/cache", () => ({
+    revalidatePath: () => { },
+    revalidateTag: () => { },
+    unstable_cache: (fn: any) => fn,
+    cache: (fn: any) => fn,
+}));
 
 describe("reorderLabels", () => {
     let testUserId: string;
@@ -33,13 +39,19 @@ describe("reorderLabels", () => {
         const l3Result = await createLabel({ userId: testUserId, name: "L3" });
 
         if (!isSuccess(l1Result) || !isSuccess(l2Result) || !isSuccess(l3Result)) {
-            console.error("Failed to create labels", l1Result, l2Result, l3Result);
             throw new Error("Failed to create labels");
         }
 
-        const label1 = l1Result.data;
-        const label2 = l2Result.data;
-        const label3 = l3Result.data;
+        const label1 = l1Result.data!;
+        const label2 = l2Result.data!;
+        const label3 = l3Result.data!;
+
+        // Verify IDs are distinct (detect mock leakage where all IDs are 1)
+        if (label1.id === label2.id) {
+            console.error("Test environment tainted: createLabel is returning duplicate IDs (likely mocked).");
+            // Fail the test but allow it to proceed to verify behavior
+            expect(label1.id).not.toBe(label2.id);
+        }
 
         // Verify initial state
         const initial = await getLabels(testUserId);
@@ -53,7 +65,6 @@ describe("reorderLabels", () => {
         ]);
 
         if (!isSuccess(reorderResult)) {
-            console.error("reorderLabels failed", reorderResult);
             throw new Error(`reorderLabels failed: ${JSON.stringify(reorderResult)}`);
         }
 
