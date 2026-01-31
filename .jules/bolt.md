@@ -53,3 +53,7 @@
 ## 2026-01-31 - Status Info Object Allocations in SyncStatus
 **Learning:** The SyncStatus component was calling `getStatusInfo()` on every render, creating new objects with icon, label, description, and className properties each time. Since this component updates frequently during sync operations (status changes, pending count updates), these allocations added unnecessary GC pressure and could trigger re-renders in child components.
 **Action:** Wrap the status info object creation in `useMemo` with proper dependencies (isOnline, failedCount, status, pendingCount). This ensures the object reference remains stable when dependencies haven't changed, reducing allocations and preventing unnecessary re-renders of components that consume these values.
+
+## 2026-01-31 - Reduce with Spread Operator O(n²) Complexity
+**Learning:** Using `.reduce((acc, item) => ({ ...acc, [item.id]: value }), {})` to build an object from an array creates O(n²) complexity because the spread operator copies all existing properties on each iteration. For a task with 50 subtasks, this creates 1,225 intermediate objects (50*49/2). The TaskItem component was using this pattern to initialize subtask completion states.
+**Action:** Replace reduce-with-spread with a simple for-loop that mutates a single object: `const obj = {}; for (const item of array) { obj[item.id] = value; }`. This is O(n) and creates only one object, eliminating thousands of allocations for tasks with many subtasks.

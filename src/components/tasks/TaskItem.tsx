@@ -115,9 +115,15 @@ const priorityColors = {
 export const TaskItem = memo(function TaskItem({ task, showListInfo = true, userId, disableAnimations = false, dragHandleProps, dispatch: dispatchProp, onEdit }: TaskItemProps) {
     const [isCompleted, setIsCompleted] = useState(task.isCompleted || false);
     const [isExpanded, setIsExpanded] = useState(false);
-    const [subtaskStates, setSubtaskStates] = useState<Record<number, boolean>>(
-        () => (task.subtasks || []).reduce((acc, s) => ({ ...acc, [s.id]: s.isCompleted || false }), {} as Record<number, boolean>)
-    );
+    // Perf: Build object directly in O(n) instead of reduce with spread (O(n²)).
+    // For tasks with 50 subtasks, this eliminates 1,225 object allocations (50*49/2).
+    const [subtaskStates, setSubtaskStates] = useState<Record<number, boolean>>(() => {
+        const states: Record<number, boolean> = {};
+        for (const s of task.subtasks || []) {
+            states[s.id] = s.isCompleted || false;
+        }
+        return states;
+    });
 
     const hasSubtasks = (task.subtaskCount || 0) > 0;
     const completedCount = task.completedSubtaskCount || 0;
