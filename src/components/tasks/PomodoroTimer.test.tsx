@@ -1,5 +1,5 @@
 
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { PomodoroTimer } from "./PomodoroTimer";
 import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 

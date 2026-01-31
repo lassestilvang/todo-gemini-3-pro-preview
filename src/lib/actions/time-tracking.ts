@@ -22,6 +22,7 @@ import {
     type ActionResult,
 } from "./shared";
 import { rateLimit } from "@/lib/rate-limit";
+import { requireUser } from "@/lib/auth";
 
 // ============================================================================
 // Time Entry CRUD Operations
@@ -39,6 +40,7 @@ export async function startTimeEntry(
     userId: string
 ): Promise<ActionResult<typeof timeEntries.$inferSelect>> {
     return withErrorHandling(async () => {
+        await requireUser(userId);
         await rateLimit(`${userId}:time-tracking`, 20, 60);
 
         // Check if there's already an active entry for this task
@@ -86,6 +88,8 @@ export async function stopTimeEntry(
     userId: string
 ): Promise<ActionResult<typeof timeEntries.$inferSelect>> {
     return withErrorHandling(async () => {
+        await requireUser(userId);
+
         const [existing] = await db
             .select()
             .from(timeEntries)
@@ -162,6 +166,8 @@ export async function getActiveTimeEntry(
     userId: string
 ): Promise<ActionResult<typeof timeEntries.$inferSelect | null>> {
     return withErrorHandling(async () => {
+        await requireUser(userId);
+
         const [entry] = await db
             .select()
             .from(timeEntries)
@@ -190,6 +196,8 @@ export async function getTimeEntries(
     userId: string
 ): Promise<ActionResult<Array<typeof timeEntries.$inferSelect>>> {
     return withErrorHandling(async () => {
+        await requireUser(userId);
+
         const entries = await db
             .select()
             .from(timeEntries)
@@ -223,6 +231,7 @@ export async function createManualTimeEntry(
     notes?: string
 ): Promise<ActionResult<typeof timeEntries.$inferSelect>> {
     return withErrorHandling(async () => {
+        await requireUser(userId);
         await rateLimit(`${userId}:time-tracking`, 20, 60);
 
         const startedAt = date || new Date();
@@ -291,6 +300,8 @@ export async function updateTimeEntry(
     }
 ): Promise<ActionResult<typeof timeEntries.$inferSelect>> {
     return withErrorHandling(async () => {
+        await requireUser(userId);
+
         const [existing] = await db
             .select()
             .from(timeEntries)
@@ -355,6 +366,8 @@ export async function deleteTimeEntry(
     userId: string
 ): Promise<ActionResult<{ deleted: boolean }>> {
     return withErrorHandling(async () => {
+        await requireUser(userId);
+
         const [existing] = await db
             .select()
             .from(timeEntries)
@@ -424,6 +437,8 @@ export async function getTimeStats(
     taskBreakdown: Array<{ taskId: number; title: string; totalMinutes: number }>;
 }>> {
     return withErrorHandling(async () => {
+        await requireUser(userId);
+
         let query = db
             .select()
             .from(timeEntries)
@@ -498,6 +513,8 @@ export async function updateTaskEstimate(
     estimateMinutes: number | null
 ): Promise<ActionResult<typeof tasks.$inferSelect>> {
     return withErrorHandling(async () => {
+        await requireUser(userId);
+
         const [task] = await db
             .update(tasks)
             .set({ estimateMinutes })
