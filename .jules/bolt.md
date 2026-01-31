@@ -24,3 +24,7 @@
 ## 2026-01-27 - Correlated Subqueries
 **Learning:** Using correlated subqueries (e.g., `(SELECT COUNT(*) ... WHERE outer.id = inner.id)`) in main `SELECT` statements scales poorly (O(N)) for large datasets.
 **Action:** Replace correlated subqueries with a separate parallel query using `GROUP BY` and merge the results in memory using a Map.
+
+## 2026-01-31 - Redundant Array Filtering in Render
+**Learning:** Filtering the same array multiple times in a component's render function (e.g., `pendingActions.filter(a => a.status === 'pending')` and `pendingActions.filter(a => a.status === 'failed')`) causes redundant O(n) iterations on every render.
+**Action:** Use `useMemo` with a single loop to compute all derived counts at once, reducing O(2n) to O(n) and preventing recalculation when dependencies haven't changed.
