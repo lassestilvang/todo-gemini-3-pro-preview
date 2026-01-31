@@ -2,7 +2,6 @@ import { describe, expect, it, beforeAll, beforeEach } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
 import { startTimeEntry, getTimeStats } from "@/lib/actions/time-tracking";
-import { ForbiddenError } from "@/lib/auth-errors";
 import { sqliteConnection } from "@/db";
 
 // Helper functions (since they aren't exported from setup.tsx)
@@ -11,8 +10,7 @@ async function createTestList(userId: string, name: string) {
         "INSERT INTO lists (user_id, name, slug, position) VALUES (?, ?, ?, ?)",
         [userId, name, name.toLowerCase().replace(/\s+/g, '-'), 0]
     );
-    // Use proper casting or any to avoid TS errors in test file
-    return sqliteConnection.query("SELECT * FROM lists WHERE user_id = ? AND name = ?").get(userId, name) as any;
+    return sqliteConnection.query("SELECT * FROM lists WHERE user_id = ? AND name = ?").get(userId, name) as { id: number; user_id: string; name: string };
 }
 
 async function createTestTask(userId: string, listId: number, title: string) {
@@ -20,7 +18,7 @@ async function createTestTask(userId: string, listId: number, title: string) {
         "INSERT INTO tasks (user_id, list_id, title) VALUES (?, ?, ?)",
         [userId, listId, title]
     );
-    return sqliteConnection.query("SELECT * FROM tasks WHERE user_id = ? AND title = ?").get(userId, title) as any;
+    return sqliteConnection.query("SELECT * FROM tasks WHERE user_id = ? AND title = ?").get(userId, title) as { id: number; user_id: string; list_id: number; title: string };
 }
 
 describe("Security Tests: Time Tracking Actions", () => {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
 import { PendingAction } from './types';
 

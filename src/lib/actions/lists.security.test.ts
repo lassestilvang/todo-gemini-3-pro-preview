@@ -1,7 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach, mock, beforeAll } from "bun:test";
+import { describe, it, expect, beforeEach, afterEach, beforeAll } from "bun:test";
 import { setupTestDb, resetTestDb } from "@/test/setup";
 import { setMockAuthUser, clearMockAuthUser } from "@/test/mocks";
-import { ForbiddenError } from "@/lib/auth-errors";
 
 
 
@@ -83,7 +82,7 @@ describe("Lists Security (IDOR)", () => {
       await getLists(VICTIM_ID);
       // If it doesn't throw, fail the test
       expect(true).toBe(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Just ensure an error was thrown, which means access was denied
       expect(error).toBeDefined();
     }
@@ -93,7 +92,7 @@ describe("Lists Security (IDOR)", () => {
     try {
       await getList(999, VICTIM_ID);
       expect(true).toBe(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       expect(error).toBeDefined();
     }
   });

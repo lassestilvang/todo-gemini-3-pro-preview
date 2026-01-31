@@ -40,7 +40,7 @@ export function getViewId(viewType: string, id?: number | string): string {
     return viewType;
 }
 
-export function mapDbSettingsToViewSettings(dbSettings: any): ViewSettings {
+export function mapDbSettingsToViewSettings(dbSettings: { layout?: string; showCompleted?: boolean; groupBy?: string; sortBy?: string; sortOrder?: string; compactMode?: boolean } | null): ViewSettings {
     if (!dbSettings) return defaultViewSettings;
 
     return {

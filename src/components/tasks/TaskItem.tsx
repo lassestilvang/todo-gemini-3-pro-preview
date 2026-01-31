@@ -32,7 +32,7 @@ interface TaskItemProps {
     // Typed for @dnd-kit stability - ensures memo works correctly with drag-and-drop
     dragHandleProps?: DraggableSyntheticListeners;
     // Optional: if not provided, will use useSync() internally
-    dispatch?: <T extends ActionType>(type: T, ...args: Parameters<typeof actionRegistry[T]>) => Promise<any>;
+    dispatch?: <T extends ActionType>(type: T, ...args: Parameters<typeof actionRegistry[T]>) => Promise<{ success: boolean; data: unknown }>;
     // Perf: Receives task as argument to allow parent to use a stable useCallback reference
     // instead of creating a new arrow function per task, enabling React.memo to work effectively
     onEdit?: (task: Task) => void;

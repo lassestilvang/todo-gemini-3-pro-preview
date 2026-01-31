@@ -1,8 +1,6 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import React from "react";
-import { db, tasks } from "@/db";
-import { setupTestDb, resetTestDb } from "@/test/setup";
 
 // Mock dependencies
 const mockGetTask = mock(() => Promise.resolve(null));

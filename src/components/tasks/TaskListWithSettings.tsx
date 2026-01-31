@@ -268,7 +268,7 @@ const SortableTaskItem = memo(function SortableTaskItem({
     listId?: number | null;
     userId?: string;
     isDragEnabled: boolean;
-    dispatch: <T extends ActionType>(type: T, ...args: Parameters<typeof actionRegistry[T]>) => Promise<any>;
+    dispatch: <T extends ActionType>(type: T, ...args: Parameters<typeof actionRegistry[T]>) => Promise<{ success: boolean; data: unknown }>;
 }) {
     const {
         attributes,

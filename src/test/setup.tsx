@@ -47,21 +47,21 @@ if (!global.PointerEvent) {
             this.shiftKey = props.shiftKey || false;
             this.altKey = props.altKey || false;
             this.metaKey = props.metaKey || false;
-            this.key = (props as any).key || "";
-            this.keyCode = (props as any).keyCode || 0;
+            this.key = (props as PointerEventInit & { key?: string }).key || "";
+            this.keyCode = (props as PointerEventInit & { keyCode?: number }).keyCode || 0;
             this.clientX = props.clientX || 0;
             this.clientY = props.clientY || 0;
             this.screenX = props.screenX || 0;
             this.screenY = props.screenY || 0;
-            this.pageX = (props as any).pageX || 0;
-            this.pageY = (props as any).pageY || 0;
+            this.pageX = (props as PointerEventInit & { pageX?: number }).pageX || 0;
+            this.pageY = (props as PointerEventInit & { pageY?: number }).pageY || 0;
             this.pointerId = props.pointerId || 0;
             this.pointerType = props.pointerType || "mouse";
             this.isPrimary = props.isPrimary || false;
             this.pressure = props.pressure || 0;
         }
     }
-    (global as any).PointerEvent = MockPointerEvent;
+    (global as typeof globalThis & { PointerEvent: typeof MockPointerEvent }).PointerEvent = MockPointerEvent;
 }
 
 if (!global.Element.prototype.setPointerCapture) {
@@ -134,7 +134,7 @@ mock.module("@/lib/auth", () => ({
             weekStartsOnMonday: false,
         };
     }),
-    syncUser: mock((user: any) => Promise.resolve({
+    syncUser: mock((user: { id: string; email: string }) => Promise.resolve({
         id: user.id,
         email: user.email,
     })),
@@ -152,7 +152,7 @@ mock.module("@/lib/auth", () => ({
 // Mock SyncProvider with a dummy dispatch that does nothing by default
 // Individual tests can spy on it or override it if needed.
 mock.module("@/components/providers/sync-provider", () => ({
-    SyncProvider: ({ children }: any) => React.createElement(React.Fragment, null, children),
+    SyncProvider: ({ children }: { children: React.ReactNode }) => React.createElement(React.Fragment, null, children),
     useSync: () => ({
         isOnline: true,
         lastSynced: new Date(),
@@ -178,7 +178,7 @@ mock.module("next/navigation", () => ({
 
 // Mock next/dynamic
 mock.module("next/dynamic", () => ({
-    default: (fn: any) => (props: any) => React.createElement('div', { 'data-testid': 'dynamic-component', ...props })
+    default: (_fn: () => Promise<unknown>) => (props: Record<string, unknown>) => React.createElement('div', { 'data-testid': 'dynamic-component', ...props })
 }));
 
 /**
@@ -234,7 +234,7 @@ export async function resetTestDb() {
         sqliteConnection.run("DELETE FROM templates");
         sqliteConnection.run("DELETE FROM users");
         sqliteConnection.run("DELETE FROM rate_limits");
-    } catch (e) {
+    } catch {
         // Ignore errors if tables don't exist yet
     }
 }

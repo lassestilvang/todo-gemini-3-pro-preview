@@ -9,7 +9,6 @@ import { isFailure } from "@/lib/action-result";
 const describeOrSkip = process.env.CI ? describe.skip : describe;
 
 describeOrSkip("Integration: Security IDOR", () => {
-    let attackerId: string;
     let victimId: string;
 
     beforeAll(async () => {
@@ -23,7 +22,6 @@ describeOrSkip("Integration: Security IDOR", () => {
         const attacker = await createTestUser("attacker", "attacker@evil.com");
         const victim = await createTestUser("victim", "victim@target.com");
 
-        attackerId = attacker.id;
         victimId = victim.id;
 
         // Set auth context to attacker

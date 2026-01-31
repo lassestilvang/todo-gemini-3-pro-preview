@@ -88,7 +88,7 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
     const clearFieldError = useCallback((field: string) => {
         setFieldErrors(prev => {
             if (prev[field]) {
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                 
                 const { [field]: _removed, ...rest } = prev;
                 return rest;
             }

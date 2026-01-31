@@ -72,8 +72,8 @@ describe("FocusMode", () => {
 
     it("should complete task", async () => {
         await db.insert(tasks).values({
-            id: 2, title: "Task To Complete", isCompleted: false, listId: 1, userId: "user-1"
-        } as any);
+            id: 2, title: "Task To Complete", isCompleted: false, listId: 1, userId: "user-1", position: 0
+        });
 
         const onClose = mock();
         render(<FocusMode task={{ id: 2, title: "Task To Complete", description: "Desc", priority: "high" }} userId="user-1" onClose={onClose} />);

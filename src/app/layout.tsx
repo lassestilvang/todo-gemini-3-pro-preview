@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import Script from "next/script";
 import { Inter, Quicksand, Space_Grotesk, Orbitron, Sora } from "next/font/google";
 import "./globals.css";
 import { MainLayout } from "@/components/layout/MainLayout";

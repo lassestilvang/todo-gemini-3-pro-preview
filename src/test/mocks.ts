@@ -78,18 +78,18 @@ export const mockDb: {
             execute: () => Promise.resolve([]),
         }),
     }),
-    insert: (_table: unknown) => ({ // eslint-disable-line @typescript-eslint/no-unused-vars
+    insert: (_table: unknown) => ({  
         values: (data: unknown) => ({
             returning: () => Promise.resolve([Object.assign({}, data, { id: Math.random().toString(36).substring(7) })]),
         }),
     }),
-    update: (_table: unknown) => ({ // eslint-disable-line @typescript-eslint/no-unused-vars
+    update: (_table: unknown) => ({  
         set: (data: unknown) => ({
-            where: (_condition: unknown) => Promise.resolve([Object.assign({}, data, { id: "mock-id" })]), // eslint-disable-line @typescript-eslint/no-unused-vars
+            where: (_condition: unknown) => Promise.resolve([Object.assign({}, data, { id: "mock-id" })]),  
         }),
     }),
-    delete: (_table: unknown) => ({ // eslint-disable-line @typescript-eslint/no-unused-vars
-        where: (_condition: unknown) => Promise.resolve({ deleted: true }), // eslint-disable-line @typescript-eslint/no-unused-vars
+    delete: (_table: unknown) => ({  
+        where: (_condition: unknown) => Promise.resolve({ deleted: true }),  
     }),
 };
 
