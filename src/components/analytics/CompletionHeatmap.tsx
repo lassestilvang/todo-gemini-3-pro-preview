@@ -14,7 +14,10 @@ interface CompletionHeatmapProps {
     data: HeatmapData[];
 }
 
-export function CompletionHeatmap({ data }: CompletionHeatmapProps) {
+// ⚡ Bolt Opt: Memoize heatmap to prevent re-renders when parent analytics page updates unrelated state.
+// Since heatmap data only changes when task completion history changes, this avoids expensive
+// date calculations and DOM updates when other analytics sections (charts, stats) re-render.
+export const CompletionHeatmap = React.memo(function CompletionHeatmap({ data }: CompletionHeatmapProps) {
     const today = startOfDay(new Date());
     const daysToShow = 140; // ~20 weeks
     const startDate = subDays(today, daysToShow);
@@ -106,4 +109,4 @@ export function CompletionHeatmap({ data }: CompletionHeatmapProps) {
             </div>
         </div>
     );
-}
+});

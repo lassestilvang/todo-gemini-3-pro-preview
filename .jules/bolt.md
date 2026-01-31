@@ -57,3 +57,7 @@
 ## 2026-01-31 - Reduce with Spread Operator O(n²) Complexity
 **Learning:** Using `.reduce((acc, item) => ({ ...acc, [item.id]: value }), {})` to build an object from an array creates O(n²) complexity because the spread operator copies all existing properties on each iteration. For a task with 50 subtasks, this creates 1,225 intermediate objects (50*49/2). The TaskItem component was using this pattern to initialize subtask completion states.
 **Action:** Replace reduce-with-spread with a simple for-loop that mutates a single object: `const obj = {}; for (const item of array) { obj[item.id] = value; }`. This is O(n) and creates only one object, eliminating thousands of allocations for tasks with many subtasks.
+
+## 2026-02-01 - React.memo for Analytics Components
+**Learning:** Analytics components (AnalyticsCharts, CompletionHeatmap) render expensive chart visualizations with recharts. Without React.memo, these components re-render whenever the parent analytics page updates any state (filters, tabs, etc.), even when their data prop hasn't changed. Since these components already use useMemo for internal calculations, adding React.memo prevents the entire component tree from re-rendering unnecessarily.
+**Action:** Wrap expensive visualization components with React.memo when they receive stable data props and contain heavy rendering logic (charts, heatmaps, large lists). This is especially valuable for analytics/dashboard pages where multiple independent sections might trigger parent re-renders.

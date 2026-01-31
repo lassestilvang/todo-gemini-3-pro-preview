@@ -21,6 +21,7 @@ import {
     PolarRadiusAxis
 } from "recharts";
 import { cn } from "@/lib/utils";
+import React from "react";
 
 interface AnalyticsData {
     summary: {
@@ -45,7 +46,10 @@ interface AnalyticsData {
     };
 }
 
-export function AnalyticsCharts({ data }: { data: AnalyticsData }) {
+// ⚡ Bolt Opt: Memoize analytics charts to prevent re-renders when parent page updates unrelated state.
+// Since analytics data is expensive to compute and render (multiple recharts components), this avoids
+// unnecessary re-calculations and DOM updates when other page sections (filters, tabs) change.
+export const AnalyticsCharts = React.memo(function AnalyticsCharts({ data }: { data: AnalyticsData }) {
     // PERF: Memoize expensive chart data transformations to avoid recalculating on every render.
     // For analytics pages with multiple charts, this reduces redundant array operations
     // and prevents unnecessary re-renders of child chart components.
@@ -289,4 +293,4 @@ export function AnalyticsCharts({ data }: { data: AnalyticsData }) {
             )}
         </div>
     );
-}
+});
