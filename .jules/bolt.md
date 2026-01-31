@@ -41,3 +41,7 @@
 ## 2026-01-31 - XPBar Aggressive Polling
 **Learning:** The XPBar component was polling user stats every 2 seconds, causing 30 database queries per minute per user. Since XP updates are triggered by task completion (which invalidates the React Query cache), aggressive polling is unnecessary except for multi-tab sync scenarios.
 **Action:** Reduce polling intervals to 10-30 seconds for stats that update infrequently. Rely on cache invalidation from mutations as the primary update mechanism, using polling only as a fallback for edge cases.
+
+## 2026-01-31 - Expensive Chart Data Transformations
+**Learning:** The AnalyticsCharts component was recalculating chart data arrays and finding max values on every render. Using `Math.max(...array)` spreads the array into function arguments, creating unnecessary intermediate copies. For analytics pages with multiple charts, this caused redundant array operations on every parent state change.
+**Action:** Wrap chart data transformations in `useMemo` with proper dependencies. Replace `Math.max(...array)` with a simple for-loop to find max values in a single pass without array spreading, reducing both memory allocations and computational overhead.

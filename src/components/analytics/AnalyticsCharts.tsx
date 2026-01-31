@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import {
     BarChart,
     Bar,
@@ -45,21 +46,41 @@ interface AnalyticsData {
 }
 
 export function AnalyticsCharts({ data }: { data: AnalyticsData }) {
-    const priorityData = [
-        { name: "High", value: data.priorityDist.high, color: "#ef4444" },
-        { name: "Medium", value: data.priorityDist.medium, color: "#f59e0b" },
-        { name: "Low", value: data.priorityDist.low, color: "#3b82f6" },
-        { name: "None", value: data.priorityDist.none, color: "#6b7280" },
-    ];
+    // PERF: Memoize expensive chart data transformations to avoid recalculating on every render.
+    // For analytics pages with multiple charts, this reduces redundant array operations
+    // and prevents unnecessary re-renders of child chart components.
+    const { priorityData, dayData, mostProductiveDay } = useMemo(() => {
+        const priority = [
+            { name: "High", value: data.priorityDist.high, color: "#ef4444" },
+            { name: "Medium", value: data.priorityDist.medium, color: "#f59e0b" },
+            { name: "Low", value: data.priorityDist.low, color: "#3b82f6" },
+            { name: "None", value: data.priorityDist.none, color: "#6b7280" },
+        ];
 
-    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const dayData = data.productivityByDay.map((val, i) => ({
-        day: days[i],
-        completed: val,
-    }));
+        const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        const dayDataArray = data.productivityByDay.map((val, i) => ({
+            day: days[i],
+            completed: val,
+        }));
 
-    const mostProductiveDayIndex = data.productivityByDay.indexOf(Math.max(...data.productivityByDay));
-    const mostProductiveDay = days[mostProductiveDayIndex];
+        // PERF: Find max value in a single pass instead of spreading array into Math.max
+        // which creates unnecessary intermediate array copies.
+        let maxValue = -Infinity;
+        let maxIndex = 0;
+        for (let i = 0; i < data.productivityByDay.length; i++) {
+            if (data.productivityByDay[i] > maxValue) {
+                maxValue = data.productivityByDay[i];
+                maxIndex = i;
+            }
+        }
+        const mostProductiveDayValue = days[maxIndex];
+
+        return {
+            priorityData: priority,
+            dayData: dayDataArray,
+            mostProductiveDay: mostProductiveDayValue,
+        };
+    }, [data.priorityDist, data.productivityByDay]);
 
     return (
         <div className="space-y-8">
