@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Calendar, Flag, Zap, MapPin, Smile, X } from "lucide-react";
 import { ResolvedIcon } from "@/components/ui/resolved-icon";
-import { createTask } from "@/lib/actions";
 import { IconPicker } from "@/components/ui/icon-picker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -18,9 +17,13 @@ import { Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { VoiceInput } from "./VoiceInput";
 import { TaskDialog } from "./TaskDialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
+
+import { useSync } from "@/components/providers/sync-provider";
 
 export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelIds }: { listId?: number, defaultDueDate?: Date | string, userId: string, defaultLabelIds?: number[] }) {
+    const { dispatch } = useSync();
     const [title, setTitle] = useState("");
     const [dueDate, setDueDate] = useState<Date | undefined>(
         defaultDueDate ? new Date(defaultDueDate) : undefined
@@ -76,25 +79,35 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
             toast.error("Unable to create task: missing user ID");
             return;
         }
-        await createTask({
-            userId,
-            title: parsed.title || title,
-            listId: listId || null,
-            priority: priority !== "none" ? priority : (parsed.priority || "none"),
-            energyLevel: energyLevel || parsed.energyLevel || null,
-            context: context || parsed.context || null,
-            dueDate: dueDate || parsed.dueDate || null,
-            labelIds: defaultLabelIds,
-            icon: icon || null,
-        });
 
-        setTitle("");
-        setDueDate(defaultDueDate ? new Date(defaultDueDate) : undefined);
-        setPriority("none");
-        setEnergyLevel(undefined);
-        setContext(undefined);
-        setIcon(undefined);
-        setIsExpanded(false);
+        try {
+            // Use SyncProvider dispatch instead of direct server action
+            await dispatch('createTask', {
+                userId,
+                title: parsed.title || title,
+                listId: listId || null,
+                priority: priority !== "none" ? priority : (parsed.priority || "none"),
+                energyLevel: energyLevel || parsed.energyLevel || null,
+                context: context || parsed.context || null,
+                dueDate: dueDate || parsed.dueDate || null,
+                labelIds: defaultLabelIds,
+                icon: icon || null,
+            });
+
+            setTitle("");
+            setDueDate(defaultDueDate ? new Date(defaultDueDate) : undefined);
+            setPriority("none");
+            setEnergyLevel(undefined);
+            setContext(undefined);
+            setIcon(undefined);
+            setIsExpanded(false);
+
+            // Optional: toast can be handled by the optimistic update logic if desired,
+            // but a reassuring message here is fine too.
+        } catch (error) {
+            console.error("Failed to create task:", error);
+            toast.error("Failed to create task");
+        }
     };
 
     const handleFullDetails = () => {
@@ -239,21 +252,28 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                             </div>
 
                             <div className="flex items-center gap-2">
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={handleAiEnhance}
-                                    disabled={isAiLoading || !title.trim()}
-                                    className="text-purple-500 hover:text-purple-600 hover:bg-purple-50"
-                                >
-                                    {isAiLoading ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <Sparkles className="h-4 w-4" />
-                                    )}
-                                    <span className="ml-2 sr-only">AI Detect</span>
-                                </Button>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={handleAiEnhance}
+                                            disabled={isAiLoading || !title.trim()}
+                                            className="text-purple-500 hover:text-purple-600 hover:bg-purple-50"
+                                        >
+                                            {isAiLoading ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <Sparkles className="h-4 w-4" />
+                                            )}
+                                            <span className="ml-2 sr-only">AI Detect</span>
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Auto-detect details from text</p>
+                                    </TooltipContent>
+                                </Tooltip>
                                 <VoiceInput onTranscript={(text) => {
                                     setTitle(prev => prev ? `${prev} ${text}` : text);
                                     setIsExpanded(true);

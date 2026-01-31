@@ -15,7 +15,9 @@ interface ListState {
     isInitialized: boolean;
     initialize: () => Promise<void>;
     setLists: (lists: List[]) => void;
+    upsertLists: (lists: List[]) => void;
     upsertList: (list: List) => void;
+    deleteLists: (ids: number[]) => void;
     deleteList: (id: number) => void;
 }
 
@@ -55,11 +57,37 @@ export const useListStore = create<ListState>((set, get) => ({
         saveListsToCache(newLists).catch(console.error);
     },
 
+    upsertLists: (lists: List[]) => {
+        if (lists.length === 0) return;
+        // Perf: batch upserts to reduce Zustand set() calls during sync drains.
+        set(state => {
+            const updatedLists = { ...state.lists };
+            lists.forEach(item => {
+                updatedLists[item.id] = item;
+            });
+            return { lists: updatedLists };
+        });
+        saveListsToCache(lists).catch(console.error);
+    },
+
     upsertList: (list: List) => {
         set(state => ({
             lists: { ...state.lists, [list.id]: list }
         }));
         saveListToCache(list).catch(console.error);
+    },
+
+    deleteLists: (ids: number[]) => {
+        if (ids.length === 0) return;
+        // Perf: batch deletes to reduce Zustand set() calls during sync drains.
+        set(state => {
+            const newLists = { ...state.lists };
+            ids.forEach(id => {
+                delete newLists[id];
+            });
+            return { lists: newLists };
+        });
+        Promise.all(ids.map(id => deleteListFromCache(id))).catch(console.error);
     },
 
     deleteList: (id: number) => {

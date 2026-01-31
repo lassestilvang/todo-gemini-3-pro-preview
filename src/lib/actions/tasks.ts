@@ -58,7 +58,9 @@ export async function getTasks(
   labelId?: number,
   showCompleted: boolean = true
 ) {
+
   await requireUser(userId);
+
 
   const conditions = [];
 
@@ -322,6 +324,29 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
     if (suggestions.labelIds.length > 0) finalLabelIds = suggestions.labelIds;
   }
 
+  // Calculate position to ensure task is added to the top
+  const conditions = [
+    eq(tasks.userId, taskData.userId),
+    taskData.parentId
+      ? eq(tasks.parentId, taskData.parentId)
+      : and(
+        isNull(tasks.parentId),
+        taskData.listId ? eq(tasks.listId, taskData.listId) : isNull(tasks.listId)
+      ),
+  ];
+
+  const [minPosResult] = await db
+    .select({ min: sql<number>`min(${tasks.position})` })
+    .from(tasks)
+    .where(and(...conditions));
+
+  // Subtract 1024 to leave space and ensure it's at the top
+  // If no tasks exist (min is null), start at -1024 or 0?
+  // If we start at 0, and user drags, it works.
+  // If we start at -1024, it helps if existing tasks are at 0.
+  const currentMin = minPosResult?.min ?? 0;
+  taskData.position = currentMin - 1024;
+
   const result = await db.insert(tasks).values(taskData).returning();
   const task = Array.isArray(result) ? result[0] : null;
 
@@ -361,13 +386,14 @@ export async function updateTask(
   data: Partial<Omit<typeof tasks.$inferInsert, "userId">> & {
     labelIds?: number[];
     expectedUpdatedAt?: Date | string | null;
-  }
+  },
+  existingTask?: Awaited<ReturnType<typeof getTask>> | null
 ) {
   await requireUser(userId);
 
   const { labelIds, expectedUpdatedAt, ...taskData } = data;
 
-  const currentTask = await getTask(id, userId);
+  const currentTask = existingTask ?? await getTask(id, userId);
   if (!currentTask) return;
 
   // Check for conflicts if expectedUpdatedAt is provided
@@ -544,65 +570,73 @@ export async function toggleTaskCompletion(id: number, userId: string, isComplet
     }
   }
 
-  await updateTask(id, userId, {
-    isCompleted,
-    completedAt: isCompleted ? new Date() : null,
-  });
+  await updateTask(
+    id,
+    userId,
+    {
+      isCompleted,
+      completedAt: isCompleted ? new Date() : null,
+    },
+    task
+  );
 
-  await db.insert(taskLogs).values({
+  const logPromise = db.insert(taskLogs).values({
     userId,
     taskId: id,
     action: isCompleted ? "completed" : "uncompleted",
     details: isCompleted ? "Task marked as completed" : "Task marked as uncompleted",
   });
 
-  if (isCompleted) {
-    // Check if this task blocks others
-    const blockedTasks = await db
-      .select({
-        id: tasks.id,
-        title: tasks.title,
-      })
-      .from(taskDependencies)
-      .innerJoin(tasks, eq(taskDependencies.taskId, tasks.id))
-      .where(eq(taskDependencies.blockerId, id));
-
-    if (blockedTasks.length > 0) {
-      const blockedTaskIds = blockedTasks.map((t) => t.id);
-
-      // Find which of these tasks are still blocked by OTHER incomplete tasks
-      // We leverage the fact that "isCompleted" for the current task was just set to true,
-      // so it won't be counted in this query looking for 'false'
-      const stillBlockedResult = await db
-        .select({ taskId: taskDependencies.taskId })
+  const blockedTasksPromise = (async () => {
+    if (isCompleted) {
+      // Check if this task blocks others
+      const blockedTasks = await db
+        .select({
+          id: tasks.id,
+          title: tasks.title,
+        })
         .from(taskDependencies)
-        .innerJoin(tasks, eq(taskDependencies.blockerId, tasks.id))
-        .where(
-          and(
-            inArray(taskDependencies.taskId, blockedTaskIds),
-            eq(tasks.isCompleted, false)
+        .innerJoin(tasks, eq(taskDependencies.taskId, tasks.id))
+        .where(eq(taskDependencies.blockerId, id));
+
+      if (blockedTasks.length > 0) {
+        const blockedTaskIds = blockedTasks.map((t) => t.id);
+
+        // Find which of these tasks are still blocked by OTHER incomplete tasks
+        // We leverage the fact that "isCompleted" for the current task was just set to true,
+        // so it won't be counted in this query looking for 'false'
+        const stillBlockedResult = await db
+          .select({ taskId: taskDependencies.taskId })
+          .from(taskDependencies)
+          .innerJoin(tasks, eq(taskDependencies.blockerId, tasks.id))
+          .where(
+            and(
+              inArray(taskDependencies.taskId, blockedTaskIds),
+              eq(tasks.isCompleted, false)
+            )
           )
-        )
-        .groupBy(taskDependencies.taskId);
+          .groupBy(taskDependencies.taskId);
 
-      const stillBlockedTaskIds = new Set(stillBlockedResult.map((t) => t.taskId));
+        const stillBlockedTaskIds = new Set(stillBlockedResult.map((t) => t.taskId));
 
-      const logsToInsert = blockedTasks.map((blockedTask) => {
-        const isNowUnblocked = !stillBlockedTaskIds.has(blockedTask.id);
-        return {
-          userId,
-          taskId: blockedTask.id,
-          action: "blocker_completed",
-          details: `Blocker "${task.title}" completed.${isNowUnblocked ? " Task is now unblocked!" : ""
+        const logsToInsert = blockedTasks.map((blockedTask) => {
+          const isNowUnblocked = !stillBlockedTaskIds.has(blockedTask.id);
+          return {
+            userId,
+            taskId: blockedTask.id,
+            action: "blocker_completed",
+            details: `Blocker "${task.title}" completed.${
+              isNowUnblocked ? " Task is now unblocked!" : ""
             }`,
-        };
-      });
+          };
+        });
 
-      if (logsToInsert.length > 0) {
-        await db.insert(taskLogs).values(logsToInsert);
+        if (logsToInsert.length > 0) {
+          await db.insert(taskLogs).values(logsToInsert);
+        }
       }
     }
-  }
+  })();
 
   // Consolidated Gamification Update (Streak + XP in one go)
   const baseXP = 10;
@@ -610,12 +644,18 @@ export async function toggleTaskCompletion(id: number, userId: string, isComplet
   if (task.priority === "medium") bonusXP += 5;
   if (task.priority === "high") bonusXP += 10;
 
-  const progressResult = await updateUserProgress(userId, baseXP + bonusXP);
+  const gamificationPromise = updateUserProgress(userId, baseXP + bonusXP);
+
+  const [, , progressResult] = await Promise.all([
+    logPromise,
+    blockedTasksPromise,
+    gamificationPromise,
+  ]);
 
   return {
     newXP: progressResult.newXP,
     newLevel: progressResult.newLevel,
-    leveledUp: progressResult.leveledUp
+    leveledUp: progressResult.leveledUp,
   };
 }
 

@@ -31,6 +31,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { reorderLabels } from "@/lib/actions";
 import { useLabelStore } from "@/lib/store/label-store";
+import { useTaskCounts } from "@/hooks/use-task-counts";
 
 type Label = {
     id: number;
@@ -51,11 +52,13 @@ interface SidebarLabelsProps {
 const SortableLabelItem = memo(function SortableLabelItem({
     label,
     pathname,
-    isReordering
+    isReordering,
+    count
 }: {
     label: Label;
     pathname: string;
     isReordering: boolean;
+    count: number;
 }) {
     const {
         attributes,
@@ -107,7 +110,17 @@ const SortableLabelItem = memo(function SortableLabelItem({
                         color={label.color || "#000000"}
                     // Labels usually use Hash as fallback, handled by ResolvedIcon logic if we want default
                     />
-                    <span className="truncate">{label.name}</span>
+                    <span className="truncate flex-1 text-left">{label.name}</span>
+                    {count > 0 && !isReordering && (
+                        <span className={cn(
+                            "ml-auto text-xs font-medium px-2 py-0.5 rounded-full transition-colors",
+                            pathname === `/labels/${label.id}`
+                                ? "bg-primary/20 text-primary"
+                                : "text-muted-foreground group-hover:text-foreground group-hover:bg-muted"
+                        )}>
+                            {count}
+                        </span>
+                    )}
                 </Link>
             </Button>
         </div>
@@ -118,6 +131,7 @@ export function SidebarLabels({ labels: ssrLabels, userId }: SidebarLabelsProps)
     const pathname = usePathname();
     const storeLabels = useLabelStore(state => state.labels);
     const setStoreLabels = useLabelStore(state => state.setLabels);
+    const { labelCounts } = useTaskCounts();
     const [isReordering, setIsReordering] = useState(false);
 
     // Sync SSR props to store on mount/change (hydration)
@@ -212,6 +226,7 @@ export function SidebarLabels({ labels: ssrLabels, userId }: SidebarLabelsProps)
                                 label={label}
                                 pathname={pathname}
                                 isReordering={isReordering}
+                                count={labelCounts[label.id] || 0}
                             />
                         ))}
                     </div>

@@ -19,7 +19,7 @@ global.ResizeObserver = class ResizeObserver {
     disconnect() { }
 };
 
-// Mock PointerEvent
+// Mock PointerEvent and Element pointer methods
 if (!global.PointerEvent) {
     class MockPointerEvent extends Event {
         button: number;
@@ -62,6 +62,20 @@ if (!global.PointerEvent) {
         }
     }
     (global as any).PointerEvent = MockPointerEvent;
+}
+
+if (!global.Element.prototype.setPointerCapture) {
+    global.Element.prototype.setPointerCapture = () => {};
+}
+if (!global.Element.prototype.releasePointerCapture) {
+    global.Element.prototype.releasePointerCapture = () => {};
+}
+if (!global.Element.prototype.hasPointerCapture) {
+    global.Element.prototype.hasPointerCapture = () => false;
+}
+// Mock scrollIntoView
+if (!global.Element.prototype.scrollIntoView) {
+    global.Element.prototype.scrollIntoView = () => {};
 }
 
 import { DEFAULT_MOCK_USER, setMockAuthUser } from "./mocks";
@@ -164,7 +178,7 @@ mock.module("next/navigation", () => ({
 
 // Mock next/dynamic
 mock.module("next/dynamic", () => ({
-    default: (fn: any) => (props: any) => React.createElement("div", { "data-testid": "dynamic-component", ...props })
+    default: (fn: any) => (props: any) => React.createElement('div', { 'data-testid': 'dynamic-component', ...props })
 }));
 
 // Mock next/cache
@@ -173,16 +187,6 @@ mock.module("next/cache", () => ({
     revalidateTag: mock(() => { }),
     revalidatePath: mock(() => { }),
 }));
-
-// Mock react cache to bypass memoization in tests
-// Trying to mock 'react' module completely causes infinite recursion or timeouts in bun test sometimes.
-// Instead of mocking the whole module, let's rely on the fact that `cache` is not used in the optimized
-// reorderLists function anymore (it uses direct DB update), but getLists does.
-// The real issue might be unstable_cache from next/cache, which we already mocked.
-// Let's remove the react mock for now to avoid the timeout, as unstable_cache mock might be enough
-// if getLists uses it.
-// If getLists wraps unstable_cache with react.cache, then yes, we have a problem.
-// But messing with React internals via mock.module is dangerous.
 
 /**
  * Setup database schema for tests.
@@ -248,5 +252,6 @@ export async function resetTestDb() {
 afterEach(async () => {
     await resetTestDb();
     clearMockAuthUser();
+    document.body.innerHTML = "";
 });
 setupTestDb();

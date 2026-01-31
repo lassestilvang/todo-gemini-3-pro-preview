@@ -31,6 +31,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { reorderLists } from "@/lib/actions";
 import { useListStore } from "@/lib/store/list-store";
+import { useTaskCounts } from "@/hooks/use-task-counts";
 
 type List = {
     id: number;
@@ -52,11 +53,13 @@ interface SidebarListsProps {
 const SortableListItem = memo(function SortableListItem({
     list,
     pathname,
-    isReordering
+    isReordering,
+    count
 }: {
     list: List;
     pathname: string;
     isReordering: boolean;
+    count: number;
 }) {
     const {
         attributes,
@@ -107,7 +110,17 @@ const SortableListItem = memo(function SortableListItem({
                         className="mr-2 h-4 w-4 shrink-0 transition-colors"
                         color={list.color || "#000000"}
                     />
-                    <span className="truncate">{list.name}</span>
+                    <span className="truncate flex-1 text-left">{list.name}</span>
+                    {count > 0 && !isReordering && (
+                        <span className={cn(
+                            "ml-auto text-xs font-medium px-2 py-0.5 rounded-full transition-colors",
+                            pathname === `/lists/${list.id}`
+                                ? "bg-primary/20 text-primary"
+                                : "text-muted-foreground group-hover:text-foreground group-hover:bg-muted"
+                        )}>
+                            {count}
+                        </span>
+                    )}
                 </Link>
             </Button>
         </div>
@@ -118,6 +131,7 @@ export function SidebarLists({ lists: ssrLists, userId }: SidebarListsProps) {
     const pathname = usePathname();
     const storeLists = useListStore(state => state.lists);
     const setStoreLists = useListStore(state => state.setLists);
+    const { listCounts } = useTaskCounts();
     const [isReordering, setIsReordering] = useState(false);
 
     // Sync SSR props to store on mount/change (hydration)
@@ -212,6 +226,7 @@ export function SidebarLists({ lists: ssrLists, userId }: SidebarListsProps) {
                                 list={list}
                                 pathname={pathname}
                                 isReordering={isReordering}
+                                count={listCounts[list.id] || 0}
                             />
                         ))}
                     </div>

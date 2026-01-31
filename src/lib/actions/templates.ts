@@ -19,6 +19,8 @@ import {
   NotFoundError,
 } from "./shared";
 
+import { requireUser } from "@/lib/auth";
+
 // Import createTask for template instantiation
 import { createTask } from "../actions";
 
@@ -29,6 +31,7 @@ import { createTask } from "../actions";
  * @returns Array of templates ordered by creation date (newest first)
  */
 export async function getTemplates(userId: string) {
+  await requireUser(userId);
   return await db
     .select()
     .from(templates)
@@ -45,6 +48,8 @@ export async function getTemplates(userId: string) {
  * @throws {ValidationError} When required fields are missing
  */
 async function createTemplateImpl(userId: string, name: string, content: string) {
+  await requireUser(userId);
+
   if (!userId) {
     throw new ValidationError("User ID is required", { userId: "User ID cannot be empty" });
   }
@@ -86,6 +91,7 @@ export const createTemplate: (
  * @param userId - The ID of the user who owns the template
  */
 async function deleteTemplateImpl(id: number, userId: string) {
+  await requireUser(userId);
   await db.delete(templates).where(and(eq(templates.id, id), eq(templates.userId, userId)));
   revalidatePath("/");
 }
@@ -114,6 +120,8 @@ export const deleteTemplate: (
  * @throws {NotFoundError} When template is not found or user doesn't own it
  */
 async function updateTemplateImpl(id: number, userId: string, name: string, content: string) {
+  await requireUser(userId);
+
   if (!userId) {
     throw new ValidationError("User ID is required", { userId: "User ID cannot be empty" });
   }
@@ -197,6 +205,8 @@ async function instantiateTemplateImpl(
   templateId: number,
   listId: number | null = null
 ) {
+  await requireUser(userId);
+
   const template = await db
     .select()
     .from(templates)

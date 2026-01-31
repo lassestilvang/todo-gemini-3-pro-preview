@@ -101,6 +101,11 @@ function applyViewSettings(tasks: Task[], settings: ViewSettings): Task[] {
                     case "name":
                         comparison = a.title.localeCompare(b.title);
                         break;
+                    case "created":
+                        const aTime = new Date(a.createdAt).getTime();
+                        const bTime = new Date(b.createdAt).getTime();
+                        comparison = aTime - bTime;
+                        break;
                 }
 
                 return comparison * sortMultiplier;
@@ -232,7 +237,7 @@ import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
 import { useSync } from "@/components/providers/sync-provider";
 import { useTaskStore } from "@/lib/store/task-store";
-import { Virtuoso } from "react-virtuoso";
+import { GroupedVirtuoso, Virtuoso } from "react-virtuoso";
 
 // Perf: React.memo prevents re-renders when parent state changes (e.g., dialog open/close,
 // settings updates) but the task itself hasn't changed. For lists with 100+ tasks, this
@@ -486,25 +491,25 @@ export function TaskListWithSettings({
 
         // Sort groups by estimate (minutes)
         if (settings.groupBy === "estimate") {
-            const parseMinutes = (s: string) => {
-                if (s === "No Estimate") return Infinity;
-                if (s.includes("h")) {
-                    const parts = s.split(" ");
+            // Perf: precompute sort keys once per group to avoid re-parsing in comparator.
+            const entriesWithMinutes = Array.from(groups.entries()).map(([key, value]) => {
+                if (key === "No Estimate") {
+                    return { key, value, minutes: Infinity };
+                }
+                if (key.includes("h")) {
+                    const parts = key.split(" ");
                     let total = 0;
                     for (const part of parts) {
                         if (part.endsWith("h")) total += parseInt(part) * 60;
                         if (part.endsWith("m")) total += parseInt(part);
                     }
-                    return total;
+                    return { key, value, minutes: total };
                 }
-                return parseInt(s);
-            };
+                return { key, value, minutes: parseInt(key) };
+            });
 
-            return new Map(Array.from(groups.entries()).sort((a, b) => {
-                const mA = parseMinutes(a[0]);
-                const mB = parseMinutes(b[0]);
-                return mA - mB;
-            }));
+            entriesWithMinutes.sort((a, b) => a.minutes - b.minutes);
+            return new Map(entriesWithMinutes.map(entry => [entry.key, entry.value]));
         }
 
         return groups;
@@ -541,6 +546,41 @@ export function TaskListWithSettings({
         // Perf: memoize grouped entries array to avoid rebuilding on every render.
         return Array.from(groupedTasks.entries());
     }, [groupedTasks]);
+
+    const groupedVirtualSections = useMemo(() => {
+        return groupedEntries.map(([groupName, groupTasks]) => {
+            const active: Task[] = [];
+            const completed: Task[] = [];
+            for (const task of groupTasks) {
+                (task.isCompleted ? completed : active).push(task);
+            }
+
+            const items: Array<{ type: "task"; task: Task } | { type: "separator" }> = [];
+            for (const task of active) {
+                items.push({ type: "task", task });
+            }
+            if (active.length > 0 && completed.length > 0) {
+                items.push({ type: "separator" });
+            }
+            for (const task of completed) {
+                items.push({ type: "task", task });
+            }
+
+            return {
+                groupName,
+                totalCount: groupTasks.length,
+                items,
+            };
+        });
+    }, [groupedEntries]);
+
+    const groupedVirtualCounts = useMemo(() => {
+        return groupedVirtualSections.map(section => section.items.length);
+    }, [groupedVirtualSections]);
+
+    const totalGroupedTasks = useMemo(() => {
+        return groupedEntries.reduce((sum, [, groupTasks]) => sum + groupTasks.length, 0);
+    }, [groupedEntries]);
 
     // Drag and Drop Logic
     const isDragEnabled = settings.sortBy === "manual" && settings.groupBy === "none" && !!userId;
@@ -589,14 +629,52 @@ export function TaskListWithSettings({
     };
 
 
+    const viewIndicator = useMemo(() => {
+        if (settings.sortBy !== "manual") {
+            const label = {
+                dueDate: "Due Date",
+                priority: "Priority",
+                name: "Name",
+                created: "Created"
+            }[settings.sortBy];
+            return `Sort: ${label}`;
+        }
+        if (settings.groupBy !== "none") {
+            const label = {
+                dueDate: "Due Date",
+                priority: "Priority",
+                label: "Label",
+                list: "List",
+                estimate: "Estimate"
+            }[settings.groupBy];
+            return `Group: ${label}`;
+        }
+        if (
+            settings.filterPriority ||
+            settings.filterLabelId !== null ||
+            settings.filterDate !== "all" ||
+            settings.filterEnergyLevel ||
+            settings.filterContext
+        ) {
+            return "Filter: Active";
+        }
+        return null;
+    }, [settings]);
+
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 {title && <h2 className="text-xl font-semibold">{title}</h2>}
                 <div className="flex items-center gap-2 ml-auto">
+                    {viewIndicator && (
+                        <span className="text-xs text-muted-foreground font-medium animate-in fade-in slide-in-from-right-2 duration-300">
+                            {viewIndicator}
+                        </span>
+                    )}
                     <ViewOptionsPopover
                         viewId={viewId}
                         userId={userId}
+                        settings={settings}
                         onSettingsChange={setSettings}
                     />
                 </div>
@@ -693,14 +771,15 @@ export function TaskListWithSettings({
                                 <span>Completed</span>
                                 <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{completedTasks.length}</span>
                             </h3>
-                            <div className="space-y-2">
-                                {completedTasks.map((task) => {
-                                    return (
-                                        <div
-                                            key={task.id}
-                                            className="rounded-lg transition-all"
-                                        >
+                            {completedTasks.length > 50 ? (
+                                <Virtuoso
+                                    useWindowScroll
+                                    data={completedTasks}
+                                    // Perf: virtualize completed tasks for large lists to keep DOM size bounded.
+                                    itemContent={(index, task) => (
+                                        <div className="rounded-lg transition-all">
                                             <TaskItem
+                                                key={task.id}
                                                 task={task}
                                                 showListInfo={!listId}
                                                 userId={userId}
@@ -709,59 +788,116 @@ export function TaskListWithSettings({
                                                 onEdit={handleEdit}
                                             />
                                         </div>
-                                    );
-                                })}
-                            </div>
+                                    )}
+                                />
+                            ) : (
+                                <div className="space-y-2">
+                                    {completedTasks.map((task) => {
+                                        return (
+                                            <div
+                                                key={task.id}
+                                                className="rounded-lg transition-all"
+                                            >
+                                                <TaskItem
+                                                    task={task}
+                                                    showListInfo={!listId}
+                                                    userId={userId}
+                                                    disableAnimations={true}
+                                                    dispatch={dispatch}
+                                                    onEdit={handleEdit}
+                                                />
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
             ) : (
                 <div className="space-y-6">
-                    {groupedEntries.map(([groupName, groupTasks]) => {
-                        // Perf: partition once per group to avoid two filter scans.
-                        const groupActiveTasks: Task[] = [];
-                        const groupCompletedTasks: Task[] = [];
-                        for (const task of groupTasks) {
-                            (task.isCompleted ? groupCompletedTasks : groupActiveTasks).push(task);
-                        }
+                    {totalGroupedTasks > 50 ? (
+                        <GroupedVirtuoso
+                            useWindowScroll
+                            groupCounts={groupedVirtualCounts}
+                            // Perf: virtualize grouped task views to avoid rendering every task at once.
+                            groupContent={(index) => {
+                                const section = groupedVirtualSections[index];
+                                return (
+                                    <h3 className="text-sm font-semibold text-muted-foreground bg-background/95 backdrop-blur-md sticky top-0 py-2 z-10 border-b flex items-center justify-between px-2 -mx-2">
+                                        <span>{formattedGroupNames.get(section.groupName) ?? section.groupName}</span>
+                                        <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{section.totalCount}</span>
+                                    </h3>
+                                );
+                            }}
+                            itemContent={(index, groupIndex) => {
+                                const section = groupedVirtualSections[groupIndex];
+                                const item = section?.items[index];
+                                if (!item) return null;
+                                if (item.type === "separator") {
+                                    return <div className="ml-4 h-px bg-border/50 my-2" />;
+                                }
+                                return (
+                                    <div className="rounded-lg transition-all">
+                                        <TaskItem
+                                            task={item.task}
+                                            showListInfo={!listId}
+                                            userId={userId}
+                                            disableAnimations={true}
+                                            dispatch={dispatch}
+                                            onEdit={handleEdit}
+                                        />
+                                    </div>
+                                );
+                            }}
+                        />
+                    ) : (
+                        groupedEntries.map(([groupName, groupTasks]) => {
+                            // Perf: partition once per group to avoid two filter scans.
+                            const groupActiveTasks: Task[] = [];
+                            const groupCompletedTasks: Task[] = [];
+                            for (const task of groupTasks) {
+                                (task.isCompleted ? groupCompletedTasks : groupActiveTasks).push(task);
+                            }
 
-                        return (
-                            <div key={groupName} className="space-y-2">
-                                <h3 className="text-sm font-semibold text-muted-foreground bg-background/95 backdrop-blur-md sticky top-0 py-2 z-10 border-b flex items-center justify-between px-2 -mx-2">
-                                    <span>{formattedGroupNames.get(groupName) ?? groupName}</span>
-                                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{groupTasks.length}</span>
-                                </h3>
-                                {groupActiveTasks.map((task) => {
-                                    return (
-                                        <div
-                                            key={task.id}
-                                            className="rounded-lg transition-all"
-                                        >
-                                            <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={handleEdit} />
-                                        </div>
-                                    );
-                                })}
+                            return (
+                                <div key={groupName} className="space-y-2">
+                                    <h3 className="text-sm font-semibold text-muted-foreground bg-background/95 backdrop-blur-md sticky top-0 py-2 z-10 border-b flex items-center justify-between px-2 -mx-2">
+                                        <span>{formattedGroupNames.get(groupName) ?? groupName}</span>
+                                        <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{groupTasks.length}</span>
+                                    </h3>
+                                    {groupActiveTasks.map((task) => {
+                                        return (
+                                            <div
+                                                key={task.id}
+                                                className="rounded-lg transition-all"
+                                            >
+                                                <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={handleEdit} />
+                                            </div>
+                                        );
+                                    })}
 
-                                {groupCompletedTasks.length > 0 && (
-                                    <>
-                                        {groupActiveTasks.length > 0 && (
-                                            <div className="ml-4 h-px bg-border/50 my-2" />
-                                        )}
-                                        {groupCompletedTasks.map((task) => {
-                                            return (
-                                                <div
-                                                    key={task.id}
-                                                    className="rounded-lg transition-all"
-                                                >
-                                                    <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={handleEdit} />
-                                                </div>
-                                            );
-                                        })}
-                                    </>
-                                )}
-                            </div>
-                        );
-                    })}
+                                    {groupCompletedTasks.length > 0 && (
+                                        <>
+                                            {groupActiveTasks.length > 0 && (
+                                                <div className="ml-4 h-px bg-border/50 my-2" />
+                                            )}
+                                            {groupCompletedTasks.map((task) => {
+                                                return (
+                                                    <div
+                                                        key={task.id}
+                                                        className="rounded-lg transition-all"
+                                                    >
+                                                        <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={handleEdit} />
+                                                    </div>
+                                                );
+                                            })}
+                                        </>
+                                    )}
+                                </div>
+                            );
+                        })
+                    )}
                 </div>
             )}
 

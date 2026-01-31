@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
     Select,
     SelectContent,
@@ -35,6 +34,7 @@ import {
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formatTimePreference } from "@/lib/time-utils";
+import { GroupedVirtuoso } from "react-virtuoso";
 
 
 export type LogType = ActivityLogEntry;
@@ -135,16 +135,25 @@ export function ActivityLogContent({ initialLogs, use24h }: ActivityLogContentPr
         }
     };
 
-    // Perf: useMemo prevents re-grouping logs on every render when only filter state changes.
-    // For activity logs with 1000+ entries, this avoids O(n) reduce + date formatting on each keystroke.
-    const groupedLogs = useMemo(() => {
-        return initialLogs.reduce((groups: Record<string, ActivityLogEntry[]>, log) => {
-            const date = format(new Date(log.createdAt), "yyyy-MM-dd");
-            if (!groups[date]) groups[date] = [];
-            groups[date].push(log);
-            return groups;
-        }, {});
+    // Perf: build stable group order + counts once to feed virtualization.
+    // This avoids re-grouping work during filter interactions and enables windowed rendering.
+    const groupedEntries = useMemo(() => {
+        const groups: Record<string, ActivityLogEntry[]> = {};
+        const order: string[] = [];
+        for (const log of initialLogs) {
+            const dateKey = format(new Date(log.createdAt), "yyyy-MM-dd");
+            if (!groups[dateKey]) {
+                groups[dateKey] = [];
+                order.push(dateKey);
+            }
+            groups[dateKey].push(log);
+        }
+        return order.map(date => ({ date, logs: groups[date] }));
     }, [initialLogs]);
+
+    const groupCounts = useMemo(() => {
+        return groupedEntries.map(entry => entry.logs.length);
+    }, [groupedEntries]);
 
     const formatDateHeader = (dateStr: string) => {
         const date = new Date(dateStr);
@@ -249,22 +258,53 @@ export function ActivityLogContent({ initialLogs, use24h }: ActivityLogContentPr
                 </div>
             </div>
 
-            <ScrollArea className="flex-1 min-h-0">
-
-
-                <div className="space-y-10 pb-12">
-                    {Object.entries(groupedLogs).map(([date, logs]) => (
-                        <div key={date} className="relative">
-                            <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm py-2 px-4 mb-4 -mx-4 border-y border-muted/20">
-                                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">
-                                    {formatDateHeader(date)}
-                                </h3>
-                            </div>
-
-                            <div className="space-y-1 relative before:absolute before:left-[17px] before:top-2 before:bottom-2 before:w-[2px] before:bg-muted/30">
-                                {logs.map((log) => (
+            <div className="flex-1 min-h-0">
+                {initialLogs.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in slide-in-from-bottom-4">
+                        <div className="h-20 w-20 rounded-full bg-muted/20 flex items-center justify-center mb-4">
+                            <History className="h-10 w-10 text-muted-foreground" />
+                        </div>
+                        <h2 className="text-xl font-bold">No activity found</h2>
+                        <p className="text-muted-foreground max-w-xs mx-auto mt-2">
+                            {searchQuery || typeFilter !== "all"
+                                ? "Try adjusting your filters to find what you&apos;re looking for."
+                                : "Activities will show up here as you use the app."}
+                        </p>
+                        {(searchQuery || typeFilter !== "all") && (
+                            <Button
+                                variant="ghost"
+                                className="mt-4"
+                                onClick={() => {
+                                    setSearchQuery("");
+                                    setTypeFilter("all");
+                                }}
+                            >
+                                Clear all filters
+                            </Button>
+                        )}
+                    </div>
+                ) : (
+                    <GroupedVirtuoso
+                        style={{ height: "100%" }}
+                        groupCounts={groupCounts}
+                        className="pb-12"
+                        // Perf: virtualize large activity logs to keep DOM and paint cost bounded.
+                        groupContent={(groupIndex) => {
+                            const date = groupedEntries[groupIndex]?.date;
+                            return (
+                                <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm py-2 px-4 mb-4 -mx-4 border-y border-muted/20">
+                                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">
+                                        {date ? formatDateHeader(date) : ""}
+                                    </h3>
+                                </div>
+                            );
+                        }}
+                        itemContent={(index, groupIndex) => {
+                            const log = groupedEntries[groupIndex]?.logs[index];
+                            if (!log) return null;
+                            return (
+                                <div className="space-y-1 relative before:absolute before:left-[17px] before:top-2 before:bottom-2 before:w-[2px] before:bg-muted/30">
                                     <div
-                                        key={log.id}
                                         className="group relative flex items-start gap-4 p-3 rounded-xl hover:bg-muted/40 transition-all duration-200"
                                     >
                                         <div className="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-background shadow-sm transition-transform group-hover:scale-110">
@@ -275,7 +315,7 @@ export function ActivityLogContent({ initialLogs, use24h }: ActivityLogContentPr
                                             <div className="flex items-center justify-between gap-4">
                                                 <div className="flex items-center gap-2 overflow-hidden">
                                                     <span className="font-semibold text-sm capitalize truncate pr-1">
-                                                        {log.action.replace(/_/g, ' ')}
+                                                        {log.action.replace(/_/g, " ")}
                                                     </span>
                                                     {getActionBadge(log.action)}
                                                 </div>
@@ -325,38 +365,12 @@ export function ActivityLogContent({ initialLogs, use24h }: ActivityLogContentPr
                                             )}
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        </div>
-                    ))}
-
-                    {initialLogs.length === 0 && (
-                        <div className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in slide-in-from-bottom-4">
-                            <div className="h-20 w-20 rounded-full bg-muted/20 flex items-center justify-center mb-4">
-                                <History className="h-10 w-10 text-muted-foreground" />
-                            </div>
-                            <h2 className="text-xl font-bold">No activity found</h2>
-                            <p className="text-muted-foreground max-w-xs mx-auto mt-2">
-                                {searchQuery || typeFilter !== "all"
-                                    ? "Try adjusting your filters to find what you&apos;re looking for."
-                                    : "Activities will show up here as you use the app."}
-                            </p>
-                            {(searchQuery || typeFilter !== "all") && (
-                                <Button
-                                    variant="ghost"
-                                    className="mt-4"
-                                    onClick={() => {
-                                        setSearchQuery("");
-                                        setTypeFilter("all");
-                                    }}
-                                >
-                                    Clear all filters
-                                </Button>
-                            )}
-                        </div>
-                    )}
-                </div>
-            </ScrollArea>
+                                </div>
+                            );
+                        }}
+                    />
+                )}
+            </div>
         </div>
     );
 }

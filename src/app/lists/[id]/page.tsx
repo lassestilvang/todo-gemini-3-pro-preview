@@ -16,6 +16,10 @@ interface ListPageProps {
 
 import { type Task } from "@/lib/types";
 
+import { getViewSettings } from "@/lib/actions/view-settings";
+import { mapDbSettingsToViewSettings } from "@/lib/view-settings";
+import { getTasks } from "@/lib/actions/tasks";
+
 export default async function ListPage({ params }: ListPageProps) {
     const user = await getCurrentUser();
     if (!user) {
@@ -30,12 +34,21 @@ export default async function ListPage({ params }: ListPageProps) {
     const list = await getList(listId, user.id);
     if (!list) return notFound();
 
-    // OPTIM: Removed blocking task fetch
-    const tasks: Task[] = [];
+    // Restore blocking task fetch
+    const tasks = await getTasks(user.id, listId);
 
-    // We can't easily skip getViewSettings if we want initialSettings passed.
-    // BUT we can make it hydrating too.
-    const initialSettings = undefined;
+    // Fetch view settings on server to prevent flash
+    const dbSettings = await getViewSettings(user.id, `list-${listId}`);
+    let initialSettings = mapDbSettingsToViewSettings(dbSettings);
+
+    // Default to "Created" descending for Lists if no settings exist
+    if (!dbSettings) {
+        initialSettings = {
+            ...initialSettings,
+            sortBy: "created",
+            sortOrder: "desc"
+        };
+    }
 
     return (
         <div className="container max-w-4xl py-6 lg:py-10">

@@ -4,6 +4,7 @@ import { Inter, Quicksand, Space_Grotesk, Orbitron, Sora } from "next/font/googl
 import "./globals.css";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Toaster } from "sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const quicksand = Quicksand({
@@ -74,7 +75,7 @@ export default function RootLayout({
       className={`${inter.variable} ${quicksand.variable} ${spaceGrotesk.variable} ${orbitron.variable} ${sora.variable}`}
     >
       <head>
-        {process.env.NODE_ENV === "development" && (
+        {/*process.env.NODE_ENV === "development" && (
           <>
             <Script
               src="https://unpkg.com/react-grab/dist/index.global.js"
@@ -82,14 +83,15 @@ export default function RootLayout({
               strategy="beforeInteractive"
             />
           </>
-        )}
+        )*/}
       </head>
       <body className="font-sans antialiased" suppressHydrationWarning>
         <QueryProvider>
           <SyncProvider>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
+            <TooltipProvider>
+              <ThemeProvider
+                attribute="class"
+                defaultTheme="system"
               enableSystem
               disableTransitionOnChange
               themes={[...AVAILABLE_THEMES].filter(t => t !== "system")}
@@ -107,7 +109,8 @@ export default function RootLayout({
                   </LazyMotionProvider>
                 </PerformanceProvider>
               </ZenModeProvider>
-            </ThemeProvider>
+              </ThemeProvider>
+            </TooltipProvider>
           </SyncProvider>
         </QueryProvider>
       </body>

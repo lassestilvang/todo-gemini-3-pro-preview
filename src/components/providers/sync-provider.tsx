@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { getQueue, addToQueue, removeFromQueue, updateActionStatus, getDB } from "@/lib/sync/db";
+import { getQueue, addToQueueBatch, removeFromQueue, removeFromQueueBatch, updateActionStatus, updateActionStatusBatch, getDB } from "@/lib/sync/db";
 import { PendingAction, SyncStatus, ConflictInfo } from "@/lib/sync/types";
 import { actionRegistry, ActionType } from "@/lib/sync/registry";
 import { toast } from "sonner";
@@ -47,8 +47,14 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     const [status, setStatus] = useState<SyncStatus>('online');
     const [isOnline, setIsOnline] = useState(true);
     const [conflicts, setConflicts] = useState<ConflictInfo[]>([]);
+    const MAX_PENDING_QUEUE = 100;
+    const FLUSH_IDLE_TIMEOUT_MS = 200;
     const processingRef = useRef(false);
     const processQueueRef = useRef<(() => Promise<void>) | undefined>(undefined);
+    const flushActionsRef = useRef<(() => Promise<void>) | undefined>(undefined);
+    const pendingQueueRef = useRef<PendingAction[]>([]);
+    const flushTimerRef = useRef<number | null>(null);
+    const flushIdleRef = useRef<number | null>(null);
 
     const fixupQueueIds = useCallback(async (oldId: number, newId: number) => {
         const dbCurrent = await getDB();
@@ -76,18 +82,28 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         processingRef.current = true;
         setStatus('syncing');
 
+        const completedIds: string[] = [];
+        const statusUpdates: Array<{ id: string; status: PendingAction['status']; error?: string }> = [];
+        const taskUpserts: any[] = [];
+        const taskDeletes: number[] = [];
+        const listUpserts: any[] = [];
+        const listDeletes: number[] = [];
+        const labelUpserts: any[] = [];
+        const labelDeletes: number[] = [];
+        const conflictUpdates: ConflictInfo[] = [];
         try {
             // Process sequentially
             for (const action of queue) {
                 const fn = actionRegistry[action.type as ActionType];
                 if (!fn) {
                     console.error(`Unknown action type: ${action.type}`);
-                    await removeFromQueue(action.id);
+                    completedIds.push(action.id);
                     continue;
                 }
 
                 try {
-                    await updateActionStatus(action.id, 'processing');
+                    // Perf: batch status updates to avoid per-action IDB writes.
+                    statusUpdates.push({ id: action.id, status: 'processing' });
 
                     // Execute Server Action
                     const result = await (fn as (...args: any[]) => Promise<any>)(...(action.payload as any[]));
@@ -98,38 +114,34 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
                         // Fixup the store: Remove temp ID, Add real ID
                         if (action.type === 'createTask') {
-                            const store = useTaskStore.getState();
-                            store.deleteTask(action.tempId);
-                            store.upsertTask(result);
+                            taskDeletes.push(action.tempId);
+                            taskUpserts.push(result);
                         } else if (action.type === 'createList') {
-                            const store = useListStore.getState();
-                            store.deleteList(action.tempId);
-                            store.upsertList(result);
+                            listDeletes.push(action.tempId);
+                            listUpserts.push(result);
                         } else if (action.type === 'createLabel') {
-                            const store = useLabelStore.getState();
-                            store.deleteLabel(action.tempId);
-                            store.upsertLabel(result);
+                            labelDeletes.push(action.tempId);
+                            labelUpserts.push(result);
                         }
                     } else if (result) {
                         // Generic update to store
                         const payload = action.payload as any[];
                         if (action.type === 'deleteTask') {
-                            useTaskStore.getState().deleteTask(payload[0]);
+                            taskDeletes.push(payload[0]);
                         } else if (action.type === 'deleteList') {
-                            useListStore.getState().deleteList(payload[0]);
+                            listDeletes.push(payload[0]);
                         } else if (action.type === 'deleteLabel') {
-                            useLabelStore.getState().deleteLabel(payload[0]);
+                            labelDeletes.push(payload[0]);
                         } else if (action.type.includes('Task') && typeof result === 'object' && 'id' in result) {
-                            useTaskStore.getState().upsertTask(result);
+                            taskUpserts.push(result);
                         } else if (action.type.includes('List') && typeof result === 'object' && 'id' in result) {
-                            useListStore.getState().upsertList(result);
+                            listUpserts.push(result);
                         } else if (action.type.includes('Label') && typeof result === 'object' && 'id' in result) {
-                            useLabelStore.getState().upsertLabel(result);
+                            labelUpserts.push(result);
                         }
                     }
 
-                    await removeFromQueue(action.id);
-                    setPendingActions(prev => prev.filter(p => p.id !== action.id));
+                    completedIds.push(action.id);
 
                 } catch (error: unknown) {
                     console.error(`Failed to process action ${action.id}:`, error);
@@ -142,27 +154,61 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
                     if (isConflict) {
                         const serverData = err?.serverData || err?.error?.details?.serverData;
                         const payload = action.payload as any[];
-                        setConflicts(prev => [...prev, {
+                        conflictUpdates.push({
                             actionId: action.id,
                             actionType: action.type,
                             serverData: serverData ? (typeof serverData === 'string' ? JSON.parse(serverData) : serverData) : null,
                             localData: payload[2], // For updateTask, payload is [id, userId, data]
                             timestamp: Date.now(),
-                        }]);
+                        });
                         // Mark as conflict, don't block queue
-                        await updateActionStatus(action.id, 'failed', 'CONFLICT');
+                        statusUpdates.push({ id: action.id, status: 'failed', error: 'CONFLICT' });
                         continue; // Skip to next action instead of breaking
                     }
 
                     // If network error, stop processing and retry later
                     // If logical error (400/500), maybe remove or stash?
-                    await updateActionStatus(action.id, 'failed', String(error));
+                    statusUpdates.push({ id: action.id, status: 'failed', error: String(error) });
 
                     // Stop processing on error to preserve order if dependency exists
                     break;
                 }
             }
         } finally {
+            if (taskUpserts.length > 0) {
+                // Perf: batch store updates to reduce React render churn during sync drains.
+                useTaskStore.getState().upsertTasks(taskUpserts);
+            }
+            if (taskDeletes.length > 0) {
+                useTaskStore.getState().deleteTasks(taskDeletes);
+            }
+            if (listUpserts.length > 0) {
+                useListStore.getState().upsertLists(listUpserts);
+            }
+            if (listDeletes.length > 0) {
+                useListStore.getState().deleteLists(listDeletes);
+            }
+            if (labelUpserts.length > 0) {
+                useLabelStore.getState().upsertLabels(labelUpserts);
+            }
+            if (labelDeletes.length > 0) {
+                useLabelStore.getState().deleteLabels(labelDeletes);
+            }
+            if (conflictUpdates.length > 0) {
+                // Perf: batch conflict updates to avoid per-action dialog state churn.
+                setConflicts(prev => [...prev, ...conflictUpdates]);
+            }
+            if (completedIds.length > 0) {
+                // Perf: batch IDB deletes to reduce per-action transaction overhead when draining the queue.
+                await removeFromQueueBatch(completedIds);
+            }
+            if (statusUpdates.length > 0) {
+                await updateActionStatusBatch(statusUpdates);
+            }
+            if (completedIds.length > 0 || statusUpdates.length > 0) {
+                // Perf: refresh pendingActions once after batch updates to avoid per-action state churn.
+                setPendingActions(await getQueue());
+            }
             processingRef.current = false;
             setStatus('online');
         }
@@ -170,6 +216,13 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
     // Initial load
     useEffect(() => {
+        const handlePageExit = () => {
+            // Perf: flush queued actions before the page is hidden/unloaded.
+            void flushActionsRef.current?.();
+        };
+        window.addEventListener('pagehide', handlePageExit);
+        window.addEventListener('beforeunload', handlePageExit);
+
         setIsOnline(navigator.onLine);
 
         const loadQueue = async () => {
@@ -195,6 +248,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         window.addEventListener('offline', handleOffline);
 
         return () => {
+            window.removeEventListener('pagehide', handlePageExit);
+            window.removeEventListener('beforeunload', handlePageExit);
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
         };
@@ -249,6 +304,49 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         setConflicts(prev => prev.filter(c => c.actionId !== actionId));
     }, [pendingActions, conflicts, processQueue]);
 
+    const flushQueuedActions = useCallback(async () => {
+        const queued = pendingQueueRef.current;
+        if (queued.length === 0) return;
+        pendingQueueRef.current = [];
+
+        if (flushTimerRef.current !== null) {
+            window.clearTimeout(flushTimerRef.current);
+            flushTimerRef.current = null;
+        }
+        if (flushIdleRef.current !== null && 'cancelIdleCallback' in window) {
+            (window as any).cancelIdleCallback(flushIdleRef.current);
+            flushIdleRef.current = null;
+        }
+
+        // Perf: batch IDB writes + state updates for rapid dispatch bursts.
+        await addToQueueBatch(queued);
+        setPendingActions(prev => [...prev, ...queued]);
+    }, []);
+
+    flushActionsRef.current = flushQueuedActions;
+
+    const scheduleFlush = useCallback(() => {
+        if (pendingQueueRef.current.length >= MAX_PENDING_QUEUE) {
+            void flushQueuedActions();
+            return;
+        }
+
+        if (flushTimerRef.current !== null || flushIdleRef.current !== null) return;
+
+        if ('requestIdleCallback' in window) {
+            flushIdleRef.current = (window as any).requestIdleCallback(() => {
+                flushIdleRef.current = null;
+                void flushQueuedActions();
+            }, { timeout: FLUSH_IDLE_TIMEOUT_MS });
+            return;
+        }
+
+        flushTimerRef.current = window.setTimeout(async () => {
+            flushTimerRef.current = null;
+            await flushQueuedActions();
+        }, 50);
+    }, [flushQueuedActions]);
+
     const dispatch = useCallback(async <T extends ActionType>(type: T, ...args: Parameters<typeof actionRegistry[T]>) => {
         const id = uuidv4();
 
@@ -276,11 +374,9 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             tempId
         };
 
-        // Add to IDB
-        await addToQueue(action);
-
-        // Update Local State
-        setPendingActions(prev => [...prev, action]);
+        // Perf: batch queue writes/state updates when many actions are dispatched rapidly.
+        pendingQueueRef.current.push(action);
+        scheduleFlush();
 
         // Optimistic Update to Global Store
         const taskStore = useTaskStore.getState();
@@ -374,7 +470,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         }
 
         return { id: tempId, ...(args[0] as any) }; // Approximate optimistic result
-    }, [processQueue]);
+    }, [processQueue, scheduleFlush]);
 
     const value = useMemo(() => ({
         pendingActions,

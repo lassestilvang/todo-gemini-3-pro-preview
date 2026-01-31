@@ -15,6 +15,7 @@ import {
   withErrorHandling,
   ValidationError,
 } from "./shared";
+import { requireUser } from "@/lib/auth";
 
 /**
  * View settings configuration type.
@@ -23,7 +24,7 @@ export type ViewSettingsConfig = {
   layout?: "list" | "board" | "calendar";
   showCompleted?: boolean;
   groupBy?: "none" | "dueDate" | "priority" | "label";
-  sortBy?: "manual" | "dueDate" | "priority" | "name";
+  sortBy?: "manual" | "dueDate" | "priority" | "name" | "created";
   sortOrder?: "asc" | "desc";
   filterDate?: "all" | "hasDate" | "noDate";
   filterPriority?: string | null;
@@ -40,6 +41,7 @@ export type ViewSettingsConfig = {
  * @returns The view settings if found, null otherwise
  */
 export async function getViewSettings(userId: string, viewId: string) {
+  await requireUser(userId);
   const result = await db
     .select()
     .from(viewSettings)
@@ -104,6 +106,7 @@ export const saveViewSettings: (
  * @param viewId - The ID of the view
  */
 async function resetViewSettingsImpl(userId: string, viewId: string) {
+  await requireUser(userId);
   await db
     .delete(viewSettings)
     .where(and(eq(viewSettings.userId, userId), eq(viewSettings.viewId, viewId)));

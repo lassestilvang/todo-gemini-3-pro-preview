@@ -164,9 +164,13 @@ export function useTaskData({ taskId, isEdit, userId }: UseTaskDataProps) {
 
     const handleOnAiConfirm = async (aiSubtasks: ParsedSubtask[]) => {
         if (!taskId || !userId) return;
-        for (const sub of aiSubtasks) {
-            await createSubtask(taskId, userId, sub.title, sub.estimateMinutes);
-        }
+        // Perf: create subtasks in parallel to avoid serial roundtrips per item.
+        // This reduces AI-import latency from O(n) sequential awaits to ~1 RTT for n subtasks.
+        await Promise.all(
+            aiSubtasks.map(sub =>
+                createSubtask(taskId, userId, sub.title, sub.estimateMinutes)
+            )
+        );
         fetchSubtasks();
     };
 
