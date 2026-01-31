@@ -10,10 +10,14 @@ import { cn } from "@/lib/utils";
 
 
 export function XPBar({ userId }: { userId?: string }) {
+    // PERF: Reduced polling from 2s to 10s to minimize unnecessary database queries.
+    // XP updates are triggered by task completion, which invalidates this query via
+    // React Query's cache invalidation. Polling is only needed as a fallback for
+    // multi-tab scenarios. For a single user, this reduces DB load by 80%.
     const { data: stats } = useQuery({
         queryKey: ['userStats', userId],
         queryFn: () => userId ? getUserStats(userId) : Promise.resolve(null),
-        refetchInterval: 2000, // Poll every 2 seconds
+        refetchInterval: 10000, // Poll every 10 seconds (reduced from 2s)
         enabled: !!userId,
         // Only update if data changed structurally, but confetti logic needs previous value
     });

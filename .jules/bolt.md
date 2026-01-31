@@ -36,3 +36,8 @@
 ## 2026-01-31 - Array.find() in Render Loops
 **Learning:** Using `Array.find()` inside a render loop creates O(n*m) complexity. For a heatmap with 140 days and 100 data points, this results in 14,000 array iterations per render.
 **Action:** Build a Map from the data array once using `useMemo`, then use O(1) Map lookups instead of O(n) Array.find() calls. This reduces complexity from O(n*m) to O(n+m).
+
+
+## 2026-01-31 - XPBar Aggressive Polling
+**Learning:** The XPBar component was polling user stats every 2 seconds, causing 30 database queries per minute per user. Since XP updates are triggered by task completion (which invalidates the React Query cache), aggressive polling is unnecessary except for multi-tab sync scenarios.
+**Action:** Reduce polling intervals to 10-30 seconds for stats that update infrequently. Rely on cache invalidation from mutations as the primary update mechanism, using polling only as a fallback for edge cases.
