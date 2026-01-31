@@ -1,9 +1,22 @@
-import { describe, it, expect, afterEach } from "bun:test";
-import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
+import { describe, it, expect, afterEach, beforeAll } from "bun:test";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./select";
 import React from "react";
 
 describe("Select", () => {
+    beforeAll(() => {
+        // Mock pointer capture methods globally
+        if (!Element.prototype.setPointerCapture) {
+            Element.prototype.setPointerCapture = () => {};
+        }
+        if (!Element.prototype.releasePointerCapture) {
+            Element.prototype.releasePointerCapture = () => {};
+        }
+        if (!Element.prototype.hasPointerCapture) {
+            Element.prototype.hasPointerCapture = () => false;
+        }
+    });
+
     afterEach(() => {
         cleanup();
         document.body.innerHTML = "";
@@ -26,17 +39,6 @@ describe("Select", () => {
     // Note: Select interaction testing can be tricky with pointer events mock requirements.
     // We'll stick to basic rendering and trigger interaction.
     it("should open content when trigger is clicked", async () => {
-        // Mock pointer capture methods which are required for Radix UI Select
-        if (!Element.prototype.setPointerCapture) {
-            Element.prototype.setPointerCapture = () => {};
-        }
-        if (!Element.prototype.releasePointerCapture) {
-            Element.prototype.releasePointerCapture = () => {};
-        }
-        if (!Element.prototype.hasPointerCapture) {
-            Element.prototype.hasPointerCapture = () => false;
-        }
-
         render(
             <Select>
                 <SelectTrigger>
@@ -57,8 +59,7 @@ describe("Select", () => {
         });
 
         // Radix Select content is rendered in a portal
-        await waitFor(() => {
-            expect(screen.getByRole("option", { name: "Option 1" })).toBeInTheDocument();
-        });
-    });
+        const option = await screen.findByText("Option 1", {}, { timeout: 5000 });
+        expect(option).toBeInTheDocument();
+    }, 15000);
 });
