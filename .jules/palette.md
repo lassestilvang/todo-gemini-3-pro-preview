@@ -7,3 +7,7 @@
 ## 2024-05-22 - Clickable Rows vs Interactive Children
 **Learning:** Making an entire table row clickable (`onClick` on div) is inaccessible to keyboard users, preventing them from accessing the primary action (e.g., Edit) if the row also contains other interactive elements (checkboxes).
 **Action:** Always provide a dedicated, focusable button (e.g., "Edit" icon) for the primary row action to ensure keyboard accessibility.
+
+## 2025-02-18 - Timer Accessibility
+**Learning:** Adding `aria-live="polite"` to a second-by-second countdown timer floods screen readers with constant updates, making the rest of the page unusable.
+**Action:** Use `role="timer"` without `aria-live` for frequently updating timers, or only announce major milestones.

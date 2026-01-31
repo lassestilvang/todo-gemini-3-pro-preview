@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Play, Pause, RotateCcw, Coffee, Brain, Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { m } from "framer-motion";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 type TimerMode = "pomodoro" | "shortBreak" | "longBreak";
 
@@ -78,7 +79,7 @@ export function PomodoroTimer() {
             </div>
 
             <div className="relative flex items-center justify-center">
-                <svg className="w-64 h-64 -rotate-90">
+                <svg className="w-64 h-64 -rotate-90" aria-hidden="true">
                     <circle
                         cx="128"
                         cy="128"
@@ -104,7 +105,7 @@ export function PomodoroTimer() {
                         )}
                     />
                 </svg>
-                <div className="absolute flex flex-col items-center">
+                <div className="absolute flex flex-col items-center" role="timer">
                     <span className="text-6xl font-bold tracking-tighter tabular-nums">
                         {formatTime(timeLeft)}
                     </span>
@@ -115,28 +116,46 @@ export function PomodoroTimer() {
             </div>
 
             <div className="flex items-center gap-4">
-                <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={resetTimer}
-                    className="rounded-full h-12 w-12"
-                >
-                    <RotateCcw className="h-5 w-5" />
-                </Button>
-                <Button
-                    size="icon"
-                    onClick={toggleTimer}
-                    className={cn(
-                        "rounded-full h-16 w-16 shadow-lg",
-                        isActive ? "bg-orange-500 hover:bg-orange-600" : "bg-indigo-600 hover:bg-indigo-700"
-                    )}
-                >
-                    {isActive ? (
-                        <Pause className="h-8 w-8 text-white" />
-                    ) : (
-                        <Play className="h-8 w-8 text-white ml-1" />
-                    )}
-                </Button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={resetTimer}
+                            className="rounded-full h-12 w-12"
+                            aria-label="Reset timer"
+                        >
+                            <RotateCcw className="h-5 w-5" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Reset Timer</p>
+                    </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            size="icon"
+                            onClick={toggleTimer}
+                            className={cn(
+                                "rounded-full h-16 w-16 shadow-lg",
+                                isActive ? "bg-orange-500 hover:bg-orange-600" : "bg-indigo-600 hover:bg-indigo-700"
+                            )}
+                            aria-label={isActive ? "Pause timer" : "Start timer"}
+                        >
+                            {isActive ? (
+                                <Pause className="h-8 w-8 text-white" />
+                            ) : (
+                                <Play className="h-8 w-8 text-white ml-1" />
+                            )}
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>{isActive ? "Pause Timer" : "Start Timer"}</p>
+                    </TooltipContent>
+                </Tooltip>
+
                 <div className="w-12" /> {/* Spacer */}
             </div>
         </div>
