@@ -2,7 +2,7 @@
 
 import { m } from "framer-motion";
 
-import { useState, useEffect, memo } from "react";
+import { useState, useEffect, useCallback, memo } from "react";
 import { format } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
@@ -37,6 +37,59 @@ interface TaskItemProps {
     // instead of creating a new arrow function per task, enabling React.memo to work effectively
     onEdit?: (task: Task) => void;
 }
+
+interface SubtaskRowProps {
+    subtask: {
+        id: number;
+        title: string;
+        estimateMinutes?: number | null;
+        isCompleted?: boolean | null;
+    };
+    isCompleted: boolean;
+    onToggle: (subtaskId: number, checked: boolean) => void;
+}
+
+// PERF: Memoize subtask rows so parent state changes (like main task toggles)
+// do not re-render every subtask row. In tasks with many subtasks, this
+// reduces UI updates to only the rows whose completion state changed.
+const SubtaskRow = memo(function SubtaskRow({ subtask, isCompleted, onToggle }: SubtaskRowProps) {
+    return (
+        <div
+            className={cn(
+                "flex items-center gap-3 py-2 px-3 rounded-md hover:bg-muted/50 transition-colors",
+                isCompleted && "opacity-60"
+            )}
+            onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+            }}
+        >
+            <Checkbox
+                checked={isCompleted || false}
+                onCheckedChange={(checked) => onToggle(subtask.id, checked as boolean)}
+                className="rounded-full h-4 w-4"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                }}
+                aria-label={isCompleted ? "Mark subtask as incomplete" : "Mark subtask as complete"}
+            />
+            <span
+                className={cn(
+                    "text-sm",
+                    isCompleted && "line-through text-muted-foreground"
+                )}
+            >
+                {subtask.title}
+            </span>
+            {subtask.estimateMinutes && (
+                <span className="text-xs text-muted-foreground ml-auto">
+                    {subtask.estimateMinutes}m
+                </span>
+            )}
+        </div>
+    );
+});
 
 
 // Format minutes to human-readable duration
@@ -74,11 +127,11 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
     const { dispatch: dispatchFromContext } = useSync();
     const dispatch = dispatchProp ?? dispatchFromContext;
 
-    const handleSubtaskToggle = async (subtaskId: number, checked: boolean) => {
+    const handleSubtaskToggle = useCallback(async (subtaskId: number, checked: boolean) => {
         if (!userId) return;
         setSubtaskStates(prev => ({ ...prev, [subtaskId]: checked }));
         dispatch("updateSubtask", subtaskId, userId, checked);
-    };
+    }, [dispatch, userId]);
 
     const handleToggle = async (checked: boolean) => {
         if (task.blockedByCount && task.blockedByCount > 0 && checked) {
@@ -400,41 +453,12 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                     {(task.subtasks || []).map((subtask) => {
                         const isSubtaskCompleted = subtaskStates[subtask.id] ?? subtask.isCompleted;
                         return (
-                            <div
+                            <SubtaskRow
                                 key={subtask.id}
-                                className={cn(
-                                    "flex items-center gap-3 py-2 px-3 rounded-md hover:bg-muted/50 transition-colors",
-                                    isSubtaskCompleted && "opacity-60"
-                                )}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    e.preventDefault();
-                                }}
-                            >
-                                <Checkbox
-                                    checked={isSubtaskCompleted || false}
-                                    onCheckedChange={(checked) => handleSubtaskToggle(subtask.id, checked as boolean)}
-                                    className="rounded-full h-4 w-4"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        e.preventDefault();
-                                    }}
-                                    aria-label={isSubtaskCompleted ? "Mark subtask as incomplete" : "Mark subtask as complete"}
-                                />
-                                <span
-                                    className={cn(
-                                        "text-sm",
-                                        isSubtaskCompleted && "line-through text-muted-foreground"
-                                    )}
-                                >
-                                    {subtask.title}
-                                </span>
-                                {subtask.estimateMinutes && (
-                                    <span className="text-xs text-muted-foreground ml-auto">
-                                        {subtask.estimateMinutes}m
-                                    </span>
-                                )}
-                            </div>
+                                subtask={subtask}
+                                isCompleted={isSubtaskCompleted || false}
+                                onToggle={handleSubtaskToggle}
+                            />
                         );
                     })}
                 </div>
