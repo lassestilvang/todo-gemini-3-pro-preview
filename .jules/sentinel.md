@@ -23,6 +23,11 @@
 **Learning:** Checking ownership inside the query (e.g. `where userId = ?`) is insufficient if the query parameter itself is trusted input from the client.
 **Prevention:** All server actions accepting `userId` MUST call `await requireUser(userId)` as the first statement. Added regression tests in `src/test/integration/security-missing-auth.test.ts`.
 
+## 2026-10-28 - [Critical] IDOR in Time Tracking Actions
+**Vulnerability:** All functions in `src/lib/actions/time-tracking.ts` (e.g., `startTimeEntry`, `stopTimeEntry`) accepted `userId` as an argument without validating it against the session. This allowed any user to read, modify, or delete another user's time entries.
+**Learning:** `withErrorHandling` wrapper catches `ForbiddenError` and returns a failure result, meaning tests must assert on the result object (`result.success === false`) rather than expecting a thrown error.
+**Prevention:** Added `await requireUser(userId)` to the start of every exported function in `time-tracking.ts`. Created `src/lib/actions/time-tracking.security.test.ts` to verify IDOR protection.
+
 ## 2026-10-28 - [Critical] Unprotected Label Actions
 **Vulnerability:** `src/lib/actions/labels.ts` server actions (`getLabels`, `createLabel`, etc.) accepted `userId` but failed to validate it against the authenticated session, allowing IDOR.
 **Learning:** Systematic checks (e.g., `grep` for "userId" without "requireUser") reveal vulnerabilities that manual review might miss.
