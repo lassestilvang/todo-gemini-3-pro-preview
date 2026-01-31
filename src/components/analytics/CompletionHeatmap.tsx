@@ -24,10 +24,19 @@ export function CompletionHeatmap({ data }: CompletionHeatmapProps) {
         end: today,
     });
 
+    // PERF: Build a Map for O(1) lookups instead of O(n) Array.find() per day.
+    // For 140 days with 100 data points, this reduces lookups from O(14,000) to O(140).
+    const dataMap = React.useMemo(() => {
+        const map = new Map<string, number>();
+        for (const item of data) {
+            map.set(item.date, item.count);
+        }
+        return map;
+    }, [data]);
+
     const getCountForDate = (date: Date) => {
         const dateStr = format(date, "yyyy-MM-dd");
-        const found = data.find((d) => d.date === dateStr);
-        return found ? found.count : 0;
+        return dataMap.get(dateStr) ?? 0;
     };
 
     const getColorClass = (count: number) => {

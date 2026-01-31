@@ -32,3 +32,7 @@
 ## 2026-01-31 - Date Object Allocation in Filter Loops
 **Learning:** Creating `new Date()` objects inside filter loops (e.g., `new Date(task.dueDate).getTime()` for each task) causes unnecessary allocations. For 1k tasks, this creates 1k+ Date objects per render.
 **Action:** Pre-compute timestamps outside the loop and use `.getTime()` directly on Date properties. Since `task.dueDate` is already a Date object, call `.getTime()` on it directly instead of wrapping in `new Date()`.
+
+## 2026-01-31 - Array.find() in Render Loops
+**Learning:** Using `Array.find()` inside a render loop creates O(n*m) complexity. For a heatmap with 140 days and 100 data points, this results in 14,000 array iterations per render.
+**Action:** Build a Map from the data array once using `useMemo`, then use O(1) Map lookups instead of O(n) Array.find() calls. This reduces complexity from O(n*m) to O(n+m).
