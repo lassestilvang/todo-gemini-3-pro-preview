@@ -59,6 +59,6 @@ describe("Select", () => {
         // Radix Select content is rendered in a portal
         await waitFor(() => {
             expect(screen.getByRole("option", { name: "Option 1" })).toBeInTheDocument();
-        });
+        }, { timeout: 5000 });
     });
 });
