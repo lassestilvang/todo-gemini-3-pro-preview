@@ -49,3 +49,7 @@
 ## 2026-01-31 - Date Comparison Allocations in TaskItem
 **Learning:** TaskItem was creating new Date objects from `task.dueDate` and `task.deadline` for every comparison check (`new Date(task.dueDate) < now`). Since `task.dueDate` and `task.deadline` are already Date objects in the Task type, wrapping them in `new Date()` is redundant. For 100 tasks rendered, this created 200+ unnecessary Date allocations per render.
 **Action:** Use `.getTime()` directly on Date properties for timestamp comparisons. Pre-compute `nowTime` once and compare timestamps instead of Date objects, eliminating redundant allocations while maintaining exact comparison semantics.
+
+## 2026-01-31 - Status Info Object Allocations in SyncStatus
+**Learning:** The SyncStatus component was calling `getStatusInfo()` on every render, creating new objects with icon, label, description, and className properties each time. Since this component updates frequently during sync operations (status changes, pending count updates), these allocations added unnecessary GC pressure and could trigger re-renders in child components.
+**Action:** Wrap the status info object creation in `useMemo` with proper dependencies (isOnline, failedCount, status, pendingCount). This ensures the object reference remains stable when dependencies haven't changed, reducing allocations and preventing unnecessary re-renders of components that consume these values.

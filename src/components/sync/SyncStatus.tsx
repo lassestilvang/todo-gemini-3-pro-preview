@@ -27,7 +27,11 @@ export function SyncStatus() {
         return { pendingCount: pending, failedCount: failed };
     }, [pendingActions]);
 
-    const getStatusInfo = () => {
+    // PERF: Memoize status info object to avoid creating new objects on every render.
+    // This prevents unnecessary re-renders of child components and reduces GC pressure.
+    // The status indicator updates frequently during sync operations, so avoiding object
+    // allocations here improves responsiveness during heavy sync activity.
+    const statusInfo = useMemo(() => {
         if (!isOnline) {
             return {
                 icon: CloudOff,
@@ -72,9 +76,9 @@ export function SyncStatus() {
             description: "All changes saved",
             className: "text-green-500",
         };
-    };
+    }, [isOnline, failedCount, status, pendingCount]);
 
-    const { icon: Icon, label, description, className } = getStatusInfo();
+    const { icon: Icon, label, description, className } = statusInfo;
 
     // Don't show indicator when everything is synced and online
     if (isOnline && status === 'online' && pendingCount === 0 && failedCount === 0) {
