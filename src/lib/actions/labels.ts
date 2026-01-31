@@ -10,6 +10,8 @@ import {
   labels,
   eq,
   and,
+  sql,
+  inArray,
   revalidatePath,
   type ActionResult,
   withErrorHandling,
@@ -54,14 +56,21 @@ export const getLabels = cache(async function getLabels(userId: string) {
  * @param items - Array of label IDs and their new positions
  */
 async function reorderLabelsImpl(userId: string, items: { id: number; position: number }[]) {
-  await Promise.all(
-    items.map((item) =>
-      db
-        .update(labels)
-        .set({ position: item.position })
-        .where(and(eq(labels.id, item.id), eq(labels.userId, userId)))
-    )
+  if (items.length === 0) return;
+
+  const ids = items.map((i) => i.id);
+  const caseWhen = sql.join(
+    items.map((item) => sql`WHEN ${labels.id} = ${item.id} THEN ${item.position}`),
+    sql` `
   );
+
+  // Optimized: Batch updates into single query using CASE WHEN to avoid N+1 DB calls
+  await db
+    .update(labels)
+    .set({
+      position: sql`CASE ${caseWhen} ELSE ${labels.position} END`,
+    })
+    .where(and(inArray(labels.id, ids), eq(labels.userId, userId)));
 
   await logActivity({
     userId,
