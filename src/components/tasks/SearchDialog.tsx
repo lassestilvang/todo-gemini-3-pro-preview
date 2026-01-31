@@ -98,8 +98,8 @@ export function SearchDialog({ userId }: { userId?: string }) {
     // Debounce search input to avoid running Fuse on every keystroke.
     // For large task lists, this reduces search executions during rapid typing by ~60-80%.
     React.useEffect(() => {
-        const handle = window.setTimeout(() => setDebouncedQuery(query), 150);
-        return () => window.clearTimeout(handle);
+        const handle = setTimeout(() => setDebouncedQuery(query), 150);
+        return () => clearTimeout(handle);
     }, [query]);
 
     React.useEffect(() => {

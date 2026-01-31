@@ -53,8 +53,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     const processQueueRef = useRef<(() => Promise<void>) | undefined>(undefined);
     const flushActionsRef = useRef<(() => Promise<void>) | undefined>(undefined);
     const pendingQueueRef = useRef<PendingAction[]>([]);
-    const flushTimerRef = useRef<number | null>(null);
-    const flushIdleRef = useRef<number | null>(null);
+    const flushTimerRef = useRef<any>(null);
+    const flushIdleRef = useRef<any>(null);
 
     const fixupQueueIds = useCallback(async (oldId: number, newId: number) => {
         const dbCurrent = await getDB();
@@ -310,7 +310,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         pendingQueueRef.current = [];
 
         if (flushTimerRef.current !== null) {
-            window.clearTimeout(flushTimerRef.current);
+            clearTimeout(flushTimerRef.current);
             flushTimerRef.current = null;
         }
         if (flushIdleRef.current !== null && 'cancelIdleCallback' in window) {
@@ -341,7 +341,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             return;
         }
 
-        flushTimerRef.current = window.setTimeout(async () => {
+        flushTimerRef.current = setTimeout(async () => {
             flushTimerRef.current = null;
             await flushQueuedActions();
         }, 50);

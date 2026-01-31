@@ -14,6 +14,8 @@ import {
     desc,
     gte,
     lte,
+    inArray,
+    sql,
     isNull,
     revalidatePath,
     withErrorHandling,
@@ -123,21 +125,21 @@ export async function stopTimeEntry(
             .where(eq(timeEntries.id, entryId))
             .returning();
 
-        // Update the task's actualMinutes
-        const allEntries = await db
-            .select()
+        // ⚡ Bolt Opt: Replace O(N) fetch-and-sum in memory with O(1) SQL aggregation.
+        // For tasks with many sessions, this avoids transferring the entire history to calculate one number.
+        const [sumResult] = await db
+            .select({ total: sql<number>`COALESCE(SUM(${timeEntries.durationMinutes}), 0)` })
             .from(timeEntries)
             .where(
                 and(
                     eq(timeEntries.taskId, existing.taskId),
-                    eq(timeEntries.userId, userId)
+                    eq(timeEntries.userId, userId),
+                    // Only count stopped entries
+                    sql`${timeEntries.endedAt} IS NOT NULL`
                 )
             );
 
-        const totalMinutes = allEntries.reduce(
-            (sum, e) => sum + (e.durationMinutes || 0),
-            0
-        );
+        const totalMinutes = Number(sumResult.total);
 
         await db
             .update(tasks)
@@ -250,21 +252,19 @@ export async function createManualTimeEntry(
             })
             .returning();
 
-        // Update the task's actualMinutes
-        const allEntries = await db
-            .select()
+        // ⚡ Bolt Opt: Replace O(N) fetch-and-sum in memory with O(1) SQL aggregation.
+        const [sumResult] = await db
+            .select({ total: sql<number>`COALESCE(SUM(${timeEntries.durationMinutes}), 0)` })
             .from(timeEntries)
             .where(
                 and(
                     eq(timeEntries.taskId, taskId),
-                    eq(timeEntries.userId, userId)
+                    eq(timeEntries.userId, userId),
+                    sql`${timeEntries.endedAt} IS NOT NULL`
                 )
             );
 
-        const totalMinutes = allEntries.reduce(
-            (sum, e) => sum + (e.durationMinutes || 0),
-            0
-        );
+        const totalMinutes = Number(sumResult.total);
 
         await db
             .update(tasks)
@@ -323,21 +323,19 @@ export async function updateTimeEntry(
             .where(eq(timeEntries.id, entryId))
             .returning();
 
-        // Recalculate task's actualMinutes
-        const allEntries = await db
-            .select()
+        // ⚡ Bolt Opt: Replace O(N) fetch-and-sum in memory with O(1) SQL aggregation.
+        const [sumResult] = await db
+            .select({ total: sql<number>`COALESCE(SUM(${timeEntries.durationMinutes}), 0)` })
             .from(timeEntries)
             .where(
                 and(
                     eq(timeEntries.taskId, existing.taskId),
-                    eq(timeEntries.userId, userId)
+                    eq(timeEntries.userId, userId),
+                    sql`${timeEntries.endedAt} IS NOT NULL`
                 )
             );
 
-        const totalMinutes = allEntries.reduce(
-            (sum, e) => sum + (e.durationMinutes || 0),
-            0
-        );
+        const totalMinutes = Number(sumResult.total);
 
         await db
             .update(tasks)
@@ -385,21 +383,19 @@ export async function deleteTimeEntry(
 
         await db.delete(timeEntries).where(eq(timeEntries.id, entryId));
 
-        // Recalculate task's actualMinutes
-        const allEntries = await db
-            .select()
+        // ⚡ Bolt Opt: Replace O(N) fetch-and-sum in memory with O(1) SQL aggregation.
+        const [sumResult] = await db
+            .select({ total: sql<number>`COALESCE(SUM(${timeEntries.durationMinutes}), 0)` })
             .from(timeEntries)
             .where(
                 and(
                     eq(timeEntries.taskId, existing.taskId),
-                    eq(timeEntries.userId, userId)
+                    eq(timeEntries.userId, userId),
+                    sql`${timeEntries.endedAt} IS NOT NULL`
                 )
             );
 
-        const totalMinutes = allEntries.reduce(
-            (sum, e) => sum + (e.durationMinutes || 0),
-            0
-        );
+        const totalMinutes = Number(sumResult.total);
 
         await db
             .update(tasks)
@@ -439,62 +435,46 @@ export async function getTimeStats(
     return withErrorHandling(async () => {
         await requireUser(userId);
 
-        let query = db
-            .select()
+        // ⚡ Bolt Opt: Use SQL aggregations to calculate stats instead of loading all entries into memory.
+        // This scales O(1) with data size for the application layer.
+        const whereConditions = [eq(timeEntries.userId, userId)];
+        if (dateRange) {
+            whereConditions.push(
+                gte(timeEntries.startedAt, dateRange.from),
+                lte(timeEntries.startedAt, dateRange.to)
+            );
+        }
+
+        const [statsResult] = await db
+            .select({
+                totalMinutes: sql<number>`COALESCE(SUM(${timeEntries.durationMinutes}), 0)`,
+                count: sql<number>`COUNT(*)`,
+                avgMinutes: sql<number>`COALESCE(AVG(${timeEntries.durationMinutes}), 0)`,
+            })
+            .from(timeEntries)
+            .where(and(...whereConditions, sql`${timeEntries.durationMinutes} IS NOT NULL`));
+
+        // Grouped task breakdown in a single query
+        const taskBreakdown = await db
+            .select({
+                taskId: timeEntries.taskId,
+                title: tasks.title,
+                totalMinutes: sql<number>`CAST(SUM(${timeEntries.durationMinutes}) AS INTEGER)`,
+            })
             .from(timeEntries)
             .innerJoin(tasks, eq(timeEntries.taskId, tasks.id))
-            .where(eq(timeEntries.userId, userId));
-
-        if (dateRange) {
-            query = db
-                .select()
-                .from(timeEntries)
-                .innerJoin(tasks, eq(timeEntries.taskId, tasks.id))
-                .where(
-                    and(
-                        eq(timeEntries.userId, userId),
-                        gte(timeEntries.startedAt, dateRange.from),
-                        lte(timeEntries.startedAt, dateRange.to)
-                    )
-                );
-        }
-
-        const entries = await query;
-
-        const totalTrackedMinutes = entries.reduce(
-            (sum, e) => sum + (e.time_entries.durationMinutes || 0),
-            0
-        );
-
-        const completedEntries = entries.filter(e => e.time_entries.durationMinutes);
-        const averageSessionMinutes = completedEntries.length > 0
-            ? Math.round(totalTrackedMinutes / completedEntries.length)
-            : 0;
-
-        // Group by task
-        const taskMap = new Map<number, { title: string; totalMinutes: number }>();
-        for (const entry of entries) {
-            const existing = taskMap.get(entry.tasks.id);
-            if (existing) {
-                existing.totalMinutes += entry.time_entries.durationMinutes || 0;
-            } else {
-                taskMap.set(entry.tasks.id, {
-                    title: entry.tasks.title,
-                    totalMinutes: entry.time_entries.durationMinutes || 0,
-                });
-            }
-        }
-
-        const taskBreakdown = Array.from(taskMap.entries())
-            .map(([taskId, data]) => ({ taskId, ...data }))
-            .sort((a, b) => b.totalMinutes - a.totalMinutes);
-
+            .where(and(...whereConditions, sql`${timeEntries.durationMinutes} IS NOT NULL`))
+            .groupBy(timeEntries.taskId, tasks.title)
+            .orderBy(desc(sql`SUM(${timeEntries.durationMinutes})`));
 
         return {
-            totalTrackedMinutes,
-            entriesCount: entries.length,
-            averageSessionMinutes,
-            taskBreakdown,
+            totalTrackedMinutes: Number(statsResult.totalMinutes),
+            entriesCount: Number(statsResult.count),
+            averageSessionMinutes: Math.round(Number(statsResult.avgMinutes)),
+            taskBreakdown: taskBreakdown.map(t => ({
+                ...t,
+                totalMinutes: Number(t.totalMinutes)
+            })),
         };
     })();
 }

@@ -468,17 +468,14 @@ export async function updateTask(
   }
 
   if (taskData.listId !== undefined && taskData.listId !== currentTask.listId) {
-    let fromListName = "Inbox";
-    if (currentTask.listId) {
-      const list = await getList(currentTask.listId, userId);
-      if (list) fromListName = list.name;
-    }
+    // ⚡ Bolt Opt: Parallelize list lookups for logging.
+    const [fromList, toList] = await Promise.all([
+      currentTask.listId ? getList(currentTask.listId, userId) : Promise.resolve(null),
+      taskData.listId ? getList(taskData.listId, userId) : Promise.resolve(null),
+    ]);
 
-    let toListName = "Inbox";
-    if (taskData.listId) {
-      const list = await getList(taskData.listId, userId);
-      if (list) toListName = list.name;
-    }
+    const fromListName = fromList?.name || "Inbox";
+    const toListName = toList?.name || "Inbox";
 
     changes.push(`List changed from "${fromListName}" to "${toListName}"`);
   }
@@ -488,11 +485,26 @@ export async function updateTask(
     const newLabelIds = [...labelIds].sort();
 
     if (JSON.stringify(currentLabelIds) !== JSON.stringify(newLabelIds)) {
-      const allLabels = await getLabels(userId);
-      const currentLabelNames = currentTask.labels.map((l) => l.name || "Unknown");
-      const newLabelNames = newLabelIds.map(
-        (id) => allLabels.find((l) => l.id === id)?.name || "Unknown"
-      );
+      const currentLabelNamesMap = new Map(currentTask.labels.map((l) => [l.id, l.name || "Unknown"]));
+
+      // ⚡ Bolt Opt: Only fetch labels that we don't already have names for.
+      // Avoids loading all users labels just to log a single name change.
+      const labelsToFetch = newLabelIds.filter(id => !currentLabelNamesMap.has(id));
+
+      const allRelevantLabelsMap = new Map(currentLabelNamesMap);
+      if (labelsToFetch.length > 0) {
+        const fetchedLabels = await db
+          .select({ id: labels.id, name: labels.name })
+          .from(labels)
+          .where(and(eq(labels.userId, userId), inArray(labels.id, labelsToFetch)));
+
+        for (const label of fetchedLabels) {
+          allRelevantLabelsMap.set(label.id, label.name || "Unknown");
+        }
+      }
+
+      const currentLabelNames = Array.from(currentLabelNamesMap.values());
+      const newLabelNames = newLabelIds.map(id => allRelevantLabelsMap.get(id) || "Unknown");
 
       const added = newLabelNames.filter((n) => !currentLabelNames.includes(n));
       const removed = currentLabelNames.filter((n) => !newLabelNames.includes(n));
@@ -625,9 +637,8 @@ export async function toggleTaskCompletion(id: number, userId: string, isComplet
             userId,
             taskId: blockedTask.id,
             action: "blocker_completed",
-            details: `Blocker "${task.title}" completed.${
-              isNowUnblocked ? " Task is now unblocked!" : ""
-            }`,
+            details: `Blocker "${task.title}" completed.${isNowUnblocked ? " Task is now unblocked!" : ""
+              }`,
           };
         });
 
