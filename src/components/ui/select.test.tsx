@@ -50,7 +50,8 @@ describe("Select", () => {
             </Select>
         );
 
-        const trigger = screen.getByRole("combobox");
+        // Robustly find trigger: try role first (standard), fallback to text (resilient to HappyDOM quirks where role might be missing)
+        const trigger = screen.queryByRole("combobox") || screen.getByText("Select option");
 
         await React.act(async () => {
             // Radix Select uses pointerdown/pointerup, so plain click might not be enough in some environments

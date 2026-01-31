@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { Calendar, Flag, Clock, Repeat, AlertCircle, Lock, ChevronDown, GitBranch, GripVertical, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { FocusMode } from "./FocusMode";
 import { Target } from "lucide-react";
 import { playSuccessSound } from "@/lib/audio";
@@ -346,36 +347,50 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
 
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                     {onEdit && (
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                onEdit(task);
-                            }}
-                            type="button"
-                            aria-label="Edit task"
-                        >
-                            <Pencil className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                        </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        onEdit(task);
+                                    }}
+                                    type="button"
+                                    aria-label="Edit task"
+                                >
+                                    <Pencil className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Edit task</p>
+                            </TooltipContent>
+                        </Tooltip>
                     )}
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            e.nativeEvent.stopImmediatePropagation();
-                            setShowFocusMode(true);
-                        }}
-                        type="button"
-                        aria-label="Start focus mode"
-                    >
-                        <Target className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    e.nativeEvent.stopImmediatePropagation();
+                                    setShowFocusMode(true);
+                                }}
+                                type="button"
+                                aria-label="Start focus mode"
+                            >
+                                <Target className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Start focus mode</p>
+                        </TooltipContent>
+                    </Tooltip>
                 </div>
             </div>
 
