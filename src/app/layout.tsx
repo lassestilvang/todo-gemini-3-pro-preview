@@ -4,6 +4,7 @@ import { Inter, Quicksand, Space_Grotesk, Orbitron, Sora } from "next/font/googl
 import "./globals.css";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Toaster } from "sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const quicksand = Quicksand({
@@ -87,9 +88,10 @@ export default function RootLayout({
       <body className="font-sans antialiased" suppressHydrationWarning>
         <QueryProvider>
           <SyncProvider>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
+            <TooltipProvider>
+              <ThemeProvider
+                attribute="class"
+                defaultTheme="system"
               enableSystem
               disableTransitionOnChange
               themes={[...AVAILABLE_THEMES].filter(t => t !== "system")}
@@ -107,7 +109,8 @@ export default function RootLayout({
                   </LazyMotionProvider>
                 </PerformanceProvider>
               </ZenModeProvider>
-            </ThemeProvider>
+              </ThemeProvider>
+            </TooltipProvider>
           </SyncProvider>
         </QueryProvider>
       </body>
