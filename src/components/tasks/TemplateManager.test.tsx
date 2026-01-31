@@ -4,11 +4,13 @@ import { TemplateManager } from "./TemplateManager";
 import React from "react";
 
 // Mock sonner toast
+// We use a mock function that we can inspect
+const mockToast = {
+  success: mock(() => { }),
+  error: mock(() => { }),
+};
 mock.module("sonner", () => ({
-  toast: {
-    success: mock(() => { }),
-    error: mock(() => { }),
-  },
+  toast: mockToast,
 }));
 
 // Mock window.confirm
@@ -17,6 +19,7 @@ const originalConfirm = globalThis.confirm;
 import { db, templates, users } from "@/db";
 import { setupTestDb, resetTestDb } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
+import { getTemplates } from "@/lib/actions";
 
 // Mock PointerEvent methods for Radix UI
 if (!Element.prototype.setPointerCapture) {
@@ -33,6 +36,10 @@ describe("TemplateManager", () => {
   beforeEach(async () => {
     await setupTestDb();
     await resetTestDb();
+
+    // Reset toast mocks
+    mockToast.success.mockClear();
+    mockToast.error.mockClear();
 
     // Set mock user to match the one expected by tests
     setMockAuthUser({
@@ -97,6 +104,10 @@ describe("TemplateManager", () => {
     }, 40000);
 
     it("should load and display templates when dialog opens", async () => {
+      // Verify DB state first
+      const dbTemplates = await getTemplates("test_user_123");
+      expect(dbTemplates).toHaveLength(2);
+
       render(<TemplateManager userId="test_user_123" />);
 
       await React.act(async () => {
@@ -104,7 +115,10 @@ describe("TemplateManager", () => {
       });
 
       await waitFor(() => {
-        // expect(mockGetTemplates).toHaveBeenCalledWith("test_user_123"); // Removed action spy
+        // If it fails, check if toast error was called
+        if (mockToast.error.mock.calls.length > 0) {
+           console.error("Toast error calls:", mockToast.error.mock.calls);
+        }
         expect(screen.getByText("Weekly Report")).toBeInTheDocument();
         expect(screen.getByText("Daily Standup")).toBeInTheDocument();
       }, { timeout: 15000 });
