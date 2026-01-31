@@ -316,8 +316,11 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
 
   // Smart Tagging: If no list or labels provided, try to guess them
   if (!taskData.listId && finalLabelIds.length === 0 && taskData.title && taskData.userId) {
-    const allLists = await getLists(taskData.userId);
-    const allLabels = await getLabels(taskData.userId);
+    // Perf: fetch lists + labels in parallel to cut smart-tagging latency roughly in half.
+    const [allLists, allLabels] = await Promise.all([
+      getLists(taskData.userId),
+      getLabels(taskData.userId),
+    ]);
     const suggestions = await suggestMetadata(taskData.title, allLists, allLabels);
 
     if (suggestions.listId) taskData.listId = suggestions.listId;

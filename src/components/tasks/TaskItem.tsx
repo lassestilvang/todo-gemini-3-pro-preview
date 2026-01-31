@@ -170,9 +170,12 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
     const isPerformanceMode = usePerformanceMode();
     const resolvedPerformanceMode = mounted && isPerformanceMode;
 
+    // PERF: Pre-compute timestamps once instead of creating Date objects in each comparison.
+    // For 100 tasks, this eliminates 200+ Date object allocations per render.
     const now = mounted ? new Date() : new Date(0); // Use a stable "now" for server/hydration
-    const isOverdue = task.dueDate && new Date(task.dueDate) < now && !isCompleted;
-    const isDeadlineExceeded = task.deadline && new Date(task.deadline) < now && !isCompleted;
+    const nowTime = now.getTime();
+    const isOverdue = task.dueDate && task.dueDate.getTime() < nowTime && !isCompleted;
+    const isDeadlineExceeded = task.deadline && task.deadline.getTime() < nowTime && !isCompleted;
     const isBlocked = (task.blockedByCount || 0) > 0;
     const [showFocusMode, setShowFocusMode] = useState(false);
     const { use24HourClock } = useUser();

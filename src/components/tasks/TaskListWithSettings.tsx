@@ -82,7 +82,12 @@ function applyViewSettings(tasks: Task[], settings: ViewSettings): Task[] {
             // For 1k tasks, this avoids ~10k+ Date constructions during sort.
             const withDueTime = result.map(task => ({
                 task,
-                dueTime: task.dueDate ? new Date(task.dueDate).getTime() : Infinity,
+                // Perf: reuse Date instances when already hydrated to skip extra allocations.
+                dueTime: task.dueDate
+                    ? (task.dueDate instanceof Date
+                        ? task.dueDate.getTime()
+                        : new Date(task.dueDate).getTime())
+                    : Infinity,
             }));
             withDueTime.sort((a, b) => (a.dueTime - b.dueTime) * sortMultiplier);
             result = withDueTime.map(item => item.task);
@@ -102,8 +107,13 @@ function applyViewSettings(tasks: Task[], settings: ViewSettings): Task[] {
                         comparison = a.title.localeCompare(b.title);
                         break;
                     case "created":
-                        const aTime = new Date(a.createdAt).getTime();
-                        const bTime = new Date(b.createdAt).getTime();
+                        // Perf: avoid new Date() if createdAt is already a Date object.
+                        const aTime = a.createdAt instanceof Date
+                            ? a.createdAt.getTime()
+                            : new Date(a.createdAt).getTime();
+                        const bTime = b.createdAt instanceof Date
+                            ? b.createdAt.getTime()
+                            : new Date(b.createdAt).getTime();
                         comparison = aTime - bTime;
                         break;
                 }

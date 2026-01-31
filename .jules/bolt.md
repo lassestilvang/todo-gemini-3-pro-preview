@@ -45,3 +45,7 @@
 ## 2026-01-31 - Expensive Chart Data Transformations
 **Learning:** The AnalyticsCharts component was recalculating chart data arrays and finding max values on every render. Using `Math.max(...array)` spreads the array into function arguments, creating unnecessary intermediate copies. For analytics pages with multiple charts, this caused redundant array operations on every parent state change.
 **Action:** Wrap chart data transformations in `useMemo` with proper dependencies. Replace `Math.max(...array)` with a simple for-loop to find max values in a single pass without array spreading, reducing both memory allocations and computational overhead.
+
+## 2026-01-31 - Date Comparison Allocations in TaskItem
+**Learning:** TaskItem was creating new Date objects from `task.dueDate` and `task.deadline` for every comparison check (`new Date(task.dueDate) < now`). Since `task.dueDate` and `task.deadline` are already Date objects in the Task type, wrapping them in `new Date()` is redundant. For 100 tasks rendered, this created 200+ unnecessary Date allocations per render.
+**Action:** Use `.getTime()` directly on Date properties for timestamp comparisons. Pre-compute `nowTime` once and compare timestamps instead of Date objects, eliminating redundant allocations while maintaining exact comparison semantics.
