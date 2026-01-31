@@ -104,22 +104,37 @@ export function CalendarView({ tasks }: CalendarViewProps) {
   // Without this, each of the 35-42 calendar cells would iterate all tasks O(n),
   // resulting in O(n*days) complexity. This reduces it to O(n) total preprocessing.
   const tasksByDate = useMemo(() => {
-    const map = new Map<string, CalendarTask[]>();
+    const map = new Map<
+      string,
+      { tasks: CalendarTask[]; completedCount: number }
+    >();
     for (const task of displayTasks) {
       if (!task.dueDate) continue;
       const dateKey = format(new Date(task.dueDate), "yyyy-MM-dd");
       const existing = map.get(dateKey);
       if (existing) {
-        existing.push(task);
+        existing.tasks.push(task);
+        if (task.isCompleted) {
+          existing.completedCount += 1;
+        }
       } else {
-        map.set(dateKey, [task]);
+        map.set(dateKey, {
+          tasks: [task],
+          completedCount: task.isCompleted ? 1 : 0,
+        });
       }
     }
     return map;
   }, [displayTasks]);
 
-  const getTasksForDay = (date: Date): CalendarTask[] => {
-    return tasksByDate.get(format(date, "yyyy-MM-dd")) || [];
+  const getTaskSummaryForDay = (date: Date) => {
+    // PERF: Return tasks + completed count in O(1) to avoid per-day filtering.
+    return (
+      tasksByDate.get(format(date, "yyyy-MM-dd")) || {
+        tasks: [],
+        completedCount: 0,
+      }
+    );
   };
 
   if (!isInitialized && tasks.length === 0) {
@@ -193,7 +208,8 @@ export function CalendarView({ tasks }: CalendarViewProps) {
         {/* Days Grid */}
         <div className="grid grid-cols-7 flex-1 auto-rows-fr">
           {days.map((day, dayIdx) => {
-            const dayTasks = getTasksForDay(day);
+            const { tasks: dayTasks, completedCount } =
+              getTaskSummaryForDay(day);
             const isCurrentMonth = isSameMonth(day, currentMonth);
             const isSelected = selectedDate && isSameDay(day, selectedDate);
             const isTodayDate = isToday(day);
@@ -221,8 +237,7 @@ export function CalendarView({ tasks }: CalendarViewProps) {
                   </span>
                   {dayTasks.length > 0 && (
                     <span className="text-[10px] text-muted-foreground font-medium">
-                      {dayTasks.filter((t) => t.isCompleted).length}/
-                      {dayTasks.length}
+                      {completedCount}/{dayTasks.length}
                     </span>
                   )}
                 </div>
