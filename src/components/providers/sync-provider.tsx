@@ -422,11 +422,9 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
                 }
             } else if (type === 'updateSubtask') {
                 const [id, , isCompleted] = a;
-                const task = Object.values(taskStore.tasks).find((t: any) => t.subtasks?.some((s: any) => s.id === id));
-                if (task) {
-                    const newSubtasks = task.subtasks!.map((s: any) => s.id === id ? { ...s, isCompleted } : s);
-                    taskStore.upsertTask({ ...task, subtasks: newSubtasks });
-                }
+                // Perf: update only the targeted subtask instead of mapping the entire array.
+                // Expected impact: reduces allocations and speeds up rapid subtask toggles.
+                taskStore.updateSubtaskCompletion(id, isCompleted);
             } else if (type === 'createList') {
                 const data = a[0];
                 listStore.upsertList({

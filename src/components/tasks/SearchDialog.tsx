@@ -143,18 +143,25 @@ export function SearchDialog({ userId }: { userId?: string }) {
         setOpen(false);
     };
 
-    const matches = (text: string) => {
-        return !query || text.toLowerCase().includes(query.toLowerCase());
-    };
+    // Normalize the query once per render to avoid repeated lowercasing and allocations.
+    // Expected impact: reduces string allocations per render when the dialog is open.
+    const normalizedQuery = React.useMemo(() => query.trim().toLowerCase(), [query]);
 
-    const hasSuggestions =
+    const matches = React.useCallback((text: string) => {
+        return !normalizedQuery || text.toLowerCase().includes(normalizedQuery);
+    }, [normalizedQuery]);
+
+    // Memoize suggestion/theme filtering to avoid re-scanning constants on unrelated renders.
+    // Expected impact: eliminates unnecessary filter passes while typing or when results update.
+    const hasSuggestions = React.useMemo(() => (
         matches("Go to Inbox") ||
         matches("Create New Task") ||
-        matches("Toggle Zen Mode");
+        matches("Toggle Zen Mode")
+    ), [matches]);
 
-    const filteredThemes = AVAILABLE_THEMES.filter(theme =>
-        matches(`${THEME_METADATA[theme].label} Theme`)
-    );
+    const filteredThemes = React.useMemo(() => (
+        AVAILABLE_THEMES.filter(theme => matches(`${THEME_METADATA[theme].label} Theme`))
+    ), [matches]);
 
     return (
         <>
