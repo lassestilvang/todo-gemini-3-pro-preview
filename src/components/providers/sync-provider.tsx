@@ -47,11 +47,14 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     const [status, setStatus] = useState<SyncStatus>('online');
     const [isOnline, setIsOnline] = useState(true);
     const [conflicts, setConflicts] = useState<ConflictInfo[]>([]);
+    const MAX_PENDING_QUEUE = 100;
+    const FLUSH_IDLE_TIMEOUT_MS = 200;
     const processingRef = useRef(false);
     const processQueueRef = useRef<(() => Promise<void>) | undefined>(undefined);
     const flushActionsRef = useRef<(() => Promise<void>) | undefined>(undefined);
     const pendingQueueRef = useRef<PendingAction[]>([]);
     const flushTimerRef = useRef<number | null>(null);
+    const flushIdleRef = useRef<number | null>(null);
 
     const fixupQueueIds = useCallback(async (oldId: number, newId: number) => {
         const dbCurrent = await getDB();
@@ -306,12 +309,43 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         if (queued.length === 0) return;
         pendingQueueRef.current = [];
 
+        if (flushTimerRef.current !== null) {
+            window.clearTimeout(flushTimerRef.current);
+            flushTimerRef.current = null;
+        }
+        if (flushIdleRef.current !== null && 'cancelIdleCallback' in window) {
+            (window as any).cancelIdleCallback(flushIdleRef.current);
+            flushIdleRef.current = null;
+        }
+
         // Perf: batch IDB writes + state updates for rapid dispatch bursts.
         await addToQueueBatch(queued);
         setPendingActions(prev => [...prev, ...queued]);
     }, []);
 
     flushActionsRef.current = flushQueuedActions;
+
+    const scheduleFlush = useCallback(() => {
+        if (pendingQueueRef.current.length >= MAX_PENDING_QUEUE) {
+            void flushQueuedActions();
+            return;
+        }
+
+        if (flushTimerRef.current !== null || flushIdleRef.current !== null) return;
+
+        if ('requestIdleCallback' in window) {
+            flushIdleRef.current = (window as any).requestIdleCallback(() => {
+                flushIdleRef.current = null;
+                void flushQueuedActions();
+            }, { timeout: FLUSH_IDLE_TIMEOUT_MS });
+            return;
+        }
+
+        flushTimerRef.current = window.setTimeout(async () => {
+            flushTimerRef.current = null;
+            await flushQueuedActions();
+        }, 50);
+    }, [flushQueuedActions]);
 
     const dispatch = useCallback(async <T extends ActionType>(type: T, ...args: Parameters<typeof actionRegistry[T]>) => {
         const id = uuidv4();
@@ -342,12 +376,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
         // Perf: batch queue writes/state updates when many actions are dispatched rapidly.
         pendingQueueRef.current.push(action);
-        if (flushTimerRef.current === null) {
-            flushTimerRef.current = window.setTimeout(async () => {
-                flushTimerRef.current = null;
-                await flushQueuedActions();
-            }, 50);
-        }
+        scheduleFlush();
 
         // Optimistic Update to Global Store
         const taskStore = useTaskStore.getState();
@@ -441,7 +470,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         }
 
         return { id: tempId, ...(args[0] as any) }; // Approximate optimistic result
-    }, [processQueue, flushQueuedActions]);
+    }, [processQueue, scheduleFlush]);
 
     const value = useMemo(() => ({
         pendingActions,
