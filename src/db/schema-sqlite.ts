@@ -21,6 +21,8 @@ export const users = sqliteTable("users", {
     isInitialized: integer("is_initialized", { mode: "boolean" }).notNull().default(false),
     use24HourClock: integer("use_24h_clock", { mode: "boolean" }),
     weekStartsOnMonday: integer("week_starts_on_monday", { mode: "boolean" }),
+    calendarUseNativeTooltipsOnDenseDays: integer("calendar_use_native_tooltips_on_dense_days", { mode: "boolean" }),
+    calendarDenseTooltipThreshold: integer("calendar_dense_tooltip_threshold"),
     createdAt: integer("created_at", { mode: "timestamp" })
         .notNull()
         .default(sql`(strftime('%s', 'now'))`),
