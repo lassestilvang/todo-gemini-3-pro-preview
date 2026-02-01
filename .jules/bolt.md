@@ -61,3 +61,7 @@
 ## 2026-02-01 - React.memo for Analytics Components
 **Learning:** Analytics components (AnalyticsCharts, CompletionHeatmap) render expensive chart visualizations with recharts. Without React.memo, these components re-render whenever the parent analytics page updates any state (filters, tabs, etc.), even when their data prop hasn't changed. Since these components already use useMemo for internal calculations, adding React.memo prevents the entire component tree from re-rendering unnecessarily.
 **Action:** Wrap expensive visualization components with React.memo when they receive stable data props and contain heavy rendering logic (charts, heatmaps, large lists). This is especially valuable for analytics/dashboard pages where multiple independent sections might trigger parent re-renders.
+
+## 2024-05-22 - Mocking Hoisting in Bun Tests
+**Learning:** Static imports in Bun tests bind before `mock.module` takes effect. When mocking Server Actions for component integration tests, use dynamic `await import(...)` for the component under test inside `beforeEach` to ensure it uses the mocked dependencies.
+**Action:** Always use dynamic imports for components when mocking their dependencies in the same test file.

@@ -1,6 +1,9 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
 import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 import React from "react";
+import { setupTestDb, resetTestDb } from "@/test/setup";
+import { setMockAuthUser } from "@/test/mocks";
+import { db, users, templates } from "@/db";
 
 // Mock sonner toast
 mock.module("sonner", () => ({
@@ -40,6 +43,15 @@ mock.module("@/lib/actions", () => ({
   updateTemplate: mock(async () => { }),
 }));
 
+// Also mock the specific file path to be safe, as TemplateManager might be importing from there
+mock.module("@/lib/actions/templates", () => ({
+  getTemplates: mockGetTemplates,
+  deleteTemplate: mockDeleteTemplate,
+  instantiateTemplate: mockInstantiateTemplate,
+  createTemplate: mock(async () => { }),
+  updateTemplate: mock(async () => { }),
+}));
+
 // Mock window.confirm
 const originalConfirm = globalThis.confirm;
 
@@ -59,9 +71,49 @@ describe("TemplateManager", () => {
   let TemplateManager: any;
 
   beforeEach(async () => {
+    // Restore DB seeding as a fallback in case mocks fail (belt and suspenders)
+    // This ensures that even if the real getTemplates is called, it returns data.
+    await setupTestDb();
+    await resetTestDb();
+
+    // Set mock user to match the one expected by tests
+    setMockAuthUser({
+      id: "test_user_123",
+      email: "test@example.com",
+      firstName: "Test",
+      lastName: "User",
+      profilePictureUrl: null
+    });
+
+    // Create user first to satisfy FK constraint
+    await db.insert(users).values({
+      id: "test_user_123",
+      email: "test@example.com",
+      firstName: "Test",
+      lastName: "User",
+    });
+
+    // Seed templates
+    await db.insert(templates).values([
+      {
+        id: 1,
+        userId: "test_user_123",
+        name: "Weekly Report",
+        content: JSON.stringify({ title: "Weekly Report Task", priority: "high" }),
+        createdAt: new Date("2024-01-15"),
+      },
+      {
+        id: 2,
+        userId: "test_user_123",
+        name: "Daily Standup",
+        content: JSON.stringify({ title: "Daily Standup Task", priority: "medium" }),
+        createdAt: new Date("2024-01-16"),
+      }
+    ]);
+
     // Dynamic import to ensure mock is applied
-    const module = await import("./TemplateManager");
-    TemplateManager = module.TemplateManager;
+    const importedModule = await import("./TemplateManager");
+    TemplateManager = importedModule.TemplateManager;
 
     globalThis.confirm = mock(() => true);
     mockGetTemplates.mockClear();
@@ -86,6 +138,11 @@ describe("TemplateManager", () => {
 
       await React.act(async () => {
         fireEvent.click(screen.getByText("Templates"));
+      });
+
+      // Explicitly wait for dialog
+      await waitFor(() => {
+        expect(screen.getByRole("dialog")).toBeInTheDocument();
       });
 
       await waitFor(() => {
