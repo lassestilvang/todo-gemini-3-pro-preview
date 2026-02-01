@@ -8,11 +8,9 @@ import {
   startOfWeek,
   endOfWeek,
   eachDayOfInterval,
-  isSameMonth,
-  isSameDay,
   addMonths,
   subMonths,
-  isToday,
+  startOfDay,
 } from "date-fns";
 import {
   ChevronLeft,
@@ -23,7 +21,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useUser } from "@/components/providers/UserProvider";
+import { getEffectiveCalendarDenseTooltipThreshold, useUser } from "@/components/providers/UserProvider";
 
 import {
   Tooltip,
@@ -52,6 +50,11 @@ interface CalendarViewProps {
 
 export function CalendarView({ tasks }: CalendarViewProps) {
   const { tasks: storeTasks, initialize, isInitialized } = useTaskStore();
+  const {
+    getWeekStartDay,
+    calendarUseNativeTooltipsOnDenseDays,
+    calendarDenseTooltipThreshold,
+  } = useUser();
 
   useEffect(() => {
     initialize();
@@ -60,11 +63,12 @@ export function CalendarView({ tasks }: CalendarViewProps) {
   // Use props if provided (SSR), otherwise fallback to store (Client Hydration)
   const displayTasks = useMemo((): CalendarTask[] => {
     const sourceTasks = (tasks && tasks.length > 0) ? tasks : Object.values(storeTasks);
-    // Map tasks to CalendarTask interface to ensure boolean completion and typed priority
+    // Perf: avoid redundant Date allocations. Task.dueDate is already a Date
+    // (or null). Reusing it prevents per-task allocations when the calendar re-renders.
     return sourceTasks.map(t => ({
       id: t.id,
       title: t.title,
-      dueDate: t.dueDate ? new Date(t.dueDate) : null,
+      dueDate: t.dueDate ?? null,
       isCompleted: !!t.isCompleted, // Ensure boolean
       priority: (t.priority ?? "none") as "none" | "low" | "medium" | "high",
       energyLevel: t.energyLevel ?? null // Ensure string | null
@@ -73,8 +77,6 @@ export function CalendarView({ tasks }: CalendarViewProps) {
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
-  const { getWeekStartDay } = useUser();
-
   const weekStartsOn = getWeekStartDay();
   const weekOptions = { weekStartsOn };
 
@@ -105,12 +107,14 @@ export function CalendarView({ tasks }: CalendarViewProps) {
   // resulting in O(n*days) complexity. This reduces it to O(n) total preprocessing.
   const tasksByDate = useMemo(() => {
     const map = new Map<
-      string,
+      number,
       { tasks: CalendarTask[]; completedCount: number }
     >();
     for (const task of displayTasks) {
       if (!task.dueDate) continue;
-      const dateKey = format(new Date(task.dueDate), "yyyy-MM-dd");
+      // Perf: use start-of-day timestamp keys to avoid format() per task.
+      // This reduces string allocations and date formatting cost for large lists.
+      const dateKey = startOfDay(task.dueDate).getTime();
       const existing = map.get(dateKey);
       if (existing) {
         existing.tasks.push(task);
@@ -127,10 +131,30 @@ export function CalendarView({ tasks }: CalendarViewProps) {
     return map;
   }, [displayTasks]);
 
-  const getTaskSummaryForDay = (date: Date) => {
+  const daysWithMeta = useMemo(() => {
+    // Perf: precompute all day metadata once to avoid repeated date-fns calls per cell.
+    const selectedKey = selectedDate ? startOfDay(selectedDate).getTime() : null;
+    const todayKey = startOfDay(new Date()).getTime();
+    const currentMonthValue = currentMonth.getMonth();
+    const currentMonthYear = currentMonth.getFullYear();
+
+    return days.map(day => {
+      const key = startOfDay(day).getTime();
+      return {
+        day,
+        key,
+        isCurrentMonth: day.getMonth() === currentMonthValue && day.getFullYear() === currentMonthYear,
+        isSelected: selectedKey !== null && key === selectedKey,
+        isTodayDate: key === todayKey,
+        label: day.getDate(),
+      };
+    });
+  }, [currentMonth, days, selectedDate]);
+
+  const getTaskSummaryForDayKey = (dateKey: number) => {
     // PERF: Return tasks + completed count in O(1) to avoid per-day filtering.
     return (
-      tasksByDate.get(format(date, "yyyy-MM-dd")) || {
+      tasksByDate.get(dateKey) || {
         tasks: [],
         completedCount: 0,
       }
@@ -206,92 +230,111 @@ export function CalendarView({ tasks }: CalendarViewProps) {
         </div>
 
         {/* Days Grid */}
-        <div className="grid grid-cols-7 flex-1 auto-rows-fr">
-          {days.map((day, dayIdx) => {
-            const { tasks: dayTasks, completedCount } =
-              getTaskSummaryForDay(day);
-            const isCurrentMonth = isSameMonth(day, currentMonth);
-            const isSelected = selectedDate && isSameDay(day, selectedDate);
-            const isTodayDate = isToday(day);
+        <TooltipProvider>
+          {/* Perf: single provider for the whole grid to avoid per-day context instantiation. */}
+          <div className="grid grid-cols-7 flex-1 auto-rows-fr">
+            {daysWithMeta.map(({ day, key, isCurrentMonth, isSelected, isTodayDate, label }, dayIdx) => {
+              const { tasks: dayTasks, completedCount } =
+                getTaskSummaryForDayKey(key);
+              const isSelectedDay = isSelected;
+              // Perf: use native title tooltips on busy days to avoid mounting
+              // a Tooltip component for every task badge.
+              const tooltipThreshold = getEffectiveCalendarDenseTooltipThreshold(calendarDenseTooltipThreshold, 6);
+              const useNativeTooltip =
+                calendarUseNativeTooltipsOnDenseDays === false
+                  ? false
+                  : dayTasks.length > tooltipThreshold;
 
-            return (
-              <div
-                key={day.toString()}
-                onClick={() => setSelectedDate(day)}
-                className={cn(
-                  "min-h-[100px] border-b border-r p-2 transition-colors hover:bg-muted/20 cursor-pointer flex flex-col gap-1",
-                  !isCurrentMonth && "bg-muted/10 text-muted-foreground",
-                  isSelected && "bg-primary/5 ring-1 ring-inset ring-primary",
-                  dayIdx % 7 === 6 && "border-r-0", // Remove right border for last column
-                )}
-              >
-                <div className="flex justify-between items-start">
-                  <span
-                    className={cn(
-                      "text-sm font-medium h-7 w-7 flex items-center justify-center rounded-full",
-                      isTodayDate && "bg-primary text-primary-foreground",
-                      !isTodayDate && isSelected && "text-primary",
-                    )}
-                  >
-                    {format(day, "d")}
-                  </span>
-                  {dayTasks.length > 0 && (
-                    <span className="text-[10px] text-muted-foreground font-medium">
-                      {completedCount}/{dayTasks.length}
-                    </span>
+              return (
+                <div
+                  key={day.toString()}
+                  onClick={() => setSelectedDate(day)}
+                  className={cn(
+                    "min-h-[100px] border-b border-r p-2 transition-colors hover:bg-muted/20 cursor-pointer flex flex-col gap-1",
+                    !isCurrentMonth && "bg-muted/10 text-muted-foreground",
+                    isSelectedDay && "bg-primary/5 ring-1 ring-inset ring-primary",
+                    dayIdx % 7 === 6 && "border-r-0", // Remove right border for last column
                   )}
-                </div>
-
-                {/* PERF: TooltipProvider wraps all tasks to avoid per-item context instantiation.
-                                    Moving it outside the .map() reduces React context overhead from O(n) to O(1). */}
-                <TooltipProvider>
-                  <div className="flex-1 flex flex-col gap-1 mt-1 overflow-y-auto max-h-[100px] scrollbar-hide">
-                    {dayTasks.map((task) => (
-                      <Tooltip key={task.id}>
-                        <TooltipTrigger asChild>
-                          <div
-                            className={cn(
-                              "text-[10px] px-1.5 py-0.5 rounded truncate flex items-center gap-1 border",
-                              task.isCompleted
-                                ? "bg-muted text-muted-foreground line-through border-transparent"
-                                : "bg-background border-l-2 shadow-sm",
-                              !task.isCompleted &&
-                              task.priority === "high" &&
-                              "border-l-red-500",
-                              !task.isCompleted &&
-                              task.priority === "medium" &&
-                              "border-l-yellow-500",
-                              !task.isCompleted &&
-                              task.priority === "low" &&
-                              "border-l-blue-500",
-                              !task.isCompleted &&
-                              task.priority === "none" &&
-                              "border-l-gray-300",
-                            )}
-                          >
-                            {task.isCompleted ? (
-                              <CheckCircle2 className="h-2.5 w-2.5 shrink-0" />
-                            ) : (
-                              <Circle className="h-2.5 w-2.5 shrink-0" />
-                            )}
-                            <span className="truncate">{task.title}</span>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>{task.title}</p>
-                          <p className="text-xs text-muted-foreground capitalize">
-                            {task.priority} Priority •{" "}
-                            {task.energyLevel || "No Energy"}
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    ))}
+                >
+                  <div className="flex justify-between items-start">
+                    <span
+                      className={cn(
+                        "text-sm font-medium h-7 w-7 flex items-center justify-center rounded-full",
+                        isTodayDate && "bg-primary text-primary-foreground",
+                        !isTodayDate && isSelectedDay && "text-primary",
+                      )}
+                    >
+                      {label}
+                    </span>
+                    {dayTasks.length > 0 && (
+                      <span className="text-[10px] text-muted-foreground font-medium">
+                        {completedCount}/{dayTasks.length}
+                      </span>
+                    )}
                   </div>
-                </TooltipProvider>
-              </div>
-            );
-          })}
-        </div>
+
+                  <div className="flex-1 flex flex-col gap-1 mt-1 overflow-y-auto max-h-[100px] scrollbar-hide">
+                    {dayTasks.map((task) => {
+                      const taskBadge = (
+                        <div
+                          className={cn(
+                            "text-[10px] px-1.5 py-0.5 rounded truncate flex items-center gap-1 border",
+                            task.isCompleted
+                              ? "bg-muted text-muted-foreground line-through border-transparent"
+                              : "bg-background border-l-2 shadow-sm",
+                            !task.isCompleted &&
+                            task.priority === "high" &&
+                            "border-l-red-500",
+                            !task.isCompleted &&
+                            task.priority === "medium" &&
+                            "border-l-yellow-500",
+                            !task.isCompleted &&
+                            task.priority === "low" &&
+                            "border-l-blue-500",
+                            !task.isCompleted &&
+                            task.priority === "none" &&
+                            "border-l-gray-300",
+                          )}
+                          title={useNativeTooltip ? task.title : undefined}
+                        >
+                          {task.isCompleted ? (
+                            <CheckCircle2 className="h-2.5 w-2.5 shrink-0" />
+                          ) : (
+                            <Circle className="h-2.5 w-2.5 shrink-0" />
+                          )}
+                          <span className="truncate">{task.title}</span>
+                        </div>
+                      );
+
+                      if (useNativeTooltip) {
+                        return (
+                          <div key={task.id}>
+                            {taskBadge}
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <Tooltip key={task.id}>
+                          <TooltipTrigger asChild>
+                            {taskBadge}
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{task.title}</p>
+                            <p className="text-xs text-muted-foreground capitalize">
+                              {task.priority} Priority •{" "}
+                              {task.energyLevel || "No Energy"}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </TooltipProvider>
       </div>
     </div>
   );

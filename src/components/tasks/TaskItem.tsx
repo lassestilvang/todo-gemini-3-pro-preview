@@ -128,8 +128,8 @@ function arePropsEqual(prev: TaskItemProps, next: TaskItemProps) {
     if (p.title !== n.title) return false;
     if (p.isCompleted !== n.isCompleted) return false;
 
-    const pUpdated = p.updatedAt instanceof Date ? p.updatedAt.getTime() : (p.updatedAt ? new Date(p.updatedAt).getTime() : null);
-    const nUpdated = n.updatedAt instanceof Date ? n.updatedAt.getTime() : (n.updatedAt ? new Date(n.updatedAt).getTime() : null);
+    const pUpdated = p.updatedAt instanceof Date ? p.updatedAt.getTime() : new Date(p.updatedAt || 0).getTime();
+    const nUpdated = n.updatedAt instanceof Date ? n.updatedAt.getTime() : new Date(n.updatedAt || 0).getTime();
     if (pUpdated !== nUpdated) return false;
 
     // Subtasks & Blockers
@@ -207,7 +207,7 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
         setSubtaskStates(prev => {
             const next = { ...prev };
             let changed = false;
-            for (const s of task.subtasks) {
+            for (const s of task.subtasks || []) {
                 if (next[s.id] !== (s.isCompleted || false)) {
                     next[s.id] = s.isCompleted || false;
                     changed = true;

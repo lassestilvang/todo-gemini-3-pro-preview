@@ -33,14 +33,15 @@ const mockGetTemplates = mock(async () => [
 
 const mockDeleteTemplate = mock(async () => { });
 const mockInstantiateTemplate = mock(async () => { });
+const mockUpdateTemplate = mock(async () => ({ success: true }));
+const mockCreateTemplate = mock(async () => ({ success: true }));
 
 mock.module("@/lib/actions", () => ({
   getTemplates: mockGetTemplates,
   deleteTemplate: mockDeleteTemplate,
   instantiateTemplate: mockInstantiateTemplate,
-  // Export other required actions as mocks or pass-through if needed
-  createTemplate: mock(async () => { }),
-  updateTemplate: mock(async () => { }),
+  createTemplate: mockCreateTemplate,
+  updateTemplate: mockUpdateTemplate,
 }));
 
 // Also mock the specific file path to be safe, as TemplateManager might be importing from there
@@ -48,8 +49,8 @@ mock.module("@/lib/actions/templates", () => ({
   getTemplates: mockGetTemplates,
   deleteTemplate: mockDeleteTemplate,
   instantiateTemplate: mockInstantiateTemplate,
-  createTemplate: mock(async () => { }),
-  updateTemplate: mock(async () => { }),
+  createTemplate: mockCreateTemplate,
+  updateTemplate: mockUpdateTemplate,
 }));
 
 // Mock window.confirm
@@ -119,6 +120,8 @@ describe("TemplateManager", () => {
     mockGetTemplates.mockClear();
     mockDeleteTemplate.mockClear();
     mockInstantiateTemplate.mockClear();
+    mockUpdateTemplate.mockClear();
+    mockCreateTemplate.mockClear();
   });
 
   afterEach(() => {
@@ -158,6 +161,7 @@ describe("TemplateManager", () => {
       });
 
       await waitFor(() => {
+        expect(mockGetTemplates).toHaveBeenCalled();
         expect(screen.getByText("Weekly Report")).toBeInTheDocument();
         expect(screen.getByText("Daily Standup")).toBeInTheDocument();
       }, { timeout: 10000 });

@@ -10,6 +10,8 @@ export const users = pgTable("users", {
     isInitialized: boolean("is_initialized").notNull().default(false),
     use24HourClock: boolean("use_24h_clock"), // true = 24h, false = 12h, null = auto
     weekStartsOnMonday: boolean("week_starts_on_monday"), // true = Monday, false = Sunday, null = auto
+    calendarUseNativeTooltipsOnDenseDays: boolean("calendar_use_native_tooltips_on_dense_days"),
+    calendarDenseTooltipThreshold: integer("calendar_dense_tooltip_threshold"),
     createdAt: timestamp("created_at")
         .notNull()
         .defaultNow(),

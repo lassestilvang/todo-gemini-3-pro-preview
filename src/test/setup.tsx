@@ -97,6 +97,8 @@ mock.module("@/lib/auth", () => ({
             avatarUrl: user.profilePictureUrl,
             use24HourClock: false,
             weekStartsOnMonday: false,
+            calendarUseNativeTooltipsOnDenseDays: true,
+            calendarDenseTooltipThreshold: 6,
         };
     }),
     requireAuth: mock(async () => {
@@ -112,6 +114,8 @@ mock.module("@/lib/auth", () => ({
             avatarUrl: user.profilePictureUrl,
             use24HourClock: false,
             weekStartsOnMonday: false,
+            calendarUseNativeTooltipsOnDenseDays: true,
+            calendarDenseTooltipThreshold: 6,
         };
     }),
     requireUser: mock(async (userId: string) => {
@@ -132,6 +136,8 @@ mock.module("@/lib/auth", () => ({
             avatarUrl: user.profilePictureUrl,
             use24HourClock: false,
             weekStartsOnMonday: false,
+            calendarUseNativeTooltipsOnDenseDays: true,
+            calendarDenseTooltipThreshold: 6,
         };
     }),
     syncUser: mock((user: { id: string; email: string }) => Promise.resolve({
@@ -185,7 +191,7 @@ mock.module("next/dynamic", () => ({
  * Setup database schema for tests.
  */
 export async function setupTestDb() {
-    sqliteConnection.run("CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY, email TEXT NOT NULL, first_name TEXT, last_name TEXT, avatar_url TEXT, is_initialized INTEGER NOT NULL DEFAULT 0, use_24h_clock INTEGER, week_starts_on_monday INTEGER, created_at INTEGER DEFAULT(strftime('%s', 'now')), updated_at INTEGER DEFAULT(strftime('%s', 'now')));");
+    sqliteConnection.run("CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY, email TEXT NOT NULL, first_name TEXT, last_name TEXT, avatar_url TEXT, is_initialized INTEGER NOT NULL DEFAULT 0, use_24h_clock INTEGER, week_starts_on_monday INTEGER, calendar_use_native_tooltips_on_dense_days INTEGER, calendar_dense_tooltip_threshold INTEGER, created_at INTEGER DEFAULT(strftime('%s', 'now')), updated_at INTEGER DEFAULT(strftime('%s', 'now')));");
     sqliteConnection.run("CREATE TABLE IF NOT EXISTS lists(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, name TEXT NOT NULL, color TEXT DEFAULT '#000000', icon TEXT, slug TEXT NOT NULL, description TEXT, position INTEGER DEFAULT 0 NOT NULL, created_at INTEGER DEFAULT(strftime('%s', 'now')), updated_at INTEGER DEFAULT(strftime('%s', 'now')));");
     sqliteConnection.run("CREATE TABLE IF NOT EXISTS tasks(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, list_id INTEGER REFERENCES lists(id) ON DELETE CASCADE, title TEXT NOT NULL, description TEXT, icon TEXT, priority TEXT DEFAULT 'none', due_date INTEGER, is_completed INTEGER DEFAULT 0, completed_at INTEGER, is_recurring INTEGER DEFAULT 0, recurring_rule TEXT, parent_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE, estimate_minutes INTEGER, position INTEGER DEFAULT 0 NOT NULL, actual_minutes INTEGER, energy_level TEXT, context TEXT, is_habit INTEGER DEFAULT 0, created_at INTEGER DEFAULT(strftime('%s', 'now')), updated_at INTEGER DEFAULT(strftime('%s', 'now')), deadline INTEGER);");
     sqliteConnection.run("CREATE TABLE IF NOT EXISTS labels(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, name TEXT NOT NULL, color TEXT DEFAULT '#000000', icon TEXT, description TEXT, position INTEGER DEFAULT 0 NOT NULL);");
