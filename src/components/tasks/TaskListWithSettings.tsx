@@ -10,6 +10,7 @@ import { getViewSettings } from "@/lib/actions/view-settings";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { ActionType, actionRegistry } from "@/lib/sync/registry";
+import { Inbox, Calendar, CheckCircle, Layers, ClipboardList } from "lucide-react";
 
 const TaskDialog = dynamic(() => import("./TaskDialog").then(mod => mod.TaskDialog), {
     ssr: false,
@@ -701,8 +702,47 @@ export function TaskListWithSettings({
                     <div className="h-64 bg-muted rounded-lg w-full" />
                 </div>
             ) : processedTasks.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground border rounded-lg border-dashed">
-                    <p>No tasks found</p>
+                <div
+                    className="flex flex-col items-center justify-center h-[300px] text-muted-foreground border rounded-lg border-dashed bg-muted/5"
+                    role="status"
+                    aria-live="polite"
+                >
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/20 mb-4">
+                        {(() => {
+                            switch (filterType || viewId) {
+                                case "inbox": return <Inbox className="h-6 w-6 opacity-50" />;
+                                case "today": return <Calendar className="h-6 w-6 opacity-50" />;
+                                case "upcoming": return <Calendar className="h-6 w-6 opacity-50" />;
+                                case "completed": return <CheckCircle className="h-6 w-6 opacity-50" />;
+                                case "all": return <Layers className="h-6 w-6 opacity-50" />;
+                                default: return <ClipboardList className="h-6 w-6 opacity-50" />;
+                            }
+                        })()}
+                    </div>
+                    <h3 className="font-semibold text-lg mb-1">
+                        {(() => {
+                            switch (filterType || viewId) {
+                                case "inbox": return "Your inbox is empty";
+                                case "today": return "No tasks for today";
+                                case "upcoming": return "No upcoming tasks";
+                                case "completed": return "No completed tasks yet";
+                                case "all": return "No tasks found";
+                                default: return "No tasks found";
+                            }
+                        })()}
+                    </h3>
+                    <p className="text-sm opacity-70">
+                        {(() => {
+                            switch (filterType || viewId) {
+                                case "inbox": return "Capture ideas and tasks here.";
+                                case "today": return "Time to relax or plan ahead.";
+                                case "upcoming": return "Your schedule is clear.";
+                                case "completed": return "Finish tasks to see them here.";
+                                case "all": return "Add a task to get started.";
+                                default: return "Add a task to get started.";
+                            }
+                        })()}
+                    </p>
                 </div>
             ) : settings.groupBy === "none" ? (
                 <div className="space-y-6">
