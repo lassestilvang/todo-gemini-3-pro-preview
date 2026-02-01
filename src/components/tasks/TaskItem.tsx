@@ -207,7 +207,7 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
         setSubtaskStates(prev => {
             const next = { ...prev };
             let changed = false;
-            for (const s of task.subtasks || []) {
+            for (const s of task.subtasks) {
                 if (next[s.id] !== (s.isCompleted || false)) {
                     next[s.id] = s.isCompleted || false;
                     changed = true;
