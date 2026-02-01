@@ -37,15 +37,15 @@ describe("Labels Security (IDOR)", () => {
       await getLabels(VICTIM_ID);
       // Should fail if security check is missing (meaning it returned data or empty array without error)
       expect(true).toBe(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Check for ForbiddenError by code or name/message to be robust across environments
       // In some CI environments, error.name might be generic "Error", so check message too
-      if (error.code) {
-        expect(error.code).toBe("FORBIDDEN");
-      } else if (error.name === "ForbiddenError") {
+      if (typeof error === 'object' && error !== null && 'code' in error) {
+        expect((error as { code: string }).code).toBe("FORBIDDEN");
+      } else if (error instanceof Error && error.name === "ForbiddenError") {
         expect(error.name).toBe("ForbiddenError");
-      } else {
-         expect(error.message).toContain("not authorized");
+      } else if (error instanceof Error) {
+        expect(error.message).toContain("not authorized");
       }
     }
   });
@@ -95,21 +95,25 @@ describe("Labels Security (IDOR)", () => {
 
   it("should prevent getting a specific label of another user", async () => {
     try {
-        await getLabel(999, VICTIM_ID);
-        expect(true).toBe(false);
-    } catch (error: any) {
-        expect(error.code).toBe("FORBIDDEN");
+      await getLabel(999, VICTIM_ID);
+      expect(true).toBe(false);
+    } catch (error: unknown) {
+      if (typeof error === 'object' && error !== null && 'code' in error) {
+        expect((error as { code: string }).code).toBe("FORBIDDEN");
+      } else {
+        throw error;
+      }
     }
   });
 
   it("should allow creating and getting labels for authorized user", async () => {
     // Use a fresh authorized user to avoid any cache/state overlap
     setMockAuthUser({
-        id: AUTHORIZED_ID,
-        email: "authorized@example.com",
-        firstName: "Authorized",
-        lastName: "User",
-        profilePictureUrl: null,
+      id: AUTHORIZED_ID,
+      email: "authorized@example.com",
+      firstName: "Authorized",
+      lastName: "User",
+      profilePictureUrl: null,
     });
 
     const result = await createLabel({

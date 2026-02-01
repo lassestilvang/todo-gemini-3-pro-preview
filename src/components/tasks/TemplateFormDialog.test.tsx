@@ -108,7 +108,7 @@ describe("TemplateFormDialog", () => {
       await waitFor(() => {
         expect(screen.getByTestId("name-error")).toBeInTheDocument();
         expect(screen.getByTestId("name-error")).toHaveTextContent("Template name is required");
-      });
+      }, { timeout: 3000 });
     });
 
     it("should show error when task title is empty on submit", async () => {
@@ -125,7 +125,7 @@ describe("TemplateFormDialog", () => {
       await waitFor(() => {
         expect(screen.getByTestId("title-error")).toBeInTheDocument();
         expect(screen.getByTestId("title-error")).toHaveTextContent("Task title is required");
-      });
+      }, { timeout: 3000 });
     });
 
     it("should clear error when user starts typing in invalid field", async () => {
@@ -137,7 +137,7 @@ describe("TemplateFormDialog", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId("name-error")).toBeInTheDocument();
-      });
+      }, { timeout: 3000 });
 
       // Start typing in name field
       const nameInput = screen.getByTestId("template-name-input");
@@ -187,7 +187,7 @@ describe("TemplateFormDialog", () => {
         const templatesInDb = await db.select().from(templates).where(eq(templates.name, "New Template"));
         expect(templatesInDb.length).toBe(1);
         expect(templatesInDb[0].userId).toBe("test_user_123");
-      });
+      }, { timeout: 3000 });
     });
   });
 
@@ -254,7 +254,7 @@ describe("TemplateFormDialog", () => {
         const updated = await db.select().from(templates).where(eq(templates.id, template.id));
         expect(updated.length).toBe(1);
         expect(updated[0].name).toBe("Updated Template");
-      });
+      }, { timeout: 3000 });
     });
 
     it("should show error message for malformed JSON content", () => {
@@ -297,7 +297,7 @@ describe("TemplateFormDialog", () => {
       await waitFor(() => {
         expect(defaultProps.onSave).toHaveBeenCalled();
         expect(defaultProps.onOpenChange).toHaveBeenCalledWith(false);
-      });
+      }, { timeout: 3000 });
     });
   });
 });

@@ -6,6 +6,12 @@ import { getMockAuthUser, clearMockAuthUser } from "./mocks";
 import React from "react";
 import { ForbiddenError, UnauthorizedError } from "@/lib/auth-errors";
 
+// Mock React cache
+mock.module("react", () => ({
+    ...React,
+    cache: mock((fn: unknown) => fn),
+}));
+
 // Register happy-dom for component testing
 GlobalRegistrator.register();
 
@@ -18,6 +24,42 @@ global.ResizeObserver = class ResizeObserver {
     unobserve() { }
     disconnect() { }
 };
+
+// Mock indexedDB for happy-dom/idb tests
+const mockIDBRequest = {
+    onerror: null,
+    onsuccess: null,
+    result: null,
+};
+
+const mockIDBDatabase = {
+    close: () => { },
+    transaction: () => ({
+        objectStore: () => ({
+            get: () => mockIDBRequest,
+            put: () => mockIDBRequest,
+            delete: () => mockIDBRequest,
+            clear: () => mockIDBRequest,
+            index: () => ({
+                get: () => mockIDBRequest,
+            }),
+        }),
+    }),
+};
+
+global.indexedDB = {
+    open: () => {
+        const request = { ...mockIDBRequest } as unknown as IDBOpenDBRequest;
+        setTimeout(() => {
+            if (request.onsuccess) {
+                const event = { target: { result: mockIDBDatabase } } as unknown as Event;
+                (request.onsuccess as (this: IDBOpenDBRequest, ev: Event) => unknown).call(request, event);
+            }
+        }, 0);
+        return request;
+    },
+    deleteDatabase: () => mockIDBRequest as unknown as IDBOpenDBRequest,
+} as unknown as IDBFactory;
 
 // Mock PointerEvent and Element pointer methods
 if (!global.PointerEvent) {
@@ -61,21 +103,21 @@ if (!global.PointerEvent) {
             this.pressure = props.pressure || 0;
         }
     }
-    (global as typeof globalThis & { PointerEvent: typeof MockPointerEvent }).PointerEvent = MockPointerEvent;
+    (global as unknown as { PointerEvent: unknown }).PointerEvent = MockPointerEvent;
 }
 
 if (!global.Element.prototype.setPointerCapture) {
-    global.Element.prototype.setPointerCapture = () => {};
+    global.Element.prototype.setPointerCapture = () => { };
 }
 if (!global.Element.prototype.releasePointerCapture) {
-    global.Element.prototype.releasePointerCapture = () => {};
+    global.Element.prototype.releasePointerCapture = () => { };
 }
 if (!global.Element.prototype.hasPointerCapture) {
     global.Element.prototype.hasPointerCapture = () => false;
 }
 // Mock scrollIntoView
 if (!global.Element.prototype.scrollIntoView) {
-    global.Element.prototype.scrollIntoView = () => {};
+    global.Element.prototype.scrollIntoView = () => { };
 }
 
 import { DEFAULT_MOCK_USER, setMockAuthUser } from "./mocks";
@@ -180,6 +222,13 @@ mock.module("next/navigation", () => ({
     redirect: mock(() => { }),
     permanentRedirect: mock(() => { }),
     notFound: mock(() => { }),
+}));
+
+// Mock next/cache
+mock.module("next/cache", () => ({
+    revalidatePath: mock(() => { }),
+    revalidateTag: mock(() => { }),
+    unstable_cache: mock((fn: unknown) => fn),
 }));
 
 // Mock next/dynamic
