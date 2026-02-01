@@ -81,17 +81,13 @@ export async function getTasks(
   }
 
   if (labelId) {
-    const taskIdsWithLabel = await db
+    // Perf: use a subquery for label filtering to eliminate one database roundtrip.
+    const taskIdsSubquery = db
       .select({ taskId: taskLabels.taskId })
       .from(taskLabels)
       .where(eq(taskLabels.labelId, labelId));
 
-    const ids = taskIdsWithLabel.map((t) => t.taskId);
-    if (ids.length > 0) {
-      conditions.push(inArray(tasks.id, ids));
-    } else {
-      return []; // No tasks with this label
-    }
+    conditions.push(inArray(tasks.id, taskIdsSubquery));
   }
 
   const now = new Date();
