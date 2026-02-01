@@ -11,12 +11,38 @@ mock.module("sonner", () => ({
   },
 }));
 
+// Mock actions to avoid DB dependencies and improve test stability
+const mockGetTemplates = mock(async () => [
+  {
+    id: 1,
+    userId: "test_user_123",
+    name: "Weekly Report",
+    content: JSON.stringify({ title: "Weekly Report Task", priority: "high" }),
+    createdAt: new Date("2024-01-15"),
+  },
+  {
+    id: 2,
+    userId: "test_user_123",
+    name: "Daily Standup",
+    content: JSON.stringify({ title: "Daily Standup Task", priority: "medium" }),
+    createdAt: new Date("2024-01-16"),
+  }
+]);
+
+const mockDeleteTemplate = mock(async () => { });
+const mockInstantiateTemplate = mock(async () => { });
+
+mock.module("@/lib/actions", () => ({
+  getTemplates: mockGetTemplates,
+  deleteTemplate: mockDeleteTemplate,
+  instantiateTemplate: mockInstantiateTemplate,
+  // Export other required actions as mocks or pass-through if needed
+  createTemplate: mock(async () => { }),
+  updateTemplate: mock(async () => { }),
+}));
+
 // Mock window.confirm
 const originalConfirm = globalThis.confirm;
-
-import { db, templates, users } from "@/db";
-import { setupTestDb, resetTestDb } from "@/test/setup";
-import { setMockAuthUser } from "@/test/mocks";
 
 // Mock PointerEvent methods for Radix UI
 if (!Element.prototype.setPointerCapture) {
@@ -31,45 +57,10 @@ if (!Element.prototype.hasPointerCapture) {
 
 describe("TemplateManager", () => {
   beforeEach(async () => {
-    await setupTestDb();
-    await resetTestDb();
-
-    // Set mock user to match the one expected by tests
-    setMockAuthUser({
-      id: "test_user_123",
-      email: "test@example.com",
-      firstName: "Test",
-      lastName: "User",
-      profilePictureUrl: null
-    });
-
     globalThis.confirm = mock(() => true);
-
-    // Create user first to satisfy FK constraint
-    await db.insert(users).values({
-      id: "test_user_123",
-      email: "test@example.com",
-      firstName: "Test",
-      lastName: "User",
-    });
-
-    // Seed templates
-    await db.insert(templates).values([
-      {
-        id: 1,
-        userId: "test_user_123",
-        name: "Weekly Report",
-        content: JSON.stringify({ title: "Weekly Report Task", priority: "high" }),
-        createdAt: new Date("2024-01-15"),
-      },
-      {
-        id: 2,
-        userId: "test_user_123",
-        name: "Daily Standup",
-        content: JSON.stringify({ title: "Daily Standup Task", priority: "medium" }),
-        createdAt: new Date("2024-01-16"),
-      }
-    ]);
+    mockGetTemplates.mockClear();
+    mockDeleteTemplate.mockClear();
+    mockInstantiateTemplate.mockClear();
   });
 
   afterEach(() => {
@@ -111,7 +102,7 @@ describe("TemplateManager", () => {
     }, 30000);
 
     it("should show empty state when no templates exist", async () => {
-      await db.delete(templates);
+      mockGetTemplates.mockResolvedValueOnce([]);
 
       render(<TemplateManager userId="test_user_123" />);
 
