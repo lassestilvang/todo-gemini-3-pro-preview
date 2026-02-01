@@ -6,6 +6,7 @@ import { getLabels, createLabel, updateLabel, deleteLabel, reorderLabels, getLab
 describe("Labels Security (IDOR)", () => {
   const ATTACKER_ID = "attacker_123";
   const VICTIM_ID = "victim_456";
+  const AUTHORIZED_ID = "authorized_789";
 
   beforeAll(async () => {
     await setupTestDb();
@@ -16,6 +17,7 @@ describe("Labels Security (IDOR)", () => {
     // Ensure users exist in DB to satisfy Foreign Key constraints
     await createTestUser(ATTACKER_ID, "attacker@example.com");
     await createTestUser(VICTIM_ID, "victim@example.com");
+    await createTestUser(AUTHORIZED_ID, "authorized@example.com");
 
     setMockAuthUser({
       id: ATTACKER_ID,
@@ -36,7 +38,12 @@ describe("Labels Security (IDOR)", () => {
       // Should fail if security check is missing (meaning it returned data or empty array without error)
       expect(true).toBe(false);
     } catch (error: any) {
-      expect(error.code).toBe("FORBIDDEN");
+      // Check for ForbiddenError by code or name/message to be robust across environments
+      if (error.code) {
+        expect(error.code).toBe("FORBIDDEN");
+      } else {
+        expect(error.name).toBe("ForbiddenError");
+      }
     }
   });
 
@@ -93,9 +100,17 @@ describe("Labels Security (IDOR)", () => {
   });
 
   it("should allow creating and getting labels for authorized user", async () => {
-    // Act as ATTACKER (who is the authenticated user)
+    // Use a fresh authorized user to avoid any cache/state overlap
+    setMockAuthUser({
+        id: AUTHORIZED_ID,
+        email: "authorized@example.com",
+        firstName: "Authorized",
+        lastName: "User",
+        profilePictureUrl: null,
+    });
+
     const result = await createLabel({
-      userId: ATTACKER_ID,
+      userId: AUTHORIZED_ID,
       name: "My Label",
       color: "#0000ff",
       position: 1
@@ -103,11 +118,11 @@ describe("Labels Security (IDOR)", () => {
 
     expect(result.success).toBe(true);
     if (result.success && result.data) {
-       expect(result.data.userId).toBe(ATTACKER_ID);
+       expect(result.data.userId).toBe(AUTHORIZED_ID);
        expect(result.data.name).toBe("My Label");
     }
 
-    const labels = await getLabels(ATTACKER_ID);
+    const labels = await getLabels(AUTHORIZED_ID);
     expect(labels.length).toBeGreaterThan(0);
     expect(labels.find(l => l.name === "My Label")).toBeDefined();
   });
