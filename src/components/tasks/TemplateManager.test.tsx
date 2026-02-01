@@ -14,8 +14,6 @@ mock.module("sonner", () => ({
 // Mock window.confirm
 const originalConfirm = globalThis.confirm;
 
-import { db, templates, users } from "@/db";
-import { setupTestDb, resetTestDb } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
 
 // Mock PointerEvent methods for Radix UI
@@ -29,11 +27,39 @@ if (!Element.prototype.hasPointerCapture) {
   Element.prototype.hasPointerCapture = () => false;
 }
 
+// Mock Actions
+const mockGetTemplates = mock(() => Promise.resolve([
+  {
+    id: 1,
+    name: "Weekly Report",
+    content: JSON.stringify({ title: "Weekly Report Task", priority: "high" }),
+    createdAt: new Date("2024-01-15"),
+    userId: "test_user_123"
+  },
+  {
+    id: 2,
+    name: "Daily Standup",
+    content: JSON.stringify({ title: "Daily Standup Task", priority: "medium" }),
+    createdAt: new Date("2024-01-16"),
+    userId: "test_user_123"
+  }
+]));
+
+const mockDeleteTemplate = mock(() => Promise.resolve({ success: true }));
+const mockInstantiateTemplate = mock(() => Promise.resolve({ success: true }));
+const mockUpdateTemplate = mock(() => Promise.resolve({ success: true }));
+const mockCreateTemplate = mock(() => Promise.resolve({ success: true }));
+
+mock.module("@/lib/actions", () => ({
+    getTemplates: mockGetTemplates,
+    deleteTemplate: mockDeleteTemplate,
+    instantiateTemplate: mockInstantiateTemplate,
+    updateTemplate: mockUpdateTemplate,
+    createTemplate: mockCreateTemplate
+}));
+
 describe("TemplateManager", () => {
   beforeEach(async () => {
-    await setupTestDb();
-    await resetTestDb();
-
     // Set mock user to match the one expected by tests
     setMockAuthUser({
       id: "test_user_123",
@@ -44,32 +70,9 @@ describe("TemplateManager", () => {
     });
 
     globalThis.confirm = mock(() => true);
-
-    // Create user first to satisfy FK constraint
-    await db.insert(users).values({
-      id: "test_user_123",
-      email: "test@example.com",
-      firstName: "Test",
-      lastName: "User",
-    });
-
-    // Seed templates
-    await db.insert(templates).values([
-      {
-        id: 1,
-        userId: "test_user_123",
-        name: "Weekly Report",
-        content: JSON.stringify({ title: "Weekly Report Task", priority: "high" }),
-        createdAt: new Date("2024-01-15"),
-      },
-      {
-        id: 2,
-        userId: "test_user_123",
-        name: "Daily Standup",
-        content: JSON.stringify({ title: "Daily Standup Task", priority: "medium" }),
-        createdAt: new Date("2024-01-16"),
-      }
-    ]);
+    mockGetTemplates.mockClear();
+    mockDeleteTemplate.mockClear();
+    mockInstantiateTemplate.mockClear();
   });
 
   afterEach(() => {
@@ -93,8 +96,8 @@ describe("TemplateManager", () => {
 
       await waitFor(() => {
         expect(screen.getByText("Task Templates")).toBeInTheDocument();
-      }, { timeout: 10000 });
-    }, 30000);
+      });
+    });
 
     it("should load and display templates when dialog opens", async () => {
       render(<TemplateManager userId="test_user_123" />);
@@ -104,14 +107,14 @@ describe("TemplateManager", () => {
       });
 
       await waitFor(() => {
-        // expect(mockGetTemplates).toHaveBeenCalledWith("test_user_123"); // Removed action spy
+        expect(mockGetTemplates).toHaveBeenCalledWith("test_user_123");
         expect(screen.getByText("Weekly Report")).toBeInTheDocument();
         expect(screen.getByText("Daily Standup")).toBeInTheDocument();
-      }, { timeout: 10000 });
-    }, 30000);
+      });
+    });
 
     it("should show empty state when no templates exist", async () => {
-      await db.delete(templates);
+      mockGetTemplates.mockResolvedValueOnce([]);
 
       render(<TemplateManager userId="test_user_123" />);
 
@@ -121,8 +124,8 @@ describe("TemplateManager", () => {
 
       await waitFor(() => {
         expect(screen.getByText("No templates found. Create one to get started.")).toBeInTheDocument();
-      }, { timeout: 10000 });
-    }, 30000);
+      });
+    });
   });
 
   describe("create dialog", () => {
@@ -136,7 +139,7 @@ describe("TemplateManager", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId("new-template-button")).toBeInTheDocument();
-      }, { timeout: 10000 });
+      });
 
       // Click New Template button
       await React.act(async () => {
@@ -147,8 +150,8 @@ describe("TemplateManager", () => {
         // Should show the TemplateFormDialog in create mode
         expect(screen.getByRole("heading", { name: "Create Template" })).toBeInTheDocument();
         expect(screen.getByTestId("template-name-input")).toBeInTheDocument();
-      }, { timeout: 10000 });
-    }, 30000);
+      });
+    });
 
     it("should show empty form fields in create mode", async () => {
       render(<TemplateManager userId="test_user_123" />);
@@ -160,7 +163,7 @@ describe("TemplateManager", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId("new-template-button")).toBeInTheDocument();
-      }, { timeout: 10000 });
+      });
 
       // Click New Template button
       await React.act(async () => {
@@ -172,8 +175,8 @@ describe("TemplateManager", () => {
         const titleInput = screen.getByTestId("task-title-input") as HTMLInputElement;
         expect(nameInput.value).toBe("");
         expect(titleInput.value).toBe("");
-      }, { timeout: 10000 });
-    }, 30000);
+      });
+    });
   });
 
   describe("edit dialog", () => {
@@ -187,8 +190,8 @@ describe("TemplateManager", () => {
       await waitFor(() => {
         expect(screen.getByTestId("edit-template-1")).toBeInTheDocument();
         expect(screen.getByTestId("edit-template-2")).toBeInTheDocument();
-      }, { timeout: 10000 });
-    }, 30000);
+      });
+    });
 
     it("should open edit dialog with template data when edit button is clicked", async () => {
       render(<TemplateManager userId="test_user_123" />);
@@ -200,21 +203,20 @@ describe("TemplateManager", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId("edit-template-1")).toBeInTheDocument();
-      }, { timeout: 10000 });
+      });
 
       // Click edit button for first template
       await React.act(async () => {
         fireEvent.click(screen.getByTestId("edit-template-1"));
       });
 
-      // Relaxed check for happy-dom which struggles with portals/visibility
       await waitFor(() => {
         // Check for the input directly as it's the critical part of the edit form
         const nameInput = screen.getByTestId("template-name-input") as HTMLInputElement;
         expect(nameInput).toBeInTheDocument();
         expect(nameInput.value).toBe("Weekly Report");
-      }, { timeout: 10000 });
-    }, 30000);
+      });
+    });
 
     it("should pre-populate task title from template content", async () => {
       render(<TemplateManager userId="test_user_123" />);
@@ -226,7 +228,7 @@ describe("TemplateManager", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId("edit-template-1")).toBeInTheDocument();
-      }, { timeout: 10000 });
+      });
 
       // Click edit button for first template
       await React.act(async () => {
@@ -236,8 +238,8 @@ describe("TemplateManager", () => {
       await waitFor(() => {
         const titleInput = screen.getByTestId("task-title-input") as HTMLInputElement;
         expect(titleInput.value).toBe("Weekly Report Task");
-      }, { timeout: 10000 });
-    }, 30000);
+      });
+    });
   });
 
   describe("template actions", () => {
@@ -251,8 +253,8 @@ describe("TemplateManager", () => {
       await waitFor(() => {
         expect(screen.getByTestId("use-template-1")).toBeInTheDocument();
         expect(screen.getByTestId("use-template-2")).toBeInTheDocument();
-      }, { timeout: 10000 });
-    }, 30000);
+      });
+    });
 
     it("should render delete button for each template", async () => {
       render(<TemplateManager userId="test_user_123" />);
@@ -264,8 +266,8 @@ describe("TemplateManager", () => {
       await waitFor(() => {
         expect(screen.getByTestId("delete-template-1")).toBeInTheDocument();
         expect(screen.getByTestId("delete-template-2")).toBeInTheDocument();
-      }, { timeout: 10000 });
-    }, 30000);
+      });
+    });
   });
 
   describe("without userId", () => {
@@ -277,6 +279,7 @@ describe("TemplateManager", () => {
       // Wait a bit to ensure no call is made
       await new Promise(resolve => setTimeout(resolve, 100));
 
+      expect(mockGetTemplates).not.toHaveBeenCalled();
       expect(screen.queryByText("Weekly Report")).not.toBeInTheDocument();
     });
   });
