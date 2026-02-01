@@ -1,6 +1,5 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
 import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
-import { TemplateManager } from "./TemplateManager";
 import React from "react";
 
 // Mock sonner toast
@@ -56,7 +55,14 @@ if (!Element.prototype.hasPointerCapture) {
 }
 
 describe("TemplateManager", () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let TemplateManager: any;
+
   beforeEach(async () => {
+    // Dynamic import to ensure mock is applied
+    const module = await import("./TemplateManager");
+    TemplateManager = module.TemplateManager;
+
     globalThis.confirm = mock(() => true);
     mockGetTemplates.mockClear();
     mockDeleteTemplate.mockClear();
@@ -95,7 +101,6 @@ describe("TemplateManager", () => {
       });
 
       await waitFor(() => {
-        // expect(mockGetTemplates).toHaveBeenCalledWith("test_user_123"); // Removed action spy
         expect(screen.getByText("Weekly Report")).toBeInTheDocument();
         expect(screen.getByText("Daily Standup")).toBeInTheDocument();
       }, { timeout: 10000 });
