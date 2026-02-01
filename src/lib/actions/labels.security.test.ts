@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, beforeAll } from "bun:test";
-import { setupTestDb, resetTestDb } from "@/test/setup";
+import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser, clearMockAuthUser } from "@/test/mocks";
 import { getLabels, createLabel, updateLabel, deleteLabel, reorderLabels, getLabel } from "./labels";
 
@@ -13,6 +13,10 @@ describe("Labels Security (IDOR)", () => {
 
   beforeEach(async () => {
     await resetTestDb();
+    // Ensure users exist in DB to satisfy Foreign Key constraints
+    await createTestUser(ATTACKER_ID, "attacker@example.com");
+    await createTestUser(VICTIM_ID, "victim@example.com");
+
     setMockAuthUser({
       id: ATTACKER_ID,
       email: "attacker@example.com",
