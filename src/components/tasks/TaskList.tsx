@@ -53,9 +53,13 @@ export function TaskList({ tasks, title, listId, labelId, defaultDueDate, userId
             ) : (
                 <div className="space-y-2">
                     {tasks.map((task) => (
-                        <div key={task.id}>
-                            <TaskItem task={task} showListInfo={!listId} onEdit={handleEdit} />
-                        </div>
+                        <TaskItem
+                            key={task.id}
+                            task={task}
+                            showListInfo={!listId}
+                            onEdit={handleEdit}
+                            userId={userId}
+                        />
                     ))}
                 </div>
             )}
