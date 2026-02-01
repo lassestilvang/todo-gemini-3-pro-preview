@@ -60,4 +60,7 @@
 
 ## 2026-02-01 - React.memo for Analytics Components
 **Learning:** Analytics components (AnalyticsCharts, CompletionHeatmap) render expensive chart visualizations with recharts. Without React.memo, these components re-render whenever the parent analytics page updates any state (filters, tabs, etc.), even when their data prop hasn't changed. Since these components already use useMemo for internal calculations, adding React.memo prevents the entire component tree from re-rendering unnecessarily.
-**Action:** Wrap expensive visualization components with React.memo when they receive stable data props and contain heavy rendering logic (charts, heatmaps, large lists). This is especially valuable for analytics/dashboard pages where multiple independent sections might trigger parent re-renders.
+
+## 2026-02-01 - Missing Composite Indexes
+**Learning:** High-traffic aggregation queries (e.g., "Daily Completed Task Count" for streaks) and default list views often lack covering indexes, leading to full table scans or expensive sort operations as data grows.
+**Action:** Identify the most frequent access patterns (aggregations, default sorts) and add specific composite indexes (e.g., `(userId, isCompleted, completedAt)` for stats) to enable Index Only Scans.
