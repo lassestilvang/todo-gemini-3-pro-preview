@@ -99,6 +99,19 @@ export const tasks = sqliteTable("tasks", {
     dueDateIdx: index("tasks_due_date_idx").on(table.dueDate),
     createdAtIdx: index("tasks_created_at_idx").on(table.createdAt),
     completedAtIdx: index("tasks_completed_at_idx").on(table.completedAt),
+    // Composite index for gamification stats (daily completed count)
+    gamificationStatsIdx: index("tasks_gamification_stats_idx").on(
+        table.userId,
+        table.isCompleted,
+        table.completedAt
+    ),
+    // Composite index for main list sorting/filtering
+    listViewIdx: index("tasks_list_view_idx").on(
+        table.userId,
+        table.listId,
+        table.isCompleted,
+        table.position
+    ),
 }));
 
 export const labels = sqliteTable("labels", {
