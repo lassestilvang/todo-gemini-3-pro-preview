@@ -26,11 +26,6 @@ mock.module("./ViewOptionsPopover", () => ({
     ViewOptionsPopover: () => <div>View Options</div>
 }));
 
-// Mock TaskDialog
-mock.module("./TaskDialog", () => ({
-    TaskDialog: () => <div>Task Dialog</div>
-}));
-
 // Mock actions
 mock.module("@/lib/actions/view-settings", () => ({
     getViewSettings: mock(() => Promise.resolve(null))
