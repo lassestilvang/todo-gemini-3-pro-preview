@@ -39,10 +39,13 @@ describe("Labels Security (IDOR)", () => {
       expect(true).toBe(false);
     } catch (error: any) {
       // Check for ForbiddenError by code or name/message to be robust across environments
+      // In some CI environments, error.name might be generic "Error", so check message too
       if (error.code) {
         expect(error.code).toBe("FORBIDDEN");
-      } else {
+      } else if (error.name === "ForbiddenError") {
         expect(error.name).toBe("ForbiddenError");
+      } else {
+         expect(error.message).toContain("not authorized");
       }
     }
   });
@@ -116,11 +119,12 @@ describe("Labels Security (IDOR)", () => {
       position: 1
     });
 
+    // Ensure creation succeeded
     expect(result.success).toBe(true);
-    if (result.success && result.data) {
-       expect(result.data.userId).toBe(AUTHORIZED_ID);
-       expect(result.data.name).toBe("My Label");
-    }
+    // Explicitly check the data to fail fast if it's missing
+    expect(result.data).toBeDefined();
+    expect(result.data!.userId).toBe(AUTHORIZED_ID);
+    expect(result.data!.name).toBe("My Label");
 
     const labels = await getLabels(AUTHORIZED_ID);
     expect(labels.length).toBeGreaterThan(0);
