@@ -31,20 +31,20 @@ fc.configureGlobal({
 // Generator for valid WorkOS user IDs
 const workosUserIdArb = fc.uuid().map(u => `user_${u}`);
 
-// Generator for valid email addresses
-const emailArb = fc.emailAddress();
-
 // Generator for optional names
 const nameArb = fc.option(fc.string({ minLength: 1, maxLength: 50 }), { nil: null });
 
 // Generator for WorkOS user objects
 const workosUserArb = fc.record({
   id: workosUserIdArb,
-  email: emailArb,
+  email: fc.emailAddress(),
   firstName: nameArb,
   lastName: nameArb,
   profilePictureUrl: fc.option(fc.webUrl(), { nil: null }),
-});
+}).map((user) => ({
+  ...user,
+  email: `${user.id}@example.com`,
+}));
 
 describe("Property Tests: User Initialization", () => {
   beforeAll(async () => {

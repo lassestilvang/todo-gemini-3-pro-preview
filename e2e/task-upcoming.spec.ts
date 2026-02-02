@@ -23,6 +23,7 @@ test.describe('Task Upcoming View Verification', () => {
         // Actually "in 2 weeks" is good for Upcoming.
         const uniqueId = Date.now();
         const taskTitle = `Buy Milk ${uniqueId} in 2 weeks`;
+        const expectedTitle = `Buy Milk ${uniqueId}`;
         await taskInput.fill(taskTitle);
         await taskInput.press('Enter');
 
@@ -36,7 +37,7 @@ test.describe('Task Upcoming View Verification', () => {
         await page.waitForLoadState('load');
 
         // Verify the task appears in the Upcoming list
-        const taskItem = page.getByTestId('task-item').filter({ hasText: `Buy Milk ${uniqueId}` });
+        const taskItem = page.getByTestId('task-item').filter({ hasText: expectedTitle });
         await expect(taskItem.first()).toBeVisible({ timeout: 10000 });
     });
 
