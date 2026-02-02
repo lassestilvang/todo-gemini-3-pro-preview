@@ -6,6 +6,8 @@
 "use server";
 
 import { db, tasks, lists, labels, taskLogs, eq, desc, sql, and, asc, gte, lte, or, type SQL } from "./shared";
+import { getCurrentUser, requireUser } from "@/lib/auth";
+import { UnauthorizedError } from "@/lib/auth-errors";
 
 /**
  * Retrieves all logs for a specific task.
@@ -14,10 +16,15 @@ import { db, tasks, lists, labels, taskLogs, eq, desc, sql, and, asc, gte, lte, 
  * @returns Array of task logs ordered by creation date (newest first)
  */
 export async function getTaskLogs(taskId: number) {
+  const user = await getCurrentUser();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
+
   return await db
     .select()
     .from(taskLogs)
-    .where(eq(taskLogs.taskId, taskId))
+    .where(and(eq(taskLogs.taskId, taskId), eq(taskLogs.userId, user.id)))
     .orderBy(desc(taskLogs.createdAt), desc(taskLogs.id));
 }
 
@@ -39,6 +46,8 @@ export async function getActivityLog(
     offset?: number;
   }
 ) {
+  await requireUser(userId);
+
   const whereConditions: SQL[] = [eq(taskLogs.userId, userId)];
 
   if (filters?.type && filters.type !== "all") {
@@ -92,6 +101,8 @@ export async function getActivityLog(
  * @returns Array of completion counts grouped by date
  */
 export async function getCompletionHistory(userId: string) {
+  await requireUser(userId);
+
   return await db
     .select({
       date: sql<string>`DATE(${taskLogs.createdAt})`.as("date"),

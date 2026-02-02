@@ -19,7 +19,7 @@
 **Prevention:** Audit all exported functions in `"use server"` files. Prefer keeping internal logic in separate files without `"use server"` or explicitly unexported.
 
 ## 2026-10-27 - [Critical] Unprotected View and Template Actions
-**Vulnerability:** `view-settings.ts` and `templates.ts` server actions accepted `userId` as an argument but failed to validate it against the authenticated session, allowing full IDOR (Read/Write/Delete) on other users' data.
+**Vulnerability:** `view-settings.ts` and `templates.ts` server actions accepted `userId` as an argument but failed to validate it against the session, allowing full IDOR (Read/Write/Delete) on other users' data.
 **Learning:** Checking ownership inside the query (e.g. `where userId = ?`) is insufficient if the query parameter itself is trusted input from the client.
 **Prevention:** All server actions accepting `userId` MUST call `await requireUser(userId)` as the first statement. Added regression tests in `src/test/integration/security-missing-auth.test.ts`.
 
@@ -32,3 +32,8 @@
 **Vulnerability:** `src/lib/actions/labels.ts` server actions accepted `userId` as an argument without validating it against the session, allowing attackers to manage other users' labels.
 **Learning:** CRUD operations on auxiliary resources (like labels/tags) are often overlooked for security checks compared to core resources (like tasks), but they are equally vulnerable to IDOR.
 **Prevention:** Audit all resources, including "minor" ones. Ensure every exported Server Action that takes a `userId` calls `requireUser(userId)` immediately.
+
+## 2026-02-06 - [High] IDOR in Log Retrieval
+**Vulnerability:** `getTaskLogs`, `getActivityLog`, and `getCompletionHistory` in `src/lib/actions/logs.ts` were missing authorization checks. `getTaskLogs` (taking only `taskId`) allowed viewing logs of any task by ID. `getActivityLog` and `getCompletionHistory` accepted `userId` without validation.
+**Learning:** Functions that retrieve history/logs are sensitive and prone to IDOR because they often lack the "natural" user ownership context that creation/update actions have.
+**Prevention:** Added `requireUser` checks. For `getTaskLogs(taskId)`, we must fetch the current user and filter the query by `userId` to implicitly verify ownership of the task/log.
