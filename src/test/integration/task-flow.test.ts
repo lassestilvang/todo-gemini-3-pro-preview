@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
-import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
+import { setupTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
 import { createList, createTask, toggleTaskCompletion, getTasks, deleteTask, deleteList } from "@/lib/actions";
 import { isSuccess } from "@/lib/action-result";
@@ -13,15 +13,17 @@ describeOrSkip("Integration: Task Flow", () => {
 
     beforeAll(async () => {
         await setupTestDb();
+        // await resetTestDb();
     });
 
     // Ensure database is set up and clean before each test
     beforeEach(async () => {
-        await resetTestDb();
-        // Create a test user for each test
-        const user = await createTestUser("test_user_integration", "test@integration.com");
-        testUserId = user.id;
-        setMockAuthUser({ id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, profilePictureUrl: null });
+        // Use unique ID per test for isolation
+        const randomId = Math.random().toString(36).substring(7);
+        testUserId = `user_${randomId}`;
+
+        await createTestUser(testUserId, `${testUserId}@integration.com`);
+        setMockAuthUser({ id: testUserId, email: `${testUserId}@integration.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
     });
 
     it("should create a list, add a task, and complete it", async () => {

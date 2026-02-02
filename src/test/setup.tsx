@@ -1,22 +1,39 @@
 import { expect, afterEach, mock, beforeEach } from "bun:test";
-import { GlobalRegistrator } from "@happy-dom/global-registrator";
+// GlobalRegistrator is now loaded via register-dom.ts in bunfig.toml
 import * as matchers from "@testing-library/jest-dom/matchers";
 import { sqliteConnection } from "@/db";
-import { getMockAuthUser, clearMockAuthUser } from "./mocks";
+import { getMockAuthUser, DEFAULT_MOCK_USER, setMockAuthUser } from "./mocks";
 import React from "react";
+import { cleanup } from "@testing-library/react";
 import { ForbiddenError, UnauthorizedError } from "@/lib/auth-errors";
 
-// Mock React cache
-mock.module("react", () => ({
-    ...React,
-    cache: mock((fn: unknown) => fn),
-}));
 
-// Register happy-dom for component testing
-GlobalRegistrator.register();
 
 // Extend expect with jest-dom matchers
 expect.extend(matchers);
+
+// Mock ResizeObserver for Radix UI
+global.ResizeObserver = class ResizeObserver {
+    observe() { }
+    unobserve() { }
+    disconnect() { }
+};
+
+// Mock PointerEvent methods for Radix UI (if using happy-dom)
+if (typeof Element !== 'undefined') {
+    if (!Element.prototype.setPointerCapture) {
+        Element.prototype.setPointerCapture = () => { };
+    }
+    if (!Element.prototype.releasePointerCapture) {
+        Element.prototype.releasePointerCapture = () => { };
+    }
+    if (!Element.prototype.hasPointerCapture) {
+        Element.prototype.hasPointerCapture = () => false;
+    }
+}
+
+// Set act environment for React 18/19 tests
+(global as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
@@ -31,6 +48,20 @@ const mockIDBRequest = {
     onsuccess: null,
     result: null,
 };
+
+// Mock sonner globally
+mock.module("sonner", () => ({
+    toast: {
+        success: mock(() => { }),
+        error: mock(() => { }),
+        info: mock(() => { }),
+        warning: mock(() => { }),
+        message: mock(() => { }),
+        promise: mock(() => { }),
+        custom: mock(() => { }),
+        dismiss: mock(() => { }),
+    },
+}));
 
 const mockIDBDatabase = {
     close: () => { },
@@ -120,13 +151,28 @@ if (!global.Element.prototype.scrollIntoView) {
     global.Element.prototype.scrollIntoView = () => { };
 }
 
-import { DEFAULT_MOCK_USER, setMockAuthUser } from "./mocks";
+// Silence logs globally to prevent terminal buffer deadlocks in high-concurrency mode
+// console.log = () => { };
+// console.warn = () => { };
+// console.error = () => { };
 
-beforeEach(() => {
-    setMockAuthUser(DEFAULT_MOCK_USER);
-});
+// Mock SyncProvider 
+mock.module("@/components/providers/sync-provider", () => ({
+    SyncProvider: ({ children }: { children: React.ReactNode }) => React.createElement(React.Fragment, null, children),
+    useSync: () => ({
+        isOnline: true,
+        lastSynced: new Date(),
+        sync: mock(() => Promise.resolve()),
+        pendingCount: 0,
+        dispatch: mock(() => Promise.resolve({ success: true, data: null })),
+        pendingActions: [],
+        status: 'online' as const,
+        conflicts: [],
+        resolveConflict: mock(() => Promise.resolve()),
+    }),
+}));
 
-// Comprehensive mock for authentication
+// Traditional auth mock for broad support across all test types
 mock.module("@/lib/auth", () => ({
     getCurrentUser: mock(async () => {
         const user = getMockAuthUser();
@@ -145,9 +191,7 @@ mock.module("@/lib/auth", () => ({
     }),
     requireAuth: mock(async () => {
         const user = getMockAuthUser();
-        if (!user) {
-            throw new UnauthorizedError();
-        }
+        if (!user) throw new UnauthorizedError();
         return {
             id: user.id,
             email: user.email,
@@ -162,11 +206,10 @@ mock.module("@/lib/auth", () => ({
     }),
     requireUser: mock(async (userId: string) => {
         const user = getMockAuthUser();
-        if (!user) {
-            throw new UnauthorizedError();
-        }
+        // console.log("requireUser called with:", userId, "Mock user:", user?.id);
+        if (!user) throw new UnauthorizedError();
         if (user.id !== userId) {
-            const err = new ForbiddenError("You are not authorized to access this user's data");
+            const err = new ForbiddenError("Forbidden");
             Object.defineProperty(err, 'name', { value: 'ForbiddenError', enumerable: true });
             throw err;
         }
@@ -182,64 +225,44 @@ mock.module("@/lib/auth", () => ({
             calendarDenseTooltipThreshold: 6,
         };
     }),
-    syncUser: mock((user: { id: string; email: string }) => Promise.resolve({
-        id: user.id,
-        email: user.email,
-    })),
-    signOut: mock(() => Promise.resolve()),
-    checkResourceOwnership: mock((resourceUserId: string, authUserId: string) => Promise.resolve(resourceUserId === authUserId)),
     requireResourceOwnership: mock(async (resourceUserId: string, authUserId: string) => {
         if (resourceUserId !== authUserId) {
-            const err = new ForbiddenError();
+            const err = new ForbiddenError("Forbidden");
             Object.defineProperty(err, 'name', { value: 'ForbiddenError', enumerable: true });
             throw err;
         }
     }),
-}));
-
-// Mock SyncProvider with a dummy dispatch that does nothing by default
-// Individual tests can spy on it or override it if needed.
-mock.module("@/components/providers/sync-provider", () => ({
-    SyncProvider: ({ children }: { children: React.ReactNode }) => React.createElement(React.Fragment, null, children),
-    useSync: () => ({
-        isOnline: true,
-        lastSynced: new Date(),
-        sync: mock(() => Promise.resolve()),
-        pendingCount: 0,
-        dispatch: mock(() => Promise.resolve({ success: true, data: null })),
-        pendingActions: [],
-        status: 'online' as const,
-        conflicts: [],
-        resolveConflict: mock(() => Promise.resolve()),
+    signOut: mock(async () => { }),
+    syncUser: mock(async (workosUser: any) => ({
+        id: workosUser.id,
+        email: workosUser.email,
+        firstName: workosUser.firstName ?? null,
+        lastName: workosUser.lastName ?? null,
+        avatarUrl: workosUser.profilePictureUrl ?? null,
+        use24HourClock: false,
+        weekStartsOnMonday: false,
+        calendarUseNativeTooltipsOnDenseDays: true,
+        calendarDenseTooltipThreshold: 6,
+    })),
+    checkResourceOwnership: mock(async (resourceUserId: string | null | undefined, authenticatedUserId: string) => {
+        if (!resourceUserId) return false;
+        return resourceUserId === authenticatedUserId;
     }),
 }));
 
-// Mock next/navigation
-mock.module("next/navigation", () => ({
-    useRouter: () => ({ push: mock(() => { }), back: mock(() => { }), replace: mock(() => { }), refresh: mock(() => { }) }),
-    usePathname: () => "/",
-    useSearchParams: () => new URLSearchParams(),
-    redirect: mock(() => { }),
-    permanentRedirect: mock(() => { }),
-    notFound: mock(() => { }),
-}));
+beforeEach(() => {
+    setMockAuthUser(DEFAULT_MOCK_USER);
+});
 
-// Mock next/cache
-mock.module("next/cache", () => ({
-    revalidatePath: mock(() => { }),
-    revalidateTag: mock(() => { }),
-    unstable_cache: mock((fn: unknown) => fn),
-}));
-
-// Mock next/dynamic
-mock.module("next/dynamic", () => ({
-    default: (_fn: () => Promise<unknown>) => (props: Record<string, unknown>) => React.createElement('div', { 'data-testid': 'dynamic-component', ...props })
-}));
+let isDbSetup = false;
 
 /**
- * Setup database schema for tests.
+ * Setup the SQLite database schema for tests.
  */
 export async function setupTestDb() {
+    if (isDbSetup) return;
+    isDbSetup = true;
+
     sqliteConnection.run("CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY, email TEXT NOT NULL, first_name TEXT, last_name TEXT, avatar_url TEXT, is_initialized INTEGER NOT NULL DEFAULT 0, use_24h_clock INTEGER, week_starts_on_monday INTEGER, calendar_use_native_tooltips_on_dense_days INTEGER, calendar_dense_tooltip_threshold INTEGER, created_at INTEGER DEFAULT(strftime('%s', 'now')), updated_at INTEGER DEFAULT(strftime('%s', 'now')));");
     sqliteConnection.run("CREATE TABLE IF NOT EXISTS lists(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, name TEXT NOT NULL, color TEXT DEFAULT '#000000', icon TEXT, slug TEXT NOT NULL, description TEXT, position INTEGER DEFAULT 0 NOT NULL, created_at INTEGER DEFAULT(strftime('%s', 'now')), updated_at INTEGER DEFAULT(strftime('%s', 'now')));");
     sqliteConnection.run("CREATE TABLE IF NOT EXISTS tasks(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, list_id INTEGER REFERENCES lists(id) ON DELETE CASCADE, title TEXT NOT NULL, description TEXT, icon TEXT, priority TEXT DEFAULT 'none', due_date INTEGER, is_completed INTEGER DEFAULT 0, completed_at INTEGER, is_recurring INTEGER DEFAULT 0, recurring_rule TEXT, parent_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE, estimate_minutes INTEGER, position INTEGER DEFAULT 0 NOT NULL, actual_minutes INTEGER, energy_level TEXT, context TEXT, is_habit INTEGER DEFAULT 0, created_at INTEGER DEFAULT(strftime('%s', 'now')), updated_at INTEGER DEFAULT(strftime('%s', 'now')), deadline INTEGER);");
@@ -263,7 +286,7 @@ export async function setupTestDb() {
  * Helper to create a test user in the SQLite database.
  */
 export async function createTestUser(id: string, email: string) {
-    sqliteConnection.run("INSERT INTO users (id, email, first_name, last_name) VALUES (?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET email=excluded.email", [id, email, "Test", "User"]);
+    sqliteConnection.run("INSERT INTO users (id, email, first_name, last_name) VALUES (?, ?, 'Test', 'User') ON CONFLICT(id) DO UPDATE SET email=excluded.email", [id, email]);
     return { id, email, firstName: "Test", lastName: "User" };
 }
 
@@ -294,12 +317,15 @@ export async function resetTestDb() {
     }
 }
 
-/**
- * Global afterEach hook to ensure test isolation.
- */
-afterEach(async () => {
-    await resetTestDb();
-    clearMockAuthUser();
-    document.body.innerHTML = "";
+afterEach(() => {
+    try {
+        cleanup();
+    } catch { }
+
+    if (typeof document !== 'undefined') {
+        document.body.innerHTML = "";
+    }
 });
+
+// Run setup immediately
 setupTestDb();

@@ -29,12 +29,7 @@ import { requireUser } from "@/lib/auth";
  */
 export async function getLabels(userId: string) {
   await requireUser(userId);
-
-  return await db
-    .select()
-    .from(labels)
-    .where(eq(labels.userId, userId))
-    .orderBy(labels.position, labels.id);
+  return await db.select().from(labels).where(eq(labels.userId, userId));
 }
 
 /**

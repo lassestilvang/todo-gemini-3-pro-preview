@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
-import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
+import { setupTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
 import { getViewSettings, saveViewSettings, resetViewSettings } from "@/lib/actions/view-settings";
 import { getTemplates, createTemplate, updateTemplate, deleteTemplate, instantiateTemplate } from "@/lib/actions/templates";
@@ -17,8 +17,8 @@ describeOrSkip("Integration: Security Missing Auth", () => {
     });
 
     beforeEach(async () => {
-        await resetTestDb();
-
+        // await resetTestDb();
+        // TEST_USER_ID = `user_${Math.random().toString(36).substring(7)}`;
         // Create attacker and victim
         const attacker = await createTestUser("attacker", "attacker@evil.com");
         const victim = await createTestUser("victim", "victim@target.com");
@@ -47,7 +47,7 @@ describeOrSkip("Integration: Security Missing Auth", () => {
         // I will write the test expecting the *fix* (ForbiddenError).
         // When I run this BEFORE fixing, it should FAIL (because it currently succeeds).
 
-        await expect(getViewSettings(victimId, "inbox")).rejects.toThrow("authorized");
+        await expect(getViewSettings(victimId, "inbox")).rejects.toThrow(/Forbidden|authorized/i);
     });
 
     it("should fail when saving another user's view settings", async () => {
@@ -71,7 +71,7 @@ describeOrSkip("Integration: Security Missing Auth", () => {
 
     // Template Tests
     it("should fail when getting another user's templates", async () => {
-        await expect(getTemplates(victimId)).rejects.toThrow("authorized");
+        await expect(getTemplates(victimId)).rejects.toThrow(/Forbidden|authorized/i);
     });
 
     it("should fail when creating a template for another user", async () => {

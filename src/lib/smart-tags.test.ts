@@ -1,4 +1,4 @@
-import { describe, it, expect, mock, beforeEach } from "bun:test";
+import { describe, it, expect, mock, beforeEach, afterEach, beforeAll } from "bun:test";
 import { suggestMetadata } from "./smart-tags";
 
 // Mock gemini client
@@ -16,15 +16,24 @@ const mockGetGeminiClient = mock(() => ({
     getGenerativeModel: mockGetGenerativeModel
 }));
 
-mock.module("@/lib/gemini", () => ({
-    getGeminiClient: mockGetGeminiClient,
-    GEMINI_MODEL: "gemini-pro"
-}));
-
 describe("Smart Tags", () => {
+    const originalError = console.error;
+
+    beforeAll(() => {
+        mock.module("@/lib/gemini", () => ({
+            getGeminiClient: mockGetGeminiClient,
+            GEMINI_MODEL: "gemini-pro"
+        }));
+    });
+
     beforeEach(() => {
         mockGenerateContent.mockClear();
         mockGetGeminiClient.mockClear();
+        console.error = mock(() => { });
+    });
+
+    afterEach(() => {
+        console.error = originalError;
     });
 
     it("should return suggestions from Gemini", async () => {

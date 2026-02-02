@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "bun:test";
+import { describe, it, expect, beforeEach, afterEach, beforeAll } from "bun:test";
 import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 import { ManageListDialog } from "./ManageListDialog";
 import React from "react";
@@ -6,17 +6,22 @@ import React from "react";
 // Mock actions
 import { db, lists as listsTable } from "@/db";
 import { eq } from "drizzle-orm";
-import { setupTestDb, resetTestDb } from "@/test/setup";
+import { setupTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
 
 describe("ManageListDialog", () => {
-    beforeEach(async () => {
+    let TEST_USER_ID: string;
+
+    beforeAll(async () => {
         await setupTestDb();
-        await resetTestDb();
-        // Seed user to satisfy FK and for action logic
-        const { users } = await import("@/db");
-        await db.insert(users).values({ id: "test_user_123", email: "test@example.com", isInitialized: true });
-        setMockAuthUser({ id: "test_user_123", email: "test@example.com", firstName: "Test", lastName: "User", profilePictureUrl: null });
+    });
+
+    beforeEach(async () => {
+        // await resetTestDb();
+        // Unique ID per test for isolation
+        TEST_USER_ID = `user_${Math.random().toString(36).substring(7)}`;
+        await createTestUser(TEST_USER_ID, `${TEST_USER_ID}@example.com`);
+        setMockAuthUser({ id: TEST_USER_ID, email: `${TEST_USER_ID}@example.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
     });
 
     afterEach(() => {
@@ -25,12 +30,12 @@ describe("ManageListDialog", () => {
     });
 
     it("should render trigger button", async () => {
-        render(<ManageListDialog trigger={<button>Manage Lists</button>} authUserId="test_user_123" />);
+        render(<ManageListDialog trigger={<button>Manage Lists</button>} userId={TEST_USER_ID} />);
         expect(screen.getByText("Manage Lists")).toBeInTheDocument();
     });
 
     it("should open dialog and show form", async () => {
-        render(<ManageListDialog trigger={<button>Manage Lists</button>} authUserId="test_user_123" />);
+        render(<ManageListDialog trigger={<button>Manage Lists</button>} userId={TEST_USER_ID} />);
         fireEvent.click(screen.getByText("Manage Lists"));
 
         expect(await screen.findByText("New List")).toBeInTheDocument();
@@ -38,7 +43,7 @@ describe("ManageListDialog", () => {
     });
 
     it("should create a new list", async () => {
-        render(<ManageListDialog trigger={<button>Manage Lists</button>} authUserId="test_user_123" />);
+        render(<ManageListDialog trigger={<button>Manage Lists</button>} userId={TEST_USER_ID} />);
         fireEvent.click(screen.getByText("Manage Lists"));
 
         const nameInput = await screen.findByPlaceholderText("List Name");
@@ -48,10 +53,11 @@ describe("ManageListDialog", () => {
         expect(form).not.toBeNull();
         fireEvent.submit(form!);
 
+        // Wait for list to appear in DB or verify action completed successfully
         await waitFor(async () => {
             const list = await db.select().from(listsTable).where(eq(listsTable.name, "New List"));
             expect(list.length).toBe(1);
-            expect(list[0].userId).toBe("test_user_123");
-        }, { timeout: 3000 });
+            expect(list[0].userId).toBe(TEST_USER_ID);
+        });
     });
 });

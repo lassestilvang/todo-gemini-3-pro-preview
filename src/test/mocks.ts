@@ -4,6 +4,13 @@
  * before any modules that depend on them are loaded.
  */
 import { mock } from "bun:test";
+import React from "react";
+
+// Mock react cache to prevent state leakage across tests in the same worker
+mock.module("react", () => ({
+    ...React,
+    cache: (fn: any) => fn,
+}));
 
 // Mock next/navigation globally - must be before any component imports
 mock.module("next/navigation", () => ({
@@ -27,6 +34,16 @@ mock.module("next/cache", () => ({
     revalidatePath: () => { },
     revalidateTag: () => { },
     unstable_cache: (fn: unknown) => fn,
+}));
+
+// Mock next/headers globally
+mock.module("next/headers", () => ({
+    cookies: mock(async () => ({
+        get: () => undefined,
+        set: () => { },
+        delete: () => { },
+    })),
+    headers: mock(async () => new Map()),
 }));
 
 // Mock gemini client globally to prevent AI calls during tests
@@ -78,24 +95,38 @@ export const mockDb: {
             execute: () => Promise.resolve([]),
         }),
     }),
-    insert: (_table: unknown) => ({  
+    insert: (_table: unknown) => ({
         values: (data: unknown) => ({
             returning: () => Promise.resolve([Object.assign({}, data, { id: Math.random().toString(36).substring(7) })]),
         }),
     }),
-    update: (_table: unknown) => ({  
+    update: (_table: unknown) => ({
         set: (data: unknown) => ({
-            where: (_condition: unknown) => Promise.resolve([Object.assign({}, data, { id: "mock-id" })]),  
+            where: (_condition: unknown) => Promise.resolve([Object.assign({}, data, { id: "mock-id" })]),
         }),
     }),
-    delete: (_table: unknown) => ({  
-        where: (_condition: unknown) => Promise.resolve({ deleted: true }),  
+    delete: (_table: unknown) => ({
+        where: (_condition: unknown) => Promise.resolve({ deleted: true }),
     }),
 };
 
-// Use globalThis to ensure the mock state is shared across module boundaries
-const mockState = globalThis as unknown as { __mockAuthUser: MockAuthUser | null | typeof DEFAULT_MOCK_USER };
+import { AsyncLocalStorage } from "node:async_hooks";
+
+// Storage for mock auth user to ensure thread-safety in parallel tests
+const authStorage = new AsyncLocalStorage<MockAuthUser | null>();
+
+// Use globalThis to ensure the mock state is shared across module boundaries as a fallback
+const mockState = globalThis as unknown as { __mockAuthUser: MockAuthUser | null };
 mockState.__mockAuthUser = DEFAULT_MOCK_USER;
+
+/**
+ * Runs a function within a specific authentication context.
+ * This is the preferred way to set a mock user for a specific test block.
+ * When in an auth context, getMockAuthUser will prioritize this user.
+ */
+export function runInAuthContext<T>(user: MockAuthUser | null, fn: () => T): T {
+    return authStorage.run(user, fn);
+}
 
 export function setMockAuthUser(user: MockAuthUser | null) {
     mockState.__mockAuthUser = user;
@@ -105,8 +136,18 @@ export function clearMockAuthUser() {
     mockState.__mockAuthUser = null;
 }
 
+export function resetMockAuthUser() {
+    mockState.__mockAuthUser = DEFAULT_MOCK_USER;
+}
+
 export function getMockAuthUser(): MockAuthUser | null {
-    return mockState.__mockAuthUser as MockAuthUser | null;
+    const contextUser = authStorage.getStore();
+    // Prioritize AsyncLocalStorage context if we are inside a runInAuthContext call
+    if (contextUser !== undefined) {
+        return contextUser;
+    }
+    // Fallback to global state for tests not using runInAuthContext
+    return mockState.__mockAuthUser;
 }
 
 mock.module("@workos-inc/authkit-nextjs", () => ({

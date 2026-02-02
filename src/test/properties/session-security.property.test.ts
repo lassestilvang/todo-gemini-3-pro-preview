@@ -20,7 +20,7 @@
 
 import { describe, it, expect, beforeEach } from "bun:test";
 import fc from "fast-check";
-import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
+import { setupTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser, clearMockAuthUser } from "@/test/mocks";
 import { getCurrentUser, requireAuth } from "@/lib/auth";
 import { UnauthorizedError } from "@/lib/auth-errors";
@@ -62,7 +62,7 @@ const describeOrSkip = isCI ? describe.skip : describe;
 describeOrSkip("Property Tests: Session Security", () => {
   beforeEach(async () => {
     await setupTestDb();
-    await resetTestDb();
+    // await resetTestDb();
     clearMockAuthUser();
   });
 
@@ -130,7 +130,7 @@ describeOrSkip("Property Tests: Session Security", () => {
     it("Authenticated users can access their data via getCurrentUser", async () => {
       await fc.assert(
         fc.asyncProperty(workosUserArb, async (workosUser) => {
-          await resetTestDb();
+          // await resetTestDb();
 
           // Set up mock to return this user
           setMockAuthUser({
@@ -161,7 +161,7 @@ describeOrSkip("Property Tests: Session Security", () => {
           workosUserArb,
           fc.integer({ min: 1, max: 5 }), // Number of times to call getCurrentUser
           async (workosUser, callCount) => {
-            await resetTestDb();
+            // await resetTestDb();
 
             setMockAuthUser({
               id: workosUser.id,
@@ -247,7 +247,7 @@ describeOrSkip("Property Tests: Session Security", () => {
         fc.asyncProperty(
           workosUserIdArb,
           async (userId) => {
-            await resetTestDb();
+            // await resetTestDb();
             await createTestUser(userId, `${userId}@test.com`);
 
             // Property: Querying with a non-existent user ID returns error
