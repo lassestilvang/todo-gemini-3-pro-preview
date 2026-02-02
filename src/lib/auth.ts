@@ -48,8 +48,8 @@ async function getTestUser(): Promise<AuthUser | null> {
         };
       }
     }
-  } catch {
-    // Invalid session - return null
+  } catch (e) {
+    console.error('[Auth] Error parsing test session:', e);
   }
 
   return null;
