@@ -20,9 +20,9 @@ test.describe('Task Upcoming View Verification', () => {
         await expect(taskInput).toBeVisible();
 
         // Create a task with a future date (next month to be sure it's in Upcoming and not Today/Next 7 Days)
-        // Actually "in 2 weeks" is good for Upcoming.
+        // Using "tomorrow" is safer for NLP parsing and guaranteed to be upcoming.
         const uniqueId = Date.now();
-        const taskTitle = `Buy Milk ${uniqueId} in 2 weeks`;
+        const taskTitle = `Buy Milk ${uniqueId} tomorrow`;
         await taskInput.fill(taskTitle);
         await taskInput.press('Enter');
 

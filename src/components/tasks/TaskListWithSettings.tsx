@@ -722,16 +722,16 @@ export function TaskListWithSettings({
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/20 mb-4">
                         {(() => {
                             switch (filterType || viewId) {
-                                case "inbox": return <Inbox className="h-6 w-6 opacity-50" />;
-                                case "today": return <Calendar className="h-6 w-6 opacity-50" />;
-                                case "upcoming": return <Calendar className="h-6 w-6 opacity-50" />;
-                                case "completed": return <CheckCircle className="h-6 w-6 opacity-50" />;
-                                case "all": return <Layers className="h-6 w-6 opacity-50" />;
-                                default: return <ClipboardList className="h-6 w-6 opacity-50" />;
+                                case "inbox": return <Inbox className="h-6 w-6 text-muted-foreground" />;
+                                case "today": return <Calendar className="h-6 w-6 text-muted-foreground" />;
+                                case "upcoming": return <Calendar className="h-6 w-6 text-muted-foreground" />;
+                                case "completed": return <CheckCircle className="h-6 w-6 text-muted-foreground" />;
+                                case "all": return <Layers className="h-6 w-6 text-muted-foreground" />;
+                                default: return <ClipboardList className="h-6 w-6 text-muted-foreground" />;
                             }
                         })()}
                     </div>
-                    <h3 className="font-semibold text-lg mb-1">
+                    <h2 className="font-semibold text-lg mb-1">
                         {(() => {
                             switch (filterType || viewId) {
                                 case "inbox": return "Your inbox is empty";
@@ -742,8 +742,8 @@ export function TaskListWithSettings({
                                 default: return "No tasks found";
                             }
                         })()}
-                    </h3>
-                    <p className="text-sm opacity-70">
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
                         {(() => {
                             switch (filterType || viewId) {
                                 case "inbox": return "Capture ideas and tasks here.";

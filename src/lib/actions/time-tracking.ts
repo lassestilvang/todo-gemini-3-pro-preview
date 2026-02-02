@@ -44,6 +44,17 @@ export async function startTimeEntry(
         await requireUser(userId);
         await rateLimit(`${userId}:time-tracking`, 20, 60);
 
+        // Ensure task belongs to user
+        const [task] = await db
+            .select()
+            .from(tasks)
+            .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)))
+            .limit(1);
+
+        if (!task) {
+            throw new NotFoundError("Task not found");
+        }
+
         // Check if there's already an active entry for this task
         const existingActive = await db
             .select()
@@ -234,6 +245,17 @@ export async function createManualTimeEntry(
     return withErrorHandling(async () => {
         await requireUser(userId);
         await rateLimit(`${userId}:time-tracking`, 20, 60);
+
+        // Ensure task belongs to user
+        const [task] = await db
+            .select()
+            .from(tasks)
+            .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)))
+            .limit(1);
+
+        if (!task) {
+            throw new NotFoundError("Task not found");
+        }
 
         const startedAt = date || new Date();
         const endedAt = new Date(startedAt.getTime() + durationMinutes * 60000);

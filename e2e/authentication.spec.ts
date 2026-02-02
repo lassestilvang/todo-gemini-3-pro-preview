@@ -120,7 +120,7 @@ test.describe('Authentication Flow', () => {
       expect(await isOnLoginPage(page)).toBe(false);
 
       // Should see the inbox page content (use heading to be specific)
-      await expect(page.getByRole('heading', { name: 'Inbox' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Inbox', exact: true })).toBeVisible();
     });
 
     test('should allow access to protected routes after authentication', async ({ authenticatedPage: page }) => {
