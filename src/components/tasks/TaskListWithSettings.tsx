@@ -158,8 +158,8 @@ function groupTasks(tasks: Task[], groupBy: ViewSettings["groupBy"]): Map<string
             case "dueDate":
                 if (task.dueDate) {
                     // Perf: avoid date-fns format per task; build ISO date key directly.
-                    // This removes repeated formatting calls while preserving sorting behavior.
-                    const date = new Date(task.dueDate);
+                    // Also reuse Date instances when already hydrated to skip extra allocations.
+                    const date = task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate);
                     const year = date.getFullYear();
                     const month = String(date.getMonth() + 1).padStart(2, "0");
                     const day = String(date.getDate()).padStart(2, "0");
@@ -493,7 +493,13 @@ export function TaskListWithSettings({
 
     // Group tasks
     const groupedTasks = useMemo(() => {
-        const tasksToGroup = settings.groupBy === "none" ? activeTasks : processedTasks;
+        if (settings.groupBy === "none") {
+            // Perf: skip building group maps when grouping is disabled.
+            // This avoids O(n) grouping work on every render for the common default list view.
+            return new Map<string, Task[]>();
+        }
+
+        const tasksToGroup = processedTasks;
         const groups = groupTasks(tasksToGroup, settings.groupBy);
 
         // Sort groups by date if grouping by dueDate
@@ -529,7 +535,7 @@ export function TaskListWithSettings({
         }
 
         return groups;
-    }, [activeTasks, processedTasks, settings.groupBy]);
+    }, [processedTasks, settings.groupBy]);
 
     const formattedGroupNames = useMemo(() => {
         // Perf: cache formatted group labels to avoid re-parsing dates per render.
@@ -559,11 +565,15 @@ export function TaskListWithSettings({
     }, [groupedTasks, settings.groupBy]);
 
     const groupedEntries = useMemo(() => {
+        // Perf: avoid building grouped arrays when grouping is disabled.
+        if (settings.groupBy === "none") return [] as Array<[string, Task[]]>;
+
         // Perf: memoize grouped entries array to avoid rebuilding on every render.
         return Array.from(groupedTasks.entries());
-    }, [groupedTasks]);
+    }, [groupedTasks, settings.groupBy]);
 
     const groupedVirtualSections = useMemo(() => {
+        if (settings.groupBy === "none") return [];
         return groupedEntries.map(([groupName, groupTasks]) => {
             const active: Task[] = [];
             const completed: Task[] = [];
@@ -588,15 +598,17 @@ export function TaskListWithSettings({
                 items,
             };
         });
-    }, [groupedEntries]);
+    }, [groupedEntries, settings.groupBy]);
 
     const groupedVirtualCounts = useMemo(() => {
+        if (settings.groupBy === "none") return [] as number[];
         return groupedVirtualSections.map(section => section.items.length);
-    }, [groupedVirtualSections]);
+    }, [groupedVirtualSections, settings.groupBy]);
 
     const totalGroupedTasks = useMemo(() => {
+        if (settings.groupBy === "none") return 0;
         return groupedEntries.reduce((sum, [, groupTasks]) => sum + groupTasks.length, 0);
-    }, [groupedEntries]);
+    }, [groupedEntries, settings.groupBy]);
 
     // Drag and Drop Logic
     const isDragEnabled = settings.sortBy === "manual" && settings.groupBy === "none" && !!userId;
