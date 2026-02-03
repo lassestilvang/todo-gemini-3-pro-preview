@@ -20,20 +20,20 @@ test.describe('Task Upcoming View Verification', () => {
         await expect(taskInput).toBeVisible();
 
         // Create a task with a future date (next month to be sure it's in Upcoming and not Today/Next 7 Days)
-        // Using "in 2 weeks" to be safe.
+        // Using "next year" to be unambiguously Upcoming.
         const uniqueId = Date.now();
-        const taskTitle = `Buy Milk ${uniqueId} in 2 weeks`;
+        const taskTitle = `Buy Milk ${uniqueId} next year`;
         const expectedTitle = `Buy Milk ${uniqueId}`;
         await taskInput.fill(taskTitle);
         await taskInput.press('Enter');
 
         // Wait for the task to be created and appear on the current page (if it does)
-        // Actually, on "Today" page, "in 2 weeks" tasks might NOT appear.
+        // Actually, on "Today" page, "next year" tasks might NOT appear.
         // So we just check if it was cleared.
         await expect(taskInput).toHaveValue('', { timeout: 10000 });
 
         // Wait a bit for backend processing
-        await page.waitForTimeout(1000);
+        await page.waitForTimeout(2000);
 
         // Now navigate to Upcoming
         await page.goto('/upcoming');
