@@ -26,9 +26,10 @@ test.describe('Task Upcoming View Verification', () => {
         const expectedTitle = `Buy Milk ${uniqueId}`;
         await taskInput.fill(taskTitle);
 
+        // Wait for NLP parsing to catch up (React useEffect)
         // Verify NLP detection worked by checking for the date badge
         // This ensures the task will actually have a due date when submitted
-        await expect(page.getByText('Tomorrow')).toBeVisible();
+        await expect(page.getByText('Tomorrow')).toBeVisible({ timeout: 10000 });
 
         await taskInput.press('Enter');
 
