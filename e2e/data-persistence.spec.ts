@@ -41,7 +41,15 @@ test.describe('Data Persistence (Export/Import)', () => {
         // Trigger export and read downloaded file
         await page.getByRole('button', { name: 'Export Backup' }).click();
         const download = await page.waitForEvent('download');
-        const jsonData = JSON.parse(await download.text());
+
+        // Read the download stream since download.text() is not standard API
+        const stream = await download.createReadStream();
+        const chunks = [];
+        for await (const chunk of stream) {
+            chunks.push(chunk);
+        }
+        const fileContent = Buffer.concat(chunks).toString('utf-8');
+        const jsonData = JSON.parse(fileContent);
 
         expect(jsonData.data).toBeDefined();
         // Verify our data is in there

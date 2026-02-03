@@ -32,6 +32,9 @@ test.describe('Task Upcoming View Verification', () => {
         // So we just check if it was cleared.
         await expect(taskInput).toHaveValue('', { timeout: 10000 });
 
+        // Wait for a moment for server actions to complete and data to be ready
+        await page.waitForTimeout(1000);
+
         // Now navigate to Upcoming
         await page.goto('/upcoming');
         await page.waitForLoadState('load');

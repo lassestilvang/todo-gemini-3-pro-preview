@@ -44,6 +44,8 @@ const workosUserArb = fc.record({
 }).map((user) => ({
   ...user,
   email: `${user.id}@example.com`,
+  // Use unique ID suffix to avoid collision between tests in same run if fast-check doesn't reset seed perfectly or runs parallel
+  id: `user_${Math.random().toString(36).substring(7)}_${user.id.substring(5)}`,
 }));
 
 describe("Property Tests: User Initialization", () => {
