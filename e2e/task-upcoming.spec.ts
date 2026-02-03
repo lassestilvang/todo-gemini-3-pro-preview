@@ -22,7 +22,7 @@ test.describe('Task Upcoming View Verification', () => {
         // Create a task with a future date (next month to be sure it's in Upcoming and not Today/Next 7 Days)
         // Actually "in 2 weeks" is good for Upcoming.
         const uniqueId = Date.now();
-        const taskTitle = `Buy Milk ${uniqueId} in 2 weeks`;
+        const taskTitle = `Buy Milk ${uniqueId} tomorrow`;
         const expectedTitle = `Buy Milk ${uniqueId}`;
         await taskInput.fill(taskTitle);
         await taskInput.press('Enter');
