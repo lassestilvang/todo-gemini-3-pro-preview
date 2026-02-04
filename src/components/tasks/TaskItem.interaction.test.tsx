@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { TaskItem } from "./TaskItem";
 import { Task } from "@/lib/types";
-import { jest, describe, it, expect, beforeEach, afterEach } from "bun:test";
+import { describe, it, expect, beforeEach, afterEach, mock } from "bun:test";
 
 // Mock minimal task
 const mockTask: Task = {
@@ -23,9 +23,26 @@ describe("TaskItem Interaction", () => {
 
     beforeEach(() => {
         // Reset selection before each test
-        window.getSelection = jest.fn().mockReturnValue({
-            toString: () => ""
-        });
+        // @ts-expect-error - Mocking read-only window.getSelection
+        window.getSelection = mock(() => ({
+            toString: () => "",
+            anchorNode: null,
+            focusNode: null,
+            isCollapsed: true,
+            rangeCount: 0,
+            getRangeAt: () => null,
+            removeAllRanges: () => {},
+            addRange: () => {},
+            removeRange: () => {},
+            containsNode: () => false,
+            selectAllChildren: () => {},
+            extend: () => {},
+            collapse: () => {},
+            collapseToStart: () => {},
+            collapseToEnd: () => {},
+            deleteFromDocument: () => {},
+            type: "None",
+        }));
     });
 
     afterEach(() => {
@@ -33,7 +50,7 @@ describe("TaskItem Interaction", () => {
     });
 
     it("calls onEdit when the row is clicked", () => {
-        const handleEdit = jest.fn();
+        const handleEdit = mock(() => {});
         render(<TaskItem task={mockTask} onEdit={handleEdit} />);
 
         const row = screen.getByTestId("task-item");
@@ -46,7 +63,7 @@ describe("TaskItem Interaction", () => {
     });
 
     it("does not trigger onEdit when clicking checkbox", () => {
-        const handleEdit = jest.fn();
+        const handleEdit = mock(() => {});
         render(<TaskItem task={mockTask} onEdit={handleEdit} />);
 
         const checkbox = screen.getByRole("checkbox"); // This finds the button/input with role checkbox
@@ -57,15 +74,32 @@ describe("TaskItem Interaction", () => {
     });
 
     it("does not trigger onEdit when text is selected", () => {
-        const handleEdit = jest.fn();
+        const handleEdit = mock(() => {});
         render(<TaskItem task={mockTask} onEdit={handleEdit} />);
 
         const row = screen.getByTestId("task-item");
 
         // Simulate text selection
-        window.getSelection = jest.fn().mockReturnValue({
-            toString: () => "Some text"
-        });
+        // @ts-expect-error - Mocking read-only window.getSelection
+        window.getSelection = mock(() => ({
+            toString: () => "Some text",
+            anchorNode: null,
+            focusNode: null,
+            isCollapsed: false,
+            rangeCount: 1,
+            getRangeAt: () => null,
+            removeAllRanges: () => {},
+            addRange: () => {},
+            removeRange: () => {},
+            containsNode: () => false,
+            selectAllChildren: () => {},
+            extend: () => {},
+            collapse: () => {},
+            collapseToStart: () => {},
+            collapseToEnd: () => {},
+            deleteFromDocument: () => {},
+            type: "Range",
+        }));
 
         fireEvent.click(row);
 
