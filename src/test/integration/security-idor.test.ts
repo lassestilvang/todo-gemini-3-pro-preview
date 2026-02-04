@@ -6,9 +6,7 @@ import { getCustomIcons, createCustomIcon, deleteCustomIcon } from "@/lib/action
 import { getUserStats, getUserAchievements } from "@/lib/actions/gamification";
 import { isFailure } from "@/lib/action-result";
 
-const describeOrSkip = process.env.CI ? describe.skip : describe;
-
-describeOrSkip("Integration: Security IDOR", () => {
+describe("Integration: Security IDOR", () => {
     let victimId: string;
     let ATTACKER_ID: string;
 

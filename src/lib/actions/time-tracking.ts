@@ -29,6 +29,34 @@ import { requireUser } from "@/lib/auth";
 // Time Entry CRUD Operations
 // ============================================================================
 
+async function updateTaskActualMinutes(taskId: number, userId: string) {
+    // ⚡ Bolt Opt: Shared aggregation keeps time tracking updates consistent and avoids duplicated queries.
+    const [sumResult] = await db
+        .select({ total: sql<number>`COALESCE(SUM(${timeEntries.durationMinutes}), 0)` })
+        .from(timeEntries)
+        .where(
+            and(
+                eq(timeEntries.taskId, taskId),
+                eq(timeEntries.userId, userId),
+                sql`${timeEntries.endedAt} IS NOT NULL`
+            )
+        );
+
+    const totalMinutes = Number(sumResult.total);
+
+    await db
+        .update(tasks)
+        .set({ actualMinutes: totalMinutes })
+        .where(
+            and(
+                eq(tasks.id, taskId),
+                eq(tasks.userId, userId)
+            )
+        );
+
+    return totalMinutes;
+}
+
 /**
  * Start a new time entry for a task.
  * 
@@ -137,29 +165,7 @@ export async function stopTimeEntry(
 
         // ⚡ Bolt Opt: Replace O(N) fetch-and-sum in memory with O(1) SQL aggregation.
         // For tasks with many sessions, this avoids transferring the entire history to calculate one number.
-        const [sumResult] = await db
-            .select({ total: sql<number>`COALESCE(SUM(${timeEntries.durationMinutes}), 0)` })
-            .from(timeEntries)
-            .where(
-                and(
-                    eq(timeEntries.taskId, existing.taskId),
-                    eq(timeEntries.userId, userId),
-                    // Only count stopped entries
-                    sql`${timeEntries.endedAt} IS NOT NULL`
-                )
-            );
-
-        const totalMinutes = Number(sumResult.total);
-
-        await db
-            .update(tasks)
-            .set({ actualMinutes: totalMinutes })
-            .where(
-                and(
-                    eq(tasks.id, existing.taskId),
-                    eq(tasks.userId, userId)
-                )
-            );
+        await updateTaskActualMinutes(existing.taskId, userId);
 
         revalidatePath("/");
         return entry;
@@ -274,28 +280,7 @@ export async function createManualTimeEntry(
             .returning();
 
         // ⚡ Bolt Opt: Replace O(N) fetch-and-sum in memory with O(1) SQL aggregation.
-        const [sumResult] = await db
-            .select({ total: sql<number>`COALESCE(SUM(${timeEntries.durationMinutes}), 0)` })
-            .from(timeEntries)
-            .where(
-                and(
-                    eq(timeEntries.taskId, taskId),
-                    eq(timeEntries.userId, userId),
-                    sql`${timeEntries.endedAt} IS NOT NULL`
-                )
-            );
-
-        const totalMinutes = Number(sumResult.total);
-
-        await db
-            .update(tasks)
-            .set({ actualMinutes: totalMinutes })
-            .where(
-                and(
-                    eq(tasks.id, taskId),
-                    eq(tasks.userId, userId)
-                )
-            );
+        await updateTaskActualMinutes(taskId, userId);
 
         revalidatePath("/");
         return entry;
@@ -345,28 +330,7 @@ export async function updateTimeEntry(
             .returning();
 
         // ⚡ Bolt Opt: Replace O(N) fetch-and-sum in memory with O(1) SQL aggregation.
-        const [sumResult] = await db
-            .select({ total: sql<number>`COALESCE(SUM(${timeEntries.durationMinutes}), 0)` })
-            .from(timeEntries)
-            .where(
-                and(
-                    eq(timeEntries.taskId, existing.taskId),
-                    eq(timeEntries.userId, userId),
-                    sql`${timeEntries.endedAt} IS NOT NULL`
-                )
-            );
-
-        const totalMinutes = Number(sumResult.total);
-
-        await db
-            .update(tasks)
-            .set({ actualMinutes: totalMinutes })
-            .where(
-                and(
-                    eq(tasks.id, existing.taskId),
-                    eq(tasks.userId, userId)
-                )
-            );
+        await updateTaskActualMinutes(existing.taskId, userId);
 
         revalidatePath("/");
         return entry;
@@ -405,28 +369,7 @@ export async function deleteTimeEntry(
         await db.delete(timeEntries).where(eq(timeEntries.id, entryId));
 
         // ⚡ Bolt Opt: Replace O(N) fetch-and-sum in memory with O(1) SQL aggregation.
-        const [sumResult] = await db
-            .select({ total: sql<number>`COALESCE(SUM(${timeEntries.durationMinutes}), 0)` })
-            .from(timeEntries)
-            .where(
-                and(
-                    eq(timeEntries.taskId, existing.taskId),
-                    eq(timeEntries.userId, userId),
-                    sql`${timeEntries.endedAt} IS NOT NULL`
-                )
-            );
-
-        const totalMinutes = Number(sumResult.total);
-
-        await db
-            .update(tasks)
-            .set({ actualMinutes: totalMinutes })
-            .where(
-                and(
-                    eq(tasks.id, existing.taskId),
-                    eq(tasks.userId, userId)
-                )
-            );
+        await updateTaskActualMinutes(existing.taskId, userId);
 
         revalidatePath("/");
         return { deleted: true };

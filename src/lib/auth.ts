@@ -60,7 +60,7 @@ async function getTestUser(): Promise<AuthUser | null> {
  * Returns null if not authenticated.
  * In E2E test mode, checks for test session cookie instead of WorkOS.
  */
-export const getCurrentUser = cache(async function getCurrentUser(): Promise<AuthUser | null> {
+async function getCurrentUserImpl(): Promise<AuthUser | null> {
   // In E2E test mode, only use test session (skip WorkOS entirely)
   if (process.env.E2E_TEST_MODE === 'true') {
     return getTestUser();
@@ -94,7 +94,12 @@ export const getCurrentUser = cache(async function getCurrentUser(): Promise<Aut
     calendarUseNativeTooltipsOnDenseDays: dbUser?.calendarUseNativeTooltipsOnDenseDays ?? null,
     calendarDenseTooltipThreshold: dbUser?.calendarDenseTooltipThreshold ?? null,
   };
-});
+}
+
+export const getCurrentUser =
+  process.env.NODE_ENV === "test"
+    ? getCurrentUserImpl
+    : cache(getCurrentUserImpl);
 
 /**
  * Require authentication for a server action.
