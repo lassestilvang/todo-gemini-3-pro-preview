@@ -16,7 +16,7 @@ import { playSuccessSound } from "@/lib/audio";
 import { useUser } from "@/components/providers/UserProvider";
 import { formatTimePreference } from "@/lib/time-utils";
 import { usePerformanceMode } from "@/components/providers/PerformanceContext";
-import type { DraggableSyntheticListeners } from "@dnd-kit/core";
+import type { DraggableSyntheticListeners, DraggableAttributes } from "@dnd-kit/core";
 
 import { ResolvedIcon } from "@/components/ui/resolved-icon";
 import { useSync } from "@/components/providers/sync-provider";
@@ -31,6 +31,7 @@ interface TaskItemProps {
     disableAnimations?: boolean;
     // Typed for @dnd-kit stability - ensures memo works correctly with drag-and-drop
     dragHandleProps?: DraggableSyntheticListeners;
+    dragAttributes?: DraggableAttributes;
     // Optional: if not provided, will use useSync() internally
     dispatch?: <T extends ActionType>(type: T, ...args: Parameters<typeof actionRegistry[T]>) => Promise<{ success: boolean; data: unknown }>;
     // Perf: Receives task as argument to allow parent to use a stable useCallback reference
@@ -112,7 +113,7 @@ const priorityColors = {
 // React.memo prevents re-renders when parent state changes (e.g., dialog open/close)
 // but the task props remain unchanged. In lists with 50+ tasks, this reduces
 // unnecessary re-renders by ~95% when opening the task edit dialog.
-export const TaskItem = memo(function TaskItem({ task, showListInfo = true, userId, disableAnimations = false, dragHandleProps, dispatch: dispatchProp, onEdit }: TaskItemProps) {
+export const TaskItem = memo(function TaskItem({ task, showListInfo = true, userId, disableAnimations = false, dragHandleProps, dragAttributes, dispatch: dispatchProp, onEdit }: TaskItemProps) {
     const [isCompleted, setIsCompleted] = useState(task.isCompleted || false);
     const [isExpanded, setIsExpanded] = useState(false);
     // Perf: Build object directly in O(n) instead of reduce with spread (O(n²)).
@@ -199,7 +200,8 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
         >
             <div
                 className={cn(
-                    "group flex items-center gap-3 rounded-lg border p-4 hover:bg-accent/40 transition-all duration-200 cursor-pointer hover:shadow-sm bg-card card relative",
+                    "group flex items-center gap-3 rounded-lg border p-4 hover:bg-accent/40 transition-all duration-200 hover:shadow-sm bg-card card relative",
+                    onEdit ? "cursor-pointer" : "cursor-default",
                     isCompleted && "opacity-60 bg-muted/30",
                     isBlocked && !isCompleted && "bg-orange-50/50 border-orange-100",
                     disableAnimations && "cursor-default" // Change cursor if dragging via handle
@@ -207,12 +209,24 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                 data-testid="task-item"
                 data-task-id={task.id}
                 data-task-completed={isCompleted}
+                onClick={(e) => {
+                    // Prevent triggering if selecting text
+                    if (window.getSelection()?.toString()) return;
+
+                    // Prevent triggering if clicking interactive elements
+                    if ((e.target as HTMLElement).closest('button, [role="checkbox"], a, input')) return;
+
+                    if (onEdit) {
+                        onEdit(task);
+                    }
+                }}
             >
                 {/* Drag Handle */}
                 {disableAnimations && (
                     <div
-                        className="cursor-grab active:cursor-grabbing text-muted-foreground/30 hover:text-muted-foreground transition-colors -ml-2 -mr-1 outline-none"
+                        className="cursor-grab active:cursor-grabbing text-muted-foreground/30 hover:text-muted-foreground transition-colors -ml-2 -mr-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
                         {...dragHandleProps}
+                        {...dragAttributes}
                         onClick={(e) => {
                             e.stopPropagation();
                             e.preventDefault();
