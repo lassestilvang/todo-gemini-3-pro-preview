@@ -7,6 +7,7 @@ import {
 } from "@/db/schema"
 import { getCurrentUser } from "@/lib/auth"
 import { and, eq, inArray, sql } from "drizzle-orm"
+import type { NeonHttpQueryResult } from "drizzle-orm/neon-http"
 import { z } from "zod"
 import { revalidatePath, revalidateTag } from "next/cache"
 
@@ -60,23 +61,6 @@ export async function exportUserData() {
     if (taskIds.length > 0) {
         // Fetch task-related data
         // Note: Drizzle optimized query for "inArray"
-        userTaskLabels = await db.select().from(taskLabels).where(
-            // We can't easily filter task_labels by userId directly as it's a join table without userId
-            // So we filter by tasks that belong to the user.
-            // However, for simplicity in export/import, we can filter by matching taskIds in memory 
-            // OR join. Since we already have taskIds, let's fetch all relevant taskLabels
-            // But simpler: just select * from taskLabels where taskId in taskIds
-            undefined
-        )
-
-        // Workaround: We need to filter taskLabels and reminders by the tasks we just fetched
-        // Since `inArray` can be slow with thousands of IDs, we'll do joins if needed, 
-        // but for personal todo app, fetching directly is likely fine.
-        // Let's use a simpler approach: 
-        // We will fetch ALL taskLabels and filter in memory if the dataset is small, 
-        // OR better: use `inArray` if supported properly.
-        // Given Drizzle complexity with `inArray` on many rows, let's try to query with join.
-
         userTaskLabels = await db
             .select({
                 taskId: taskLabels.taskId,
@@ -133,9 +117,9 @@ export async function importUserData(jsonData: unknown) {
 
     const batchInsert = async <T>(
         values: T[],
-        insertFn: (batch: T[]) => Promise<unknown>,
+        insertFn: (batch: T[]) => Promise<NeonHttpQueryResult<unknown>>,
         batchSize = 500
-    ) => {
+    ): Promise<void> => {
         // ⚡ Bolt Opt: Chunk inserts to keep SQL payloads small while reducing roundtrips.
         for (let i = 0; i < values.length; i += batchSize) {
             await insertFn(values.slice(i, i + batchSize))
@@ -145,48 +129,145 @@ export async function importUserData(jsonData: unknown) {
     try {
         // 1. Import Lists
         console.log('[Import] Starting import...');
-        for (const list of data.lists) {
-            const [newList] = await db.insert(lists).values({
+        const importStamp = Date.now()
+        const listSlugMap = new Map<string, number>()
+        const listValues = data.lists.map((list) => {
+            const slug = `${list.slug}-imported-${importStamp}-${list.id}`
+            listSlugMap.set(slug, list.id)
+            return {
                 ...list,
                 id: undefined, // Let DB generate new ID
                 userId: userId, // Ensure it belongs to current user
-                slug: `${list.slug}-imported-${Date.now()}`, // Avoid slug collision
+                slug, // Avoid slug collision while keeping old->new mapping
                 createdAt: new Date(list.createdAt),
                 updatedAt: new Date(),
-            }).returning({ id: lists.id })
+            }
+        })
 
-            listMap.set(list.id, newList.id)
+        if (listValues.length > 0) {
+            // ⚡ Bolt Opt: Batch list inserts while preserving old->new ID mapping via slug.
+            for (let i = 0; i < listValues.length; i += 500) {
+                const batch = listValues.slice(i, i + 500)
+                const insertedLists = await db
+                    .insert(lists)
+                    .values(batch)
+                    .returning({ id: lists.id, slug: lists.slug })
+
+                for (const row of insertedLists) {
+                    const oldId = listSlugMap.get(row.slug)
+                    if (oldId !== undefined) {
+                        listMap.set(oldId, row.id)
+                    }
+                }
+            }
         }
 
         // 2. Import Labels
-        for (const label of data.labels) {
-            const [newLabel] = await db.insert(labels).values({
-                ...label,
-                id: undefined,
-                userId: userId,
-            }).returning({ id: labels.id })
+        const labelKeyFor = (label: {
+            name: string
+            color: string | null
+            icon: string | null
+            description: string | null
+            position: number
+        }) =>
+            JSON.stringify([
+                label.name,
+                label.color,
+                label.icon,
+                label.description,
+                label.position,
+            ])
 
-            labelMap.set(label.id, newLabel.id)
+        const labelValues = data.labels.map((label) => ({
+            ...label,
+            id: undefined,
+            userId: userId,
+        }))
+
+        if (labelValues.length > 0) {
+            const labelKeyMap = new Map<string, number[]>()
+            for (const label of data.labels) {
+                const key = labelKeyFor({
+                    name: label.name,
+                    color: label.color ?? null,
+                    icon: label.icon ?? null,
+                    description: label.description ?? null,
+                    position: label.position ?? 0,
+                })
+                const queue = labelKeyMap.get(key) ?? []
+                queue.push(label.id)
+                labelKeyMap.set(key, queue)
+            }
+
+            // ⚡ Bolt Opt: Batch label inserts and map old->new IDs via a stable content key.
+            for (let i = 0; i < labelValues.length; i += 500) {
+                const batch = labelValues.slice(i, i + 500)
+                const insertedLabels = await db
+                    .insert(labels)
+                    .values(batch)
+                    .returning({
+                        id: labels.id,
+                        name: labels.name,
+                        color: labels.color,
+                        icon: labels.icon,
+                        description: labels.description,
+                        position: labels.position,
+                    })
+
+                for (const row of insertedLabels) {
+                    const key = labelKeyFor({
+                        name: row.name,
+                        color: row.color ?? null,
+                        icon: row.icon ?? null,
+                        description: row.description ?? null,
+                        position: row.position,
+                    })
+                    const queue = labelKeyMap.get(key)
+                    const oldId = queue?.shift()
+                    if (oldId !== undefined) {
+                        labelMap.set(oldId, row.id)
+                    }
+                }
+            }
         }
 
         // 3. Import Tasks
-        for (const task of data.tasks) {
+        const taskValues = data.tasks.map((task) => {
             const newListId = task.listId ? listMap.get(task.listId) : null
+            return {
+                oldId: task.id,
+                value: {
+                    ...task,
+                    id: undefined,
+                    userId: userId,
+                    listId: newListId,
+                    parentId: null, // Set null initially to avoid FK errors
+                    dueDate: task.dueDate ? new Date(task.dueDate) : null,
+                    createdAt: new Date(task.createdAt),
+                    updatedAt: new Date(),
+                    completedAt: task.completedAt ? new Date(task.completedAt) : null,
+                    deadline: task.deadline ? new Date(task.deadline) : null,
+                },
+            }
+        })
 
-            const [newTask] = await db.insert(tasks).values({
-                ...task,
-                id: undefined,
-                userId: userId,
-                listId: newListId,
-                parentId: null, // Set null initially to avoid FK errors
-                dueDate: task.dueDate ? new Date(task.dueDate) : null,
-                createdAt: new Date(task.createdAt),
-                updatedAt: new Date(),
-                completedAt: task.completedAt ? new Date(task.completedAt) : null,
-                deadline: task.deadline ? new Date(task.deadline) : null,
-            }).returning({ id: tasks.id })
+        if (taskValues.length > 0) {
+            // ⚡ Bolt Opt: Batch task inserts and map old->new IDs by insert order.
+            // Postgres returns INSERT ... RETURNING rows in the VALUES order.
+            for (let i = 0; i < taskValues.length; i += 500) {
+                const batch = taskValues.slice(i, i + 500)
+                const insertedTasks = await db
+                    .insert(tasks)
+                    .values(batch.map((item) => item.value))
+                    .returning({ id: tasks.id })
 
-            taskMap.set(task.id, newTask.id)
+                for (let j = 0; j < insertedTasks.length; j += 1) {
+                    const oldId = batch[j]?.oldId
+                    if (oldId !== undefined) {
+                        taskMap.set(oldId, insertedTasks[j].id)
+                    }
+                }
+            }
         }
 
         // 3b. Update Parent IDs
