@@ -33,8 +33,10 @@ async function getTestUser(): Promise<AuthUser | null> {
     const testSession = cookieStore.get('wos-session-test');
 
     if (testSession) {
+      console.log('[Auth] Found test session cookie:', testSession.value.substring(0, 50) + '...');
       const session = JSON.parse(testSession.value);
       if (session.user && session.expiresAt > Date.now()) {
+        console.log('[Auth] Test session valid for user:', session.user.id);
         return {
           id: session.user.id,
           email: session.user.email,
@@ -48,10 +50,11 @@ async function getTestUser(): Promise<AuthUser | null> {
         };
       }
     }
-  } catch {
-    // Invalid session - return null
+  } catch (e) {
+    console.error('[Auth] Error parsing test session:', e);
   }
 
+  console.log('[Auth] No valid test session found');
   return null;
 }
 
