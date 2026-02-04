@@ -48,10 +48,14 @@ async function getTestUser(): Promise<AuthUser | null> {
           calendarUseNativeTooltipsOnDenseDays: null,
           calendarDenseTooltipThreshold: null,
         };
+      } else {
+        console.warn("[Auth] Test session invalid or expired:", session);
       }
+    } else {
+        console.warn("[Auth] No test session cookie found");
     }
-  } catch (e) {
-    console.error('[Auth] Error parsing test session:', e);
+  } catch (error) {
+    console.error("[Auth] Error parsing test session:", error);
   }
 
   console.log('[Auth] No valid test session found');

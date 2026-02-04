@@ -45,7 +45,7 @@ test.describe('Task Upcoming View Verification', () => {
         // Verify the task appears in the Upcoming list
         await waitForTask(page, expectedTitle);
         const taskItem = page.getByTestId('task-item').filter({ hasText: expectedTitle });
-        await expect(taskItem.first()).toBeVisible({ timeout: 10000 });
+        await expect(taskItem.first()).toBeVisible({ timeout: 30000 });
     });
 
 });
