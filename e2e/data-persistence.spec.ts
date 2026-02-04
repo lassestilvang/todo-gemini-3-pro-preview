@@ -1,4 +1,6 @@
 import { test, expect } from './fixtures';
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 test.describe('Data Persistence (Export/Import)', () => {
     test('should export and import data correctly preserving relationships', async ({ authenticatedPage: page }) => {

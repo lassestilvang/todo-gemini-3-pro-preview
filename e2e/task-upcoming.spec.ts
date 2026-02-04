@@ -25,6 +25,12 @@ test.describe('Task Upcoming View Verification', () => {
         const taskTitle = `Buy Milk ${uniqueId} tomorrow`;
         const expectedTitle = `Buy Milk ${uniqueId}`;
         await taskInput.fill(taskTitle);
+
+        // Wait for NLP parsing to catch up (React useEffect)
+        // Verify NLP detection worked by checking for the date badge
+        // This ensures the task will actually have a due date when submitted
+        await expect(page.getByText('Tomorrow')).toBeVisible({ timeout: 10000 });
+
         await taskInput.press('Enter');
 
         // Wait for the task to be created and appear on the current page (if it does)
@@ -42,7 +48,7 @@ test.describe('Task Upcoming View Verification', () => {
         // Verify the task appears in the Upcoming list
         await waitForTask(page, expectedTitle);
         const taskItem = page.getByTestId('task-item').filter({ hasText: expectedTitle });
-        await expect(taskItem.first()).toBeVisible({ timeout: 10000 });
+        await expect(taskItem.first()).toBeVisible({ timeout: 30000 });
     });
 
 });

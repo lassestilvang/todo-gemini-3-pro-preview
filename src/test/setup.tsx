@@ -272,7 +272,7 @@ if (!global.Element.prototype.scrollIntoView) {
 // console.warn = () => { };
 // console.error = () => { };
 
-// Mock SyncProvider 
+// Mock SyncProvider
 mock.module("@/components/providers/sync-provider", () => ({
     SyncProvider: ({ children }: { children: React.ReactNode }) => React.createElement(React.Fragment, null, children),
     useSync: () => ({
