@@ -1,4 +1,6 @@
 import { test, expect } from './fixtures';
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 test.describe('Data Persistence (Export/Import)', () => {
     test('should export and import data correctly preserving relationships', async ({ authenticatedPage: page }) => {
@@ -41,7 +43,13 @@ test.describe('Data Persistence (Export/Import)', () => {
         // Trigger export and read downloaded file
         await page.getByRole('button', { name: 'Export Backup' }).click();
         const download = await page.waitForEvent('download');
-        const jsonData = JSON.parse(await download.text());
+        const downloadPath = await download.path();
+        const fallbackPath = downloadPath ?? join(process.cwd(), `tmp-export-${uniqueId}.json`);
+        if (!downloadPath) {
+            await download.saveAs(fallbackPath);
+        }
+        const jsonText = await readFile(downloadPath ?? fallbackPath, "utf8");
+        const jsonData = JSON.parse(jsonText);
 
         expect(jsonData.data).toBeDefined();
         // Verify our data is in there
