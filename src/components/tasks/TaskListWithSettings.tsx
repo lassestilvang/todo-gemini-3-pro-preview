@@ -715,11 +715,11 @@ export function TaskListWithSettings({
                 </div>
             ) : processedTasks.length === 0 ? (
                 <div
-                    className="flex flex-col items-center justify-center h-[300px] text-muted-foreground border rounded-lg border-dashed bg-muted/5"
+                    className="flex flex-col items-center justify-center h-[300px] text-foreground border rounded-lg border-dashed bg-muted/5"
                     role="status"
                     aria-live="polite"
                 >
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/20 mb-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/20 mb-4 text-foreground/50">
                         {(() => {
                             switch (filterType || viewId) {
                                 case "inbox": return <Inbox className="h-6 w-6 opacity-50" />;
@@ -731,7 +731,7 @@ export function TaskListWithSettings({
                             }
                         })()}
                     </div>
-                    <h3 className="font-semibold text-lg mb-1">
+                    <h2 className="font-semibold text-lg mb-1">
                         {(() => {
                             switch (filterType || viewId) {
                                 case "inbox": return "Your inbox is empty";
@@ -742,8 +742,8 @@ export function TaskListWithSettings({
                                 default: return "No tasks found";
                             }
                         })()}
-                    </h3>
-                    <p className="text-sm opacity-70">
+                    </h2>
+                    <p className="text-sm text-foreground/70">
                         {(() => {
                             switch (filterType || viewId) {
                                 case "inbox": return "Capture ideas and tasks here.";

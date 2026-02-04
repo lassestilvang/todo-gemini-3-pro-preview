@@ -44,7 +44,10 @@ const workosUserArb = fc.record({
   firstName: nameArb,
   lastName: nameArb,
   profilePictureUrl: fc.option(fc.webUrl(), { nil: null }),
-});
+}).map((user) => ({
+  ...user,
+  email: `${user.id}@example.com`,
+}));
 
 describe("Property Tests: User Initialization", () => {
   beforeAll(async () => {
