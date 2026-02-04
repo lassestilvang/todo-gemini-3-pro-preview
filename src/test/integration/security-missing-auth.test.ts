@@ -16,6 +16,8 @@ describe("Integration: Security Missing Auth", () => {
 
     beforeEach(async () => {
         clearMockAuthUser();
+        // await resetTestDb();
+        // TEST_USER_ID = `user_${Math.random().toString(36).substring(7)}`;
         // Create attacker and victim
         const attacker = await createTestUser("attacker", "attacker@evil.com");
         const victim = await createTestUser("victim", "victim@target.com");
@@ -36,6 +38,23 @@ describe("Integration: Security Missing Auth", () => {
     // View Settings Tests
     it("should fail when reading another user's view settings", async () => {
         // getViewSettings is not wrapped in withErrorHandling, so it throws ForbiddenError directly
+        // Debug check
+        // const currentUser = await import("@/lib/auth").then(m => m.getCurrentUser());
+        // console.log(`[DEBUG] Test User: Attacker=${attackerId}, Victim=${victimId}`);
+        // console.log(`[DEBUG] Current Mock User: ${currentUser?.id}`);
+        // if (currentUser?.id === victimId) {
+        //     throw new Error("Mock user leakage detected: User is victim, expected attacker");
+        // }
+
+        // Currently this passes (returns null or settings), proving vulnerability.
+        // We expect it to eventually throw "ForbiddenError" or "UnauthorizedError"
+
+        // Since we are fixing it, we write the test to expect the SAFE behavior.
+        // But for reproduction, I need to show it FAILS the security check (i.e., it succeeds in doing the bad thing).
+
+        // I will write the test expecting the *fix* (ForbiddenError).
+        // When I run this BEFORE fixing, it should FAIL (because it currently succeeds).
+
         await expect(getViewSettings(victimId, "inbox")).rejects.toThrow(/Forbidden|authorized/i);
     });
 

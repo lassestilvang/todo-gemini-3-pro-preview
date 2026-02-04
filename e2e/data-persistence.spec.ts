@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures';
+import * as fs from 'fs';
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -43,13 +44,15 @@ test.describe('Data Persistence (Export/Import)', () => {
         // Trigger export and read downloaded file
         await page.getByRole('button', { name: 'Export Backup' }).click();
         const download = await page.waitForEvent('download');
-        const downloadPath = await download.path();
-        const fallbackPath = downloadPath ?? join(process.cwd(), `tmp-export-${uniqueId}.json`);
-        if (!downloadPath) {
-            await download.saveAs(fallbackPath);
+
+        // Read the download stream since download.text() is not standard API
+        const stream = await download.createReadStream();
+        const chunks = [];
+        for await (const chunk of stream) {
+            chunks.push(chunk);
         }
-        const jsonText = await readFile(downloadPath ?? fallbackPath, "utf8");
-        const jsonData = JSON.parse(jsonText);
+        const fileContent = Buffer.concat(chunks).toString('utf-8');
+        const jsonData = JSON.parse(fileContent);
 
         expect(jsonData.data).toBeDefined();
         // Verify our data is in there

@@ -34,13 +34,20 @@ test.describe('Task Upcoming View Verification', () => {
         await taskInput.press('Enter');
 
         // Wait for the task to be created and appear on the current page (if it does)
-        // Actually, on "Today" page, "in 2 weeks" tasks might NOT appear.
+        // Actually, on "Today" page, "next year" tasks might NOT appear.
         // So we just check if it was cleared.
         await expect(taskInput).toHaveValue('', { timeout: 10000 });
+
+        // Wait a bit for backend processing
+        await page.waitForTimeout(2000);
+        // Wait for success toast to ensure data is persisted
+        await expect(page.getByText('Task created')).toBeVisible({ timeout: 10000 });
 
         // Now navigate to Upcoming
         await page.goto('/upcoming');
         await page.waitForLoadState('load');
+        // Reload to ensure fresh data
+        await page.reload();
 
         // Verify the task appears in the Upcoming list
         await waitForTask(page, expectedTitle);

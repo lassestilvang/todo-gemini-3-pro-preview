@@ -4,6 +4,7 @@ import * as React from "react";
 import { m } from "framer-motion";
 import { Play, Square, Clock, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -178,26 +179,38 @@ export function TimeTrackerWidget({
                 {/* Play/Pause/Stop Controls */}
                 <div className="flex items-center gap-1">
                     {!isTracking ? (
-                        <Button
-                            type="button"
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8 rounded-full bg-primary/10 hover:bg-primary/20 text-primary"
-                            onClick={handleStart}
-                        >
-                            <Play className="h-4 w-4 ml-0.5" />
-                        </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-8 w-8 rounded-full bg-primary/10 hover:bg-primary/20 text-primary"
+                                    onClick={handleStart}
+                                    aria-label="Start timer"
+                                >
+                                    <Play className="h-4 w-4 ml-0.5" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Start timer</TooltipContent>
+                        </Tooltip>
                     ) : (
                         <>
-                            <Button
-                                type="button"
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8 rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-500"
-                                onClick={handleStop}
-                            >
-                                <Square className="h-3.5 w-3.5" />
-                            </Button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-8 w-8 rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-500"
+                                        onClick={handleStop}
+                                        aria-label="Stop timer"
+                                    >
+                                        <Square className="h-3.5 w-3.5" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Stop timer</TooltipContent>
+                            </Tooltip>
                         </>
                     )}
                 </div>
@@ -252,28 +265,40 @@ export function TimeTrackerWidget({
 
                 {/* Edit Button */}
                 {onEditClick && (
-                    <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8"
-                        onClick={onEditClick}
-                    >
-                        <Edit2 className="h-3.5 w-3.5" />
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8"
+                                onClick={onEditClick}
+                                aria-label="Edit time entry"
+                            >
+                                <Edit2 className="h-3.5 w-3.5" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Edit time entry</TooltipContent>
+                    </Tooltip>
                 )}
 
                 {/* Collapse button for compact mode */}
                 {compact && (
-                    <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        className="h-6 w-6"
-                        onClick={() => setIsExpanded(false)}
-                    >
-                        <span className="text-xs">×</span>
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                className="h-6 w-6"
+                                onClick={() => setIsExpanded(false)}
+                                aria-label="Collapse timer"
+                            >
+                                <span className="text-xs">×</span>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Collapse timer</TooltipContent>
+                    </Tooltip>
                 )}
             </div>
         </m.div>

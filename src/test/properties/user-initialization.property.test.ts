@@ -44,6 +44,8 @@ const workosUserArb = fc.record({
 }).map((user) => ({
   ...user,
   email: `${user.id}@example.com`,
+  // Use unique ID suffix to avoid collision between tests in same run if fast-check doesn't reset seed perfectly or runs parallel
+  id: `user_${Math.random().toString(36).substring(7)}_${user.id.substring(5)}`,
 }));
 
 describe("Property Tests: User Initialization", () => {
@@ -111,6 +113,7 @@ describe("Property Tests: User Initialization", () => {
   it("Property 2: New users get default Inbox list and initialized stats", async () => {
     await fc.assert(
       fc.asyncProperty(workosUserArb, async (workosUser) => {
+        // Cleanup potential collisions from previous runs
         // Ensure clean state for this user ID
         await db.delete(users).where(eq(users.id, workosUser.id));
 
@@ -156,6 +159,7 @@ describe("Property Tests: User Initialization", () => {
   it("User data persists with correct values after creation", async () => {
     await fc.assert(
       fc.asyncProperty(workosUserArb, async (workosUser) => {
+        // Cleanup potential collisions from previous runs
         // Ensure clean state for this user ID
         await db.delete(users).where(eq(users.id, workosUser.id));
 

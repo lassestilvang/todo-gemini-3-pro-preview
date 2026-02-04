@@ -21,6 +21,7 @@ import type { DraggableSyntheticListeners, DraggableAttributes } from "@dnd-kit/
 import { ResolvedIcon } from "@/components/ui/resolved-icon";
 import { useSync } from "@/components/providers/sync-provider";
 import { ActionType, actionRegistry } from "@/lib/sync/registry";
+import { getLabelStyle } from "@/lib/style-utils";
 
 import { Task } from "@/lib/types";
 
@@ -110,12 +111,88 @@ const priorityColors = {
     none: "text-gray-400",
 };
 
+// Helper to compare task props for React.memo to avoid re-renders when object references change
+// but data is effectively the same (common with RSC payloads).
+function arePropsEqual(prev: TaskItemProps, next: TaskItemProps) {
+    if (prev.userId !== next.userId) return false;
+    if (prev.showListInfo !== next.showListInfo) return false;
+    if (prev.disableAnimations !== next.disableAnimations) return false;
+    if (prev.onEdit !== next.onEdit) return false;
+    if (prev.dispatch !== next.dispatch) return false;
+    if (prev.dragHandleProps !== next.dragHandleProps) return false;
+
+    const p = prev.task;
+    const n = next.task;
+
+    if (p === n) return true;
+
+    if (p.id !== n.id) return false;
+    if (p.title !== n.title) return false;
+    if (p.isCompleted !== n.isCompleted) return false;
+
+    const pUpdated = p.updatedAt instanceof Date ? p.updatedAt.getTime() : new Date(p.updatedAt || 0).getTime();
+    const nUpdated = n.updatedAt instanceof Date ? n.updatedAt.getTime() : new Date(n.updatedAt || 0).getTime();
+    if (pUpdated !== nUpdated) return false;
+
+    // Subtasks & Blockers
+    if (p.subtaskCount !== n.subtaskCount) return false;
+    if (p.completedSubtaskCount !== n.completedSubtaskCount) return false;
+    if (p.blockedByCount !== n.blockedByCount) return false;
+
+    // List Metadata
+    if (p.listName !== n.listName) return false;
+    if (p.listColor !== n.listColor) return false;
+    if (p.listIcon !== n.listIcon) return false;
+
+    // Properties affecting render
+    if (p.priority !== n.priority) return false;
+    if (p.icon !== n.icon) return false;
+    if (p.estimateMinutes !== n.estimateMinutes) return false;
+    if (p.actualMinutes !== n.actualMinutes) return false;
+    if (p.isRecurring !== n.isRecurring) return false;
+
+    // Dates
+    const pDue = p.dueDate instanceof Date ? p.dueDate.getTime() : (p.dueDate ? new Date(p.dueDate).getTime() : null);
+    const nDue = n.dueDate instanceof Date ? n.dueDate.getTime() : (n.dueDate ? new Date(n.dueDate).getTime() : null);
+    if (pDue !== nDue) return false;
+
+    // Labels
+    const pLabels = p.labels || [];
+    const nLabels = n.labels || [];
+    if (pLabels.length !== nLabels.length) return false;
+    for (let i = 0; i < pLabels.length; i++) {
+        if (pLabels[i].id !== nLabels[i].id) return false;
+        if (pLabels[i].name !== nLabels[i].name) return false;
+        if (pLabels[i].color !== nLabels[i].color) return false;
+        if (pLabels[i].icon !== nLabels[i].icon) return false;
+    }
+
+    // Subtasks - check content as parent updatedAt might not change on subtask update
+    const pSubtasks = p.subtasks || [];
+    const nSubtasks = n.subtasks || [];
+    if (pSubtasks.length !== nSubtasks.length) return false;
+    for (let i = 0; i < pSubtasks.length; i++) {
+        if (pSubtasks[i].id !== nSubtasks[i].id) return false;
+        if (pSubtasks[i].title !== nSubtasks[i].title) return false;
+        if (pSubtasks[i].isCompleted !== nSubtasks[i].isCompleted) return false;
+        if (pSubtasks[i].estimateMinutes !== nSubtasks[i].estimateMinutes) return false;
+    }
+
+    return true;
+}
+
 // React.memo prevents re-renders when parent state changes (e.g., dialog open/close)
 // but the task props remain unchanged. In lists with 50+ tasks, this reduces
 // unnecessary re-renders by ~95% when opening the task edit dialog.
 export const TaskItem = memo(function TaskItem({ task, showListInfo = true, userId, disableAnimations = false, dragHandleProps, dragAttributes, dispatch: dispatchProp, onEdit }: TaskItemProps) {
     const [isCompleted, setIsCompleted] = useState(task.isCompleted || false);
     const [isExpanded, setIsExpanded] = useState(false);
+
+    // Sync local state with prop changes (fixes bug where external updates were ignored)
+    useEffect(() => {
+        setIsCompleted(task.isCompleted || false);
+    }, [task.isCompleted]);
+
     // Perf: Build object directly in O(n) instead of reduce with spread (O(n²)).
     // For tasks with 50 subtasks, this eliminates 1,225 object allocations (50*49/2).
     const [subtaskStates, setSubtaskStates] = useState<Record<number, boolean>>(() => {
@@ -125,6 +202,22 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
         }
         return states;
     });
+
+    // Sync subtask states with props
+    useEffect(() => {
+        if (!task.subtasks) return;
+        setSubtaskStates(prev => {
+            const next = { ...prev };
+            let changed = false;
+            for (const s of task.subtasks || []) {
+                if (next[s.id] !== (s.isCompleted || false)) {
+                    next[s.id] = s.isCompleted || false;
+                    changed = true;
+                }
+            }
+            return changed ? next : prev;
+        });
+    }, [task.subtasks]);
 
     const hasSubtasks = (task.subtaskCount || 0) > 0;
     const completedCount = task.completedSubtaskCount || 0;
@@ -398,15 +491,7 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                                 <Badge
                                     key={label.id}
                                     variant="outline"
-                                    style={(() => {
-                                        // Perf: Pre-calculate style strings to avoid object allocations in common cases
-                                        const color = label.color || '#000000';
-                                        return {
-                                            borderColor: color + '40',
-                                            backgroundColor: color + '10',
-                                            color: color
-                                        };
-                                    })()}
+                                    style={getLabelStyle(label.color)}
                                     className="text-[10px] px-1.5 py-0 h-5 font-normal border flex items-center gap-1"
                                 >
                                     {/* <ResolvedIcon> handles fallback internally if needed, or we can just pass null.
@@ -500,4 +585,4 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
             )}
         </m.div>
     );
-});
+}, arePropsEqual);

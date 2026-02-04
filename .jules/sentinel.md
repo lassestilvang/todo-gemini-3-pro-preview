@@ -19,7 +19,7 @@
 **Prevention:** Audit all exported functions in `"use server"` files. Prefer keeping internal logic in separate files without `"use server"` or explicitly unexported.
 
 ## 2026-10-27 - [Critical] Unprotected View and Template Actions
-**Vulnerability:** `view-settings.ts` and `templates.ts` server actions accepted `userId` as an argument but failed to validate it against the authenticated session, allowing full IDOR (Read/Write/Delete) on other users' data.
+**Vulnerability:** `view-settings.ts` and `templates.ts` server actions accepted `userId` as an argument but failed to validate it against the session, allowing full IDOR (Read/Write/Delete) on other users' data.
 **Learning:** Checking ownership inside the query (e.g. `where userId = ?`) is insufficient if the query parameter itself is trusted input from the client.
 **Prevention:** All server actions accepting `userId` MUST call `await requireUser(userId)` as the first statement. Added regression tests in `src/test/integration/security-missing-auth.test.ts`.
 
@@ -32,6 +32,11 @@
 **Vulnerability:** `src/lib/actions/labels.ts` server actions accepted `userId` as an argument without validating it against the session, allowing attackers to manage other users' labels.
 **Learning:** CRUD operations on auxiliary resources (like labels/tags) are often overlooked for security checks compared to core resources (like tasks), but they are equally vulnerable to IDOR.
 **Prevention:** Audit all resources, including "minor" ones. Ensure every exported Server Action that takes a `userId` calls `requireUser(userId)` immediately.
+
+## 2026-10-29 - [Critical] IDOR in Task Dependencies
+**Vulnerability:** `getBlockers` and `getBlockedTasks` in `src/lib/actions/dependencies.ts` accepted task IDs and returned related tasks without verifying if the user owned the task or the blocker.
+**Learning:** Checking ownership is critical for ALL read operations, not just write operations. Even "helper" data like dependencies can leak information about tasks.
+**Prevention:** Updated functions to accept `userId` and verify ownership of the primary entity (task or blocker) before returning data.
 
 ## 2026-10-31 - [Critical] IDOR in Dependencies and Reminders
 **Vulnerability:** `src/lib/actions/dependencies.ts` and `src/lib/actions/reminders.ts` server actions accepted `userId` as an argument without validating it against the session, allowing attackers to manage other users' task dependencies and reminders.
