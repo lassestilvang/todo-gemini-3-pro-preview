@@ -6,7 +6,7 @@ import {
     viewSettings
 } from "@/db/schema"
 import { getCurrentUser } from "@/lib/auth"
-import { eq } from "drizzle-orm"
+import { and, eq, inArray, sql } from "drizzle-orm"
 import { z } from "zod"
 import { revalidatePath, revalidateTag } from "next/cache"
 
@@ -131,6 +131,17 @@ export async function importUserData(jsonData: unknown) {
     const labelMap = new Map<number, number>()
     const taskMap = new Map<number, number>()
 
+    const batchInsert = async <T>(
+        values: T[],
+        insertFn: (batch: T[]) => Promise<unknown>,
+        batchSize = 500
+    ) => {
+        // ⚡ Bolt Opt: Chunk inserts to keep SQL payloads small while reducing roundtrips.
+        for (let i = 0; i < values.length; i += batchSize) {
+            await insertFn(values.slice(i, i + batchSize))
+        }
+    }
+
     try {
         // 1. Import Lists
         console.log('[Import] Starting import...');
@@ -179,65 +190,94 @@ export async function importUserData(jsonData: unknown) {
         }
 
         // 3b. Update Parent IDs
-        for (const task of data.tasks) {
-            if (task.parentId) {
+        const parentUpdates = data.tasks
+            .map((task) => {
+                if (!task.parentId) return null
                 const newParentId = taskMap.get(task.parentId)
                 const newTaskId = taskMap.get(task.id)
+                return newParentId && newTaskId ? { id: newTaskId, parentId: newParentId } : null
+            })
+            .filter((update): update is { id: number; parentId: number } => update !== null)
 
-                if (newParentId && newTaskId) {
-                    await db.update(tasks)
-                        .set({ parentId: newParentId })
-                        .where(eq(tasks.id, newTaskId))
-                }
-            }
+        if (parentUpdates.length > 0) {
+            // ⚡ Bolt Opt: Single batched UPDATE replaces N per-task updates.
+            const taskIds = parentUpdates.map((update) => update.id)
+            const caseWhen = sql.join(
+                parentUpdates.map(
+                    (update) => sql`WHEN ${tasks.id} = ${update.id} THEN ${update.parentId}`
+                ),
+                sql` `
+            )
+
+            await db
+                .update(tasks)
+                .set({
+                    parentId: sql`CASE ${caseWhen} ELSE ${tasks.parentId} END`,
+                })
+                .where(and(inArray(tasks.id, taskIds), eq(tasks.userId, userId)))
         }
 
         // 4. Import Task Labels
-        for (const tl of data.taskLabels) {
-            const newTaskId = taskMap.get(tl.taskId)
-            const newLabelId = labelMap.get(tl.labelId)
+        const taskLabelValues = data.taskLabels
+            .map((tl) => {
+                const newTaskId = taskMap.get(tl.taskId)
+                const newLabelId = labelMap.get(tl.labelId)
+                return newTaskId && newLabelId ? { taskId: newTaskId, labelId: newLabelId } : null
+            })
+            .filter((value): value is { taskId: number; labelId: number } => value !== null)
 
-            if (newTaskId && newLabelId) {
-                await db.insert(taskLabels).values({
-                    taskId: newTaskId,
-                    labelId: newLabelId
-                }).onConflictDoNothing()
-            }
+        if (taskLabelValues.length > 0) {
+            // ⚡ Bolt Opt: Batch insert reduces task label writes to a handful of queries.
+            await batchInsert(taskLabelValues, (batch) =>
+                db.insert(taskLabels).values(batch).onConflictDoNothing()
+            )
         }
 
         // 5. Import Reminders
-        for (const r of data.reminders) {
-            const newTaskId = taskMap.get(r.taskId)
-            if (newTaskId) {
-                await db.insert(reminders).values({
+        const reminderValues = data.reminders
+            .map((r) => {
+                const newTaskId = taskMap.get(r.taskId)
+                if (!newTaskId) return null
+                return {
                     ...r,
                     id: undefined,
                     taskId: newTaskId,
                     remindAt: new Date(r.remindAt),
-                    createdAt: new Date(r.createdAt)
-                })
-            }
+                    createdAt: new Date(r.createdAt),
+                }
+            })
+            .filter((value): value is typeof data.reminders[number] & { taskId: number } => value !== null)
+
+        if (reminderValues.length > 0) {
+            // ⚡ Bolt Opt: Batch reminder inserts to avoid per-row roundtrips.
+            await batchInsert(reminderValues, (batch) => db.insert(reminders).values(batch))
         }
 
         // 6. Import Templates
-        for (const t of data.templates) {
-            await db.insert(templates).values({
-                ...t,
-                id: undefined,
-                userId: userId,
-                createdAt: new Date(t.createdAt),
-                updatedAt: new Date()
-            })
+        const templateValues = data.templates.map((t) => ({
+            ...t,
+            id: undefined,
+            userId: userId,
+            createdAt: new Date(t.createdAt),
+            updatedAt: new Date(),
+        }))
+
+        if (templateValues.length > 0) {
+            // ⚡ Bolt Opt: Batch template inserts to cut import latency.
+            await batchInsert(templateValues, (batch) => db.insert(templates).values(batch))
         }
 
         // 7. Import Saved Views
-        for (const sv of data.savedViews) {
-            await db.insert(savedViews).values({
-                ...sv,
-                id: undefined,
-                userId: userId,
-                createdAt: new Date(sv.createdAt)
-            })
+        const savedViewValues = data.savedViews.map((sv) => ({
+            ...sv,
+            id: undefined,
+            userId: userId,
+            createdAt: new Date(sv.createdAt),
+        }))
+
+        if (savedViewValues.length > 0) {
+            // ⚡ Bolt Opt: Batch saved view inserts to reduce total queries.
+            await batchInsert(savedViewValues, (batch) => db.insert(savedViews).values(batch))
         }
 
         revalidateTag(`lists-${userId}`, 'max');
