@@ -130,8 +130,8 @@ export function runInAuthContext<T>(user: MockAuthUser | null, fn: () => T): T {
 
     try {
         const result = authStorage.run(user, fn);
-        if (result && typeof (result as Promise<unknown>).finally === "function") {
-            return (result as Promise<unknown>).finally(() => {
+        if (result && typeof (result as unknown as Promise<unknown>).finally === "function") {
+            return (result as unknown as Promise<unknown>).finally(() => {
                 mockState.__mockAuthUser = previousUser;
             }) as T;
         }

@@ -188,7 +188,7 @@ global.indexedDB = {
         const request = createMockIDBRequest() as unknown as IDBOpenDBRequest;
         setTimeout(() => {
             const db = createMockIDBDatabase();
-            request.result = db as unknown as IDBDatabase;
+            Object.defineProperty(request, 'result', { value: db as unknown as IDBDatabase, writable: true });
             const event = { target: request, oldVersion: 0, newVersion: 1 } as unknown as Event;
             if (request.onupgradeneeded) {
                 (request.onupgradeneeded as (this: IDBOpenDBRequest, ev: Event) => unknown).call(request, event);
