@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures';
+import * as fs from 'fs';
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
