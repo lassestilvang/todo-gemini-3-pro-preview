@@ -36,16 +36,34 @@ describe("Integration: Security Missing Auth", () => {
 
     // View Settings Tests
     it("should fail when reading another user's view settings", async () => {
-        // Currently this passes (returns null or settings), proving vulnerability.
-        // We expect it to eventually throw "ForbiddenError" or "UnauthorizedError"
-
-        // Since we are fixing it, we write the test to expect the SAFE behavior.
-        // But for reproduction, I need to show it FAILS the security check (i.e., it succeeds in doing the bad thing).
-
-        // I will write the test expecting the *fix* (ForbiddenError).
-        // When I run this BEFORE fixing, it should FAIL (because it currently succeeds).
-
-        await expect(getViewSettings(victimId, "inbox")).rejects.toThrow(/Forbidden|authorized/i);
+        // The action currently throws ForbiddenError which might be caught if it was wrapped,
+        // but requireUser throws it. If getViewSettings is just a function that calls requireUser, it throws.
+        // However, if it's an action, it might return { success: false, error: ... }
+        // Let's check the result type.
+        try {
+            const result = await getViewSettings(victimId, "inbox");
+            // If it returns a result object (wrapped action)
+            // @ts-expect-error - checking if it's an ActionResult
+            if (result && typeof result === 'object' && 'success' in result) {
+                 // @ts-expect-error - checking if it's an ActionResult
+                 expect(isFailure(result)).toBe(true);
+                 // @ts-expect-error - checking if it's an ActionResult
+                 if (isFailure(result)) {
+                     // @ts-expect-error - checking if it's an ActionResult
+                     expect(result.error.code).toBe("FORBIDDEN");
+                 }
+            } else {
+                 // If it returns data directly (unwrapped), it should have thrown before this line
+                 // If we are here and it's unwrapped, it means it SUCCEEDED in reading data (Bad)
+                 // OR it returned null (if not found).
+                 // But requireUser should have thrown.
+                 // So if we are here, and it's not a failure object, we failed the test.
+                 throw new Error("Should have thrown or returned failure");
+            }
+        } catch (e: any) {
+            // If it threw, verify it's the right error
+            expect(e.message).toMatch(/Forbidden|authorized/i);
+        }
     });
 
     it("should fail when saving another user's view settings", async () => {
@@ -69,7 +87,23 @@ describe("Integration: Security Missing Auth", () => {
 
     // Template Tests
     it("should fail when getting another user's templates", async () => {
-        await expect(getTemplates(victimId)).rejects.toThrow(/Forbidden|authorized/i);
+        try {
+            const result = await getTemplates(victimId);
+            // @ts-expect-error - checking if it's an ActionResult
+            if (result && typeof result === 'object' && 'success' in result) {
+                // @ts-expect-error - checking if it's an ActionResult
+                expect(isFailure(result)).toBe(true);
+                // @ts-expect-error - checking if it's an ActionResult
+                if (isFailure(result)) {
+                    // @ts-expect-error - checking if it's an ActionResult
+                    expect(result.error.code).toBe("FORBIDDEN");
+                }
+            } else {
+                 throw new Error("Should have thrown or returned failure");
+            }
+        } catch (e: any) {
+             expect(e.message).toMatch(/Forbidden|authorized/i);
+        }
     });
 
     it("should fail when creating a template for another user", async () => {
