@@ -722,12 +722,12 @@ export function TaskListWithSettings({
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/20 mb-4 text-foreground/50">
                         {(() => {
                             switch (filterType || viewId) {
-                                case "inbox": return <Inbox className="h-6 w-6 opacity-50" />;
-                                case "today": return <Calendar className="h-6 w-6 opacity-50" />;
-                                case "upcoming": return <Calendar className="h-6 w-6 opacity-50" />;
-                                case "completed": return <CheckCircle className="h-6 w-6 opacity-50" />;
-                                case "all": return <Layers className="h-6 w-6 opacity-50" />;
-                                default: return <ClipboardList className="h-6 w-6 opacity-50" />;
+                                case "inbox": return <Inbox className="h-6 w-6 text-muted-foreground" />;
+                                case "today": return <Calendar className="h-6 w-6 text-muted-foreground" />;
+                                case "upcoming": return <Calendar className="h-6 w-6 text-muted-foreground" />;
+                                case "completed": return <CheckCircle className="h-6 w-6 text-muted-foreground" />;
+                                case "all": return <Layers className="h-6 w-6 text-muted-foreground" />;
+                                default: return <ClipboardList className="h-6 w-6 text-muted-foreground" />;
                             }
                         })()}
                     </div>
@@ -743,7 +743,7 @@ export function TaskListWithSettings({
                             }
                         })()}
                     </h2>
-                    <p className="text-sm text-foreground/70">
+                    <p className="text-sm text-muted-foreground">
                         {(() => {
                             switch (filterType || viewId) {
                                 case "inbox": return "Capture ideas and tasks here.";

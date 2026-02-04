@@ -144,4 +144,14 @@ describe("TaskItem", () => {
         fireEvent.click(editButton);
         expect(handleEdit).toHaveBeenCalledTimes(1);
     });
+
+    it("should update completion status when prop changes", () => {
+        const { rerender } = render(<TaskItem task={sampleTask} />);
+        const checkbox = screen.getByRole("checkbox");
+        expect(checkbox).not.toBeChecked();
+
+        const completedTask = { ...sampleTask, isCompleted: true };
+        rerender(<TaskItem task={completedTask} />);
+        expect(checkbox).toBeChecked();
+    });
 });

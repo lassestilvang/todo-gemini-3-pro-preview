@@ -29,10 +29,7 @@ fc.configureGlobal({
   seed: FAST_CHECK_SEED,
 });
 
-// Skip in CI due to parallel test execution issues with Bun's module mocking
-// and shared in-memory SQLite database. These tests run successfully locally.
-const isCI = process.env.CI === "true";
-const describeOrSkip = isCI ? describe.skip : describe;
+const describeOrSkip = describe;
 
 // Valid error codes as defined in action-result.ts
 const VALID_ERROR_CODES: ErrorCode[] = [

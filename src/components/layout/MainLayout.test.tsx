@@ -2,11 +2,6 @@ import { describe, it, expect, afterEach, mock, beforeAll } from "bun:test";
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import React from "react";
 
-// Actions mock removed to prevent pollution
-mock.module("@/lib/auth", () => ({
-    getCurrentUser: mock(() => Promise.resolve({ id: "test-user", email: "test@example.com" }))
-}));
-
 mock.module("@/components/gamification/XPBar", () => ({
     XPBar: () => <div data-testid="xp-bar">XP Bar</div>
 }));

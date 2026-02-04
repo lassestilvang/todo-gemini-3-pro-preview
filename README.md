@@ -156,7 +156,7 @@ Database branching is automatically managed by the [Neon Vercel Integration](htt
 
 1. **Create a preview deployment**: When you push a branch or open a PR, Vercel creates a preview deployment with its own Neon database branch
 2. **Isolated environment**: Each preview has its own copy of the database, inheriting data from the main branch
-3. **Automatic cleanup**: When the preview is removed, the corresponding Neon branch is automatically deleted
+3. **Automatic cleanup**: When the preview is removed, the corresponding Neon branch is automatically deleted (see Setup below)
 
 ### Setup
 
@@ -164,11 +164,18 @@ The Vercel + Neon integration handles database branching automatically. To enabl
 
 1. Connect your Neon project to Vercel via the [Neon Vercel Integration](https://vercel.com/integrations/neon)
 2. Enable "Create a branch for each preview deployment" in the integration settings
-3. Add these GitHub secrets for CI migrations:
+3. Enable "Automatically delete obsolete Neon branches" in the integration settings
+4. Add these GitHub secrets for CI migrations:
    - `NEON_API_KEY` - From Neon dashboard → Account Settings → API Keys
    - `NEON_PROJECT_ID` - From your Neon project settings
    - `DATABASE_URL` - Main branch connection string
-4. That's it! Preview deployments will automatically get isolated database branches with migrations applied
+5. That's it! Preview deployments will automatically get isolated database branches with migrations applied
+
+### Cleanup on PR Close
+
+This repo also includes a GitHub Actions workflow that deletes CI-created Neon branches (named `preview/<branch>`) when a PR is closed (merged or not). This complements the Vercel integration auto-delete and helps keep branch usage under Neon limits.
+
+**Caveats:** Neon auto-delete may not trigger if preview branches were renamed or used as parents for other branches. If you rename or branch off preview databases, clean them up manually in Neon.
 
 ### Local Development with Branches
 

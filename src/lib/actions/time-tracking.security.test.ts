@@ -34,10 +34,11 @@ describe("Security Tests: Time Tracking Actions", () => {
         }
     });
 
-    it.skip("should prevent cross-user get time stats (IDOR)", async () => {
+    it("should prevent cross-user get time stats (IDOR)", async () => {
         setMockAuthUser(attackerUser);
-        // Expect promise to reject with ForbiddenError
-        // Note: The action throws, it doesn't return ActionResult failure for get operations typically
-        await expect(getTimeStats(victimId, "day")).rejects.toThrow(/Forbidden|authorized/i);
+        await expect(getTimeStats(victimId)).resolves.toMatchObject({
+            success: false,
+            error: { code: "FORBIDDEN" },
+        });
     });
 });

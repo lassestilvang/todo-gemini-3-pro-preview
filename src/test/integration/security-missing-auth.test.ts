@@ -1,14 +1,12 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, createTestUser } from "@/test/setup";
-import { setMockAuthUser } from "@/test/mocks";
+import { setMockAuthUser, clearMockAuthUser } from "@/test/mocks";
 import { getViewSettings, saveViewSettings, resetViewSettings } from "@/lib/actions/view-settings";
 import { getTemplates, createTemplate, updateTemplate, deleteTemplate, instantiateTemplate } from "@/lib/actions/templates";
 import { isFailure } from "@/lib/action-result";
 import { db, templates } from "@/db";
 
-const describeOrSkip = process.env.CI ? describe.skip : describe;
-
-describeOrSkip("Integration: Security Missing Auth", () => {
+describe("Integration: Security Missing Auth", () => {
     let attackerId: string;
     let victimId: string;
 
@@ -17,6 +15,7 @@ describeOrSkip("Integration: Security Missing Auth", () => {
     });
 
     beforeEach(async () => {
+        clearMockAuthUser();
         // await resetTestDb();
         // TEST_USER_ID = `user_${Math.random().toString(36).substring(7)}`;
         // Create attacker and victim
@@ -38,6 +37,14 @@ describeOrSkip("Integration: Security Missing Auth", () => {
 
     // View Settings Tests
     it("should fail when reading another user's view settings", async () => {
+        // Debug check
+        // const currentUser = await import("@/lib/auth").then(m => m.getCurrentUser());
+        // console.log(`[DEBUG] Test User: Attacker=${attackerId}, Victim=${victimId}`);
+        // console.log(`[DEBUG] Current Mock User: ${currentUser?.id}`);
+        // if (currentUser?.id === victimId) {
+        //     throw new Error("Mock user leakage detected: User is victim, expected attacker");
+        // }
+
         // Currently this passes (returns null or settings), proving vulnerability.
         // We expect it to eventually throw "ForbiddenError" or "UnauthorizedError"
 
