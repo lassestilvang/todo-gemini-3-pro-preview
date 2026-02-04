@@ -92,7 +92,7 @@ function getWorkOSRedirectURI(): string {
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["better-sqlite3"],
-  reactCompiler: true,
+  reactCompiler: false,
   turbopack: {
     root: __dirname,
   },

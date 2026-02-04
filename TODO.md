@@ -39,6 +39,10 @@
 - [ ] **[Improvement] Settings Page A11y Test**: Complete the skipped accessibility test in `e2e/a11y.spec.ts`.
 - [ ] **[Improvement] Visual Regression CI baselines**: Add Linux-based snapshots for CI.
 - [ ] **[Improvement] LazyMotion domMax**: Consider upgrading `domAnimation` to `domMax` in `LazyMotionProvider.tsx`.
+- [ ] **[Perf] Batch Template Instantiation**: Replace per-task `createTask` calls with a bulk insert pipeline.
+  - **Approach**: Flatten template tree into top-level + subtask batches, insert with `RETURNING` to map IDs.
+  - **Parent Mapping**: Use insert order or a stable key to map old IDs to new IDs, then update `parentId` in one batched `CASE` update.
+  - **Goal**: Reduce template instantiation from O(n) roundtrips to O(1–3) queries per level.
 - [ ] **[Perf] Search Scalability**: Monitor client-side search performance with >2000 tasks.
 - [ ] **[Perf] Search Index Warm-up**: Prefetch or persist search index to eliminate warm-up delay.
 - [ ] **[Refactor] Split globals.css**: Modularize the large CSS file (`globals.css` is ~600 lines) for better maintainability.
