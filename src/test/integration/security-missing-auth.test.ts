@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, createTestUser } from "@/test/setup";
-import { setMockAuthUser } from "@/test/mocks";
+import { setMockAuthUser, clearMockAuthUser } from "@/test/mocks";
 import { getViewSettings, saveViewSettings, resetViewSettings } from "@/lib/actions/view-settings";
 import { getTemplates, createTemplate, updateTemplate, deleteTemplate, instantiateTemplate } from "@/lib/actions/templates";
 import { isFailure } from "@/lib/action-result";
@@ -15,8 +15,7 @@ describe("Integration: Security Missing Auth", () => {
     });
 
     beforeEach(async () => {
-        // await resetTestDb();
-        // TEST_USER_ID = `user_${Math.random().toString(36).substring(7)}`;
+        clearMockAuthUser();
         // Create attacker and victim
         const attacker = await createTestUser("attacker", "attacker@evil.com");
         const victim = await createTestUser("victim", "victim@target.com");
@@ -36,34 +35,8 @@ describe("Integration: Security Missing Auth", () => {
 
     // View Settings Tests
     it("should fail when reading another user's view settings", async () => {
-        // The action currently throws ForbiddenError which might be caught if it was wrapped,
-        // but requireUser throws it. If getViewSettings is just a function that calls requireUser, it throws.
-        // However, if it's an action, it might return { success: false, error: ... }
-        // Let's check the result type.
-        try {
-            const result = await getViewSettings(victimId, "inbox");
-            // If it returns a result object (wrapped action)
-            // @ts-expect-error - checking if it's an ActionResult
-            if (result && typeof result === 'object' && 'success' in result) {
-                 // @ts-expect-error - checking if it's an ActionResult
-                 expect(isFailure(result)).toBe(true);
-                 // @ts-expect-error - checking if it's an ActionResult
-                 if (isFailure(result)) {
-                     // @ts-expect-error - checking if it's an ActionResult
-                     expect(result.error.code).toBe("FORBIDDEN");
-                 }
-            } else {
-                 // If it returns data directly (unwrapped), it should have thrown before this line
-                 // If we are here and it's unwrapped, it means it SUCCEEDED in reading data (Bad)
-                 // OR it returned null (if not found).
-                 // But requireUser should have thrown.
-                 // So if we are here, and it's not a failure object, we failed the test.
-                 throw new Error("Should have thrown or returned failure");
-            }
-        } catch (e: any) {
-            // If it threw, verify it's the right error
-            expect(e.message).toMatch(/Forbidden|authorized/i);
-        }
+        // getViewSettings is not wrapped in withErrorHandling, so it throws ForbiddenError directly
+        await expect(getViewSettings(victimId, "inbox")).rejects.toThrow(/Forbidden|authorized/i);
     });
 
     it("should fail when saving another user's view settings", async () => {

@@ -19,3 +19,7 @@
 ## 2024-05-24 - Drag-and-Drop Accessibility
 **Learning:** In `dnd-kit`, splitting `attributes` (wrapper) and `listeners` (handle) breaks keyboard accessibility because the focusable element (wrapper) lacks the event listeners to trigger drag.
 **Action:** Ensure `listeners` and `attributes` are applied to the *same* element (the handle), or pass `listeners` to the wrapper if the whole item is the handle.
+
+## 2024-05-24 - Relative Dates and Hydration
+**Learning:** Rendering relative dates like "Today" directly during SSR causes hydration mismatches when server and client timezones differ.
+**Action:** Always gate relative date formatting with a `mounted` check to ensure the client re-renders with the correct local time.

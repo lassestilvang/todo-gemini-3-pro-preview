@@ -14,7 +14,7 @@ import { FocusMode } from "./FocusMode";
 import { Target } from "lucide-react";
 import { playSuccessSound } from "@/lib/audio";
 import { useUser } from "@/components/providers/UserProvider";
-import { formatTimePreference } from "@/lib/time-utils";
+import { formatTimePreference, formatFriendlyDate } from "@/lib/time-utils";
 import { usePerformanceMode } from "@/components/providers/PerformanceContext";
 import type { DraggableSyntheticListeners, DraggableAttributes } from "@dnd-kit/core";
 
@@ -318,7 +318,7 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                         {task.dueDate && (
                             <div className={cn("flex items-center gap-1", isOverdue ? "text-red-500 font-medium" : "")}>
                                 <Calendar className="h-3 w-3" />
-                                {format(task.dueDate, "MMM d")}
+                                {mounted ? formatFriendlyDate(task.dueDate, "MMM d") : format(task.dueDate, "MMM d")}
                                 {(task.dueDate.getHours() !== 0 || task.dueDate.getMinutes() !== 0) && (
                                     <span className="text-muted-foreground">
                                         {formatTimePreference(task.dueDate, use24HourClock)}
