@@ -56,7 +56,8 @@ mock.module("@/lib/actions/templates", () => ({
 // Mock window.confirm
 const originalConfirm = globalThis.confirm;
 
-// Mock PointerEvent methods for Radix UI
+// PointerEvent mocks are provided globally in setup.tsx (upstream change),
+// but adding them here defensively to ensure tests pass in all environments
 if (!Element.prototype.setPointerCapture) {
   Element.prototype.setPointerCapture = () => {};
 }
@@ -70,6 +71,8 @@ if (!Element.prototype.hasPointerCapture) {
 describe("TemplateManager", () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let TemplateManager: any;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  let templateIds: number[] = [];
 
   beforeEach(async () => {
     // Restore DB seeding as a fallback in case mocks fail (belt and suspenders)
@@ -95,7 +98,8 @@ describe("TemplateManager", () => {
     });
 
     // Seed templates
-    await db.insert(templates).values([
+    // Capture IDs for tests that need them
+    const inserted = await db.insert(templates).values([
       {
         id: 1,
         userId: "test_user_123",
@@ -110,7 +114,9 @@ describe("TemplateManager", () => {
         content: JSON.stringify({ title: "Daily Standup Task", priority: "medium" }),
         createdAt: new Date("2024-01-16"),
       }
-    ]);
+    ]).returning();
+
+    templateIds = inserted.map(t => t.id);
 
     // Dynamic import to ensure mock is applied
     const importedModule = await import("./TemplateManager");

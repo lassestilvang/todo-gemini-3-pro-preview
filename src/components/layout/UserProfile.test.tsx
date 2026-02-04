@@ -1,20 +1,14 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
 
-// Mock the auth module before importing the component
-// This prevents the auth module from loading next/cache
-const mockSignOut = mock(() => Promise.resolve());
-mock.module("@/lib/auth", () => ({
-    signOut: mockSignOut,
-}));
-
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { UserProfile } from "./UserProfile";
 import { OnboardingProvider } from "@/components/providers/OnboardingProvider";
+import { signOut } from "@/lib/auth";
 
 describe("UserProfile", () => {
     beforeEach(() => {
-        mockSignOut.mockClear();
+        (signOut as unknown as ReturnType<typeof mock>).mockClear();
     });
 
     afterEach(() => {
@@ -141,7 +135,7 @@ describe("UserProfile", () => {
         await testUser.click(signOutItem);
 
         await waitFor(() => {
-            expect(mockSignOut).toHaveBeenCalled();
+            expect(signOut).toHaveBeenCalled();
         });
     });
 

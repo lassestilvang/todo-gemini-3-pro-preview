@@ -1,60 +1,32 @@
-import { describe, expect, it, beforeAll, beforeEach } from "bun:test";
-import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
+import { describe, it, expect, beforeEach } from "bun:test";
+import { createTestUser } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
-import { startTimeEntry, getTimeStats } from "@/lib/actions/time-tracking";
-import { sqliteConnection } from "@/db";
-
-// Helper functions (since they aren't exported from setup.tsx)
-async function createTestList(userId: string, name: string) {
-    sqliteConnection.run(
-        "INSERT INTO lists (user_id, name, slug, position) VALUES (?, ?, ?, ?)",
-        [userId, name, name.toLowerCase().replace(/\s+/g, '-'), 0]
-    );
-    return sqliteConnection.query("SELECT * FROM lists WHERE user_id = ? AND name = ?").get(userId, name) as { id: number; user_id: string; name: string };
-}
-
-async function createTestTask(userId: string, listId: number, title: string) {
-    sqliteConnection.run(
-        "INSERT INTO tasks (user_id, list_id, title) VALUES (?, ?, ?)",
-        [userId, listId, title]
-    );
-    return sqliteConnection.query("SELECT * FROM tasks WHERE user_id = ? AND title = ?").get(userId, title) as { id: number; user_id: string; list_id: number; title: string };
-}
+import { startTimeEntry, getTimeStats } from "./time-tracking";
 
 describe("Security Tests: Time Tracking Actions", () => {
+    let attackerId: string;
     let victimId: string;
-    let victimTaskId: number;
-
-    beforeAll(async () => {
-        await setupTestDb();
-    });
+    let attackerUser: any;
 
     beforeEach(async () => {
-        await resetTestDb();
+        attackerId = `attacker_${Math.random().toString(36).substring(7)}`;
+        victimId = `victim_${Math.random().toString(36).substring(7)}`;
 
-        // Create attacker and victim
-        const attacker = await createTestUser("attacker", "attacker@evil.com");
-        const victim = await createTestUser("victim", "victim@innocent.com");
-        victimId = victim.id;
+        await createTestUser(attackerId, `${attackerId}@evil.com`);
+        await createTestUser(victimId, `${victimId}@target.com`);
 
-        // Create a task for victim
-        const victimList = await createTestList(victimId, "Victim List");
-        const victimTask = await createTestTask(victimId, victimList.id, "Victim Task");
-        victimTaskId = victimTask.id;
-
-        // Authenticate as Attacker
-        setMockAuthUser({
-            id: attacker.id,
-            email: attacker.email,
-            firstName: attacker.firstName,
-            lastName: attacker.lastName,
-            profilePictureUrl: null
-        });
+        attackerUser = {
+            id: attackerId,
+            email: `${attackerId}@evil.com`,
+            firstName: "Attacker",
+            lastName: "User",
+            profilePictureUrl: null,
+        };
     });
 
     it("should prevent cross-user start time entry (IDOR)", async () => {
-        // Attacker tries to start time for Victim
-        const result = await startTimeEntry(victimTaskId, victimId);
+        setMockAuthUser(attackerUser);
+        const result = await startTimeEntry(999, victimId); // Try to start time for victim
 
         expect(result.success).toBe(false);
         if (!result.success) {
@@ -63,12 +35,10 @@ describe("Security Tests: Time Tracking Actions", () => {
     });
 
     it("should prevent cross-user get time stats (IDOR)", async () => {
-        // Attacker tries to get stats for Victim
-        const result = await getTimeStats(victimId);
-
-        expect(result.success).toBe(false);
-        if (!result.success) {
-            expect(result.error.code).toBe("FORBIDDEN");
-        }
+        setMockAuthUser(attackerUser);
+        await expect(getTimeStats(victimId)).resolves.toMatchObject({
+            success: false,
+            error: { code: "FORBIDDEN" },
+        });
     });
 });

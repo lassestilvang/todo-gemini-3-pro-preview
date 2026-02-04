@@ -25,10 +25,12 @@ export function DataExportImport() {
             const url = URL.createObjectURL(blob)
             const a = document.createElement("a")
             a.href = url
+            a.rel = "noopener"
             a.download = `todo-gemini-backup-${new Date().toISOString().split('T')[0]}.json`
+            a.setAttribute("data-testid", "export-backup-download")
             document.body.appendChild(a)
             a.click()
-            document.body.removeChild(a)
+            a.remove()
             URL.revokeObjectURL(url)
 
             toast.success("Data exported successfully")

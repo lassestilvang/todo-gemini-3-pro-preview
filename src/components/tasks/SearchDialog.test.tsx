@@ -2,7 +2,6 @@ import { describe, it, expect, mock, beforeEach } from "bun:test";
 import { render, screen, fireEvent } from "@testing-library/react";
 import React from "react";
 import Fuse from "fuse.js";
-import { setupTestDb, resetTestDb } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
 
 // Mock navigation
@@ -89,8 +88,6 @@ function ClientSearchLogic() {
 
 describe("SearchDialog", () => {
     beforeEach(async () => {
-        await setupTestDb();
-        await resetTestDb();
         setMockAuthUser({ id: "user-1", email: "test@example.com", firstName: "Test", lastName: "User", profilePictureUrl: null });
     });
     // We don't really need DB setup if we mock the data inside the wrapper.

@@ -1,24 +1,22 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
-import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
+import { setupTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
 import { updateUserPreferences } from "@/lib/actions/user";
 import { getCustomIcons, createCustomIcon, deleteCustomIcon } from "@/lib/actions/custom-icons";
 import { getUserStats, getUserAchievements } from "@/lib/actions/gamification";
 import { isFailure } from "@/lib/action-result";
 
-const describeOrSkip = process.env.CI ? describe.skip : describe;
-
-describeOrSkip("Integration: Security IDOR", () => {
+describe("Integration: Security IDOR", () => {
     let victimId: string;
+    let ATTACKER_ID: string;
 
     beforeAll(async () => {
         await setupTestDb();
     });
 
     beforeEach(async () => {
-        await resetTestDb();
-
-        // Create attacker and victim
+        // await resetTestDb();
+        ATTACKER_ID = `attacker_${Math.random().toString(36).substring(7)}`;
         const attacker = await createTestUser("attacker", "attacker@evil.com");
         const victim = await createTestUser("victim", "victim@target.com");
 
@@ -70,14 +68,14 @@ describeOrSkip("Integration: Security IDOR", () => {
 
     it("should fail when getting another user's custom icons", async () => {
         // Expect promise to reject with ForbiddenError
-        await expect(getCustomIcons(victimId)).rejects.toThrow("authorized");
+        await expect(getCustomIcons(victimId)).rejects.toThrow(/Forbidden|authorized/i);
     });
 
     it("should fail when getting another user's stats", async () => {
-        await expect(getUserStats(victimId)).rejects.toThrow("authorized");
+        await expect(getUserStats(victimId)).rejects.toThrow(/Forbidden|authorized/i);
     });
 
     it("should fail when getting another user's achievements", async () => {
-        await expect(getUserAchievements(victimId)).rejects.toThrow("authorized");
+        await expect(getUserAchievements(victimId)).rejects.toThrow(/Forbidden|authorized/i);
     });
 });

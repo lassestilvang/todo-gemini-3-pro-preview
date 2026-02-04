@@ -17,6 +17,7 @@ import {
   withErrorHandling,
   ValidationError,
 } from "./shared";
+import { revalidateTag } from "next/cache";
 import { logActivity } from "./logs";
 import { requireUser } from "@/lib/auth";
 
@@ -26,31 +27,10 @@ import { requireUser } from "@/lib/auth";
  * @param userId - The ID of the user whose labels to retrieve
  * @returns Array of labels
  */
-import { cache } from "react";
-import { unstable_cache, revalidateTag } from "next/cache";
-
-/**
- * Retrieves all labels for a specific user.
- *
- * @param userId - The ID of the user whose labels to retrieve
- * @returns Array of labels
- */
-export const getLabels = cache(async function getLabels(userId: string) {
+export async function getLabels(userId: string) {
   await requireUser(userId);
-
-  const fn = unstable_cache(
-    async (id: string) => {
-      return await db
-        .select()
-        .from(labels)
-        .where(eq(labels.userId, id))
-        .orderBy(labels.position, labels.id);
-    },
-    ["labels"],
-    { tags: [`labels-${userId}`] }
-  );
-  return fn(userId);
-});
+  return await db.select().from(labels).where(eq(labels.userId, userId));
+}
 
 /**
  * Internal implementation for reordering labels.
