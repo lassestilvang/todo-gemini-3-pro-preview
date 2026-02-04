@@ -74,6 +74,10 @@ export async function getTasks(
     conditions.push(eq(tasks.isCompleted, false));
   }
 
+  if (filter === "completed") {
+    conditions.push(eq(tasks.isCompleted, true));
+  }
+
   if (listId) {
     conditions.push(eq(tasks.listId, listId));
   } else if (listId === null) {
