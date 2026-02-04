@@ -1,5 +1,5 @@
 import { describe, it, expect, mock, beforeEach, beforeAll } from "bun:test";
-import { setupTestDb, resetTestDb, createTestUser } from "../test/setup";
+import { setupTestDb, createTestUser } from "../test/setup";
 import { db, tasks } from "@/db";
 import { eq } from "drizzle-orm";
 import { generateSubtasks, extractDeadline, generateSmartSchedule, analyzePriorities, applyScheduleSuggestion } from "./smart-scheduler";
@@ -20,26 +20,24 @@ const mockGetGeminiClient = mock(() => ({
 }));
 
 // Mock the module
-mock.module("./gemini", () => ({
-    getGeminiClient: mockGetGeminiClient,
-    GEMINI_MODEL: "gemini-pro"
-}));
-
-// Note: We do NOT mock @/db or drizzle-orm here as that breaks other tests
-// The smart-scheduler functions can use the real test database
-
 describe("smart-scheduler", () => {
     let testUserId: string;
 
     beforeAll(async () => {
+        mock.module("@/lib/gemini", () => ({
+            getGeminiClient: mockGetGeminiClient,
+            GEMINI_MODEL: "gemini-pro"
+        }));
         await setupTestDb();
+        // await resetTestDb();
     });
 
     beforeEach(async () => {
-        await resetTestDb();
-        // Create a test user for each test
-        const user = await createTestUser("test_user_scheduler", "test@scheduler.com");
-        testUserId = user.id;
+        // Use unique ID per test for isolation
+        const randomId = Math.random().toString(36).substring(7);
+        testUserId = `user_${randomId}`;
+
+        await createTestUser(testUserId, `${testUserId}@scheduler.com`);
         mockGenerateContent.mockClear();
         mockGetGeminiClient.mockClear();
     });

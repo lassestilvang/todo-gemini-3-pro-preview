@@ -4,23 +4,26 @@ import { toggleTaskCompletion, createTask, getUserStats } from "@/lib/actions";
 import { db, userAchievements, achievements } from "@/db";
 import { setMockAuthUser } from "@/test/mocks";
 
-import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
+import { setupTestDb, createTestUser } from "@/test/setup";
 
 describe("Gamification Logic", () => {
     let testUserId: string;
 
     beforeAll(async () => {
         await setupTestDb();
+        // await resetTestDb();
     });
 
     beforeEach(async () => {
-        await resetTestDb();
-        // Create a test user for each test
-        const user = await createTestUser("test_user_gamification", "test@gamification.com");
-        testUserId = user.id;
-        setMockAuthUser({ id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, profilePictureUrl: null });
+        // Use unique ID per test for isolation
+        const randomId = Math.random().toString(36).substring(7);
+        testUserId = `user_${randomId}`;
 
-        // Seed achievements
+        await createTestUser(testUserId, `${testUserId}@gamification.com`);
+        setMockAuthUser({ id: testUserId, email: `${testUserId}@gamification.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
+
+        // Seed achievements with unique ID if needed, but here id is constant.
+        // Use onConflictDoNothing to avoid errors if another test already seeded it.
         await db.insert(achievements).values([
             {
                 id: "first_blood",
@@ -31,7 +34,7 @@ describe("Gamification Logic", () => {
                 conditionValue: 1,
                 xpReward: 50
             }
-        ]);
+        ]).onConflictDoNothing();
     });
 
     it("should calculate streak correctly", () => {

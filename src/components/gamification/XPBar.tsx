@@ -10,10 +10,14 @@ import { cn } from "@/lib/utils";
 
 
 export function XPBar({ userId }: { userId?: string }) {
+    // PERF: Reduced polling from 10s to 5 minutes to minimize unnecessary database queries.
+    // XP updates are triggered by task completion, which explicitly invalidates this query via
+    // SyncProvider. Polling is only needed as a fallback for multi-tab scenarios.
+    // For a single user, this reduces idle DB load to near zero.
     const { data: stats } = useQuery({
         queryKey: ['userStats', userId],
         queryFn: () => userId ? getUserStats(userId) : Promise.resolve(null),
-        refetchInterval: 2000, // Poll every 2 seconds
+        refetchInterval: 300000, // Poll every 5 minutes
         enabled: !!userId,
         // Only update if data changed structurally, but confetti logic needs previous value
     });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -112,8 +112,16 @@ export function TaskDetailsTab({
 }: TaskDetailsTabProps) {
     const [aiBreakdownOpen, setAiBreakdownOpen] = useState(false);
 
-    // List rendering helper to show selected value with icon
-    const selectedList = lists.find(l => l.id.toString() === listId);
+    // Performance: memoize lookup maps to avoid repeated O(n) finds during render.
+    const listById = useMemo(() => {
+        return new Map(lists.map((list) => [list.id.toString(), list]));
+    }, [lists]);
+    const labelById = useMemo(() => {
+        return new Map(labels.map((label) => [label.id, label]));
+    }, [labels]);
+
+    // List rendering helper to show selected value with icon.
+    const selectedList = listById.get(listId);
 
     return (
         <TabsContent value="details">
@@ -466,8 +474,8 @@ export function TaskDetailsTab({
                 <div className="space-y-2">
                     <Label>Labels</Label>
                     <div className="flex flex-wrap gap-2 mb-2">
-                        {selectedLabelIds.map(id => {
-                            const label = labels.find(l => l.id === id);
+                        {selectedLabelIds.map((id) => {
+                            const label = labelById.get(id);
                             if (!label) return null;
                             return (
                                 <Badge

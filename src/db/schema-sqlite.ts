@@ -21,6 +21,8 @@ export const users = sqliteTable("users", {
     isInitialized: integer("is_initialized", { mode: "boolean" }).notNull().default(false),
     use24HourClock: integer("use_24h_clock", { mode: "boolean" }),
     weekStartsOnMonday: integer("week_starts_on_monday", { mode: "boolean" }),
+    calendarUseNativeTooltipsOnDenseDays: integer("calendar_use_native_tooltips_on_dense_days", { mode: "boolean" }),
+    calendarDenseTooltipThreshold: integer("calendar_dense_tooltip_threshold"),
     createdAt: integer("created_at", { mode: "timestamp" })
         .notNull()
         .default(sql`(strftime('%s', 'now'))`),
@@ -97,6 +99,19 @@ export const tasks = sqliteTable("tasks", {
     dueDateIdx: index("tasks_due_date_idx").on(table.dueDate),
     createdAtIdx: index("tasks_created_at_idx").on(table.createdAt),
     completedAtIdx: index("tasks_completed_at_idx").on(table.completedAt),
+    // Composite index for gamification stats (daily completed count)
+    gamificationStatsIdx: index("tasks_gamification_stats_idx").on(
+        table.userId,
+        table.isCompleted,
+        table.completedAt
+    ),
+    // Composite index for main list sorting/filtering
+    listViewIdx: index("tasks_list_view_idx").on(
+        table.userId,
+        table.listId,
+        table.isCompleted,
+        table.position
+    ),
 }));
 
 export const labels = sqliteTable("labels", {

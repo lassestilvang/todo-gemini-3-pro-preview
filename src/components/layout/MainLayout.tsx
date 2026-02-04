@@ -34,7 +34,13 @@ export async function MainLayout({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <UserProvider userId={userId} use24HourClock={user.use24HourClock ?? null} weekStartsOnMonday={user.weekStartsOnMonday ?? null}>
+        <UserProvider
+            userId={userId}
+            use24HourClock={user.use24HourClock ?? null}
+            weekStartsOnMonday={user.weekStartsOnMonday ?? null}
+            calendarUseNativeTooltipsOnDenseDays={user.calendarUseNativeTooltipsOnDenseDays ?? null}
+            calendarDenseTooltipThreshold={user.calendarDenseTooltipThreshold ?? null}
+        >
             <DataLoader userId={userId} />
             <div className="flex h-[100dvh] overflow-hidden bg-background" data-testid="app-container">
                 {/* Desktop Sidebar - Hidden on mobile */}

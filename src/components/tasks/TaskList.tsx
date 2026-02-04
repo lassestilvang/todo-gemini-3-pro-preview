@@ -28,10 +28,11 @@ export function TaskList({ tasks, title, listId, labelId, defaultDueDate, userId
         setIsDialogOpen(true);
     }, []);
 
-    const handleAdd = () => {
+    // PERF: Stable callback reference for Add button to prevent re-renders.
+    const handleAdd = useCallback(() => {
         setEditingTask(null);
         setIsDialogOpen(true);
-    };
+    }, []);
 
     return (
         <div className="space-y-4">

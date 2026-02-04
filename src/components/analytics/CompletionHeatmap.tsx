@@ -14,7 +14,10 @@ interface CompletionHeatmapProps {
     data: HeatmapData[];
 }
 
-export function CompletionHeatmap({ data }: CompletionHeatmapProps) {
+// ⚡ Bolt Opt: Memoize heatmap to prevent re-renders when parent analytics page updates unrelated state.
+// Since heatmap data only changes when task completion history changes, this avoids expensive
+// date calculations and DOM updates when other analytics sections (charts, stats) re-render.
+export const CompletionHeatmap = React.memo(function CompletionHeatmap({ data }: CompletionHeatmapProps) {
     const today = startOfDay(new Date());
     const daysToShow = 140; // ~20 weeks
     const startDate = subDays(today, daysToShow);
@@ -24,10 +27,19 @@ export function CompletionHeatmap({ data }: CompletionHeatmapProps) {
         end: today,
     });
 
+    // PERF: Build a Map for O(1) lookups instead of O(n) Array.find() per day.
+    // For 140 days with 100 data points, this reduces lookups from O(14,000) to O(140).
+    const dataMap = React.useMemo(() => {
+        const map = new Map<string, number>();
+        for (const item of data) {
+            map.set(item.date, item.count);
+        }
+        return map;
+    }, [data]);
+
     const getCountForDate = (date: Date) => {
         const dateStr = format(date, "yyyy-MM-dd");
-        const found = data.find((d) => d.date === dateStr);
-        return found ? found.count : 0;
+        return dataMap.get(dateStr) ?? 0;
     };
 
     const getColorClass = (count: number) => {
@@ -38,17 +50,20 @@ export function CompletionHeatmap({ data }: CompletionHeatmapProps) {
         return "bg-indigo-800 dark:bg-indigo-400";
     };
 
-    // Group days by week
-    const weeks: Date[][] = [];
-    let currentWeek: Date[] = [];
-
-    heatmapDays.forEach((day) => {
-        currentWeek.push(day);
-        if (day.getDay() === 6 || isSameDay(day, today)) {
-            weeks.push(currentWeek);
-            currentWeek = [];
+    // PERF: Memoize week grouping to avoid O(n) array operations on every render.
+    // For 140 days, this prevents 140 push operations + 20 array allocations per render.
+    const weeks = React.useMemo(() => {
+        const result: Date[][] = [];
+        let currentWeek: Date[] = [];
+        for (const day of heatmapDays) {
+            currentWeek.push(day);
+            if (day.getDay() === 6 || isSameDay(day, today)) {
+                result.push(currentWeek);
+                currentWeek = [];
+            }
         }
-    });
+        return result;
+    }, [heatmapDays, today]);
 
     return (
         <div className="flex flex-col gap-2 p-4 bg-card border rounded-xl shadow-sm overflow-x-auto">
@@ -97,4 +112,4 @@ export function CompletionHeatmap({ data }: CompletionHeatmapProps) {
             </div>
         </div>
     );
-}
+});

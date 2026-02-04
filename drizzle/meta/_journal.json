@@ -92,6 +92,20 @@
       "when": 1769418113281,
       "tag": "0012_uneven_wilson_fisk",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1769950600000,
+      "tag": "0013_calendar_tooltip_preferences",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1769982138730,
+      "tag": "0014_overjoyed_grandmaster",
+      "breakpoints": true
     }
   ]
 }

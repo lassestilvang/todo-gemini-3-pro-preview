@@ -6,6 +6,8 @@ interface UserContextType {
     userId?: string;
     use24HourClock: boolean | null;
     weekStartsOnMonday: boolean | null;
+    calendarUseNativeTooltipsOnDenseDays: boolean | null;
+    calendarDenseTooltipThreshold: number | null;
     /** Returns 0 for Sunday, 1 for Monday based on preference or locale */
     getWeekStartDay: () => 0 | 1;
 }
@@ -13,6 +15,8 @@ interface UserContextType {
 const UserContext = createContext<UserContextType>({
     use24HourClock: null,
     weekStartsOnMonday: null,
+    calendarUseNativeTooltipsOnDenseDays: null,
+    calendarDenseTooltipThreshold: null,
     getWeekStartDay: () => 0,
 });
 
@@ -20,14 +24,30 @@ export function useUser() {
     return useContext(UserContext);
 }
 
+export function getEffectiveCalendarDenseTooltipThreshold(value: number | null, fallback = 6) {
+    if (typeof value === "number" && Number.isFinite(value)) {
+        return Math.max(1, Math.min(20, Math.round(value)));
+    }
+    return fallback;
+}
+
 interface UserProviderProps {
     children: ReactNode;
     userId?: string;
     use24HourClock: boolean | null;
     weekStartsOnMonday: boolean | null;
+    calendarUseNativeTooltipsOnDenseDays?: boolean | null;
+    calendarDenseTooltipThreshold?: number | null;
 }
 
-export function UserProvider({ children, userId, use24HourClock, weekStartsOnMonday }: UserProviderProps) {
+export function UserProvider({
+    children,
+    userId,
+    use24HourClock,
+    weekStartsOnMonday,
+    calendarUseNativeTooltipsOnDenseDays = null,
+    calendarDenseTooltipThreshold = null,
+}: UserProviderProps) {
     const value = useMemo(() => {
         const getWeekStartDay = (): 0 | 1 => {
             if (weekStartsOnMonday !== null) {
@@ -45,8 +65,21 @@ export function UserProvider({ children, userId, use24HourClock, weekStartsOnMon
                 return 0; // Default to Sunday
             }
         };
-        return { userId, use24HourClock, weekStartsOnMonday, getWeekStartDay };
-    }, [userId, use24HourClock, weekStartsOnMonday]);
+        return {
+            userId,
+            use24HourClock,
+            weekStartsOnMonday,
+            calendarUseNativeTooltipsOnDenseDays,
+            calendarDenseTooltipThreshold,
+            getWeekStartDay,
+        };
+    }, [
+        userId,
+        use24HourClock,
+        weekStartsOnMonday,
+        calendarUseNativeTooltipsOnDenseDays,
+        calendarDenseTooltipThreshold,
+    ]);
 
     return (
         <UserContext.Provider value={value}>

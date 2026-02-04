@@ -27,3 +27,8 @@
 **Vulnerability:** All functions in `src/lib/actions/time-tracking.ts` (e.g., `startTimeEntry`, `stopTimeEntry`) accepted `userId` as an argument without validating it against the session. This allowed any user to read, modify, or delete another user's time entries.
 **Learning:** `withErrorHandling` wrapper catches `ForbiddenError` and returns a failure result, meaning tests must assert on the result object (`result.success === false`) rather than expecting a thrown error.
 **Prevention:** Added `await requireUser(userId)` to the start of every exported function in `time-tracking.ts`. Created `src/lib/actions/time-tracking.security.test.ts` to verify IDOR protection.
+
+## 2026-02-01 - [High] IDOR in Label Management
+**Vulnerability:** `src/lib/actions/labels.ts` server actions accepted `userId` as an argument without validating it against the session, allowing attackers to manage other users' labels.
+**Learning:** CRUD operations on auxiliary resources (like labels/tags) are often overlooked for security checks compared to core resources (like tasks), but they are equally vulnerable to IDOR.
+**Prevention:** Audit all resources, including "minor" ones. Ensure every exported Server Action that takes a `userId` calls `requireUser(userId)` immediately.

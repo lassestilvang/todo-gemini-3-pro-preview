@@ -1,0 +1,2 @@
+CREATE INDEX "tasks_gamification_stats_idx" ON "tasks" USING btree ("user_id","is_completed","completed_at");--> statement-breakpoint
+CREATE INDEX "tasks_list_view_idx" ON "tasks" USING btree ("user_id","list_id","is_completed","position");

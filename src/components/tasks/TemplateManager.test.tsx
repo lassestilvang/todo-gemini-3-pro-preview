@@ -1,87 +1,56 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
-import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
-import { TemplateManager } from "./TemplateManager";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import React from "react";
+import { db, templates } from "@/db";
+import { createTestUser, resetTestDb } from "@/test/setup";
+import { setMockAuthUser } from "@/test/mocks";
+import { TemplateManager } from "./TemplateManager";
+import { getTemplates } from "@/lib/actions";
 
-// Mock sonner toast
-// We use a mock function that we can inspect
-const mockToast = {
-  success: mock(() => { }),
-  error: mock(() => { }),
-};
-mock.module("sonner", () => ({
-  toast: mockToast,
-}));
+// Mock sonner toast - removed local mock to use global from setup.tsx
 
 // Mock window.confirm
 const originalConfirm = globalThis.confirm;
 
-import { db, templates, users } from "@/db";
-import { setupTestDb, resetTestDb } from "@/test/setup";
-import { setMockAuthUser } from "@/test/mocks";
-import { getTemplates } from "@/lib/actions";
-
-// Mock PointerEvent methods for Radix UI
-if (!Element.prototype.setPointerCapture) {
-  Element.prototype.setPointerCapture = () => {};
-}
-if (!Element.prototype.releasePointerCapture) {
-  Element.prototype.releasePointerCapture = () => {};
-}
-if (!Element.prototype.hasPointerCapture) {
-  Element.prototype.hasPointerCapture = () => false;
-}
+// PointerEvent mocks are provided globally in setup.tsx
 
 describe("TemplateManager", () => {
-  beforeEach(async () => {
-    await setupTestDb();
-    await resetTestDb();
+  let templateIds: number[] = [];
+  const testUserId = "test_user_123";
 
-    // Reset toast mocks
-    mockToast.success.mockClear();
-    mockToast.error.mockClear();
+  beforeEach(async () => {
+    await resetTestDb();
+    await createTestUser(testUserId, `${testUserId}@example.com`);
 
     // Set mock user to match the one expected by tests
     setMockAuthUser({
-      id: "test_user_123",
-      email: "test@example.com",
+      id: testUserId,
+      email: `${testUserId}@example.com`,
       firstName: "Test",
       lastName: "User",
       profilePictureUrl: null
     });
 
-    globalThis.confirm = mock(() => true);
-
-    // Create user first to satisfy FK constraint
-    await db.insert(users).values({
-      id: "test_user_123",
-      email: "test@example.com",
-      firstName: "Test",
-      lastName: "User",
-    });
-
-    // Seed templates
-    await db.insert(templates).values([
+    const inserted = await db.insert(templates).values([
       {
-        id: 1,
-        userId: "test_user_123",
+        userId: testUserId,
         name: "Weekly Report",
         content: JSON.stringify({ title: "Weekly Report Task", priority: "high" }),
         createdAt: new Date("2024-01-15"),
       },
       {
-        id: 2,
-        userId: "test_user_123",
+        userId: testUserId,
         name: "Daily Standup",
         content: JSON.stringify({ title: "Daily Standup Task", priority: "medium" }),
         createdAt: new Date("2024-01-16"),
       }
-    ]);
+    ]).returning();
+    templateIds = inserted.map((template) => template.id);
+
+    globalThis.confirm = mock(() => true);
   });
 
   afterEach(() => {
-    cleanup();
-    document.body.innerHTML = "";
     globalThis.confirm = originalConfirm;
   });
 
@@ -110,24 +79,20 @@ describe("TemplateManager", () => {
 
       render(<TemplateManager userId="test_user_123" />);
 
-      await React.act(async () => {
-        fireEvent.click(screen.getByText("Templates"));
-      });
+      fireEvent.click(screen.getByText("Templates"));
+
+      expect(await screen.findByText("Task Templates")).toBeInTheDocument();
 
       await waitFor(() => {
-        // If it fails, check if toast error was called
-        if (mockToast.error.mock.calls.length > 0) {
-           console.error("Toast error calls:", mockToast.error.mock.calls);
-        }
         expect(screen.getByText("Weekly Report")).toBeInTheDocument();
         expect(screen.getByText("Daily Standup")).toBeInTheDocument();
       }, { timeout: 15000 });
     }, 40000);
 
     it("should show empty state when no templates exist", async () => {
-      await db.delete(templates);
-
       render(<TemplateManager userId="test_user_123" />);
+
+      await db.delete(templates);
 
       await React.act(async () => {
         fireEvent.click(screen.getByText("Templates"));
@@ -143,19 +108,13 @@ describe("TemplateManager", () => {
     it("should open create dialog when New Template button is clicked", async () => {
       render(<TemplateManager userId="test_user_123" />);
 
-      // Open template list dialog
-      await React.act(async () => {
-        fireEvent.click(screen.getByText("Templates"));
-      });
+      fireEvent.click(screen.getByText("Templates"));
 
       await waitFor(() => {
         expect(screen.getByTestId("new-template-button")).toBeInTheDocument();
       }, { timeout: 15000 });
 
-      // Click New Template button
-      await React.act(async () => {
-        fireEvent.click(screen.getByTestId("new-template-button"));
-      });
+      fireEvent.click(screen.getByTestId("new-template-button"));
 
       await waitFor(() => {
         // Should show the TemplateFormDialog in create mode
@@ -194,9 +153,7 @@ describe("TemplateManager", () => {
     it("should render edit button for each template", async () => {
       render(<TemplateManager userId="test_user_123" />);
 
-      await React.act(async () => {
-        fireEvent.click(screen.getByText("Templates"));
-      });
+      fireEvent.click(screen.getByText("Templates"));
 
       await waitFor(() => {
         expect(screen.getByTestId("edit-template-1")).toBeInTheDocument();
@@ -207,10 +164,7 @@ describe("TemplateManager", () => {
     it("should open edit dialog with template data when edit button is clicked", async () => {
       render(<TemplateManager userId="test_user_123" />);
 
-      // Open template list dialog
-      await React.act(async () => {
-        fireEvent.click(screen.getByText("Templates"));
-      });
+      fireEvent.click(screen.getByText("Templates"));
 
       await waitFor(() => {
         expect(screen.getByTestId("edit-template-1")).toBeInTheDocument();
@@ -244,7 +198,7 @@ describe("TemplateManager", () => {
 
       // Click edit button for first template
       await React.act(async () => {
-        fireEvent.click(screen.getByTestId("edit-template-1"));
+        fireEvent.click(screen.getByTestId(`edit-template-${templateIds[0]}`));
       });
 
       await waitFor(() => {
@@ -288,10 +242,9 @@ describe("TemplateManager", () => {
 
       fireEvent.click(screen.getByText("Templates"));
 
-      // Wait a bit to ensure no call is made
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      expect(screen.queryByText("Weekly Report")).not.toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText("No templates found. Create one to get started.")).toBeInTheDocument();
+      });
     });
   });
 });
