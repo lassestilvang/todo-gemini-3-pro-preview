@@ -42,3 +42,8 @@
 **Vulnerability:** `src/lib/actions/dependencies.ts` and `src/lib/actions/reminders.ts` server actions accepted `userId` as an argument without validating it against the session, allowing attackers to manage other users' task dependencies and reminders.
 **Learning:** Even if an action is "simple" (like adding a dependency or reminder), if it takes a `userId` and writes to the DB, it must be protected. The pattern of missing checks is consistent across less "core" modules.
 **Prevention:** Applied `requireUser(userId)` to `dependencies.ts` and `reminders.ts`. Added reproduction test `src/test/integration/security-dependencies.test.ts` to catch future regressions.
+
+## 2026-02-06 - [High] IDOR in Log Retrieval
+**Vulnerability:** `getTaskLogs`, `getActivityLog`, and `getCompletionHistory` in `src/lib/actions/logs.ts` were missing authorization checks. `getTaskLogs` (taking only `taskId`) allowed viewing logs of any task by ID. `getActivityLog` and `getCompletionHistory` accepted `userId` without validation.
+**Learning:** Functions that retrieve history/logs are sensitive and prone to IDOR because they often lack the "natural" user ownership context that creation/update actions have.
+**Prevention:** Added `requireUser` checks. For `getTaskLogs(taskId)`, we must fetch the current user and filter the query by `userId` to implicitly verify ownership of the task/log.

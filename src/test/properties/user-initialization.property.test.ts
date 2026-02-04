@@ -113,18 +113,22 @@ describe("Property Tests: User Initialization", () => {
   it("Property 2: New users get default Inbox list and initialized stats", async () => {
     await fc.assert(
       fc.asyncProperty(workosUserArb, async (workosUser) => {
-        // Cleanup potential collisions from previous runs
-        // Ensure clean state for this user ID
-        await db.delete(users).where(eq(users.id, workosUser.id));
-
-        // Create user
-        await db.insert(users).values({
-          id: workosUser.id,
-          email: workosUser.email,
-          firstName: workosUser.firstName,
-          lastName: workosUser.lastName,
-          avatarUrl: workosUser.profilePictureUrl,
-        });
+        // Create user (safe upsert)
+        await db.insert(users)
+          .values({
+            id: workosUser.id,
+            email: workosUser.email,
+            firstName: workosUser.firstName,
+            lastName: workosUser.lastName,
+            avatarUrl: workosUser.profilePictureUrl,
+          })
+          .onConflictDoUpdate({
+            target: users.id,
+            set: {
+              email: workosUser.email,
+              updatedAt: new Date(),
+            },
+          });
 
         // Initialize default data (simulating initializeUserData)
         await db.insert(lists).values({
@@ -159,18 +163,25 @@ describe("Property Tests: User Initialization", () => {
   it("User data persists with correct values after creation", async () => {
     await fc.assert(
       fc.asyncProperty(workosUserArb, async (workosUser) => {
-        // Cleanup potential collisions from previous runs
-        // Ensure clean state for this user ID
-        await db.delete(users).where(eq(users.id, workosUser.id));
-
-        // Create user
-        await db.insert(users).values({
-          id: workosUser.id,
-          email: workosUser.email,
-          firstName: workosUser.firstName,
-          lastName: workosUser.lastName,
-          avatarUrl: workosUser.profilePictureUrl,
-        });
+        // Create user (safe upsert)
+        await db.insert(users)
+          .values({
+            id: workosUser.id,
+            email: workosUser.email,
+            firstName: workosUser.firstName,
+            lastName: workosUser.lastName,
+            avatarUrl: workosUser.profilePictureUrl,
+          })
+          .onConflictDoUpdate({
+            target: users.id,
+            set: {
+              email: workosUser.email,
+              firstName: workosUser.firstName,
+              lastName: workosUser.lastName,
+              avatarUrl: workosUser.profilePictureUrl,
+              updatedAt: new Date(),
+            },
+          });
 
         const retrieved = await db.select().from(users).where(eq(users.id, workosUser.id)).limit(1);
         expect(retrieved).toHaveLength(1);

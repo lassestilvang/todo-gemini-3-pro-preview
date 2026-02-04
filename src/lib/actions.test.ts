@@ -534,6 +534,29 @@ describe("Server Actions", () => {
             expect(actions).toContain("created");
             expect(actions).toContain("completed");
         });
+
+        it("should fail to get task logs for another user's task", async () => {
+            const task = await createTask({ userId: testUserId, title: "Secret Task" });
+
+            // Switch to another user
+            setMockAuthUser({ id: "other_user", email: "other@example.com" });
+
+            const logs = await getTaskLogs(task.id);
+            expect(logs).toHaveLength(0);
+
+            // Reset user
+            setMockAuthUser({ id: testUserId, email: `${testUserId}@example.com` });
+        });
+
+        it("should fail to get activity log for another user", async () => {
+             try {
+                await getActivityLog("other_user");
+                expect(true).toBe(false); // Should not reach here
+             } catch (error: any) {
+                 expect(error.message).toBe("Forbidden");
+                 expect(error.name).toBe("ForbiddenError");
+             }
+        });
     });
 
     describe("View Settings", () => {
