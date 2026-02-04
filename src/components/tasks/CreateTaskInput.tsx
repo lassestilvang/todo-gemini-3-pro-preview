@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { VoiceInput } from "./VoiceInput";
 import { TaskDialog } from "./TaskDialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { formatFriendlyDate } from "@/lib/time-utils";
 
 
 import { useSync } from "@/components/providers/sync-provider";
@@ -37,6 +38,11 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const [isPriorityOpen, setIsPriorityOpen] = useState(false);
     const [icon, setIcon] = useState<string | undefined>(undefined);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     // Parse natural language input - intentionally only depends on title
     useEffect(() => {
@@ -171,7 +177,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                                     <PopoverTrigger asChild>
                                         <Button variant="ghost" size="sm" className={cn(dueDate && "text-primary")}>
                                             <Calendar className="mr-2 h-4 w-4" />
-                                            {dueDate ? format(dueDate, "MMM d") : "Due Date"}
+                                            {dueDate ? (mounted ? formatFriendlyDate(dueDate, "MMM d") : format(dueDate, "MMM d")) : "Due Date"}
                                         </Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0">
