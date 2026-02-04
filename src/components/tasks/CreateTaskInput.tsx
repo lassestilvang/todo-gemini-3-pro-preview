@@ -108,8 +108,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
             setIcon(undefined);
             setIsExpanded(false);
 
-            // Optional: toast can be handled by the optimistic update logic if desired, 
-            // but a reassuring message here is fine too.
+            toast.success("Task created");
         } catch (error) {
             console.error("Failed to create task:", error);
             toast.error("Failed to create task");
