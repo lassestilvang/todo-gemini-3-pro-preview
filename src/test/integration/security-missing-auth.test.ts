@@ -37,6 +37,7 @@ describe("Integration: Security Missing Auth", () => {
 
     // View Settings Tests
     it("should fail when reading another user's view settings", async () => {
+        // getViewSettings is not wrapped in withErrorHandling, so it throws ForbiddenError directly
         // Debug check
         // const currentUser = await import("@/lib/auth").then(m => m.getCurrentUser());
         // console.log(`[DEBUG] Test User: Attacker=${attackerId}, Victim=${victimId}`);
@@ -78,7 +79,23 @@ describe("Integration: Security Missing Auth", () => {
 
     // Template Tests
     it("should fail when getting another user's templates", async () => {
-        await expect(getTemplates(victimId)).rejects.toThrow(/Forbidden|authorized/i);
+        try {
+            const result = await getTemplates(victimId);
+            // @ts-expect-error - checking if it's an ActionResult
+            if (result && typeof result === 'object' && 'success' in result) {
+                // @ts-expect-error - checking if it's an ActionResult
+                expect(isFailure(result)).toBe(true);
+                // @ts-expect-error - checking if it's an ActionResult
+                if (isFailure(result)) {
+                    // @ts-expect-error - checking if it's an ActionResult
+                    expect(result.error.code).toBe("FORBIDDEN");
+                }
+            } else {
+                 throw new Error("Should have thrown or returned failure");
+            }
+        } catch (e: any) {
+             expect(e.message).toMatch(/Forbidden|authorized/i);
+        }
     });
 
     it("should fail when creating a template for another user", async () => {

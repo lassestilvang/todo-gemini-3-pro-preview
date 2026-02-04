@@ -31,22 +31,21 @@ fc.configureGlobal({
 // Generator for valid WorkOS user IDs
 const workosUserIdArb = fc.uuid().map(u => `user_${u}`);
 
-// Generator for valid email addresses
-const emailArb = fc.emailAddress();
-
 // Generator for optional names
 const nameArb = fc.option(fc.string({ minLength: 1, maxLength: 50 }), { nil: null });
 
 // Generator for WorkOS user objects
 const workosUserArb = fc.record({
   id: workosUserIdArb,
-  email: emailArb,
+  email: fc.emailAddress(),
   firstName: nameArb,
   lastName: nameArb,
   profilePictureUrl: fc.option(fc.webUrl(), { nil: null }),
 }).map((user) => ({
   ...user,
   email: `${user.id}@example.com`,
+  // Use unique ID suffix to avoid collision between tests in same run if fast-check doesn't reset seed perfectly or runs parallel
+  id: `user_${Math.random().toString(36).substring(7)}_${user.id.substring(5)}`,
 }));
 
 describe("Property Tests: User Initialization", () => {

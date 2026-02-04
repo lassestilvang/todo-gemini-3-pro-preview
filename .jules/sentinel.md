@@ -33,6 +33,11 @@
 **Learning:** CRUD operations on auxiliary resources (like labels/tags) are often overlooked for security checks compared to core resources (like tasks), but they are equally vulnerable to IDOR.
 **Prevention:** Audit all resources, including "minor" ones. Ensure every exported Server Action that takes a `userId` calls `requireUser(userId)` immediately.
 
+## 2026-10-29 - [Critical] IDOR in Task Dependencies
+**Vulnerability:** `getBlockers` and `getBlockedTasks` in `src/lib/actions/dependencies.ts` accepted task IDs and returned related tasks without verifying if the user owned the task or the blocker.
+**Learning:** Checking ownership is critical for ALL read operations, not just write operations. Even "helper" data like dependencies can leak information about tasks.
+**Prevention:** Updated functions to accept `userId` and verify ownership of the primary entity (task or blocker) before returning data.
+
 ## 2026-10-31 - [Critical] IDOR in Dependencies and Reminders
 **Vulnerability:** `src/lib/actions/dependencies.ts` and `src/lib/actions/reminders.ts` server actions accepted `userId` as an argument without validating it against the session, allowing attackers to manage other users' task dependencies and reminders.
 **Learning:** Even if an action is "simple" (like adding a dependency or reminder), if it takes a `userId` and writes to the DB, it must be protected. The pattern of missing checks is consistent across less "core" modules.
