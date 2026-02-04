@@ -70,7 +70,9 @@ export async function getTasks(
   // Always filter out subtasks - only show parent tasks
   conditions.push(isNull(tasks.parentId));
 
-  if (!showCompleted) {
+  if (filter === "completed") {
+    conditions.push(eq(tasks.isCompleted, true));
+  } else if (!showCompleted) {
     conditions.push(eq(tasks.isCompleted, false));
   }
 

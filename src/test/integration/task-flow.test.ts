@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
-import { createList, createTask, toggleTaskCompletion, getTasks, deleteTask, deleteList } from "@/lib/actions";
+import { createList, deleteList } from "@/lib/actions/lists";
+import { createTask, toggleTaskCompletion, getTasks, deleteTask } from "@/lib/actions/tasks";
 import { isSuccess } from "@/lib/action-result";
 
 describe("Integration: Task Flow", () => {

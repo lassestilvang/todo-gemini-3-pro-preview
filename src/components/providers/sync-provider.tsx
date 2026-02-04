@@ -11,6 +11,7 @@ import { useTaskStore } from "@/lib/store/task-store";
 import { useListStore } from "@/lib/store/list-store";
 import { useLabelStore } from "@/lib/store/label-store";
 import { ConflictDialog } from "@/components/sync/ConflictDialog";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface SyncContextType {
     pendingActions: PendingAction[];
@@ -44,6 +45,7 @@ function replaceIdsInPayload(payload: unknown, oldId: number, newId: number): un
 }
 
 export function SyncProvider({ children }: { children: React.ReactNode }) {
+    const queryClient = useQueryClient();
     const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
     const [status, setStatus] = useState<SyncStatus>('online');
     const [isOnline, setIsOnline] = useState(true);
@@ -77,10 +79,22 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     const processQueue = useCallback(async () => {
         if (processingRef.current || !navigator.onLine) return;
 
-        const queue = await getQueue();
-        if (queue.length === 0) return;
-
         processingRef.current = true;
+
+        let queue: PendingAction[];
+        try {
+            queue = await getQueue();
+        } catch (error) {
+            console.error("Failed to fetch sync queue:", error);
+            processingRef.current = false;
+            return;
+        }
+
+        if (queue.length === 0) {
+            processingRef.current = false;
+            return;
+        }
+
         setStatus('syncing');
 
         const completedIds: string[] = [];
@@ -139,6 +153,15 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
                             listUpserts.push(result);
                         } else if (action.type.includes('Label') && typeof result === 'object' && 'id' in result) {
                             labelUpserts.push(result);
+                        }
+                    }
+
+                    // Invalidate user stats on completion toggle to update XP/Streak immediately
+                    if (action.type === 'toggleTaskCompletion') {
+                        const payload = action.payload as any[];
+                        const userId = payload[1];
+                        if (userId) {
+                            queryClient.invalidateQueries({ queryKey: ['userStats', userId] });
                         }
                     }
 

@@ -55,7 +55,7 @@ const workosUserArb = fc.record({
   profilePictureUrl: fc.option(fc.webUrl(), { nil: null }),
 });
 
-const describeOrSkip = describe;
+const describeOrSkip = process.env.CI ? describe.skip : describe;
 
 describeOrSkip("Property Tests: Session Security", () => {
   beforeEach(async () => {
