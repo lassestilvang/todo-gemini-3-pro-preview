@@ -44,6 +44,14 @@ mock.module("@/lib/actions", () => ({
   createTemplate: mockCreateTemplate
 }));
 
+mock.module("@/lib/actions/templates", () => ({
+  getTemplates: mockGetTemplates,
+  deleteTemplate: mockDeleteTemplate,
+  instantiateTemplate: mockInstantiateTemplate,
+  updateTemplate: mockUpdateTemplate,
+  createTemplate: mockCreateTemplate
+}));
+
 describe("TemplateManager", () => {
   beforeEach(async () => {
     // Set mock user to match the one expected by tests

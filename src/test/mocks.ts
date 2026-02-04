@@ -116,8 +116,13 @@ import { AsyncLocalStorage } from "node:async_hooks";
 const authStorage = new AsyncLocalStorage<MockAuthUser | null>();
 
 // Use globalThis to ensure the mock state is shared across module boundaries as a fallback
-const mockState = globalThis as unknown as { __mockAuthUser: MockAuthUser | null };
-mockState.__mockAuthUser = DEFAULT_MOCK_USER;
+const GLOBAL_MOCK_USER_KEY = "__mockAuthUser";
+const mockState = globalThis as unknown as Record<string, MockAuthUser | null>;
+
+// Initialize only if not present to preserve state across module reloads
+if (mockState[GLOBAL_MOCK_USER_KEY] === undefined) {
+    mockState[GLOBAL_MOCK_USER_KEY] = DEFAULT_MOCK_USER;
+}
 
 /**
  * Runs a function within a specific authentication context.
@@ -125,35 +130,35 @@ mockState.__mockAuthUser = DEFAULT_MOCK_USER;
  * When in an auth context, getMockAuthUser will prioritize this user.
  */
 export function runInAuthContext<T>(user: MockAuthUser | null, fn: () => T): T {
-    const previousUser = mockState.__mockAuthUser;
-    mockState.__mockAuthUser = user;
+    const previousUser = mockState[GLOBAL_MOCK_USER_KEY];
+    mockState[GLOBAL_MOCK_USER_KEY] = user;
 
     try {
         const result = authStorage.run(user, fn);
         if (result && typeof (result as unknown as Promise<unknown>).finally === "function") {
             return (result as unknown as Promise<unknown>).finally(() => {
-                mockState.__mockAuthUser = previousUser;
+                mockState[GLOBAL_MOCK_USER_KEY] = previousUser;
             }) as T;
         }
 
-        mockState.__mockAuthUser = previousUser;
+        mockState[GLOBAL_MOCK_USER_KEY] = previousUser;
         return result;
     } catch (error) {
-        mockState.__mockAuthUser = previousUser;
+        mockState[GLOBAL_MOCK_USER_KEY] = previousUser;
         throw error;
     }
 }
 
 export function setMockAuthUser(user: MockAuthUser | null) {
-    mockState.__mockAuthUser = user;
+    mockState[GLOBAL_MOCK_USER_KEY] = user;
 }
 
 export function clearMockAuthUser() {
-    mockState.__mockAuthUser = null;
+    mockState[GLOBAL_MOCK_USER_KEY] = null;
 }
 
 export function resetMockAuthUser() {
-    mockState.__mockAuthUser = DEFAULT_MOCK_USER;
+    mockState[GLOBAL_MOCK_USER_KEY] = DEFAULT_MOCK_USER;
 }
 
 export function getMockAuthUser(): MockAuthUser | null {
@@ -163,7 +168,7 @@ export function getMockAuthUser(): MockAuthUser | null {
         return contextUser;
     }
     // Fallback to global state for tests not using runInAuthContext
-    return mockState.__mockAuthUser;
+    return mockState[GLOBAL_MOCK_USER_KEY];
 }
 
 mock.module("@workos-inc/authkit-nextjs", () => ({
