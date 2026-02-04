@@ -17,6 +17,7 @@ import {
   withErrorHandling,
   ValidationError,
 } from "./shared";
+import { requireUser } from "@/lib/auth";
 
 /**
  * Internal implementation for adding a dependency between tasks.
@@ -27,6 +28,8 @@ import {
  * @throws {ValidationError} When task tries to block itself or circular dependency detected
  */
 async function addDependencyImpl(userId: string, taskId: number, blockerId: number) {
+  await requireUser(userId);
+
   if (taskId === blockerId) {
     throw new ValidationError("Task cannot block itself", {
       blockerId: "A task cannot be its own blocker",
@@ -84,6 +87,8 @@ export const addDependency: (
  * @param blockerId - The ID of the task that was blocking
  */
 async function removeDependencyImpl(userId: string, taskId: number, blockerId: number) {
+  await requireUser(userId);
+
   await db
     .delete(taskDependencies)
     .where(and(eq(taskDependencies.taskId, taskId), eq(taskDependencies.blockerId, blockerId)));
