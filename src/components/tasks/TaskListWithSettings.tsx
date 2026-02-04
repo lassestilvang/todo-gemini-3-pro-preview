@@ -294,7 +294,6 @@ const SortableTaskItem = memo(function SortableTaskItem({
         <div
             ref={setNodeRef}
             style={style}
-            {...attributes}
             // Listeners are applied to the handle inside TaskItem via a prop? 
             // Better: Render Drag Handle in SortableTaskItem and pass it the listeners.
             // Or: Pass listeners to TaskItem and attach to handle.
@@ -319,6 +318,7 @@ const SortableTaskItem = memo(function SortableTaskItem({
                 userId={userId}
                 disableAnimations={isDragEnabled}
                 dragHandleProps={isDragEnabled ? listeners : undefined}
+                dragAttributes={isDragEnabled ? attributes : undefined}
                 dispatch={dispatch}
                 onEdit={handleEdit}
             />

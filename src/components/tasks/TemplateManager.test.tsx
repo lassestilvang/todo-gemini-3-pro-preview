@@ -165,8 +165,6 @@ describe("TemplateManager", () => {
     });
 
     it("should show empty state when no templates exist", async () => {
-      mockGetTemplates.mockResolvedValueOnce([]);
-
       render(<TemplateManager userId="test_user_123" />);
 
       await db.delete(templates);
