@@ -32,3 +32,8 @@
 **Vulnerability:** `src/lib/actions/labels.ts` server actions accepted `userId` as an argument without validating it against the session, allowing attackers to manage other users' labels.
 **Learning:** CRUD operations on auxiliary resources (like labels/tags) are often overlooked for security checks compared to core resources (like tasks), but they are equally vulnerable to IDOR.
 **Prevention:** Audit all resources, including "minor" ones. Ensure every exported Server Action that takes a `userId` calls `requireUser(userId)` immediately.
+
+## 2026-10-31 - [Critical] IDOR in Dependencies and Reminders
+**Vulnerability:** `src/lib/actions/dependencies.ts` and `src/lib/actions/reminders.ts` server actions accepted `userId` as an argument without validating it against the session, allowing attackers to manage other users' task dependencies and reminders.
+**Learning:** Even if an action is "simple" (like adding a dependency or reminder), if it takes a `userId` and writes to the DB, it must be protected. The pattern of missing checks is consistent across less "core" modules.
+**Prevention:** Applied `requireUser(userId)` to `dependencies.ts` and `reminders.ts`. Added reproduction test `src/test/integration/security-dependencies.test.ts` to catch future regressions.
