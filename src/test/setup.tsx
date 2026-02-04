@@ -43,10 +43,60 @@ global.ResizeObserver = class ResizeObserver {
 };
 
 // Mock indexedDB for happy-dom/idb tests
-const mockIDBRequest = {
-    onerror: null,
-    onsuccess: null,
-    result: null,
+const createMockIDBTransaction = () => {
+    const listeners: Record<string, ((event: Event) => void)[]> = {};
+    const transaction = Object.assign(Object.create((global as unknown as { IDBTransaction: { prototype: object } }).IDBTransaction?.prototype ?? {}), {
+        error: null as unknown,
+        objectStoreNames: ["store"],
+        addEventListener: (type: string, handler: (event: Event) => void) => {
+            listeners[type] = listeners[type] || [];
+            listeners[type].push(handler);
+        },
+        removeEventListener: (type: string, handler: (event: Event) => void) => {
+            listeners[type] = (listeners[type] || []).filter((listener) => listener !== handler);
+        },
+        dispatchEvent: (event: Event) => {
+            const handlers = listeners[event.type] || [];
+            handlers.forEach((listener) => listener(event));
+            return true;
+        },
+        objectStore: () => ({
+            get: () => createMockIDBRequest(),
+            put: () => createMockIDBRequest(),
+            add: () => createMockIDBRequest(),
+            delete: () => createMockIDBRequest(),
+            clear: () => createMockIDBRequest(),
+            index: () => ({
+                get: () => createMockIDBRequest(),
+                getAll: () => createMockIDBRequest(),
+            }),
+        }),
+    });
+    return transaction;
+};
+
+const createMockIDBRequest = () => {
+    const listeners: Record<string, ((event: Event) => void)[]> = {};
+    return Object.assign(Object.create((global as unknown as { IDBRequest: { prototype: object } }).IDBRequest?.prototype ?? {}), {
+        onerror: null as ((event: Event) => void) | null,
+        onsuccess: null as ((event: Event) => void) | null,
+        onupgradeneeded: null as ((event: Event) => void) | null,
+        result: null as unknown,
+        transaction: createMockIDBTransaction() as unknown as IDBTransaction,
+        error: null as unknown,
+        addEventListener: (type: string, handler: (event: Event) => void) => {
+            listeners[type] = listeners[type] || [];
+            listeners[type].push(handler);
+        },
+        removeEventListener: (type: string, handler: (event: Event) => void) => {
+            listeners[type] = (listeners[type] || []).filter((listener) => listener !== handler);
+        },
+        dispatchEvent: (event: Event) => {
+            const handler = listeners[event.type] || [];
+            handler.forEach((listener) => listener(event));
+            return true;
+        },
+    });
 };
 
 // Mock sonner globally
@@ -63,33 +113,99 @@ mock.module("sonner", () => ({
     },
 }));
 
-const mockIDBDatabase = {
-    close: () => { },
-    transaction: () => ({
-        objectStore: () => ({
-            get: () => mockIDBRequest,
-            put: () => mockIDBRequest,
-            delete: () => mockIDBRequest,
-            clear: () => mockIDBRequest,
-            index: () => ({
-                get: () => mockIDBRequest,
-            }),
-        }),
-    }),
-};
+mock.module("idb", () => {
+    const createTransaction = () => ({
+        store: {
+            put: async () => undefined,
+            delete: async () => undefined,
+            get: async () => undefined,
+            getAll: async () => [],
+            getAllFromIndex: async () => [],
+        },
+        done: Promise.resolve(),
+    });
+
+    const db = {
+        transaction: () => createTransaction(),
+        getAll: async () => [],
+        getAllFromIndex: async () => [],
+        get: async () => undefined,
+        put: async () => undefined,
+        delete: async () => undefined,
+    };
+
+    return {
+        openDB: async () => db,
+    };
+});
+
+const createMockIDBDatabase = () => Object.assign(
+    Object.create((global as unknown as { IDBDatabase: { prototype: object } }).IDBDatabase?.prototype ?? {}),
+    {
+        close: () => { },
+        addEventListener: () => { },
+        transaction: () => createMockIDBTransaction(),
+        getAll: async () => [],
+        getAllFromIndex: async () => [],
+        get: async () => undefined,
+        put: async () => undefined,
+        delete: async () => undefined,
+    }
+);
+
+if (!global.IDBRequest) {
+    class MockIDBRequest { }
+    (global as unknown as { IDBRequest: unknown }).IDBRequest = MockIDBRequest;
+}
+
+if (!global.IDBTransaction) {
+    class MockIDBTransaction { }
+    (global as unknown as { IDBTransaction: unknown }).IDBTransaction = MockIDBTransaction;
+}
+
+if (!global.IDBDatabase) {
+    class MockIDBDatabase { }
+    (global as unknown as { IDBDatabase: unknown }).IDBDatabase = MockIDBDatabase;
+}
+
+if (!global.IDBObjectStore) {
+    class MockIDBObjectStore { }
+    (global as unknown as { IDBObjectStore: unknown }).IDBObjectStore = MockIDBObjectStore;
+}
+
+if (!global.IDBIndex) {
+    class MockIDBIndex { }
+    (global as unknown as { IDBIndex: unknown }).IDBIndex = MockIDBIndex;
+}
+
+if (!global.IDBCursor) {
+    class MockIDBCursor { }
+    (global as unknown as { IDBCursor: unknown }).IDBCursor = MockIDBCursor;
+}
 
 global.indexedDB = {
     open: () => {
-        const request = { ...mockIDBRequest } as unknown as IDBOpenDBRequest;
+        const request = createMockIDBRequest() as unknown as IDBOpenDBRequest;
         setTimeout(() => {
+            const db = createMockIDBDatabase();
+            Object.defineProperty(request, 'result', { value: db as unknown as IDBDatabase, writable: true });
+            const event = { target: request, oldVersion: 0, newVersion: 1 } as unknown as Event;
+            if (request.onupgradeneeded) {
+                (request.onupgradeneeded as (this: IDBOpenDBRequest, ev: Event) => unknown).call(request, event);
+            }
             if (request.onsuccess) {
-                const event = { target: { result: mockIDBDatabase } } as unknown as Event;
                 (request.onsuccess as (this: IDBOpenDBRequest, ev: Event) => unknown).call(request, event);
+            }
+            if (typeof request.dispatchEvent === "function") {
+                request.dispatchEvent(event);
+            }
+            if (typeof request.dispatchEvent === "function") {
+                request.dispatchEvent({ type: "success" } as Event);
             }
         }, 0);
         return request;
     },
-    deleteDatabase: () => mockIDBRequest as unknown as IDBOpenDBRequest,
+    deleteDatabase: () => createMockIDBRequest() as unknown as IDBOpenDBRequest,
 } as unknown as IDBFactory;
 
 // Mock PointerEvent and Element pointer methods

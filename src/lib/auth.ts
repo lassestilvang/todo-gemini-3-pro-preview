@@ -33,8 +33,10 @@ async function getTestUser(): Promise<AuthUser | null> {
     const testSession = cookieStore.get('wos-session-test');
 
     if (testSession) {
+      console.log('[Auth] Found test session cookie:', testSession.value.substring(0, 50) + '...');
       const session = JSON.parse(testSession.value);
       if (session.user && session.expiresAt > Date.now()) {
+        console.log('[Auth] Test session valid for user:', session.user.id);
         return {
           id: session.user.id,
           email: session.user.email,
@@ -48,10 +50,11 @@ async function getTestUser(): Promise<AuthUser | null> {
         };
       }
     }
-  } catch {
-    // Invalid session - return null
+  } catch (e) {
+    console.error('[Auth] Error parsing test session:', e);
   }
 
+  console.log('[Auth] No valid test session found');
   return null;
 }
 
@@ -60,7 +63,7 @@ async function getTestUser(): Promise<AuthUser | null> {
  * Returns null if not authenticated.
  * In E2E test mode, checks for test session cookie instead of WorkOS.
  */
-export const getCurrentUser = cache(async function getCurrentUser(): Promise<AuthUser | null> {
+async function getCurrentUserImpl(): Promise<AuthUser | null> {
   // In E2E test mode, only use test session (skip WorkOS entirely)
   if (process.env.E2E_TEST_MODE === 'true') {
     return getTestUser();
@@ -94,7 +97,12 @@ export const getCurrentUser = cache(async function getCurrentUser(): Promise<Aut
     calendarUseNativeTooltipsOnDenseDays: dbUser?.calendarUseNativeTooltipsOnDenseDays ?? null,
     calendarDenseTooltipThreshold: dbUser?.calendarDenseTooltipThreshold ?? null,
   };
-});
+}
+
+export const getCurrentUser =
+  process.env.NODE_ENV === "test"
+    ? getCurrentUserImpl
+    : cache(getCurrentUserImpl);
 
 /**
  * Require authentication for a server action.

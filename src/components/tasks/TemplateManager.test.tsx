@@ -1,92 +1,55 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { TemplateManager } from "./TemplateManager";
 import React from "react";
+import { db, templates } from "@/db";
+import { createTestUser, resetTestDb } from "@/test/setup";
+import { setMockAuthUser } from "@/test/mocks";
+import { TemplateManager } from "./TemplateManager";
 
 // Mock sonner toast - removed local mock to use global from setup.tsx
 
 // Mock window.confirm
 const originalConfirm = globalThis.confirm;
 
-import { setMockAuthUser } from "@/test/mocks";
-import { success } from "@/lib/action-result";
-
 // PointerEvent mocks are provided globally in setup.tsx
 
-// Mock Actions
-const mockGetTemplates = mock(() => Promise.resolve([
-  {
-    id: 1,
-    name: "Weekly Report",
-    content: JSON.stringify({ title: "Weekly Report Task", priority: "high" }),
-    createdAt: new Date("2024-01-15"),
-    userId: "test_user_123"
-  },
-  {
-    id: 2,
-    name: "Daily Standup",
-    content: JSON.stringify({ title: "Daily Standup Task", priority: "medium" }),
-    createdAt: new Date("2024-01-16"),
-    userId: "test_user_123"
-  }
-]));
-
-const mockDeleteTemplate = mock(() => Promise.resolve({ success: true }));
-const mockInstantiateTemplate = mock(() => Promise.resolve({ success: true }));
-const mockUpdateTemplate = mock(() => Promise.resolve({ success: true }));
-const mockCreateTemplate = mock(() => Promise.resolve({ success: true }));
-
-mock.module("@/lib/actions", () => ({
-  getTemplates: mockGetTemplates,
-  deleteTemplate: mockDeleteTemplate,
-  instantiateTemplate: mockInstantiateTemplate,
-  updateTemplate: mockUpdateTemplate,
-  createTemplate: mockCreateTemplate
-}));
-
 describe("TemplateManager", () => {
+  let templateIds: number[] = [];
+  const testUserId = "test_user_123";
+
   beforeEach(async () => {
+    await resetTestDb();
+    await createTestUser(testUserId, `${testUserId}@example.com`);
+
     // Set mock user to match the one expected by tests
     setMockAuthUser({
-      id: "test_user_123",
-      email: "test@example.com",
+      id: testUserId,
+      email: `${testUserId}@example.com`,
       firstName: "Test",
       lastName: "User",
       profilePictureUrl: null
     });
 
-    globalThis.confirm = mock(() => true);
-    mockGetTemplates.mockReset();
-    mockDeleteTemplate.mockReset();
-    mockInstantiateTemplate.mockReset();
-    mockUpdateTemplate.mockReset();
-    mockCreateTemplate.mockReset();
-
-    // Re-setup initial implementation
-    mockGetTemplates.mockResolvedValue([
+    const inserted = await db.insert(templates).values([
       {
-        id: 1,
+        userId: testUserId,
         name: "Weekly Report",
         content: JSON.stringify({ title: "Weekly Report Task", priority: "high" }),
         createdAt: new Date("2024-01-15"),
-        userId: "test_user_123"
       },
       {
-        id: 2,
+        userId: testUserId,
         name: "Daily Standup",
         content: JSON.stringify({ title: "Daily Standup Task", priority: "medium" }),
         createdAt: new Date("2024-01-16"),
-        userId: "test_user_123"
       }
-    ]);
-    mockDeleteTemplate.mockResolvedValue(success(undefined));
-    mockInstantiateTemplate.mockResolvedValue(success(undefined));
-    mockUpdateTemplate.mockResolvedValue(success(undefined));
-    mockCreateTemplate.mockResolvedValue(success(undefined));
+    ]).returning();
+    templateIds = inserted.map((template) => template.id);
+
+    globalThis.confirm = mock(() => true);
   });
 
   afterEach(() => {
-    document.body.innerHTML = "";
     globalThis.confirm = originalConfirm;
   });
 
@@ -96,7 +59,7 @@ describe("TemplateManager", () => {
       expect(screen.getByText("Templates")).toBeInTheDocument();
     });
 
-    it.skip("should open template list dialog when Templates button is clicked", async () => {
+    it("should open template list dialog when Templates button is clicked", async () => {
       render(<TemplateManager userId="test_user_123" />);
 
       await React.act(async () => {
@@ -108,7 +71,7 @@ describe("TemplateManager", () => {
       });
     });
 
-    it.skip("should load and display templates when dialog opens", async () => {
+    it("should load and display templates when dialog opens", async () => {
       render(<TemplateManager userId="test_user_123" />);
 
       fireEvent.click(screen.getByText("Templates"));
@@ -116,16 +79,15 @@ describe("TemplateManager", () => {
       expect(await screen.findByText("Task Templates")).toBeInTheDocument();
 
       await waitFor(() => {
-        expect(mockGetTemplates).toHaveBeenCalledWith("test_user_123");
         expect(screen.getByText("Weekly Report")).toBeInTheDocument();
         expect(screen.getByText("Daily Standup")).toBeInTheDocument();
       });
     });
 
-    it.skip("should show empty state when no templates exist", async () => {
-      mockGetTemplates.mockResolvedValueOnce([]);
-
+    it("should show empty state when no templates exist", async () => {
       render(<TemplateManager userId="test_user_123" />);
+
+      await db.delete(templates);
 
       await React.act(async () => {
         fireEvent.click(screen.getByText("Templates"));
@@ -138,7 +100,7 @@ describe("TemplateManager", () => {
   });
 
   describe("create dialog", () => {
-    it.skip("should open create dialog when New Template button is clicked", async () => {
+    it("should open create dialog when New Template button is clicked", async () => {
       render(<TemplateManager userId="test_user_123" />);
 
       fireEvent.click(screen.getByText("Templates"));
@@ -151,7 +113,7 @@ describe("TemplateManager", () => {
       expect(screen.getByTestId("template-name-input")).toBeInTheDocument();
     });
 
-    it.skip("should show empty form fields in create mode", async () => {
+    it("should show empty form fields in create mode", async () => {
       render(<TemplateManager userId="test_user_123" />);
 
       // Open template list dialog
@@ -178,28 +140,28 @@ describe("TemplateManager", () => {
   });
 
   describe("edit dialog", () => {
-    it.skip("should render edit button for each template", async () => {
+    it("should render edit button for each template", async () => {
       render(<TemplateManager userId="test_user_123" />);
 
       fireEvent.click(screen.getByText("Templates"));
 
-      expect(await screen.findByTestId("edit-template-1")).toBeInTheDocument();
-      expect(screen.getByTestId("edit-template-2")).toBeInTheDocument();
+      expect(await screen.findByTestId(`edit-template-${templateIds[0]}`)).toBeInTheDocument();
+      expect(screen.getByTestId(`edit-template-${templateIds[1]}`)).toBeInTheDocument();
     });
 
-    it.skip("should open edit dialog with template data when edit button is clicked", async () => {
+    it("should open edit dialog with template data when edit button is clicked", async () => {
       render(<TemplateManager userId="test_user_123" />);
 
       fireEvent.click(screen.getByText("Templates"));
 
-      const editBtn = await screen.findByTestId("edit-template-1");
+      const editBtn = await screen.findByTestId(`edit-template-${templateIds[0]}`);
       fireEvent.click(editBtn);
 
       const nameInput = await screen.findByTestId("template-name-input") as HTMLInputElement;
       expect(nameInput.value).toBe("Weekly Report");
     });
 
-    it.skip("should pre-populate task title from template content", async () => {
+    it("should pre-populate task title from template content", async () => {
       render(<TemplateManager userId="test_user_123" />);
 
       // Open template list dialog
@@ -208,12 +170,12 @@ describe("TemplateManager", () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByTestId("edit-template-1")).toBeInTheDocument();
+        expect(screen.getByTestId(`edit-template-${templateIds[0]}`)).toBeInTheDocument();
       });
 
       // Click edit button for first template
       await React.act(async () => {
-        fireEvent.click(screen.getByTestId("edit-template-1"));
+        fireEvent.click(screen.getByTestId(`edit-template-${templateIds[0]}`));
       });
 
       await waitFor(() => {
@@ -224,7 +186,7 @@ describe("TemplateManager", () => {
   });
 
   describe("template actions", () => {
-    it.skip("should render Use button for each template", async () => {
+    it("should render Use button for each template", async () => {
       render(<TemplateManager userId="test_user_123" />);
 
       await React.act(async () => {
@@ -232,12 +194,12 @@ describe("TemplateManager", () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByTestId("use-template-1")).toBeInTheDocument();
-        expect(screen.getByTestId("use-template-2")).toBeInTheDocument();
+        expect(screen.getByTestId(`use-template-${templateIds[0]}`)).toBeInTheDocument();
+        expect(screen.getByTestId(`use-template-${templateIds[1]}`)).toBeInTheDocument();
       });
     });
 
-    it.skip("should render delete button for each template", async () => {
+    it("should render delete button for each template", async () => {
       render(<TemplateManager userId="test_user_123" />);
 
       await React.act(async () => {
@@ -245,23 +207,21 @@ describe("TemplateManager", () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByTestId("delete-template-1")).toBeInTheDocument();
-        expect(screen.getByTestId("delete-template-2")).toBeInTheDocument();
+        expect(screen.getByTestId(`delete-template-${templateIds[0]}`)).toBeInTheDocument();
+        expect(screen.getByTestId(`delete-template-${templateIds[1]}`)).toBeInTheDocument();
       });
     });
   });
 
   describe("without userId", () => {
-    it.skip("should not load templates when userId is not provided", async () => {
+    it("should not load templates when userId is not provided", async () => {
       render(<TemplateManager />);
 
       fireEvent.click(screen.getByText("Templates"));
 
-      // Wait a bit to ensure no call is made
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      expect(mockGetTemplates).not.toHaveBeenCalled();
-      expect(screen.queryByText("Weekly Report")).not.toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText("No templates found. Create one to get started.")).toBeInTheDocument();
+      });
     });
   });
 });
