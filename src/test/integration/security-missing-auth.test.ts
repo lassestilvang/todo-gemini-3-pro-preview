@@ -6,9 +6,7 @@ import { getTemplates, createTemplate, updateTemplate, deleteTemplate, instantia
 import { isFailure } from "@/lib/action-result";
 import { db, templates } from "@/db";
 
-const describeOrSkip = process.env.CI ? describe.skip : describe;
-
-describeOrSkip("Integration: Security Missing Auth", () => {
+describe("Integration: Security Missing Auth", () => {
     let attackerId: string;
     let victimId: string;
 

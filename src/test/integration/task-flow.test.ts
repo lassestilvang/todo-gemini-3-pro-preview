@@ -4,11 +4,7 @@ import { setMockAuthUser } from "@/test/mocks";
 import { createList, createTask, toggleTaskCompletion, getTasks, deleteTask, deleteList } from "@/lib/actions";
 import { isSuccess } from "@/lib/action-result";
 
-// Skip in CI as this test has race condition issues with parallel execution
-// All functionality is already covered by unit tests in actions.test.ts
-const describeOrSkip = process.env.CI ? describe.skip : describe;
-
-describeOrSkip("Integration: Task Flow", () => {
+describe("Integration: Task Flow", () => {
     let testUserId: string;
 
     beforeAll(async () => {

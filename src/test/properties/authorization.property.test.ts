@@ -24,9 +24,7 @@ fc.configureGlobal({
     seed: FAST_CHECK_SEED,
 });
 
-// Skip in CI due to parallel test execution issues with module mocking
-const isCI = process.env.CI === "true";
-const describeOrSkip = isCI ? describe.skip : describe;
+const describeOrSkip = describe;
 
 describeOrSkip("Property Tests: Authorization", () => {
     beforeAll(async () => {

@@ -125,7 +125,23 @@ mockState.__mockAuthUser = DEFAULT_MOCK_USER;
  * When in an auth context, getMockAuthUser will prioritize this user.
  */
 export function runInAuthContext<T>(user: MockAuthUser | null, fn: () => T): T {
-    return authStorage.run(user, fn);
+    const previousUser = mockState.__mockAuthUser;
+    mockState.__mockAuthUser = user;
+
+    try {
+        const result = authStorage.run(user, fn);
+        if (result && typeof (result as Promise<unknown>).finally === "function") {
+            return (result as Promise<unknown>).finally(() => {
+                mockState.__mockAuthUser = previousUser;
+            }) as T;
+        }
+
+        mockState.__mockAuthUser = previousUser;
+        return result;
+    } catch (error) {
+        mockState.__mockAuthUser = previousUser;
+        throw error;
+    }
 }
 
 export function setMockAuthUser(user: MockAuthUser | null) {

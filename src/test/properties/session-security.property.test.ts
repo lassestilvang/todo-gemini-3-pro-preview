@@ -55,9 +55,7 @@ const workosUserArb = fc.record({
   profilePictureUrl: fc.option(fc.webUrl(), { nil: null }),
 });
 
-// Skip in CI due to parallel test execution issues with module mocking
-const isCI = process.env.CI === "true";
-const describeOrSkip = isCI ? describe.skip : describe;
+const describeOrSkip = describe;
 
 describeOrSkip("Property Tests: Session Security", () => {
   beforeEach(async () => {

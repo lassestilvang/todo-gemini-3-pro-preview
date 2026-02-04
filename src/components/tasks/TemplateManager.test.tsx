@@ -86,7 +86,6 @@ describe("TemplateManager", () => {
   });
 
   afterEach(() => {
-    document.body.innerHTML = "";
     globalThis.confirm = originalConfirm;
   });
 
@@ -96,7 +95,7 @@ describe("TemplateManager", () => {
       expect(screen.getByText("Templates")).toBeInTheDocument();
     });
 
-    it.skip("should open template list dialog when Templates button is clicked", async () => {
+    it("should open template list dialog when Templates button is clicked", async () => {
       render(<TemplateManager userId="test_user_123" />);
 
       await React.act(async () => {
@@ -108,7 +107,7 @@ describe("TemplateManager", () => {
       });
     });
 
-    it.skip("should load and display templates when dialog opens", async () => {
+    it("should load and display templates when dialog opens", async () => {
       render(<TemplateManager userId="test_user_123" />);
 
       fireEvent.click(screen.getByText("Templates"));
@@ -122,7 +121,7 @@ describe("TemplateManager", () => {
       });
     });
 
-    it.skip("should show empty state when no templates exist", async () => {
+    it("should show empty state when no templates exist", async () => {
       mockGetTemplates.mockResolvedValueOnce([]);
 
       render(<TemplateManager userId="test_user_123" />);
@@ -138,7 +137,7 @@ describe("TemplateManager", () => {
   });
 
   describe("create dialog", () => {
-    it.skip("should open create dialog when New Template button is clicked", async () => {
+    it("should open create dialog when New Template button is clicked", async () => {
       render(<TemplateManager userId="test_user_123" />);
 
       fireEvent.click(screen.getByText("Templates"));
@@ -151,7 +150,7 @@ describe("TemplateManager", () => {
       expect(screen.getByTestId("template-name-input")).toBeInTheDocument();
     });
 
-    it.skip("should show empty form fields in create mode", async () => {
+    it("should show empty form fields in create mode", async () => {
       render(<TemplateManager userId="test_user_123" />);
 
       // Open template list dialog
@@ -178,7 +177,7 @@ describe("TemplateManager", () => {
   });
 
   describe("edit dialog", () => {
-    it.skip("should render edit button for each template", async () => {
+    it("should render edit button for each template", async () => {
       render(<TemplateManager userId="test_user_123" />);
 
       fireEvent.click(screen.getByText("Templates"));
@@ -187,7 +186,7 @@ describe("TemplateManager", () => {
       expect(screen.getByTestId("edit-template-2")).toBeInTheDocument();
     });
 
-    it.skip("should open edit dialog with template data when edit button is clicked", async () => {
+    it("should open edit dialog with template data when edit button is clicked", async () => {
       render(<TemplateManager userId="test_user_123" />);
 
       fireEvent.click(screen.getByText("Templates"));
@@ -199,7 +198,7 @@ describe("TemplateManager", () => {
       expect(nameInput.value).toBe("Weekly Report");
     });
 
-    it.skip("should pre-populate task title from template content", async () => {
+    it("should pre-populate task title from template content", async () => {
       render(<TemplateManager userId="test_user_123" />);
 
       // Open template list dialog
@@ -224,7 +223,7 @@ describe("TemplateManager", () => {
   });
 
   describe("template actions", () => {
-    it.skip("should render Use button for each template", async () => {
+    it("should render Use button for each template", async () => {
       render(<TemplateManager userId="test_user_123" />);
 
       await React.act(async () => {
@@ -237,7 +236,7 @@ describe("TemplateManager", () => {
       });
     });
 
-    it.skip("should render delete button for each template", async () => {
+    it("should render delete button for each template", async () => {
       render(<TemplateManager userId="test_user_123" />);
 
       await React.act(async () => {
@@ -252,7 +251,7 @@ describe("TemplateManager", () => {
   });
 
   describe("without userId", () => {
-    it.skip("should not load templates when userId is not provided", async () => {
+    it("should not load templates when userId is not provided", async () => {
       render(<TemplateManager />);
 
       fireEvent.click(screen.getByText("Templates"));
