@@ -113,6 +113,9 @@ describe("Property Tests: User Initialization", () => {
   it("Property 2: New users get default Inbox list and initialized stats", async () => {
     await fc.assert(
       fc.asyncProperty(workosUserArb, async (workosUser) => {
+        // Ensure clean state for this user ID
+        await db.delete(users).where(eq(users.id, workosUser.id));
+
         // Create user
         await db.insert(users).values({
           id: workosUser.id,
@@ -155,6 +158,9 @@ describe("Property Tests: User Initialization", () => {
   it("User data persists with correct values after creation", async () => {
     await fc.assert(
       fc.asyncProperty(workosUserArb, async (workosUser) => {
+        // Ensure clean state for this user ID
+        await db.delete(users).where(eq(users.id, workosUser.id));
+
         // Create user
         await db.insert(users).values({
           id: workosUser.id,
