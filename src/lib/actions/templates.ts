@@ -257,9 +257,8 @@ async function instantiateTemplateImpl(
     const newTask = await createTask(insertData);
 
     if (subtasks && Array.isArray(subtasks)) {
-      for (const sub of subtasks) {
-        await createRecursive(sub, newTask.id);
-      }
+      // ⚡ Bolt Opt: Create sibling subtasks in parallel to reduce template instantiation latency.
+      await Promise.all(subtasks.map((sub) => createRecursive(sub, newTask.id)));
     }
     return newTask;
   }

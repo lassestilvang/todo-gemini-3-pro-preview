@@ -79,10 +79,22 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     const processQueue = useCallback(async () => {
         if (processingRef.current || !navigator.onLine) return;
 
-        const queue = await getQueue();
-        if (queue.length === 0) return;
-
         processingRef.current = true;
+
+        let queue: PendingAction[];
+        try {
+            queue = await getQueue();
+        } catch (error) {
+            console.error("Failed to fetch sync queue:", error);
+            processingRef.current = false;
+            return;
+        }
+
+        if (queue.length === 0) {
+            processingRef.current = false;
+            return;
+        }
+
         setStatus('syncing');
 
         const completedIds: string[] = [];

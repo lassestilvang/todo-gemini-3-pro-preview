@@ -68,3 +68,7 @@
 ## 2026-02-01 - Global Stats Caching Strategy
 **Learning:** Global user stats (XP, streaks) were managed via React Query in `XPBar` with a long polling interval (5 min). Immediate updates are triggered by invalidating the `['userStats', userId]` query key within `SyncProvider`'s `processQueue` after successful task completion actions.
 **Action:** When handling global data that changes based on specific user actions, prefer explicit cache invalidation (via `queryClient.invalidateQueries`) over aggressive polling. This reduces idle database load to near zero while ensuring immediate UI updates.
+
+## 2026-02-04 - Async Queue Processing Race Condition
+**Learning:** Checking a lock flag (`processingRef.current`) before an `await` call (like `getQueue()`) but setting the lock *after* the `await` creates a race window. Multiple calls can pass the check, wait on the promise, and then all enter the critical section.
+**Action:** Always set the lock flag *synchronously* before starting any asynchronous work in the critical section. Handle cleanup/unlocking in `finally` or error blocks.
