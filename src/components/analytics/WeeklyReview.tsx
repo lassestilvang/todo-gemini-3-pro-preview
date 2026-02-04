@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { generateWeeklyReport } from "@/lib/weekly-review";
@@ -16,7 +16,8 @@ export function WeeklyReview() {
         insights: string[];
     } | null>(null);
 
-    const handleGenerate = async () => {
+    // PERF: Stable callback reference for buttons to prevent unnecessary re-renders.
+    const handleGenerate = useCallback(async () => {
         setLoading(true);
         try {
             const result = await generateWeeklyReport();
@@ -24,7 +25,7 @@ export function WeeklyReview() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     return (
         <Card>

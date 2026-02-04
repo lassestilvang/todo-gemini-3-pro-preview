@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo } from "react";
@@ -53,8 +54,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     const processQueueRef = useRef<(() => Promise<void>) | undefined>(undefined);
     const flushActionsRef = useRef<(() => Promise<void>) | undefined>(undefined);
     const pendingQueueRef = useRef<PendingAction[]>([]);
-    const flushTimerRef = useRef<number | null>(null);
-    const flushIdleRef = useRef<number | null>(null);
+    const flushTimerRef = useRef<any>(null);
+    const flushIdleRef = useRef<any>(null);
 
     const fixupQueueIds = useCallback(async (oldId: number, newId: number) => {
         const dbCurrent = await getDB();
@@ -310,7 +311,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         pendingQueueRef.current = [];
 
         if (flushTimerRef.current !== null) {
-            window.clearTimeout(flushTimerRef.current);
+            clearTimeout(flushTimerRef.current);
             flushTimerRef.current = null;
         }
         if (flushIdleRef.current !== null && 'cancelIdleCallback' in window) {
@@ -341,7 +342,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             return;
         }
 
-        flushTimerRef.current = window.setTimeout(async () => {
+        flushTimerRef.current = setTimeout(async () => {
             flushTimerRef.current = null;
             await flushQueuedActions();
         }, 50);
@@ -421,11 +422,9 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
                 }
             } else if (type === 'updateSubtask') {
                 const [id, , isCompleted] = a;
-                const task = Object.values(taskStore.tasks).find((t: any) => t.subtasks?.some((s: any) => s.id === id));
-                if (task) {
-                    const newSubtasks = task.subtasks!.map((s: any) => s.id === id ? { ...s, isCompleted } : s);
-                    taskStore.upsertTask({ ...task, subtasks: newSubtasks });
-                }
+                // Perf: update only the targeted subtask instead of mapping the entire array.
+                // Expected impact: reduces allocations and speeds up rapid subtask toggles.
+                taskStore.updateSubtaskCompletion(id, isCompleted);
             } else if (type === 'createList') {
                 const data = a[0];
                 listStore.upsertList({

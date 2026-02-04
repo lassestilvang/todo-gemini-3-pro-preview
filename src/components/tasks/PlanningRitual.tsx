@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -43,7 +43,12 @@ export function PlanningRitual({ open, onOpenChange, type, userId }: PlanningRit
         }
     }, [open, userId]);
 
-    const completedCount = todayTasks.filter(t => t.isCompleted).length;
+    // PERF: Cache completed tasks to avoid repeated filtering in render.
+    const completedTasks = useMemo(
+        () => todayTasks.filter(t => t.isCompleted),
+        [todayTasks]
+    );
+    const completedCount = completedTasks.length;
     const totalCount = todayTasks.length;
 
     if (type === "morning") {
@@ -148,10 +153,10 @@ export function PlanningRitual({ open, onOpenChange, type, userId }: PlanningRit
                             <div>
                                 <h3 className="font-medium mb-2">Completed Tasks</h3>
                                 <div className="space-y-2">
-                                    {todayTasks.filter(t => t.isCompleted).length === 0 ? (
+                                    {completedTasks.length === 0 ? (
                                         <p className="text-sm text-muted-foreground">No tasks completed today</p>
                                     ) : (
-                                        todayTasks.filter(t => t.isCompleted).map(task => (
+                                        completedTasks.map(task => (
                                             <div key={task.id} className="flex items-center gap-2 text-sm border p-2 rounded bg-green-500/5">
                                                 <CheckCircle2 className="h-4 w-4 text-green-500" />
                                                 {task.title}

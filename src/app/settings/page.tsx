@@ -11,6 +11,7 @@ import { getCurrentUser } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { TimeSettings } from "@/components/settings/TimeSettings"
 import { WeekStartSettings } from "@/components/settings/WeekStartSettings"
+import { CalendarTooltipSettings } from "@/components/settings/CalendarTooltipSettings"
 
 export default async function SettingsPage() {
     const user = await getCurrentUser();
@@ -46,6 +47,11 @@ export default async function SettingsPage() {
                     <div className="space-y-6">
                         <TimeSettings userId={user.id} initialUse24HourClock={user.use24HourClock} />
                         <WeekStartSettings userId={user.id} initialWeekStartsOnMonday={user.weekStartsOnMonday} />
+                        <CalendarTooltipSettings
+                            userId={user.id}
+                            initialUseNativeTooltipsOnDenseDays={user.calendarUseNativeTooltipsOnDenseDays ?? null}
+                            initialDenseTooltipThreshold={user.calendarDenseTooltipThreshold ?? null}
+                        />
                     </div>
                 </section>
                 <section>

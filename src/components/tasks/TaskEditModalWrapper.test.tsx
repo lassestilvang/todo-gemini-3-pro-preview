@@ -1,8 +1,6 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
-import { render, screen, cleanup, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { db, tasks } from "@/db";
-import { setupTestDb, resetTestDb } from "@/test/setup";
 
 // Mock dependencies
 const mockGetTask = mock(() => Promise.resolve(null));
@@ -15,17 +13,19 @@ function TaskEditModalWrapperMock({ taskId }: { taskId?: string }) {
     const [isOpen, setIsOpen] = React.useState(false);
 
     React.useEffect(() => {
+        let mounted = true;
         if (taskId) {
             const id = parseInt(taskId);
             if (!isNaN(id)) {
                 mockGetTask(id).then((t) => {
-                    if (t) {
+                    if (mounted && t) {
                         setTask(t as { id: number; title: string });
                         setIsOpen(true);
                     }
                 });
             }
         }
+        return () => { mounted = false; };
     }, [taskId]);
 
     if (!isOpen || !task) return null;
@@ -44,7 +44,7 @@ describe("TaskEditModalWrapper", () => {
     });
 
     afterEach(() => {
-        cleanup();
+        // Redundant cleanup removed to avoid AggregateErrors in parallel runs
     });
 
     it("should render nothing when no taskId param", () => {

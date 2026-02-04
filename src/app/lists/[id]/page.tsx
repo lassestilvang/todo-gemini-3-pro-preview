@@ -14,8 +14,6 @@ interface ListPageProps {
     }>;
 }
 
-import { type Task } from "@/lib/types";
-
 import { getViewSettings } from "@/lib/actions/view-settings";
 import { mapDbSettingsToViewSettings } from "@/lib/view-settings";
 import { getTasks } from "@/lib/actions/tasks";

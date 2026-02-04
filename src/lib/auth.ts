@@ -16,6 +16,8 @@ export interface AuthUser {
   avatarUrl: string | null;
   use24HourClock: boolean | null;
   weekStartsOnMonday: boolean | null;
+  calendarUseNativeTooltipsOnDenseDays: boolean | null;
+  calendarDenseTooltipThreshold: number | null;
 }
 
 /**
@@ -41,6 +43,8 @@ async function getTestUser(): Promise<AuthUser | null> {
           avatarUrl: session.user.profilePictureUrl ?? null,
           use24HourClock: session.user.use24HourClock ?? null,
           weekStartsOnMonday: session.user.weekStartsOnMonday ?? null,
+          calendarUseNativeTooltipsOnDenseDays: null,
+          calendarDenseTooltipThreshold: null,
         };
       }
     }
@@ -56,7 +60,7 @@ async function getTestUser(): Promise<AuthUser | null> {
  * Returns null if not authenticated.
  * In E2E test mode, checks for test session cookie instead of WorkOS.
  */
-export const getCurrentUser = cache(async function getCurrentUser(): Promise<AuthUser | null> {
+async function getCurrentUserImpl(): Promise<AuthUser | null> {
   // In E2E test mode, only use test session (skip WorkOS entirely)
   if (process.env.E2E_TEST_MODE === 'true') {
     return getTestUser();
@@ -69,7 +73,12 @@ export const getCurrentUser = cache(async function getCurrentUser(): Promise<Aut
   }
 
   const [dbUser] = await db
-    .select({ use24HourClock: users.use24HourClock, weekStartsOnMonday: users.weekStartsOnMonday })
+    .select({
+      use24HourClock: users.use24HourClock,
+      weekStartsOnMonday: users.weekStartsOnMonday,
+      calendarUseNativeTooltipsOnDenseDays: users.calendarUseNativeTooltipsOnDenseDays,
+      calendarDenseTooltipThreshold: users.calendarDenseTooltipThreshold,
+    })
     .from(users)
     .where(eq(users.id, user.id))
     .limit(1);
@@ -82,8 +91,15 @@ export const getCurrentUser = cache(async function getCurrentUser(): Promise<Aut
     avatarUrl: user.profilePictureUrl ?? null,
     use24HourClock: dbUser?.use24HourClock ?? null,
     weekStartsOnMonday: dbUser?.weekStartsOnMonday ?? null,
+    calendarUseNativeTooltipsOnDenseDays: dbUser?.calendarUseNativeTooltipsOnDenseDays ?? null,
+    calendarDenseTooltipThreshold: dbUser?.calendarDenseTooltipThreshold ?? null,
   };
-});
+}
+
+export const getCurrentUser =
+  process.env.NODE_ENV === "test"
+    ? getCurrentUserImpl
+    : cache(getCurrentUserImpl);
 
 /**
  * Require authentication for a server action.
@@ -175,6 +191,8 @@ export async function syncUser(workosUser: {
     avatarUrl: upsertedUser.avatarUrl,
     use24HourClock: upsertedUser.use24HourClock ?? null,
     weekStartsOnMonday: upsertedUser.weekStartsOnMonday ?? null,
+    calendarUseNativeTooltipsOnDenseDays: upsertedUser.calendarUseNativeTooltipsOnDenseDays ?? null,
+    calendarDenseTooltipThreshold: upsertedUser.calendarDenseTooltipThreshold ?? null,
   };
 }
 

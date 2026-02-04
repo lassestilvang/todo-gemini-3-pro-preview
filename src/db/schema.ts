@@ -10,6 +10,8 @@ export const users = pgTable("users", {
     isInitialized: boolean("is_initialized").notNull().default(false),
     use24HourClock: boolean("use_24h_clock"), // true = 24h, false = 12h, null = auto
     weekStartsOnMonday: boolean("week_starts_on_monday"), // true = Monday, false = Sunday, null = auto
+    calendarUseNativeTooltipsOnDenseDays: boolean("calendar_use_native_tooltips_on_dense_days"),
+    calendarDenseTooltipThreshold: integer("calendar_dense_tooltip_threshold"),
     createdAt: timestamp("created_at")
         .notNull()
         .defaultNow(),
@@ -91,6 +93,19 @@ export const tasks = pgTable("tasks", {
     dueDateIdx: index("tasks_due_date_idx").on(table.dueDate),
     createdAtIdx: index("tasks_created_at_idx").on(table.createdAt),
     completedAtIdx: index("tasks_completed_at_idx").on(table.completedAt),
+    // Composite index for gamification stats (daily completed count)
+    gamificationStatsIdx: index("tasks_gamification_stats_idx").on(
+        table.userId,
+        table.isCompleted,
+        table.completedAt
+    ),
+    // Composite index for main list sorting/filtering
+    listViewIdx: index("tasks_list_view_idx").on(
+        table.userId,
+        table.listId,
+        table.isCompleted,
+        table.position
+    ),
 }));
 
 export const labels = pgTable("labels", {

@@ -1,7 +1,7 @@
 "use server";
 
 import { db, tasks, timeEntries } from "@/db";
-import { eq, and, gte, lte, desc } from "drizzle-orm";
+import { eq, and, gte, lte, desc, inArray } from "drizzle-orm";
 import { format, startOfDay, endOfDay } from "date-fns";
 
 interface TimeEntry {
@@ -63,10 +63,12 @@ export async function exportTimeData(userId: string, options: ExportOptions) {
     if (includeTaskDetails) {
         const taskIds = [...new Set(entries.map(e => e.taskId))];
         if (taskIds.length > 0) {
+            // Optimization: only fetch titles for tasks referenced by the export window.
+            // This avoids scanning all user tasks when exporting a small subset.
             const taskRows = await db
                 .select({ id: tasks.id, title: tasks.title })
                 .from(tasks)
-                .where(eq(tasks.userId, userId));
+                .where(and(eq(tasks.userId, userId), inArray(tasks.id, taskIds)));
             taskRows.forEach(t => taskMap.set(t.id, t.title));
         }
     }
@@ -167,10 +169,12 @@ export async function getTimeEntriesForRange(
     const taskMap = new Map<number, string>();
 
     if (taskIds.length > 0) {
+        // Optimization: only fetch titles for tasks present in the date range.
+        // Reduces DB work for users with many tasks.
         const taskRows = await db
             .select({ id: tasks.id, title: tasks.title })
             .from(tasks)
-            .where(eq(tasks.userId, userId));
+            .where(and(eq(tasks.userId, userId), inArray(tasks.id, taskIds)));
         taskRows.forEach(t => taskMap.set(t.id, t.title));
     }
 

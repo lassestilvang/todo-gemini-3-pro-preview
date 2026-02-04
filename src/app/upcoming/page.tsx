@@ -2,7 +2,6 @@ import { getCurrentUser } from "@/lib/auth";
 import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
 import { CreateTaskInput } from "@/components/tasks/CreateTaskInput";
 import { redirect } from "next/navigation";
-import { type Task } from "@/lib/types";
 import { getViewSettings } from "@/lib/actions/view-settings";
 import { mapDbSettingsToViewSettings } from "@/lib/view-settings";
 import { getTasks } from "@/lib/actions/tasks";
