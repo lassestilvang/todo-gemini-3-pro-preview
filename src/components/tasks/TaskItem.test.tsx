@@ -77,14 +77,12 @@ describe("TaskItem", () => {
         const label = screen.getByText("Work");
         expect(label).toBeInTheDocument();
 
-        // Check if the style is applied correctly (converting hex to RGB usually happens in styles)
-        // #FF0000 -> rgb(255, 0, 0)
-        // borderColor: #FF000040 (25% alpha)
-        // backgroundColor: #FF000010 (approx 6% alpha)
-        // color: #FF0000
-
-        // Note: checking exact style strings can be flaky across environments/browsers (hex vs rgb).
-        // But checking presence is good enough to ensure we didn't crash or hide it.
+        // Verify that the styles from `getLabelStyle` are correctly applied.
+        expect(label).toHaveStyle({
+          borderColor: '#FF000040',
+          backgroundColor: '#FF000010',
+          color: '#FF0000',
+        });
     });
 
     it("should render recurring icon", () => {
