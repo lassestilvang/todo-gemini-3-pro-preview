@@ -23,7 +23,8 @@ test.describe('Search Latency: Search Results', () => {
       await expect(taskItem.first()).toBeVisible({ timeout: 10000 });
     }
 
-    await page.waitForTimeout(1000);
+    // Shorter grace period for search indexing
+    await page.waitForTimeout(250);
 
     const searchButton = page.getByRole('button', { name: /search/i }).first();
     await expect(searchButton).toBeVisible();
