@@ -99,4 +99,24 @@ describe("CreateTaskInput", () => {
             expect(mockCreateTask).toHaveBeenCalled();
         }, { timeout: 3000 });
     });
+
+    it("should clear input when clear button is clicked", async () => {
+        const user = userEvent.setup();
+        render(<CreateTaskInput userId="test_user_123" />);
+        const input = screen.getByPlaceholderText(/Add a task/i);
+
+        // Type something
+        await user.type(input, "Something");
+        expect((input as HTMLInputElement).value).toBe("Something");
+
+        // Click clear button
+        const clearButton = await screen.findByLabelText("Clear task title");
+        await user.click(clearButton);
+
+        // Expect empty
+        expect((input as HTMLInputElement).value).toBe("");
+
+        // Expect input to be focused
+        expect(document.activeElement).toBe(input);
+    });
 });

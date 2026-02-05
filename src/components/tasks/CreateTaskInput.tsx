@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Calendar, Flag, Zap, MapPin, Smile, X } from "lucide-react";
@@ -37,6 +37,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
     const [isPriorityOpen, setIsPriorityOpen] = useState(false);
     const [icon, setIcon] = useState<string | undefined>(undefined);
     const [mounted, setMounted] = useState(false);
+    const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         setMounted(true);
@@ -120,6 +121,11 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
         // We don't clear the input here, we wait for the dialog to handle it or user to cancel
     };
 
+    const handleClear = () => {
+        setTitle("");
+        inputRef.current?.focus();
+    };
+
     return (
         <div className="mb-6">
             <div
@@ -129,15 +135,30 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                 )}
             >
                 <form onSubmit={handleSubmit} className="flex flex-col">
-                    <Input
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        onFocus={() => setIsExpanded(true)}
-                        placeholder="Add a task... (try 'Buy milk tomorrow !high @errands')"
-                        className="border-0 bg-transparent shadow-none focus-visible:ring-0 text-lg py-6"
-                        data-testid="task-input"
-                        aria-label="Create new task"
-                    />
+                    <div className="relative w-full">
+                        <Input
+                            ref={inputRef}
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            onFocus={() => setIsExpanded(true)}
+                            placeholder="Add a task... (try 'Buy milk tomorrow !high @errands')"
+                            className="border-0 bg-transparent shadow-none focus-visible:ring-0 text-lg py-6 pr-10"
+                            data-testid="task-input"
+                            aria-label="Create new task"
+                        />
+                        {title && (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                onClick={handleClear}
+                                aria-label="Clear task title"
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
+                        )}
+                    </div>
 
                     {/* Preview Badges */}
                     {title.trim() && (priority !== "none" || dueDate || energyLevel || context) && (

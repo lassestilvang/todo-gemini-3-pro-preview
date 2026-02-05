@@ -335,7 +335,7 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                             e.preventDefault();
                             setIsExpanded(!isExpanded);
                         }}
-                        className="flex items-center justify-center w-5 h-5 -ml-1 rounded hover:bg-muted transition-colors"
+                        className="flex items-center justify-center w-5 h-5 -ml-1 rounded hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         aria-label={isExpanded ? "Collapse subtasks" : "Expand subtasks"}
                         aria-expanded={isExpanded}
                     >
