@@ -16,6 +16,7 @@ import {
   ValidationError,
 } from "./shared";
 import { requireUser } from "@/lib/auth";
+import { createReminderSchema } from "@/lib/validation/reminders";
 
 /**
  * Retrieves all reminders for a specific task.
@@ -38,15 +39,8 @@ export async function getReminders(taskId: number) {
 async function createReminderImpl(userId: string, taskId: number, remindAt: Date) {
   await requireUser(userId);
 
-  if (!userId) {
-    throw new ValidationError("User ID is required", { userId: "User ID cannot be empty" });
-  }
-  if (!taskId) {
-    throw new ValidationError("Task ID is required", { taskId: "Task ID cannot be empty" });
-  }
-  if (!remindAt) {
-    throw new ValidationError("Reminder time is required", { remindAt: "Reminder time cannot be empty" });
-  }
+  const validated = createReminderSchema.parse({ userId, taskId, remindAt });
+
 
   await db.insert(reminders).values({
     taskId,

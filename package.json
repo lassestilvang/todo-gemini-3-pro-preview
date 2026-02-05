@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "bun run --bun next dev",
-    "build": "bun run --bun next build",
+    "build": "bun run --bun next build && bun scripts/generate-sw.ts",
     "analyze": "next experimental-analyze --port 8888",
     "start": "bun run --bun next start",
     "lint": "eslint",
@@ -95,7 +95,8 @@
     "fast-check": "^4.5.3",
     "happy-dom": "^20.5.0",
     "tailwindcss": "^4.1.18",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "workbox-build": "^7.4.0"
   },
   "resolutions": {
     "baseline-browser-mapping": "^2.9.18"

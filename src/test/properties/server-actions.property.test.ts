@@ -63,24 +63,24 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                             userId,
                             title: "Test Task",
                         });
-                        
+
                         // The result should always be a valid ActionResult
                         expect(typeof createResult).toBe("object");
                         expect(createResult).not.toBeNull();
                         expect("success" in createResult).toBe(true);
-                        
+
                         // If it's a success, verify structure
                         if (isSuccess(createResult)) {
                             expect(createResult.data).toBeDefined();
                         }
-                        
+
                         // If it's a failure, verify it has proper error structure
                         if (isFailure(createResult)) {
                             expect(createResult.error).toBeDefined();
                             expect(createResult.error.code).toBeDefined();
                             expect(createResult.error.message).toBeDefined();
                             expect(createResult.error.message.length).toBeGreaterThan(0);
-                            
+
                             // If it's a database error, verify the code
                             if (createResult.error.code === "DATABASE_ERROR") {
                                 expect(createResult.error.message).not.toContain("SQLITE");
@@ -113,20 +113,20 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                             userId,
                             title: invalidTitle,
                         });
-                        
+
                         // Must be a failure
                         expect(result.success).toBe(false);
                         expect(isFailure(result)).toBe(true);
-                        
+
                         if (isFailure(result)) {
                             // Must have VALIDATION_ERROR code
                             expect(result.error.code).toBe("VALIDATION_ERROR");
-                            
+
                             // Must have field-level details
                             expect(result.error.details).toBeDefined();
                             expect(result.error.details).not.toBeNull();
                             expect(typeof result.error.details).toBe("object");
-                            
+
                             // Must have title field error
                             expect(result.error.details!.title).toBeDefined();
                             expect(result.error.details!.title.length).toBeGreaterThan(0);
@@ -147,10 +147,10 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                             userId,
                             title: longTitle,
                         });
-                        
+
                         // Must be a failure
                         expect(result.success).toBe(false);
-                        
+
                         if (isFailure(result)) {
                             expect(result.error.code).toBe("VALIDATION_ERROR");
                             expect(result.error.details).toBeDefined();
@@ -173,9 +173,9 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                             name: invalidName,
                             slug: "test-slug",
                         });
-                        
+
                         expect(result.success).toBe(false);
-                        
+
                         if (isFailure(result)) {
                             expect(result.error.code).toBe("VALIDATION_ERROR");
                             expect(result.error.details).toBeDefined();
@@ -198,9 +198,9 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                             name: invalidName,
                             color: "#000000",
                         });
-                        
+
                         expect(result.success).toBe(false);
-                        
+
                         if (isFailure(result)) {
                             expect(result.error.code).toBe("VALIDATION_ERROR");
                             expect(result.error.details).toBeDefined();
@@ -232,13 +232,13 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                             userId: "",
                             title,
                         });
-                        
+
                         expect(result.success).toBe(false);
-                        
+
                         if (isFailure(result)) {
                             // Should be either FORBIDDEN or VALIDATION_ERROR for missing userId
                             expect(["FORBIDDEN", "VALIDATION_ERROR"]).toContain(result.error.code);
-                            
+
                             // Message should not contain internal details
                             expect(result.error.message).not.toContain("stack");
                             expect(result.error.message).not.toContain("SELECT");
@@ -259,16 +259,16 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                     async (ownerId, wrongUserId, title) => {
                         // Skip if userIds happen to be the same
                         if (ownerId === wrongUserId) return;
-                        
+
                         // Create a task with the owner
                         setMockAuthUser({ id: ownerId, email: `${ownerId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const createResult = await createTaskSafe({
                             userId: ownerId,
                             title,
                         });
-                        
+
                         if (!isSuccess(createResult)) return;
-                        
+
                         // Try to update with wrong user
                         setMockAuthUser({ id: wrongUserId, email: `${wrongUserId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const updateResult = await updateTaskSafe(
@@ -276,13 +276,13 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                             wrongUserId,
                             { title: "Hacked!" }
                         );
-                        
+
                         expect(updateResult.success).toBe(false);
-                        
+
                         if (isFailure(updateResult)) {
                             // Should be NOT_FOUND (task not found for this user) or FORBIDDEN
                             expect(["NOT_FOUND", "FORBIDDEN"]).toContain(updateResult.error.code);
-                            
+
                             // Message should not expose internal details
                             expect(updateResult.error.message).not.toContain("stack");
                             expect(updateResult.error.message).not.toContain("SELECT");
@@ -300,23 +300,23 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                     validTitleArb,
                     async (ownerId, wrongUserId, title) => {
                         if (ownerId === wrongUserId) return;
-                        
+
                         setMockAuthUser({ id: ownerId, email: `${ownerId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const createResult = await createTaskSafe({
                             userId: ownerId,
                             title,
                         });
-                        
+
                         if (!isSuccess(createResult)) return;
-                        
+
                         setMockAuthUser({ id: wrongUserId, email: `${wrongUserId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const deleteResult = await deleteTaskSafe(
                             createResult.data.id,
                             wrongUserId
                         );
-                        
+
                         expect(deleteResult.success).toBe(false);
-                        
+
                         if (isFailure(deleteResult)) {
                             expect(["NOT_FOUND", "FORBIDDEN"]).toContain(deleteResult.error.code);
                         }
@@ -345,10 +345,10 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                             userId,
                             title,
                         });
-                        
+
                         expect(result.success).toBe(true);
                         expect(isSuccess(result)).toBe(true);
-                        
+
                         if (isSuccess(result)) {
                             expect(result.data).toBeDefined();
                             expect(result.data.id).toBeDefined();
@@ -373,9 +373,9 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                             name,
                             slug,
                         });
-                        
+
                         expect(result.success).toBe(true);
-                        
+
                         if (isSuccess(result)) {
                             expect(result.data).toBeDefined();
                             expect(result.data.id).toBeDefined();
@@ -399,9 +399,9 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                             name,
                             color: "#FF0000",
                         });
-                        
+
                         expect(result.success).toBe(true);
-                        
+
                         if (isSuccess(result)) {
                             expect(result.data).toBeDefined();
                             expect(result.data.id).toBeDefined();
@@ -426,18 +426,18 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                             userId,
                             title: originalTitle,
                         });
-                        
+
                         if (!isSuccess(createResult)) return;
-                        
+
                         // Update the task
                         const updateResult = await updateTaskSafe(
                             createResult.data.id,
                             userId,
                             { title: newTitle }
                         );
-                        
+
                         expect(updateResult.success).toBe(true);
-                        
+
                         if (isSuccess(updateResult)) {
                             // For void returns, data should be undefined
                             expect(updateResult.data).toBeUndefined();
@@ -459,17 +459,17 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                             userId,
                             title,
                         });
-                        
+
                         if (!isSuccess(createResult)) return;
-                        
+
                         // Delete the task
                         const deleteResult = await deleteTaskSafe(
                             createResult.data.id,
                             userId
                         );
-                        
+
                         expect(deleteResult.success).toBe(true);
-                        
+
                         if (isSuccess(deleteResult)) {
                             expect(deleteResult.data).toBeUndefined();
                         }
@@ -501,14 +501,14 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                             userId,
                             { title: "Test" }
                         );
-                        
+
                         // Should fail
                         expect(result.success).toBe(false);
-                        
+
                         if (isFailure(result)) {
                             // Message should be user-friendly
                             expect(result.error.message.length).toBeGreaterThan(0);
-                            
+
                             // Should not contain internal error details
                             expect(result.error.message).not.toMatch(/Error:/);
                             expect(result.error.message).not.toMatch(/at \w+/); // Stack trace pattern
@@ -528,13 +528,82 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                     async (userId, nonExistentId) => {
                         setMockAuthUser({ id: userId, email: `${userId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         const result = await deleteTaskSafe(nonExistentId, userId);
-                        
+
                         if (isFailure(result)) {
                             // Should not contain stack trace patterns
                             expect(result.error.message).not.toMatch(/at \S+:\d+:\d+/);
                             expect(result.error.message).not.toContain(".ts:");
                             expect(result.error.message).not.toContain(".js:");
                         }
+                    }
+                )
+            );
+        });
+    });
+
+    /**
+     * **Feature: codebase-quality-improvements, Property 6: Server Actions robustly handle serialized inputs**
+     * **Validates: Requirements 1.6**
+     * 
+     * For any Server Action receiving serialized dates (strings), the system
+     * SHALL automatically parse them into Date objects and process the request successfully,
+     * preventing runtime type errors.
+     */
+    describe("Property 6: Server Actions robustly handle serialized inputs", () => {
+        it("createTask accepts ISO date strings for dueDate/deadline", async () => {
+            await fc.assert(
+                fc.asyncProperty(
+                    validUserIdArb,
+                    validTitleArb,
+                    fc.date(),
+                    async (userId, title, date) => {
+                        setMockAuthUser({ id: userId, email: `${userId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
+
+                        // Pass dates as strings (simulate JSON serialization)
+                        // @ts-expect-error - Testing runtime behavior
+                        const result = await createTaskSafe({
+                            userId,
+                            title,
+                            dueDate: date.toISOString(),
+                            deadline: date.toISOString()
+                        });
+
+                        expect(result.success).toBe(true);
+                        if (isSuccess(result)) {
+                            expect(result.data.dueDate).toBeInstanceOf(Date);
+                            // Allow for DB interaction/precision loss (SQLite may lose ms)
+                            if (result.data.dueDate) {
+                                expect(Math.abs(result.data.dueDate.getTime() - date.getTime())).toBeLessThan(1000);
+                            }
+                        }
+                    }
+                )
+            );
+        });
+
+        it("updateTask accepts ISO date strings", async () => {
+            await fc.assert(
+                fc.asyncProperty(
+                    validUserIdArb,
+                    validTitleArb,
+                    fc.date(),
+                    async (userId, title, date) => {
+                        setMockAuthUser({ id: userId, email: `${userId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
+
+                        const createResult = await createTaskSafe({ userId, title });
+                        if (!isSuccess(createResult)) return;
+
+                        // Pass dates as strings
+                        // @ts-expect-error - Testing runtime behavior
+                        const result = await updateTaskSafe(
+                            createResult.data.id,
+                            userId,
+                            {
+                                dueDate: date.toISOString()
+                            }
+                        );
+
+                        expect(result.success).toBe(true);
                     }
                 )
             );

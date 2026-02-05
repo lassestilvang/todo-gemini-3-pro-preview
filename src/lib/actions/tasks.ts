@@ -41,6 +41,7 @@ import { requireUser } from "@/lib/auth";
 import { getLists, getList } from "./lists";
 import { getLabels } from "./labels";
 import { getUserStats, updateUserProgress } from "./gamification";
+import { createTaskSchema, updateTaskSchema } from "@/lib/validation/tasks";
 
 /**
  * Retrieves tasks for a user with optional filtering.
@@ -310,16 +311,10 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
       throw new Error("Rate limit exceeded. Please try again later.");
     }
 
-    const { labelIds, ...taskData } = data;
+    // Validate and parse input data
+    const parsedData = createTaskSchema.parse(data);
+    const { labelIds, ...taskData } = parsedData;
     let finalLabelIds = labelIds || [];
-
-    // Ensure dates are parsed
-    if (typeof taskData.dueDate === 'string') {
-      taskData.dueDate = new Date(taskData.dueDate);
-    }
-    if (typeof taskData.deadline === 'string') {
-      taskData.deadline = new Date(taskData.deadline);
-    }
 
     // Smart Tagging: If no list or labels provided, try to guess them
     if (!taskData.listId && finalLabelIds.length === 0 && taskData.title && taskData.userId) {
@@ -352,9 +347,12 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
 
     // Subtract 1024 to leave space and ensure it's at the top
     const currentMin = minPosResult?.min ?? 0;
-    taskData.position = currentMin - 1024;
+    const finalTaskData = {
+      ...taskData,
+      position: currentMin - 1024
+    };
 
-    const result = await db.insert(tasks).values(taskData).returning();
+    const result = await db.insert(tasks).values(finalTaskData as any).returning();
     const task = Array.isArray(result) ? result[0] : null;
 
     if (!task) throw new Error("Failed to create task");
@@ -403,17 +401,9 @@ export async function updateTask(
 ) {
   await requireUser(userId);
 
-  const { labelIds, expectedUpdatedAt, ...taskData } = data;
-
-  // Ensure dates are parsed if passed as strings (e.g. from client/sync)
-  if (typeof taskData.dueDate === 'string') {
-    // @ts-expect-error - Drizzle expects Date, but at runtime this might be a string
-    taskData.dueDate = new Date(taskData.dueDate);
-  }
-  if (typeof taskData.deadline === 'string') {
-    // @ts-expect-error - Drizzle expects Date, but at runtime this might be a string
-    taskData.deadline = new Date(taskData.deadline);
-  }
+  // Validate and parse input data
+  const parsedData = updateTaskSchema.parse(data);
+  const { labelIds, expectedUpdatedAt, ...taskData } = parsedData;
 
   const currentTask = existingTask ?? await getTask(id, userId);
   if (!currentTask) return;
@@ -431,7 +421,7 @@ export async function updateTask(
 
   await db
     .update(tasks)
-    .set({ ...taskData, updatedAt: new Date() })
+    .set({ ...taskData, updatedAt: new Date() } as any)
     .where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
 
   if (labelIds !== undefined) {

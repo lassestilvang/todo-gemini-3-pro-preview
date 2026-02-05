@@ -6,13 +6,14 @@ import { redirect, notFound } from "next/navigation";
 import { type ViewSettings } from "@/lib/view-settings";
 import { Task } from "@/lib/types";
 
-export default async function SavedViewPage({ params }: { params: { id: string } }) {
+export default async function SavedViewPage({ params }: { params: Promise<{ id: string }> }) {
     const user = await getCurrentUser();
     if (!user) {
         redirect("/login");
     }
 
-    const viewId = parseInt(params.id);
+    const { id } = await params;
+    const viewId = parseInt(id);
     if (isNaN(viewId)) {
         notFound();
     }

@@ -24,6 +24,7 @@ import {
 } from "./shared";
 import { rateLimit } from "@/lib/rate-limit";
 import { requireUser } from "@/lib/auth";
+import { createManualTimeEntrySchema, updateTimeEntrySchema, getTimeStatsSchema } from "@/lib/validation/time-tracking";
 
 // ============================================================================
 // Time Entry CRUD Operations
@@ -263,8 +264,15 @@ export async function createManualTimeEntry(
             throw new NotFoundError("Task not found");
         }
 
-        const startedAt = date || new Date();
-        const endedAt = new Date(startedAt.getTime() + durationMinutes * 60000);
+        const validated = createManualTimeEntrySchema.parse({
+            taskId,
+            userId,
+            durationMinutes,
+            date,
+            notes
+        });
+        const startedAt = validated.date || new Date();
+        const endedAt = new Date(startedAt.getTime() + validated.durationMinutes * 60000);
 
         const [entry] = await db
             .insert(timeEntries)
@@ -307,6 +315,7 @@ export async function updateTimeEntry(
 ): Promise<ActionResult<typeof timeEntries.$inferSelect>> {
     return withErrorHandling(async () => {
         await requireUser(userId);
+        const validatedData = updateTimeEntrySchema.parse(data);
 
         const [existing] = await db
             .select()
@@ -325,7 +334,7 @@ export async function updateTimeEntry(
 
         const [entry] = await db
             .update(timeEntries)
-            .set(data)
+            .set(validatedData)
             .where(eq(timeEntries.id, entryId))
             .returning();
 
@@ -398,14 +407,15 @@ export async function getTimeStats(
 }>> {
     return withErrorHandling(async () => {
         await requireUser(userId);
+        const { dateRange: validatedDateRange } = getTimeStatsSchema.parse({ userId, dateRange });
 
         // ⚡ Bolt Opt: Use SQL aggregations to calculate stats instead of loading all entries into memory.
         // This scales O(1) with data size for the application layer.
         const whereConditions = [eq(timeEntries.userId, userId)];
-        if (dateRange) {
+        if (validatedDateRange) {
             whereConditions.push(
-                gte(timeEntries.startedAt, dateRange.from),
-                lte(timeEntries.startedAt, dateRange.to)
+                gte(timeEntries.startedAt, validatedDateRange.from),
+                lte(timeEntries.startedAt, validatedDateRange.to)
             );
         }
 
