@@ -138,6 +138,7 @@ export async function importUserData(jsonData: unknown) {
                 ...list,
                 id: undefined, // Let DB generate new ID
                 userId: userId, // Ensure it belongs to current user
+                name: `${list.name} (Imported)`, // Distinguish imported lists
                 slug, // Avoid slug collision while keeping old->new mapping
                 createdAt: new Date(list.createdAt),
                 updatedAt: new Date(),

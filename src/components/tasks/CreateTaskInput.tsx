@@ -19,8 +19,6 @@ import { VoiceInput } from "./VoiceInput";
 import { TaskDialog } from "./TaskDialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatFriendlyDate } from "@/lib/time-utils";
-
-
 import { useSync } from "@/components/providers/sync-provider";
 
 export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelIds }: { listId?: number, defaultDueDate?: Date | string, userId: string, defaultLabelIds?: number[] }) {
@@ -108,6 +106,8 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
             setIcon(undefined);
             setIsExpanded(false);
 
+            // Optional: toast can be handled by the optimistic update logic if desired,
+            // but a reassuring message here is fine too.
             toast.success("Task created");
         } catch (error) {
             console.error("Failed to create task:", error);

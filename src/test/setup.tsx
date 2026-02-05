@@ -372,6 +372,13 @@ beforeEach(() => {
 
 let isDbSetup = false;
 
+// Mock next/cache
+mock.module("next/cache", () => ({
+    unstable_cache: (fn: any) => fn,
+    revalidateTag: mock(() => { }),
+    revalidatePath: mock(() => { }),
+}));
+
 /**
  * Setup the SQLite database schema for tests.
  */

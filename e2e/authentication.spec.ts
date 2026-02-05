@@ -143,6 +143,8 @@ test.describe('Authentication Flow', () => {
 
   test.describe('Logout Flow', () => {
     test('should redirect to login after clearing session', async ({ page }) => {
+      // Navigate to establish origin for fetch
+      await page.goto('/');
       // First authenticate
       await authenticateTestUser(page);
 

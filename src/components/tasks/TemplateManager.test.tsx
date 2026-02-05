@@ -91,12 +91,13 @@ describe("TemplateManager", () => {
       profilePictureUrl: null
     });
 
-    // Create user first to satisfy FK constraint
-    await db.insert(users).values({
-      id: "test_user_123",
-      email: "test@example.com",
+    // Set mock user to match the one expected by tests
+    setMockAuthUser({
+      id: testUserId,
+      email: `${testUserId}@example.com`,
       firstName: "Test",
       lastName: "User",
+      profilePictureUrl: null
     });
 
     // Seed templates

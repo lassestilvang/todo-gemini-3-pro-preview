@@ -342,7 +342,7 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
     .where(and(...conditions));
 
   // Subtract 1024 to leave space and ensure it's at the top
-  // If no tasks exist (min is null), start at -1024 or 0? 
+  // If no tasks exist (min is null), start at -1024 or 0?
   // If we start at 0, and user drags, it works.
   // If we start at -1024, it helps if existing tasks are at 0.
   const currentMin = minPosResult?.min ?? 0;

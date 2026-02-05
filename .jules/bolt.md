@@ -25,6 +25,10 @@
 **Learning:** Using correlated subqueries (e.g., `(SELECT COUNT(*) ... WHERE outer.id = inner.id)`) in main `SELECT` statements scales poorly (O(N)) for large datasets.
 **Action:** Replace correlated subqueries with a separate parallel query using `GROUP BY` and merge the results in memory using a Map.
 
+## 2026-01-27 - Batched Updates via CASE/WHEN
+**Learning:** `Promise.all` with multiple `UPDATE` queries for reordering items causes N+1 database roundtrips. Drizzle supports constructing a single `UPDATE` query using `CASE/WHEN` logic.
+**Action:** Replace update loops with a single `UPDATE ... SET column = CASE id WHEN ... END` query using `sql` template literals for bulk operations.
+
 ## 2026-01-31 - Redundant Array Filtering in Render
 **Learning:** Filtering the same array multiple times in a component's render function (e.g., `pendingActions.filter(a => a.status === 'pending')` and `pendingActions.filter(a => a.status === 'failed')`) causes redundant O(n) iterations on every render.
 **Action:** Use `useMemo` with a single loop to compute all derived counts at once, reducing O(2n) to O(n) and preventing recalculation when dependencies haven't changed.
@@ -52,7 +56,6 @@
 ## 2026-01-31 - Status Info Object Allocations in SyncStatus
 **Learning:** The SyncStatus component was calling `getStatusInfo()` on every render, creating new objects with icon, label, description, and className properties each time. Since this component updates frequently during sync operations (status changes, pending count updates), these allocations added unnecessary GC pressure and could trigger re-renders in child components.
 **Action:** Wrap the status info object creation in `useMemo` with proper dependencies (isOnline, failedCount, status, pendingCount). This ensures the object reference remains stable when dependencies haven't changed, reducing allocations and preventing unnecessary re-renders of components that consume these values.
-**Action:** Wrap the status info object creation in `useMemo` with proper dependencies. This ensures the object reference remains stable when dependencies haven't changed, reducing allocations and preventing unnecessary re-renders of components that consume these values.
 
 ## 2026-01-31 - Reduce with Spread Operator O(n²) Complexity
 **Learning:** Using `.reduce((acc, item) => ({ ...acc, [item.id]: value }), {})` to build an object from an array creates O(n²) complexity because the spread operator copies all existing properties on each iteration. For a task with 50 subtasks, this creates 1,225 intermediate objects (50*49/2). The TaskItem component was using this pattern to initialize subtask completion states.
