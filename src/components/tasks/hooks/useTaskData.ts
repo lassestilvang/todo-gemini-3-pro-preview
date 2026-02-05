@@ -103,11 +103,11 @@ export function useTaskData({ taskId, isEdit, userId }: UseTaskDataProps) {
     }, [taskId]);
 
     const fetchBlockers = useCallback(async () => {
-        if (taskId) {
-            const fetchedBlockers = await getBlockers(taskId);
+        if (taskId && userId) {
+            const fetchedBlockers = await getBlockers(userId, taskId);
             setBlockers(fetchedBlockers);
         }
-    }, [taskId]);
+    }, [taskId, userId]);
 
     // Initial Data Fetch
     useEffect(() => {

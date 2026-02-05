@@ -17,6 +17,7 @@ import {
   withErrorHandling,
   ValidationError,
 } from "./shared";
+import { requireUser } from "@/lib/auth";
 
 /**
  * Internal implementation for adding a dependency between tasks.
@@ -27,6 +28,8 @@ import {
  * @throws {ValidationError} When task tries to block itself or circular dependency detected
  */
 async function addDependencyImpl(userId: string, taskId: number, blockerId: number) {
+  await requireUser(userId);
+
   if (taskId === blockerId) {
     throw new ValidationError("Task cannot block itself", {
       blockerId: "A task cannot be its own blocker",
@@ -84,6 +87,8 @@ export const addDependency: (
  * @param blockerId - The ID of the task that was blocking
  */
 async function removeDependencyImpl(userId: string, taskId: number, blockerId: number) {
+  await requireUser(userId);
+
   await db
     .delete(taskDependencies)
     .where(and(eq(taskDependencies.taskId, taskId), eq(taskDependencies.blockerId, blockerId)));
@@ -116,10 +121,24 @@ export const removeDependency: (
 /**
  * Gets all tasks that block a specific task.
  *
+ * @param userId - The ID of the user who owns the task
  * @param taskId - The ID of the task to get blockers for
  * @returns Array of blocking tasks with id, title, and completion status
  */
-export async function getBlockers(taskId: number) {
+export async function getBlockers(userId: string, taskId: number) {
+  await requireUser(userId);
+
+  // Check if user owns the task
+  const [task] = await db
+    .select({ id: tasks.id })
+    .from(tasks)
+    .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)))
+    .limit(1);
+
+  if (!task) {
+    return [];
+  }
+
   const result = await db
     .select({
       id: tasks.id,
@@ -136,10 +155,24 @@ export async function getBlockers(taskId: number) {
 /**
  * Gets all tasks that are blocked by a specific task.
  *
+ * @param userId - The ID of the user who owns the task
  * @param blockerId - The ID of the blocking task
  * @returns Array of blocked tasks with id, title, and completion status
  */
-export async function getBlockedTasks(blockerId: number) {
+export async function getBlockedTasks(userId: string, blockerId: number) {
+  await requireUser(userId);
+
+  // Check if user owns the task
+  const [task] = await db
+    .select({ id: tasks.id })
+    .from(tasks)
+    .where(and(eq(tasks.id, blockerId), eq(tasks.userId, userId)))
+    .limit(1);
+
+  if (!task) {
+    return [];
+  }
+
   const result = await db
     .select({
       id: tasks.id,

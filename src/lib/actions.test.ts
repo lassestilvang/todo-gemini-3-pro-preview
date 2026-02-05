@@ -300,16 +300,16 @@ describe("Server Actions", () => {
 
             await addDependency(testUserId, task1.id, task2.id); // Task 1 blocked by Task 2
 
-            const blockers = await getBlockers(task1.id);
+            const blockers = await getBlockers(testUserId, task1.id);
             expect(blockers).toHaveLength(1);
             expect(blockers[0].id).toBe(task2.id);
 
-            const blocked = await getBlockedTasks(task2.id);
+            const blocked = await getBlockedTasks(testUserId, task2.id);
             expect(blocked).toHaveLength(1);
             expect(blocked[0].id).toBe(task1.id);
 
             await removeDependency(testUserId, task1.id, task2.id);
-            const blockersAfter = await getBlockers(task1.id);
+            const blockersAfter = await getBlockers(testUserId, task1.id);
             expect(blockersAfter).toHaveLength(0);
         });
 
@@ -381,6 +381,20 @@ describe("Server Actions", () => {
             const logsAfterB = await getTaskLogs(target.id);
             // NOW it should be unblocked
             expect(logsAfterB[0].details).toContain("Task is now unblocked!");
+        });
+
+        it("should not get blockers for task owned by another user", async () => {
+            // Create task for another user
+            const otherUserId = "other_user_" + Math.random();
+            setMockAuthUser({ id: otherUserId, email: "other@example.com", firstName: "Other", lastName: "User", profilePictureUrl: null });
+            const otherTask = await createTask({ userId: otherUserId, title: "Other Task" });
+
+            // Switch back to testUserId
+            setMockAuthUser({ id: testUserId, email: `${testUserId}@example.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
+
+            // Try to get blockers for otherTask
+            const blockers = await getBlockers(testUserId, otherTask.id);
+            expect(blockers).toHaveLength(0);
         });
     });
 
@@ -519,6 +533,29 @@ describe("Server Actions", () => {
             const actions = activityLog.map(l => l.action);
             expect(actions).toContain("created");
             expect(actions).toContain("completed");
+        });
+
+        it("should fail to get task logs for another user's task", async () => {
+            const task = await createTask({ userId: testUserId, title: "Secret Task" });
+
+            // Switch to another user
+            setMockAuthUser({ id: "other_user", email: "other@example.com" });
+
+            const logs = await getTaskLogs(task.id);
+            expect(logs).toHaveLength(0);
+
+            // Reset user
+            setMockAuthUser({ id: testUserId, email: `${testUserId}@example.com` });
+        });
+
+        it("should fail to get activity log for another user", async () => {
+             try {
+                await getActivityLog("other_user");
+                expect(true).toBe(false); // Should not reach here
+             } catch (error: any) {
+                 expect(error.message).toBe("Forbidden");
+                 expect(error.name).toBe("ForbiddenError");
+             }
         });
     });
 

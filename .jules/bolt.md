@@ -53,6 +53,7 @@
 ## 2026-01-31 - Status Info Object Allocations in SyncStatus
 **Learning:** The SyncStatus component was calling `getStatusInfo()` on every render, creating new objects with icon, label, description, and className properties each time. Since this component updates frequently during sync operations (status changes, pending count updates), these allocations added unnecessary GC pressure and could trigger re-renders in child components.
 **Action:** Wrap the status info object creation in `useMemo` with proper dependencies (isOnline, failedCount, status, pendingCount). This ensures the object reference remains stable when dependencies haven't changed, reducing allocations and preventing unnecessary re-renders of components that consume these values.
+**Action:** Wrap the status info object creation in `useMemo` with proper dependencies. This ensures the object reference remains stable when dependencies haven't changed, reducing allocations and preventing unnecessary re-renders of components that consume these values.
 
 ## 2026-01-31 - Reduce with Spread Operator O(n²) Complexity
 **Learning:** Using `.reduce((acc, item) => ({ ...acc, [item.id]: value }), {})` to build an object from an array creates O(n²) complexity because the spread operator copies all existing properties on each iteration. For a task with 50 subtasks, this creates 1,225 intermediate objects (50*49/2). The TaskItem component was using this pattern to initialize subtask completion states.
@@ -60,6 +61,11 @@
 
 ## 2026-02-01 - React.memo for Analytics Components
 **Learning:** Analytics components (AnalyticsCharts, CompletionHeatmap) render expensive chart visualizations with recharts. Without React.memo, these components re-render whenever the parent analytics page updates any state (filters, tabs, etc.), even when their data prop hasn't changed. Since these components already use useMemo for internal calculations, adding React.memo prevents the entire component tree from re-rendering unnecessarily.
+**Action:** Wrap expensive visualization components with React.memo when they receive stable data props and contain heavy rendering logic (charts, heatmaps, large lists). This is especially valuable for analytics/dashboard pages where multiple independent sections might trigger parent re-renders.
+
+## 2024-05-22 - Mocking Hoisting in Bun Tests
+**Learning:** Static imports in Bun tests bind before `mock.module` takes effect. When mocking Server Actions for component integration tests, use dynamic `await import(...)` for the component under test inside `beforeEach` to ensure it uses the mocked dependencies.
+**Action:** Always use dynamic imports for components when mocking their dependencies in the same test file.
 
 ## 2026-02-01 - Missing Composite Indexes
 **Learning:** High-traffic aggregation queries (e.g., "Daily Completed Task Count" for streaks) and default list views often lack covering indexes, leading to full table scans or expensive sort operations as data grows.
