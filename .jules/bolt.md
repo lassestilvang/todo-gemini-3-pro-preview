@@ -52,6 +52,7 @@
 
 ## 2026-01-31 - Status Info Object Allocations in SyncStatus
 **Learning:** The SyncStatus component was calling `getStatusInfo()` on every render, creating new objects with icon, label, description, and className properties each time. Since this component updates frequently during sync operations (status changes, pending count updates), these allocations added unnecessary GC pressure and could trigger re-renders in child components.
+**Action:** Wrap the status info object creation in `useMemo` with proper dependencies (isOnline, failedCount, status, pendingCount). This ensures the object reference remains stable when dependencies haven't changed, reducing allocations and preventing unnecessary re-renders of components that consume these values.
 **Action:** Wrap the status info object creation in `useMemo` with proper dependencies. This ensures the object reference remains stable when dependencies haven't changed, reducing allocations and preventing unnecessary re-renders of components that consume these values.
 
 ## 2026-01-31 - Reduce with Spread Operator O(n²) Complexity

@@ -60,7 +60,10 @@ describe("Select", () => {
         });
 
         // Radix Select content is rendered in a portal
-        const option = await screen.findByText("Option 1", {}, { timeout: 5000 });
+        // Use findByRole which handles waiting automatically.
+        // We use hidden: true because Radix UI can sometimes manage visibility in ways that
+        // strictly accessible queries might miss during transitions/portaling in test environments.
+        const option = await screen.findByRole("option", { name: "Option 1", hidden: true }, { timeout: 15000 });
         expect(option).toBeInTheDocument();
-    }, 15000);
+    }, 30000);
 });

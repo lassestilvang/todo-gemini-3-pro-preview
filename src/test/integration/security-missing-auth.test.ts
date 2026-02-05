@@ -79,6 +79,7 @@ describe("Integration: Security Missing Auth", () => {
 
     // Template Tests
     it("should fail when getting another user's templates", async () => {
+        await expect(getTemplates(victimId)).rejects.toThrow(/Forbidden|authorized/i);
         try {
             const result = await getTemplates(victimId);
             // @ts-expect-error - checking if it's an ActionResult
