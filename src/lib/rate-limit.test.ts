@@ -1,14 +1,15 @@
-import { describe, expect, it, beforeAll, beforeEach } from "bun:test";
-import { setupTestDb, resetTestDb } from "@/test/setup";
+import { describe, it, expect, beforeEach } from "bun:test";
+import { setupTestDb } from "@/test/setup";
 import { rateLimit } from "./rate-limit";
 
 describe("rate-limit", () => {
-    beforeAll(async () => {
+    beforeEach(async () => {
         await setupTestDb();
+        // await resetTestDb();
     });
 
     beforeEach(async () => {
-        await resetTestDb();
+        // Unique keys per test for isolation
     });
 
     it("should allow requests within limit", async () => {

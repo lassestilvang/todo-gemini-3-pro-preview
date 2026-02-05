@@ -70,7 +70,9 @@ export async function getTasks(
   // Always filter out subtasks - only show parent tasks
   conditions.push(isNull(tasks.parentId));
 
-  if (!showCompleted) {
+  if (filter === "completed") {
+    conditions.push(eq(tasks.isCompleted, true));
+  } else if (!showCompleted) {
     conditions.push(eq(tasks.isCompleted, false));
   }
 
@@ -81,17 +83,13 @@ export async function getTasks(
   }
 
   if (labelId) {
-    const taskIdsWithLabel = await db
+    // Perf: use a subquery for label filtering to eliminate one database roundtrip.
+    const taskIdsSubquery = db
       .select({ taskId: taskLabels.taskId })
       .from(taskLabels)
       .where(eq(taskLabels.labelId, labelId));
 
-    const ids = taskIdsWithLabel.map((t) => t.taskId);
-    if (ids.length > 0) {
-      conditions.push(inArray(tasks.id, ids));
-    } else {
-      return []; // No tasks with this label
-    }
+    conditions.push(inArray(tasks.id, taskIdsSubquery));
   }
 
   const now = new Date();
@@ -316,8 +314,11 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
 
   // Smart Tagging: If no list or labels provided, try to guess them
   if (!taskData.listId && finalLabelIds.length === 0 && taskData.title && taskData.userId) {
-    const allLists = await getLists(taskData.userId);
-    const allLabels = await getLabels(taskData.userId);
+    // Perf: fetch lists + labels in parallel to cut smart-tagging latency roughly in half.
+    const [allLists, allLabels] = await Promise.all([
+      getLists(taskData.userId),
+      getLabels(taskData.userId),
+    ]);
     const suggestions = await suggestMetadata(taskData.title, allLists, allLabels);
 
     if (suggestions.listId) taskData.listId = suggestions.listId;
@@ -468,17 +469,14 @@ export async function updateTask(
   }
 
   if (taskData.listId !== undefined && taskData.listId !== currentTask.listId) {
-    let fromListName = "Inbox";
-    if (currentTask.listId) {
-      const list = await getList(currentTask.listId, userId);
-      if (list) fromListName = list.name;
-    }
+    // ⚡ Bolt Opt: Parallelize list lookups for logging.
+    const [fromList, toList] = await Promise.all([
+      currentTask.listId ? getList(currentTask.listId, userId) : Promise.resolve(null),
+      taskData.listId ? getList(taskData.listId, userId) : Promise.resolve(null),
+    ]);
 
-    let toListName = "Inbox";
-    if (taskData.listId) {
-      const list = await getList(taskData.listId, userId);
-      if (list) toListName = list.name;
-    }
+    const fromListName = fromList?.name || "Inbox";
+    const toListName = toList?.name || "Inbox";
 
     changes.push(`List changed from "${fromListName}" to "${toListName}"`);
   }
@@ -488,11 +486,26 @@ export async function updateTask(
     const newLabelIds = [...labelIds].sort();
 
     if (JSON.stringify(currentLabelIds) !== JSON.stringify(newLabelIds)) {
-      const allLabels = await getLabels(userId);
-      const currentLabelNames = currentTask.labels.map((l) => l.name || "Unknown");
-      const newLabelNames = newLabelIds.map(
-        (id) => allLabels.find((l) => l.id === id)?.name || "Unknown"
-      );
+      const currentLabelNamesMap = new Map(currentTask.labels.map((l) => [l.id, l.name || "Unknown"]));
+
+      // ⚡ Bolt Opt: Only fetch labels that we don't already have names for.
+      // Avoids loading all users labels just to log a single name change.
+      const labelsToFetch = newLabelIds.filter(id => !currentLabelNamesMap.has(id));
+
+      const allRelevantLabelsMap = new Map(currentLabelNamesMap);
+      if (labelsToFetch.length > 0) {
+        const fetchedLabels = await db
+          .select({ id: labels.id, name: labels.name })
+          .from(labels)
+          .where(and(eq(labels.userId, userId), inArray(labels.id, labelsToFetch)));
+
+        for (const label of fetchedLabels) {
+          allRelevantLabelsMap.set(label.id, label.name || "Unknown");
+        }
+      }
+
+      const currentLabelNames = Array.from(currentLabelNamesMap.values());
+      const newLabelNames = newLabelIds.map(id => allRelevantLabelsMap.get(id) || "Unknown");
 
       const added = newLabelNames.filter((n) => !currentLabelNames.includes(n));
       const removed = currentLabelNames.filter((n) => !newLabelNames.includes(n));
@@ -625,9 +638,8 @@ export async function toggleTaskCompletion(id: number, userId: string, isComplet
             userId,
             taskId: blockedTask.id,
             action: "blocker_completed",
-            details: `Blocker "${task.title}" completed.${
-              isNowUnblocked ? " Task is now unblocked!" : ""
-            }`,
+            details: `Blocker "${task.title}" completed.${isNowUnblocked ? " Task is now unblocked!" : ""
+              }`,
           };
         });
 

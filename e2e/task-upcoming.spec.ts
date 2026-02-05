@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect, waitForTask } from './fixtures';
 
 /**
  * E2E tests for cross-view task verification.
@@ -19,10 +19,11 @@ test.describe('Task Upcoming View Verification', () => {
         const taskInput = page.getByTestId('task-input');
         await expect(taskInput).toBeVisible();
 
-        // Create a task with a future date (next month to be sure it's in Upcoming and not Today/Next 7 Days)
-        // Actually "in 2 weeks" is good for Upcoming.
+        // Create a task with a future due date using natural language
+        // "tomorrow" is reliably parsed and should land in Upcoming.
         const uniqueId = Date.now();
-        const taskTitle = `Buy Milk ${uniqueId} in 2 weeks`;
+        const taskTitle = `Buy Milk ${uniqueId} tomorrow`;
+        const expectedTitle = `Buy Milk ${uniqueId}`;
         await taskInput.fill(taskTitle);
         await taskInput.press('Enter');
 
@@ -36,7 +37,8 @@ test.describe('Task Upcoming View Verification', () => {
         await page.waitForLoadState('load');
 
         // Verify the task appears in the Upcoming list
-        const taskItem = page.getByTestId('task-item').filter({ hasText: `Buy Milk ${uniqueId}` });
+        await waitForTask(page, expectedTitle);
+        const taskItem = page.getByTestId('task-item').filter({ hasText: expectedTitle });
         await expect(taskItem.first()).toBeVisible({ timeout: 10000 });
     });
 

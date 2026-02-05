@@ -1,4 +1,4 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import * as fc from "fast-check";
 import {
     success,
@@ -54,6 +54,16 @@ const actionErrorArb = fc.record({
 }) as fc.Arbitrary<ActionError>;
 
 describe("Property Tests: Action Result", () => {
+    const originalError = console.error;
+
+    beforeAll(() => {
+        console.error = () => { };
+    });
+
+    afterAll(() => {
+        console.error = originalError;
+    });
+
     /**
      * **Feature: codebase-quality-improvements, Property 7: Result type validity**
      * **Validates: Requirements 7.1, 7.2**

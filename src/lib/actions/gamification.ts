@@ -72,8 +72,9 @@ export async function updateUserProgress(userId: string, xpAmount: number) {
   await requireUser(userId);
 
   // 1. Fetch all dependencies in parallel for maximum performance
-  const todayStart = startOfDay(new Date());
-  const todayEnd = endOfDay(new Date());
+  const now = new Date();
+  const todayStart = startOfDay(now);
+  const todayEnd = endOfDay(now);
 
   const [stats, allAchievements, [taskCounts], unlockedEntries] = await Promise.all([
     getUserStats(userId),

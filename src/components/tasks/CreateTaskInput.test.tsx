@@ -11,19 +11,19 @@ mock.module("@/lib/actions", () => ({
 
 // Local UI Mocks
 mock.module("@/components/ui/dialog", () => ({
-    Dialog: ({ children, open }: any) => <div data-testid="dialog-root" data-open={open}>{children}</div>,
-    DialogContent: ({ children }: any) => <div data-testid="dialog-content">{children}</div>,
-    DialogHeader: ({ children }: any) => <div data-testid="dialog-header">{children}</div>,
-    DialogFooter: ({ children }: any) => <div data-testid="dialog-footer">{children}</div>,
-    DialogTitle: ({ children }: any) => <h2>{children}</h2>,
-    DialogDescription: ({ children }: any) => <p>{children}</p>,
-    DialogTrigger: ({ children, asChild }: any) => asChild ? children : <button>{children}</button>,
+    Dialog: ({ children, open }: { children: React.ReactNode; open?: boolean }) => <div data-testid="dialog-root" data-open={open}>{children}</div>,
+    DialogContent: ({ children }: { children: React.ReactNode }) => <div data-testid="dialog-content">{children}</div>,
+    DialogHeader: ({ children }: { children: React.ReactNode }) => <div data-testid="dialog-header">{children}</div>,
+    DialogFooter: ({ children }: { children: React.ReactNode }) => <div data-testid="dialog-footer">{children}</div>,
+    DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
+    DialogDescription: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
+    DialogTrigger: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => asChild ? children : <button>{children}</button>,
 }));
 
 mock.module("@/components/providers/sync-provider", () => ({
-    SyncProvider: ({ children }: any) => <>{children}</>,
+    SyncProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
     useSync: () => ({
-        dispatch: mock((type: string, ...args: any[]) => {
+        dispatch: mock((type: string, ...args: unknown[]) => {
             if (type === 'createTask') {
                 return mockCreateTask(...args);
             }
