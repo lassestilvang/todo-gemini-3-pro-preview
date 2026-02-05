@@ -61,7 +61,7 @@ describe("Views Security (IDOR)", () => {
       });
 
       expect(result.success).toBe(false);
-      if (!result.success) {
+      if (result.success === false) {
         expect(result.error.code).toBe("FORBIDDEN");
       }
     } finally {
