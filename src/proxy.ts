@@ -11,7 +11,7 @@ import { cookies } from 'next/headers';
 async function testModeMiddleware(request: NextRequest) {
   const cookieStore = await cookies();
   const testSession = cookieStore.get('wos-session-test');
-  
+
   if (testSession) {
     try {
       const session = JSON.parse(testSession.value);
@@ -23,16 +23,16 @@ async function testModeMiddleware(request: NextRequest) {
       // Invalid session cookie - continue to normal auth
     }
   }
-  
+
   // No valid test session - redirect to login for protected routes
   const pathname = request.nextUrl.pathname;
-  const unauthenticatedPaths = ['/', '/login', '/auth/callback'];
+  const unauthenticatedPaths = ['/', '/login', '/auth/callback', '/sw.js'];
   const isApiRoute = pathname.startsWith('/api/');
-  
+
   if (!unauthenticatedPaths.includes(pathname) && !isApiRoute) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
-  
+
   return NextResponse.next();
 }
 
@@ -40,17 +40,18 @@ async function testModeMiddleware(request: NextRequest) {
 const middleware = process.env.E2E_TEST_MODE === 'true'
   ? testModeMiddleware
   : authkitMiddleware({
-      middlewareAuth: {
-        enabled: true,
-        unauthenticatedPaths: [
-          '/',
-          '/login',
-          '/auth/callback',
-          // API routes should be handled separately or excluded
-          '/api/:path*',
-        ],
-      },
-    });
+    middlewareAuth: {
+      enabled: true,
+      unauthenticatedPaths: [
+        '/',
+        '/login',
+        '/auth/callback',
+        '/sw.js',
+        // API routes should be handled separately or excluded
+        '/api/:path*',
+      ],
+    },
+  });
 
 export default middleware;
 
@@ -65,6 +66,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * - public folder assets
      */
-    '/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|icon-.*\\.png|.*\\.svg).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|icon-.*\\.png|.*\\.svg).*)',
   ],
 };
