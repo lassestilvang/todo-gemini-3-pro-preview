@@ -50,6 +50,13 @@ mock.module("@/lib/actions/templates", () => ({
 // Mock window.confirm
 const originalConfirm = globalThis.confirm;
 
+// PointerEvent mocks are provided globally in setup.tsx
+
+describe("TemplateManager", () => {
+  let templateIds: number[] = [];
+  const testUserId = "test_user_123";
+
+  beforeEach(async () => {
 // PointerEvent mocks are provided globally in setup.tsx (upstream change),
 // but adding them here defensively to ensure tests pass in all environments
 if (!Element.prototype.setPointerCapture) {
@@ -147,7 +154,7 @@ describe("TemplateManager", () => {
 
       await waitFor(() => {
         expect(screen.getByText("Task Templates")).toBeInTheDocument();
-      }, { timeout: 15000 });
+      }, { timeout: 30000 });
     }, 40000);
 
     it("should load and display templates when dialog opens", async () => {
@@ -159,12 +166,12 @@ describe("TemplateManager", () => {
 
       fireEvent.click(screen.getByText("Templates"));
 
-      expect(await screen.findByText("Task Templates")).toBeInTheDocument();
+      expect(await screen.findByText("Task Templates", {}, { timeout: 30000 })).toBeInTheDocument();
 
       await waitFor(() => {
         expect(screen.getByText("Weekly Report")).toBeInTheDocument();
         expect(screen.getByText("Daily Standup")).toBeInTheDocument();
-      }, { timeout: 15000 });
+      }, { timeout: 30000 });
     }, 40000);
 
     it("should show empty state when no templates exist", async () => {
@@ -178,7 +185,7 @@ describe("TemplateManager", () => {
 
       await waitFor(() => {
         expect(screen.getByText("No templates found. Create one to get started.")).toBeInTheDocument();
-      }, { timeout: 15000 });
+      }, { timeout: 30000 });
     }, 40000);
   });
 
@@ -188,17 +195,12 @@ describe("TemplateManager", () => {
 
       fireEvent.click(screen.getByText("Templates"));
 
-      await waitFor(() => {
-        expect(screen.getByTestId("new-template-button")).toBeInTheDocument();
-      }, { timeout: 15000 });
+      expect(await screen.findByTestId("new-template-button", {}, { timeout: 30000 })).toBeInTheDocument();
 
       fireEvent.click(screen.getByTestId("new-template-button"));
 
-      await waitFor(() => {
-        // Should show the TemplateFormDialog in create mode
-        expect(screen.getByRole("heading", { name: "Create Template" })).toBeInTheDocument();
-        expect(screen.getByTestId("template-name-input")).toBeInTheDocument();
-      }, { timeout: 15000 });
+      expect(await screen.findByRole("heading", { name: "Create Template" }, { timeout: 30000 })).toBeInTheDocument();
+      expect(screen.getByTestId("template-name-input")).toBeInTheDocument();
     }, 40000);
 
     it("should show empty form fields in create mode", async () => {
@@ -211,7 +213,7 @@ describe("TemplateManager", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId("new-template-button")).toBeInTheDocument();
-      }, { timeout: 15000 });
+      }, { timeout: 30000 });
 
       // Click New Template button
       await React.act(async () => {
@@ -223,7 +225,7 @@ describe("TemplateManager", () => {
         const titleInput = screen.getByTestId("task-title-input") as HTMLInputElement;
         expect(nameInput.value).toBe("");
         expect(titleInput.value).toBe("");
-      }, { timeout: 15000 });
+      }, { timeout: 30000 });
     }, 40000);
   });
 
@@ -233,10 +235,8 @@ describe("TemplateManager", () => {
 
       fireEvent.click(screen.getByText("Templates"));
 
-      await waitFor(() => {
-        expect(screen.getByTestId("edit-template-1")).toBeInTheDocument();
-        expect(screen.getByTestId("edit-template-2")).toBeInTheDocument();
-      }, { timeout: 15000 });
+      expect(await screen.findByTestId(`edit-template-${templateIds[0]}`, {}, { timeout: 30000 })).toBeInTheDocument();
+      expect(screen.getByTestId(`edit-template-${templateIds[1]}`)).toBeInTheDocument();
     }, 40000);
 
     it("should open edit dialog with template data when edit button is clicked", async () => {
@@ -248,11 +248,11 @@ describe("TemplateManager", () => {
         expect(screen.getByTestId("edit-template-1")).toBeInTheDocument();
       }, { timeout: 15000 });
 
-      // Click edit button for first template
-      await React.act(async () => {
-        fireEvent.click(screen.getByTestId("edit-template-1"));
-      });
+      const editBtn = await screen.findByTestId(`edit-template-${templateIds[0]}`, {}, { timeout: 30000 });
+      fireEvent.click(editBtn);
 
+      const nameInput = await screen.findByTestId("template-name-input", {}, { timeout: 30000 }) as HTMLInputElement;
+      expect(nameInput.value).toBe("Weekly Report");
       // Relaxed check for happy-dom which struggles with portals/visibility
       await waitFor(() => {
         // Check for the input directly as it's the critical part of the edit form
@@ -271,8 +271,8 @@ describe("TemplateManager", () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByTestId("edit-template-1")).toBeInTheDocument();
-      }, { timeout: 15000 });
+        expect(screen.getByTestId(`edit-template-${templateIds[0]}`)).toBeInTheDocument();
+      }, { timeout: 30000 });
 
       // Click edit button for first template
       await React.act(async () => {
@@ -282,7 +282,7 @@ describe("TemplateManager", () => {
       await waitFor(() => {
         const titleInput = screen.getByTestId("task-title-input") as HTMLInputElement;
         expect(titleInput.value).toBe("Weekly Report Task");
-      }, { timeout: 15000 });
+      }, { timeout: 30000 });
     }, 40000);
   });
 
@@ -295,9 +295,9 @@ describe("TemplateManager", () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByTestId("use-template-1")).toBeInTheDocument();
-        expect(screen.getByTestId("use-template-2")).toBeInTheDocument();
-      }, { timeout: 15000 });
+        expect(screen.getByTestId(`use-template-${templateIds[0]}`)).toBeInTheDocument();
+        expect(screen.getByTestId(`use-template-${templateIds[1]}`)).toBeInTheDocument();
+      }, { timeout: 30000 });
     }, 40000);
 
     it("should render delete button for each template", async () => {
@@ -308,9 +308,9 @@ describe("TemplateManager", () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByTestId("delete-template-1")).toBeInTheDocument();
-        expect(screen.getByTestId("delete-template-2")).toBeInTheDocument();
-      }, { timeout: 15000 });
+        expect(screen.getByTestId(`delete-template-${templateIds[0]}`)).toBeInTheDocument();
+        expect(screen.getByTestId(`delete-template-${templateIds[1]}`)).toBeInTheDocument();
+      }, { timeout: 30000 });
     }, 40000);
   });
 
@@ -322,7 +322,7 @@ describe("TemplateManager", () => {
 
       await waitFor(() => {
         expect(screen.getByText("No templates found. Create one to get started.")).toBeInTheDocument();
-      });
-    });
+      }, { timeout: 30000 });
+    }, 40000);
   });
 });

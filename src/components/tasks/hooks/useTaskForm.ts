@@ -87,7 +87,8 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
     // Clear field errors when user modifies input
     const clearFieldError = useCallback((field: string) => {
         setFieldErrors(prev => {
-            if (prev[field]) {                 
+            if (prev[field]) {
+
                 const { [field]: _removed, ...rest } = prev;
                 return rest;
             }

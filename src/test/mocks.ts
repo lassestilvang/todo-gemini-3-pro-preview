@@ -190,6 +190,10 @@ export function resetMockAuthUser() {
     mockState.__mockAuthUser = DEFAULT_MOCK_USER;
 }
 
+export function resetMockAuthUser() {
+    mockState.__mockAuthUser = DEFAULT_MOCK_USER;
+}
+
 export function getMockAuthUser(): MockAuthUser | null {
     const contextUser = authStorage.getStore();
     // Prioritize AsyncLocalStorage context if we are inside a runInAuthContext call

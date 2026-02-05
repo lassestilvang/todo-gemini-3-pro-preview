@@ -28,6 +28,16 @@
 **Learning:** `withErrorHandling` wrapper catches `ForbiddenError` and returns a failure result, meaning tests must assert on the result object (`result.success === false`) rather than expecting a thrown error.
 **Prevention:** Added `await requireUser(userId)` to the start of every exported function in `time-tracking.ts`. Created `src/lib/actions/time-tracking.security.test.ts` to verify IDOR protection.
 
+## 2026-10-28 - [Critical] Unprotected Label Actions
+**Vulnerability:** `src/lib/actions/labels.ts` server actions (`getLabels`, `createLabel`, etc.) accepted `userId` but failed to validate it against the authenticated session, allowing IDOR.
+**Learning:** Systematic checks (e.g., `grep` for "userId" without "requireUser") reveal vulnerabilities that manual review might miss.
+**Prevention:** Added `await requireUser(userId)` to all exported functions in `labels.ts`. Created `labels.security.test.ts` to prevent regression.
+
+## 2026-10-29 - [Testing] CI Timeouts on Radix Primitives
+**Vulnerability:** CI checks failed consistently on `TemplateManager` and `Select` tests due to timeouts (3000ms-15000ms), despite local success. `Select` interactions specifically failed instantly or timed out in CI due to portal rendering delays.
+**Learning:** CI environments are significantly slower than local dev machines. `waitFor` with `getByRole` can be flaky if the element isn't immediately available in the accessible tree. `findByRole` is more robust as it combines waiting and querying.
+**Prevention:** Increased test execution timeouts to 30000ms-40000ms and switched to `findByRole` with 30000ms timeout for critical UI interactions in CI.
+
 ## 2026-02-01 - [High] IDOR in Label Management
 **Vulnerability:** `src/lib/actions/labels.ts` server actions accepted `userId` as an argument without validating it against the session, allowing attackers to manage other users' labels.
 **Learning:** CRUD operations on auxiliary resources (like labels/tags) are often overlooked for security checks compared to core resources (like tasks), but they are equally vulnerable to IDOR.
