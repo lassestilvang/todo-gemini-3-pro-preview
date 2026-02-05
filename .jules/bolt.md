@@ -25,6 +25,10 @@
 **Learning:** Using correlated subqueries (e.g., `(SELECT COUNT(*) ... WHERE outer.id = inner.id)`) in main `SELECT` statements scales poorly (O(N)) for large datasets.
 **Action:** Replace correlated subqueries with a separate parallel query using `GROUP BY` and merge the results in memory using a Map.
 
+## 2026-01-27 - Batch Update Optimization
+**Learning:** Using `Promise.all` with individual `UPDATE` queries for reordering (O(N)) is significantly slower than a single batched `UPDATE` with `CASE WHEN` (O(1)).
+**Action:** Replace sequential updates with `sql` `CASE WHEN` constructs for bulk operations like reordering.
+
 ## 2026-01-27 - Batched Updates via CASE/WHEN
 **Learning:** `Promise.all` with multiple `UPDATE` queries for reordering items causes N+1 database roundtrips. Drizzle supports constructing a single `UPDATE` query using `CASE/WHEN` logic.
 **Action:** Replace update loops with a single `UPDATE ... SET column = CASE id WHEN ... END` query using `sql` template literals for bulk operations.

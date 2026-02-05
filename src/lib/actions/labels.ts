@@ -39,6 +39,9 @@ export async function getLabels(userId: string) {
  * @param items - Array of label IDs and their new positions
  */
 async function reorderLabelsImpl(userId: string, items: { id: number; position: number }[]) {
+  if (items.length === 0) return;
+
+  const ids = items.map((i) => i.id);
   await requireUser(userId);
 
   if (items.length === 0) {
@@ -53,10 +56,13 @@ async function reorderLabelsImpl(userId: string, items: { id: number; position: 
     sql` `
   );
 
+  // Optimized: Batch updates into single query using CASE WHEN to avoid N+1 DB calls
   await db
     .update(labels)
-    .set({ position: sql`CASE ${caseWhen} ELSE ${labels.position} END` })
-    .where(and(inArray(labels.id, labelIds), eq(labels.userId, userId)));
+    .set({
+      position: sql`CASE ${caseWhen} ELSE ${labels.position} END`,
+    })
+    .where(and(inArray(labels.id, ids), eq(labels.userId, userId)));
 
   await logActivity({
     userId,
