@@ -1,5 +1,6 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import React from "react";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
@@ -111,11 +112,10 @@ describe("TemplateManager", () => {
     });
 
     it("should open template list dialog when Templates button is clicked", async () => {
+      const user = userEvent.setup();
       render(<TemplateManager userId="test_user_123" />);
 
-      await React.act(async () => {
-        fireEvent.click(screen.getByText("Templates"));
-      });
+      await user.click(screen.getByText("Templates"));
 
       // Explicitly wait for dialog
       await waitFor(() => {
@@ -128,9 +128,10 @@ describe("TemplateManager", () => {
     }, 40000);
 
     it("should load and display templates when dialog opens", async () => {
+      const user = userEvent.setup();
       render(<TemplateManager userId="test_user_123" />);
 
-      fireEvent.click(screen.getByText("Templates"));
+      await user.click(screen.getByText("Templates"));
 
       expect(await screen.findByText("Task Templates", {}, { timeout: 30000 })).toBeInTheDocument();
 
@@ -141,6 +142,7 @@ describe("TemplateManager", () => {
     }, 40000);
 
     it("should show empty state when no templates exist", async () => {
+      const user = userEvent.setup();
       // Delete templates for this specific test
       const { templates } = await import("@/db/schema-sqlite");
       const { db } = await import("@/db");
@@ -148,9 +150,7 @@ describe("TemplateManager", () => {
 
       render(<TemplateManager userId="test_user_123" />);
 
-      await React.act(async () => {
-        fireEvent.click(screen.getByText("Templates"));
-      });
+      await user.click(screen.getByText("Templates"));
 
       await waitFor(() => {
         expect(screen.getByText("No templates found. Create one to get started.")).toBeInTheDocument();
@@ -160,34 +160,32 @@ describe("TemplateManager", () => {
 
   describe("create dialog", () => {
     it("should open create dialog when New Template button is clicked", async () => {
+      const user = userEvent.setup();
       render(<TemplateManager userId="test_user_123" />);
 
-      fireEvent.click(screen.getByText("Templates"));
+      await user.click(screen.getByText("Templates"));
 
       expect(await screen.findByTestId("new-template-button", {}, { timeout: 30000 })).toBeInTheDocument();
 
-      fireEvent.click(screen.getByTestId("new-template-button"));
+      await user.click(screen.getByTestId("new-template-button"));
 
       expect(await screen.findByRole("heading", { name: "Create Template" }, { timeout: 30000 })).toBeInTheDocument();
       expect(screen.getByTestId("template-name-input")).toBeInTheDocument();
     }, 40000);
 
     it("should show empty form fields in create mode", async () => {
+      const user = userEvent.setup();
       render(<TemplateManager userId="test_user_123" />);
 
       // Open template list dialog
-      await React.act(async () => {
-        fireEvent.click(screen.getByText("Templates"));
-      });
+      await user.click(screen.getByText("Templates"));
 
       await waitFor(() => {
         expect(screen.getByTestId("new-template-button")).toBeInTheDocument();
       }, { timeout: 30000 });
 
       // Click New Template button
-      await React.act(async () => {
-        fireEvent.click(screen.getByTestId("new-template-button"));
-      });
+      await user.click(screen.getByTestId("new-template-button"));
 
       await waitFor(() => {
         const nameInput = screen.getByTestId("template-name-input") as HTMLInputElement;
@@ -200,25 +198,27 @@ describe("TemplateManager", () => {
 
   describe("edit dialog", () => {
     it("should render edit button for each template", async () => {
+      const user = userEvent.setup();
       render(<TemplateManager userId="test_user_123" />);
 
-      fireEvent.click(screen.getByText("Templates"));
+      await user.click(screen.getByText("Templates"));
 
       expect(await screen.findByTestId(`edit-template-${templateIds[0]}`, {}, { timeout: 30000 })).toBeInTheDocument();
       expect(screen.getByTestId(`edit-template-${templateIds[1]}`)).toBeInTheDocument();
     }, 40000);
 
     it("should open edit dialog with template data when edit button is clicked", async () => {
+      const user = userEvent.setup();
       render(<TemplateManager userId="test_user_123" />);
 
-      fireEvent.click(screen.getByText("Templates"));
+      await user.click(screen.getByText("Templates"));
 
       await waitFor(() => {
         expect(screen.getByTestId("edit-template-1")).toBeInTheDocument();
       }, { timeout: 15000 });
 
       const editBtn = await screen.findByTestId(`edit-template-${templateIds[0]}`, {}, { timeout: 30000 });
-      fireEvent.click(editBtn);
+      await user.click(editBtn);
 
       const nameInput = await screen.findByTestId("template-name-input", {}, { timeout: 30000 }) as HTMLInputElement;
       expect(nameInput.value).toBe("Weekly Report");
@@ -232,21 +232,18 @@ describe("TemplateManager", () => {
     }, 40000);
 
     it("should pre-populate task title from template content", async () => {
+      const user = userEvent.setup();
       render(<TemplateManager userId="test_user_123" />);
 
       // Open template list dialog
-      await React.act(async () => {
-        fireEvent.click(screen.getByText("Templates"));
-      });
+      await user.click(screen.getByText("Templates"));
 
       await waitFor(() => {
         expect(screen.getByTestId(`edit-template-${templateIds[0]}`)).toBeInTheDocument();
       }, { timeout: 30000 });
 
       // Click edit button for first template
-      await React.act(async () => {
-        fireEvent.click(screen.getByTestId(`edit-template-${templateIds[0]}`));
-      });
+      await user.click(screen.getByTestId(`edit-template-${templateIds[0]}`));
 
       await waitFor(() => {
         const titleInput = screen.getByTestId("task-title-input") as HTMLInputElement;
@@ -257,11 +254,10 @@ describe("TemplateManager", () => {
 
   describe("template actions", () => {
     it("should render Use button for each template", async () => {
+      const user = userEvent.setup();
       render(<TemplateManager userId="test_user_123" />);
 
-      await React.act(async () => {
-        fireEvent.click(screen.getByText("Templates"));
-      });
+      await user.click(screen.getByText("Templates"));
 
       await waitFor(() => {
         expect(screen.getByTestId(`use-template-${templateIds[0]}`)).toBeInTheDocument();
@@ -270,11 +266,10 @@ describe("TemplateManager", () => {
     }, 40000);
 
     it("should render delete button for each template", async () => {
+      const user = userEvent.setup();
       render(<TemplateManager userId="test_user_123" />);
 
-      await React.act(async () => {
-        fireEvent.click(screen.getByText("Templates"));
-      });
+      await user.click(screen.getByText("Templates"));
 
       await waitFor(() => {
         expect(screen.getByTestId(`delete-template-${templateIds[0]}`)).toBeInTheDocument();

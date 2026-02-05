@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, createTestUser } from "@/test/setup";
-import { setMockAuthUser, clearMockAuthUser } from "@/test/mocks";
+import { setMockAuthUser, clearMockAuthUser, runInAuthContext } from "@/test/mocks";
 import { getViewSettings, saveViewSettings, resetViewSettings } from "@/lib/actions/view-settings";
 import { getTemplates, createTemplate, updateTemplate, deleteTemplate, instantiateTemplate } from "@/lib/actions/templates";
 import { isFailure } from "@/lib/action-result";
@@ -55,7 +55,18 @@ describe("Integration: Security Missing Auth", () => {
         // I will write the test expecting the *fix* (ForbiddenError).
         // When I run this BEFORE fixing, it should FAIL (because it currently succeeds).
 
-        await expect(getViewSettings(victimId, "inbox")).rejects.toThrow(/Forbidden|authorized/i);
+        await runInAuthContext(
+            {
+                id: attackerId,
+                email: "attacker@evil.com",
+                firstName: "Test",
+                lastName: "User",
+                profilePictureUrl: null
+            },
+            async () => {
+                await expect(getViewSettings(victimId, "inbox")).rejects.toThrow(/Forbidden|authorized/i);
+            }
+        );
     });
 
     it("should fail when saving another user's view settings", async () => {

@@ -12,7 +12,14 @@ test.describe('Task Upcoming: Verify', () => {
         const taskTitle = `Buy Milk ${uniqueId} tomorrow`;
         const expectedTitle = `Buy Milk ${uniqueId}`;
         await taskInput.fill(taskTitle);
-        await expect(page.getByText('Tomorrow')).toBeVisible({ timeout: 10000 });
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const formattedTomorrow = tomorrow.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+        });
+        const dueLabel = page.getByText('Tomorrow').or(page.getByText(formattedTomorrow));
+        await expect(dueLabel).toBeVisible({ timeout: 10000 });
         await taskInput.press('Enter');
         await expect(taskInput).toHaveValue('', { timeout: 10000 });
 

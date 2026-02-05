@@ -51,19 +51,21 @@ export function TaskDialog({ task, open, onOpenChange, trigger, defaultListId, d
         <Dialog open={effectiveOpen} onOpenChange={setEffectiveOpen}>
             {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
             <DialogContent className="sm:max-w-[600px] p-0 gap-0 overflow-hidden top-[50%] translate-y-[-50%] sm:top-[10%] sm:translate-y-0 max-h-[90vh]">
-                <TaskForm
-                    key={formKey}
-                    task={task}
-                    defaultListId={defaultListId}
-                    defaultLabelIds={defaultLabelIds}
-                    defaultDueDate={defaultDueDate}
-                    initialTitle={initialTitle}
-                    initialPriority={initialPriority}
-                    initialEnergyLevel={initialEnergyLevel}
-                    initialContext={initialContext}
-                    userId={userId}
-                    onClose={() => setEffectiveOpen(false)}
-                />
+                {effectiveOpen && (
+                    <TaskForm
+                        key={formKey}
+                        task={task}
+                        defaultListId={defaultListId}
+                        defaultLabelIds={defaultLabelIds}
+                        defaultDueDate={defaultDueDate}
+                        initialTitle={initialTitle}
+                        initialPriority={initialPriority}
+                        initialEnergyLevel={initialEnergyLevel}
+                        initialContext={initialContext}
+                        userId={userId}
+                        onClose={() => setEffectiveOpen(false)}
+                    />
+                )}
             </DialogContent>
         </Dialog>
     );
