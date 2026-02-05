@@ -491,15 +491,7 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                                 <Badge
                                     key={label.id}
                                     variant="outline"
-                                    style={(() => {
-                                        // Perf: Pre-calculate style strings to avoid object allocations in common cases
-                                        const color = label.color || '#000000';
-                                        return {
-                                            borderColor: color + '40',
-                                            backgroundColor: color + '10',
-                                            color: color
-                                        };
-                                    })()}
+                                    style={getLabelStyle(label.color)}
                                     className="text-[10px] px-1.5 py-0 h-5 font-normal border flex items-center gap-1"
                                 >
                                     {/* <ResolvedIcon> handles fallback internally if needed, or we can just pass null.

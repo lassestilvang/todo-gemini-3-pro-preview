@@ -70,17 +70,21 @@ describe("TaskItem", () => {
     it("should render labels", () => {
         const taskWithLabels = {
             ...sampleTask,
-            labels: [{ id: 1, name: "Work", color: "red", icon: "Briefcase" }]
+            labels: [{ id: 1, name: "Work", color: "#FF0000", icon: "Briefcase" }]
         };
         render(<TaskItem task={taskWithLabels} />);
-        // Labels might be rendered as badges or text. 
-        // Assuming Badge contains the text.
-        // If Badge uses aria-label or similar, we might need to adjust.
-        // But usually getByText works if it's visible.
-        // Wait, TaskItem might not render labels text directly if they are just colored dots?
-        // Let's check TaskItem implementation if needed, but assuming standard Badge.
-        // Actually, let's just check if the label name is in the document.
-        // If it fails, I'll check the implementation.
+
+        const label = screen.getByText("Work");
+        expect(label).toBeInTheDocument();
+
+        // Check if the style is applied correctly (converting hex to RGB usually happens in styles)
+        // #FF0000 -> rgb(255, 0, 0)
+        // borderColor: #FF000040 (25% alpha)
+        // backgroundColor: #FF000010 (approx 6% alpha)
+        // color: #FF0000
+
+        // Note: checking exact style strings can be flaky across environments/browsers (hex vs rgb).
+        // But checking presence is good enough to ensure we didn't crash or hide it.
     });
 
     it("should render recurring icon", () => {
