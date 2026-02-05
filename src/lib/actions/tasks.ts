@@ -405,6 +405,16 @@ export async function updateTask(
 
   const { labelIds, expectedUpdatedAt, ...taskData } = data;
 
+  // Ensure dates are parsed if passed as strings (e.g. from client/sync)
+  if (typeof taskData.dueDate === 'string') {
+    // @ts-expect-error - Drizzle expects Date, but at runtime this might be a string
+    taskData.dueDate = new Date(taskData.dueDate);
+  }
+  if (typeof taskData.deadline === 'string') {
+    // @ts-expect-error - Drizzle expects Date, but at runtime this might be a string
+    taskData.deadline = new Date(taskData.deadline);
+  }
+
   const currentTask = existingTask ?? await getTask(id, userId);
   if (!currentTask) return;
 
