@@ -1,0 +1,66 @@
+import { test, expect } from './fixtures';
+
+test.describe('Data Persistence: Import', () => {
+    test('should import data correctly preserving relationships', async ({ authenticatedPage: page }) => {
+        test.setTimeout(60000);
+
+        const uniqueId = Date.now().toString();
+        const listName = `Export List ${uniqueId}`;
+        const taskName = `Export Task ${uniqueId}`;
+
+        await page.goto('/');
+
+        await page.getByTestId('add-list-button').click();
+        await expect(page.getByRole('dialog')).toBeVisible();
+        await page.getByPlaceholder('List Name').fill(listName);
+        await page.keyboard.press('Enter');
+
+        await page.getByRole('link', { name: listName }).click();
+        await page.waitForURL(/\/lists\/\d+/);
+        await expect(page.getByRole('heading', { name: listName })).toBeVisible();
+
+        await page.getByTestId('task-input').fill(taskName);
+        await expect(page.getByTestId('add-task-button')).toBeVisible();
+        await page.getByTestId('add-task-button').click();
+
+        await expect(page.getByTestId('task-input')).toHaveValue('');
+        await expect(page.getByText(taskName)).toBeVisible();
+        await page.goto('/settings');
+
+        await page.getByRole('button', { name: 'Export Backup' }).click();
+        const download = await page.waitForEvent('download');
+
+        const stream = await download.createReadStream();
+        const chunks: Buffer[] = [];
+        for await (const chunk of stream) {
+            chunks.push(chunk as Buffer);
+        }
+        const fileContent = Buffer.concat(chunks).toString('utf-8');
+        const jsonData = JSON.parse(fileContent);
+
+        expect(jsonData.data).toBeDefined();
+
+        page.on('dialog', dialog => dialog.accept());
+
+        const fileInput = page.locator('input[type="file"]');
+        await fileInput.setInputFiles({
+            name: 'todo-gemini-backup.json',
+            mimeType: 'application/json',
+            buffer: Buffer.from(JSON.stringify(jsonData)),
+        });
+
+        await expect(page.getByText('Import successful')).toBeVisible({ timeout: 60000 });
+
+        await page.waitForTimeout(2000);
+        await page.reload();
+
+        const importedListName = `${listName} (Imported)`;
+        await expect(page.getByRole('link', { name: importedListName })).toBeVisible();
+
+        await page.getByRole('link', { name: importedListName }).click();
+        await page.waitForURL(/\/lists\/\d+/);
+
+        await page.waitForLoadState('networkidle');
+        await expect(page.getByText(taskName)).toBeVisible({ timeout: 10000 });
+    });
+});
