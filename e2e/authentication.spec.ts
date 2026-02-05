@@ -13,8 +13,7 @@ import { test, expect, authenticateTestUser, clearTestSession, isOnLoginPage } f
 test.describe('Authentication Flow', () => {
   test.describe('Login Page', () => {
     test('should display login page with sign in options', async ({ page }) => {
-      await page.goto('/login');
-      await page.waitForLoadState('load');
+      await page.goto('/login', { waitUntil: 'domcontentloaded' });
 
       // Verify page title and description
       await expect(page.getByRole('heading', { name: 'Todo Gemini' })).toBeVisible();
@@ -33,8 +32,7 @@ test.describe('Authentication Flow', () => {
     });
 
     test('should display feature highlights on login page', async ({ page }) => {
-      await page.goto('/login');
-      await page.waitForLoadState('load');
+      await page.goto('/login', { waitUntil: 'domcontentloaded' });
 
       // Verify feature highlights are shown (use exact text to avoid ambiguity)
       await expect(page.getByText('AI-Powered', { exact: true })).toBeVisible();
@@ -43,16 +41,14 @@ test.describe('Authentication Flow', () => {
     });
 
     test('should display session expired message when redirected', async ({ page }) => {
-      await page.goto('/login?message=session_expired');
-      await page.waitForLoadState('load');
+      await page.goto('/login?message=session_expired', { waitUntil: 'domcontentloaded' });
 
       // Verify session expired message is shown
       await expect(page.getByText('Your session has expired')).toBeVisible();
     });
 
     test('sign in button should have href attribute', async ({ page }) => {
-      await page.goto('/login');
-      await page.waitForLoadState('load');
+      await page.goto('/login', { waitUntil: 'domcontentloaded' });
 
       const signInButton = page.getByTestId('sign-in-button');
       const href = await signInButton.getAttribute('href');
@@ -67,8 +63,7 @@ test.describe('Authentication Flow', () => {
       // Clear any existing session first
       await clearTestSession(page);
 
-      await page.goto('/inbox');
-      await page.waitForLoadState('load');
+      await page.goto('/inbox', { waitUntil: 'domcontentloaded' });
 
       // Should be redirected to login (either /login or WorkOS authkit)
       expect(await isOnLoginPage(page)).toBe(true);
@@ -77,8 +72,7 @@ test.describe('Authentication Flow', () => {
     test('should redirect to login when accessing today page unauthenticated', async ({ page }) => {
       await clearTestSession(page);
 
-      await page.goto('/today');
-      await page.waitForLoadState('load');
+      await page.goto('/today', { waitUntil: 'domcontentloaded' });
 
       expect(await isOnLoginPage(page)).toBe(true);
     });
@@ -86,8 +80,7 @@ test.describe('Authentication Flow', () => {
     test('should redirect to login when accessing calendar unauthenticated', async ({ page }) => {
       await clearTestSession(page);
 
-      await page.goto('/calendar');
-      await page.waitForLoadState('load');
+      await page.goto('/calendar', { waitUntil: 'domcontentloaded' });
 
       expect(await isOnLoginPage(page)).toBe(true);
     });
@@ -95,8 +88,7 @@ test.describe('Authentication Flow', () => {
     test('should redirect to login when accessing settings unauthenticated', async ({ page }) => {
       await clearTestSession(page);
 
-      await page.goto('/settings');
-      await page.waitForLoadState('load');
+      await page.goto('/settings', { waitUntil: 'domcontentloaded' });
 
       expect(await isOnLoginPage(page)).toBe(true);
     });
@@ -104,8 +96,7 @@ test.describe('Authentication Flow', () => {
     test('should redirect to login when accessing analytics unauthenticated', async ({ page }) => {
       await clearTestSession(page);
 
-      await page.goto('/analytics');
-      await page.waitForLoadState('load');
+      await page.goto('/analytics', { waitUntil: 'domcontentloaded' });
 
       expect(await isOnLoginPage(page)).toBe(true);
     });
@@ -113,8 +104,7 @@ test.describe('Authentication Flow', () => {
 
   test.describe('Authenticated Access', () => {
     test('should access inbox when authenticated', async ({ authenticatedPage: page }) => {
-      await page.goto('/inbox');
-      await page.waitForLoadState('load');
+      await page.goto('/inbox', { waitUntil: 'domcontentloaded' });
 
       // Should NOT be on login page
       expect(await isOnLoginPage(page)).toBe(false);
@@ -124,16 +114,14 @@ test.describe('Authentication Flow', () => {
     });
 
     test('should allow access to protected routes after authentication', async ({ authenticatedPage: page }) => {
-      await page.goto('/today');
-      await page.waitForLoadState('load');
+      await page.goto('/today', { waitUntil: 'domcontentloaded' });
 
       expect(await isOnLoginPage(page)).toBe(false);
       await expect(page.getByRole('heading', { name: 'Today', exact: true, level: 1 })).toBeVisible();
     });
 
     test('should show user profile when authenticated', async ({ authenticatedPage: page }) => {
-      await page.goto('/inbox');
-      await page.waitForLoadState('load');
+      await page.goto('/inbox', { waitUntil: 'domcontentloaded' });
 
       // User profile should be visible in sidebar
       // The test user name should appear
@@ -144,12 +132,11 @@ test.describe('Authentication Flow', () => {
   test.describe('Logout Flow', () => {
     test('should redirect to login after clearing session', async ({ page }) => {
       // Navigate to establish origin for fetch
-      await page.goto('/');
+      await page.goto('/', { waitUntil: 'domcontentloaded' });
       // First authenticate
       await authenticateTestUser(page);
 
-      await page.goto('/inbox');
-      await page.waitForLoadState('load');
+      await page.goto('/inbox', { waitUntil: 'domcontentloaded' });
 
       // Verify we're authenticated
       expect(await isOnLoginPage(page)).toBe(false);
@@ -158,8 +145,7 @@ test.describe('Authentication Flow', () => {
       await clearTestSession(page);
 
       // Try to access a protected route
-      await page.goto('/inbox');
-      await page.waitForLoadState('load');
+      await page.goto('/inbox', { waitUntil: 'domcontentloaded' });
 
       // Should be redirected to login
       expect(await isOnLoginPage(page)).toBe(true);

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const createManualTimeEntrySchema = z.object({
     taskId: z.number().int().positive(),
-    userId: z.string().uuid(),
+    userId: z.string().min(1, "User ID is required"),
     durationMinutes: z.number().min(1, "Duration must be at least 1 minute"),
     date: z.coerce.date().optional(),
     notes: z.string().optional(),
@@ -16,7 +16,7 @@ export const updateTimeEntrySchema = z.object({
 });
 
 export const getTimeStatsSchema = z.object({
-    userId: z.string().uuid(),
+    userId: z.string().min(1, "User ID is required"),
     dateRange: z.object({
         from: z.coerce.date(),
         to: z.coerce.date(),

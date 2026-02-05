@@ -28,19 +28,54 @@ export async function authenticateTestUser(page: Page): Promise<boolean> {
   try {
     // Generate a unique ID for this test to ensure database isolation
     const uniqueId = Math.random().toString(36).substring(7);
+    const user = {
+      id: `test-user-${uniqueId}`,
+      email: `test-${uniqueId}@example.com`,
+      firstName: 'E2E',
+      lastName: 'Test User',
+      profilePictureUrl: null,
+    };
 
     // Use Playwright's API request context to avoid browser origin issues
     const response = await page.request.post('/api/test-auth', {
       data: {
-        id: `test-user-${uniqueId}`,
-        email: `test-${uniqueId}@example.com`,
-        firstName: 'E2E',
-        lastName: 'Test User',
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        profilePictureUrl: user.profilePictureUrl,
       }
     });
 
     const data = await response.json();
-    return data.success === true;
+    if (data.success !== true) {
+      return false;
+    }
+
+    // Explicitly set the session cookie in the browser context to avoid racey cookie propagation.
+    const sessionValue = JSON.stringify({
+      user,
+      accessToken: 'test-access-token',
+      refreshToken: 'test-refresh-token',
+      expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+    });
+
+    const baseUrl = new URL(page.url() || 'http://localhost:3000');
+    const domain = baseUrl.hostname || 'localhost';
+    await page.context().addCookies([
+      {
+        name: 'wos-session-test',
+        value: sessionValue,
+        domain,
+        path: "/",
+        httpOnly: true,
+        secure: false,
+        sameSite: 'Lax',
+        expires: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
+      },
+    ]);
+
+    return true;
   } catch (error) {
     console.error('Failed to authenticate test user:', error);
     return false;
@@ -52,6 +87,9 @@ export async function authenticateTestUser(page: Page): Promise<boolean> {
  */
 export async function clearTestSession(page: Page): Promise<boolean> {
   try {
+    // Always clear local cookies first to guarantee unauthenticated state.
+    await page.context().clearCookies();
+
     const response = await page.request.delete('/api/test-auth');
     const data = await response.json();
     return data.success === true;
@@ -67,7 +105,7 @@ export async function clearTestSession(page: Page): Promise<boolean> {
 export const test = base.extend<{ authenticatedPage: Page }>({
   authenticatedPage: async ({ page }, use) => {
     // Navigate to a page first to establish origin for fetch
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     // Authenticate before the test
     const authenticated = await authenticateTestUser(page);
     if (!authenticated) {
@@ -75,7 +113,7 @@ export const test = base.extend<{ authenticatedPage: Page }>({
     }
 
     // Verify authentication by checking if we can access a protected route without redirect
-    await page.goto('/inbox');
+    await page.goto('/inbox', { waitUntil: 'domcontentloaded' });
     const redirectedToLogin = await isOnLoginPage(page);
     if (redirectedToLogin) {
       console.error('[E2E] Authentication verification failed: redirected to login after auth');
