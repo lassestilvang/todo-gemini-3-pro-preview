@@ -24,10 +24,7 @@ fc.configureGlobal({
     seed: FAST_CHECK_SEED,
 });
 
-// Skip in CI due to parallel test execution issues with Bun's module mocking
-// and shared in-memory SQLite database. These tests run successfully locally.
-const isCI = process.env.CI === "true";
-const describeOrSkip = isCI ? describe.skip : describe;
+const describeOrSkip = process.env.CI ? describe.skip : describe;
 
 // Arbitrary for valid user IDs
 const validUserIdArb = fc.uuid();

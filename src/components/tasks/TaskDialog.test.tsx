@@ -27,7 +27,7 @@ mock.module("@/components/ui/select", () => ({
     SelectTrigger: ({ children }: { children: React.ReactNode }) => <button>{children}</button>,
     SelectValue: ({ children, placeholder }: { children?: React.ReactNode; placeholder?: string }) => <span>{children || placeholder}</span>,
     SelectContent: ({ children }: { children: React.ReactNode }) => <div data-testid="select-content">{children}</div>,
-    SelectItem: ({ children, value }: { children: React.ReactNode; value: string }) => <div data-testid={`select-item-${value}`} role="option">{children}</div>,
+    SelectItem: ({ children, value }: { children: React.ReactNode; value: string }) => <div data-testid={`select-item-${value}`} role="option" aria-selected="false">{children}</div>,
 }));
 
 mock.module("@/components/ui/icon-picker", () => ({
@@ -44,7 +44,7 @@ mock.module("@/components/ui/icon-picker", () => ({
 }));
 
 describe("TaskDialog", () => {
-    let dispatchSpy: any;
+    let dispatchSpy: ReturnType<typeof mock>;
 
     beforeEach(() => {
         // Mock global confirm
@@ -59,7 +59,7 @@ describe("TaskDialog", () => {
             lastSynced: new Date(),
             sync: mock(() => Promise.resolve()),
             pendingCount: 0,
-            dispatch: mockDispatch as any,
+            dispatch: mockDispatch,
         });
 
         // Set mock user so setup.tsx auth mock works

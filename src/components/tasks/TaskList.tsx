@@ -28,10 +28,11 @@ export function TaskList({ tasks, title, listId, labelId, defaultDueDate, userId
         setIsDialogOpen(true);
     }, []);
 
-    const handleAdd = () => {
+    // PERF: Stable callback reference for Add button to prevent re-renders.
+    const handleAdd = useCallback(() => {
         setEditingTask(null);
         setIsDialogOpen(true);
-    };
+    }, []);
 
     return (
         <div className="space-y-4">
@@ -53,9 +54,13 @@ export function TaskList({ tasks, title, listId, labelId, defaultDueDate, userId
             ) : (
                 <div className="space-y-2">
                     {tasks.map((task) => (
-                        <div key={task.id}>
-                            <TaskItem task={task} showListInfo={!listId} onEdit={handleEdit} />
-                        </div>
+                        <TaskItem
+                            key={task.id}
+                            task={task}
+                            showListInfo={!listId}
+                            onEdit={handleEdit}
+                            userId={userId}
+                        />
                     ))}
                 </div>
             )}

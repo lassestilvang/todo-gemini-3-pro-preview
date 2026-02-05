@@ -70,7 +70,9 @@ export async function getTasks(
   // Always filter out subtasks - only show parent tasks
   conditions.push(isNull(tasks.parentId));
 
-  if (!showCompleted) {
+  if (filter === "completed") {
+    conditions.push(eq(tasks.isCompleted, true));
+  } else if (!showCompleted) {
     conditions.push(eq(tasks.isCompleted, false));
   }
 
@@ -81,17 +83,13 @@ export async function getTasks(
   }
 
   if (labelId) {
-    const taskIdsWithLabel = await db
+    // Perf: use a subquery for label filtering to eliminate one database roundtrip.
+    const taskIdsSubquery = db
       .select({ taskId: taskLabels.taskId })
       .from(taskLabels)
       .where(eq(taskLabels.labelId, labelId));
 
-    const ids = taskIdsWithLabel.map((t) => t.taskId);
-    if (ids.length > 0) {
-      conditions.push(inArray(tasks.id, ids));
-    } else {
-      return []; // No tasks with this label
-    }
+    conditions.push(inArray(tasks.id, taskIdsSubquery));
   }
 
   const now = new Date();
@@ -316,8 +314,11 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
 
   // Smart Tagging: If no list or labels provided, try to guess them
   if (!taskData.listId && finalLabelIds.length === 0 && taskData.title && taskData.userId) {
-    const allLists = await getLists(taskData.userId);
-    const allLabels = await getLabels(taskData.userId);
+    // Perf: fetch lists + labels in parallel to cut smart-tagging latency roughly in half.
+    const [allLists, allLabels] = await Promise.all([
+      getLists(taskData.userId),
+      getLabels(taskData.userId),
+    ]);
     const suggestions = await suggestMetadata(taskData.title, allLists, allLabels);
 
     if (suggestions.listId) taskData.listId = suggestions.listId;
@@ -341,7 +342,7 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
     .where(and(...conditions));
 
   // Subtract 1024 to leave space and ensure it's at the top
-  // If no tasks exist (min is null), start at -1024 or 0? 
+  // If no tasks exist (min is null), start at -1024 or 0?
   // If we start at 0, and user drags, it works.
   // If we start at -1024, it helps if existing tasks are at 0.
   const currentMin = minPosResult?.min ?? 0;
@@ -386,13 +387,14 @@ export async function updateTask(
   data: Partial<Omit<typeof tasks.$inferInsert, "userId">> & {
     labelIds?: number[];
     expectedUpdatedAt?: Date | string | null;
-  }
+  },
+  existingTask?: Awaited<ReturnType<typeof getTask>> | null
 ) {
   await requireUser(userId);
 
   const { labelIds, expectedUpdatedAt, ...taskData } = data;
 
-  const currentTask = await getTask(id, userId);
+  const currentTask = existingTask ?? await getTask(id, userId);
   if (!currentTask) return;
 
   // Check for conflicts if expectedUpdatedAt is provided
@@ -467,17 +469,14 @@ export async function updateTask(
   }
 
   if (taskData.listId !== undefined && taskData.listId !== currentTask.listId) {
-    let fromListName = "Inbox";
-    if (currentTask.listId) {
-      const list = await getList(currentTask.listId, userId);
-      if (list) fromListName = list.name;
-    }
+    // ⚡ Bolt Opt: Parallelize list lookups for logging.
+    const [fromList, toList] = await Promise.all([
+      currentTask.listId ? getList(currentTask.listId, userId) : Promise.resolve(null),
+      taskData.listId ? getList(taskData.listId, userId) : Promise.resolve(null),
+    ]);
 
-    let toListName = "Inbox";
-    if (taskData.listId) {
-      const list = await getList(taskData.listId, userId);
-      if (list) toListName = list.name;
-    }
+    const fromListName = fromList?.name || "Inbox";
+    const toListName = toList?.name || "Inbox";
 
     changes.push(`List changed from "${fromListName}" to "${toListName}"`);
   }
@@ -487,11 +486,26 @@ export async function updateTask(
     const newLabelIds = [...labelIds].sort();
 
     if (JSON.stringify(currentLabelIds) !== JSON.stringify(newLabelIds)) {
-      const allLabels = await getLabels(userId);
-      const currentLabelNames = currentTask.labels.map((l) => l.name || "Unknown");
-      const newLabelNames = newLabelIds.map(
-        (id) => allLabels.find((l) => l.id === id)?.name || "Unknown"
-      );
+      const currentLabelNamesMap = new Map(currentTask.labels.map((l) => [l.id, l.name || "Unknown"]));
+
+      // ⚡ Bolt Opt: Only fetch labels that we don't already have names for.
+      // Avoids loading all users labels just to log a single name change.
+      const labelsToFetch = newLabelIds.filter(id => !currentLabelNamesMap.has(id));
+
+      const allRelevantLabelsMap = new Map(currentLabelNamesMap);
+      if (labelsToFetch.length > 0) {
+        const fetchedLabels = await db
+          .select({ id: labels.id, name: labels.name })
+          .from(labels)
+          .where(and(eq(labels.userId, userId), inArray(labels.id, labelsToFetch)));
+
+        for (const label of fetchedLabels) {
+          allRelevantLabelsMap.set(label.id, label.name || "Unknown");
+        }
+      }
+
+      const currentLabelNames = Array.from(currentLabelNamesMap.values());
+      const newLabelNames = newLabelIds.map(id => allRelevantLabelsMap.get(id) || "Unknown");
 
       const added = newLabelNames.filter((n) => !currentLabelNames.includes(n));
       const removed = currentLabelNames.filter((n) => !newLabelNames.includes(n));
@@ -569,65 +583,72 @@ export async function toggleTaskCompletion(id: number, userId: string, isComplet
     }
   }
 
-  await updateTask(id, userId, {
-    isCompleted,
-    completedAt: isCompleted ? new Date() : null,
-  });
+  await updateTask(
+    id,
+    userId,
+    {
+      isCompleted,
+      completedAt: isCompleted ? new Date() : null,
+    },
+    task
+  );
 
-  await db.insert(taskLogs).values({
+  const logPromise = db.insert(taskLogs).values({
     userId,
     taskId: id,
     action: isCompleted ? "completed" : "uncompleted",
     details: isCompleted ? "Task marked as completed" : "Task marked as uncompleted",
   });
 
-  if (isCompleted) {
-    // Check if this task blocks others
-    const blockedTasks = await db
-      .select({
-        id: tasks.id,
-        title: tasks.title,
-      })
-      .from(taskDependencies)
-      .innerJoin(tasks, eq(taskDependencies.taskId, tasks.id))
-      .where(eq(taskDependencies.blockerId, id));
-
-    if (blockedTasks.length > 0) {
-      const blockedTaskIds = blockedTasks.map((t) => t.id);
-
-      // Find which of these tasks are still blocked by OTHER incomplete tasks
-      // We leverage the fact that "isCompleted" for the current task was just set to true,
-      // so it won't be counted in this query looking for 'false'
-      const stillBlockedResult = await db
-        .select({ taskId: taskDependencies.taskId })
+  const blockedTasksPromise = (async () => {
+    if (isCompleted) {
+      // Check if this task blocks others
+      const blockedTasks = await db
+        .select({
+          id: tasks.id,
+          title: tasks.title,
+        })
         .from(taskDependencies)
-        .innerJoin(tasks, eq(taskDependencies.blockerId, tasks.id))
-        .where(
-          and(
-            inArray(taskDependencies.taskId, blockedTaskIds),
-            eq(tasks.isCompleted, false)
+        .innerJoin(tasks, eq(taskDependencies.taskId, tasks.id))
+        .where(eq(taskDependencies.blockerId, id));
+
+      if (blockedTasks.length > 0) {
+        const blockedTaskIds = blockedTasks.map((t) => t.id);
+
+        // Find which of these tasks are still blocked by OTHER incomplete tasks
+        // We leverage the fact that "isCompleted" for the current task was just set to true,
+        // so it won't be counted in this query looking for 'false'
+        const stillBlockedResult = await db
+          .select({ taskId: taskDependencies.taskId })
+          .from(taskDependencies)
+          .innerJoin(tasks, eq(taskDependencies.blockerId, tasks.id))
+          .where(
+            and(
+              inArray(taskDependencies.taskId, blockedTaskIds),
+              eq(tasks.isCompleted, false)
+            )
           )
-        )
-        .groupBy(taskDependencies.taskId);
+          .groupBy(taskDependencies.taskId);
 
-      const stillBlockedTaskIds = new Set(stillBlockedResult.map((t) => t.taskId));
+        const stillBlockedTaskIds = new Set(stillBlockedResult.map((t) => t.taskId));
 
-      const logsToInsert = blockedTasks.map((blockedTask) => {
-        const isNowUnblocked = !stillBlockedTaskIds.has(blockedTask.id);
-        return {
-          userId,
-          taskId: blockedTask.id,
-          action: "blocker_completed",
-          details: `Blocker "${task.title}" completed.${isNowUnblocked ? " Task is now unblocked!" : ""
-            }`,
-        };
-      });
+        const logsToInsert = blockedTasks.map((blockedTask) => {
+          const isNowUnblocked = !stillBlockedTaskIds.has(blockedTask.id);
+          return {
+            userId,
+            taskId: blockedTask.id,
+            action: "blocker_completed",
+            details: `Blocker "${task.title}" completed.${isNowUnblocked ? " Task is now unblocked!" : ""
+              }`,
+          };
+        });
 
-      if (logsToInsert.length > 0) {
-        await db.insert(taskLogs).values(logsToInsert);
+        if (logsToInsert.length > 0) {
+          await db.insert(taskLogs).values(logsToInsert);
+        }
       }
     }
-  }
+  })();
 
   // Consolidated Gamification Update (Streak + XP in one go)
   const baseXP = 10;
@@ -635,12 +656,18 @@ export async function toggleTaskCompletion(id: number, userId: string, isComplet
   if (task.priority === "medium") bonusXP += 5;
   if (task.priority === "high") bonusXP += 10;
 
-  const progressResult = await updateUserProgress(userId, baseXP + bonusXP);
+  const gamificationPromise = updateUserProgress(userId, baseXP + bonusXP);
+
+  const [, , progressResult] = await Promise.all([
+    logPromise,
+    blockedTasksPromise,
+    gamificationPromise,
+  ]);
 
   return {
     newXP: progressResult.newXP,
     newLevel: progressResult.newLevel,
-    leveledUp: progressResult.leveledUp
+    leveledUp: progressResult.leveledUp,
   };
 }
 

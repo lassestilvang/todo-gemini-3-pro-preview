@@ -1,5 +1,7 @@
 import { test, expect } from './fixtures';
-import { readFileSync } from 'fs';
+import * as fs from 'fs';
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 test.describe('Data Persistence (Export/Import)', () => {
     test('should export and import data correctly preserving relationships', async ({ authenticatedPage: page }) => {
@@ -39,14 +41,17 @@ test.describe('Data Persistence (Export/Import)', () => {
         await expect(page.getByText(taskName)).toBeVisible();
         await page.goto('/settings');
 
-        // Handle download
-        const downloadPromise = page.waitForEvent('download');
-        await page.getByRole('button', { name: 'Export Backup' }).click({ force: true });
-        const download = await downloadPromise;
-        const downloadPath = await download.path();
+        // Trigger export and read downloaded file
+        await page.getByRole('button', { name: 'Export Backup' }).click();
+        const download = await page.waitForEvent('download');
 
-        // Read the downloaded file
-        const fileContent = readFileSync(downloadPath, 'utf-8');
+        // Read the download stream since download.text() is not standard API
+        const stream = await download.createReadStream();
+        const chunks = [];
+        for await (const chunk of stream) {
+            chunks.push(chunk);
+        }
+        const fileContent = Buffer.concat(chunks).toString('utf-8');
         const jsonData = JSON.parse(fileContent);
 
         expect(jsonData.data).toBeDefined();
@@ -67,7 +72,11 @@ test.describe('Data Persistence (Export/Import)', () => {
 
         // Upload file
         const fileInput = page.locator('input[type="file"]');
-        await fileInput.setInputFiles(downloadPath);
+        await fileInput.setInputFiles({
+            name: 'todo-gemini-backup.json',
+            mimeType: 'application/json',
+            buffer: Buffer.from(JSON.stringify(jsonData)),
+        });
 
         // Trigger change if needed, usually setInputFiles triggers it.
         // Wait for result toast (success or failure)
@@ -84,19 +93,20 @@ test.describe('Data Persistence (Export/Import)', () => {
         // Or at least we should find the list again.
         // Since we imported, we expect a NEW list with same name.
 
-        // Count lists with that name
-        const lists = page.getByRole('link', { name: listName });
-        const count = await lists.count();
-        expect(count).toBeGreaterThanOrEqual(2);
+        // Check for the new imported list
+        const importedListName = `${listName} (Imported)`;
+        await expect(page.getByRole('link', { name: importedListName })).toBeVisible();
 
-        // Click the second one (likely the imported one)
-        await lists.nth(1).click();
+        // Navigate to imported list
+        await page.getByRole('link', { name: importedListName }).click();
 
         // Wait for navigation
         await page.waitForURL(/\/lists\/\d+/);
 
         // Check for task
-        await expect(page.getByText(taskName)).toBeVisible();
+        // Add a retry loop or wait for the list to be fully loaded
+        await page.waitForLoadState('networkidle');
+        await expect(page.getByText(taskName)).toBeVisible({ timeout: 10000 });
 
         // Cleanup (optional, but good for local runs)
         // unlinkSync(downloadPath); // Playwright handles temp file cleanup

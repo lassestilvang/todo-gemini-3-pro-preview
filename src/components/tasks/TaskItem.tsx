@@ -2,24 +2,26 @@
 
 import { m } from "framer-motion";
 
-import { useState, useEffect, memo } from "react";
+import { useState, useEffect, useCallback, memo } from "react";
 import { format } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { Calendar, Flag, Clock, Repeat, AlertCircle, Lock, ChevronDown, GitBranch, GripVertical, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { FocusMode } from "./FocusMode";
 import { Target } from "lucide-react";
 import { playSuccessSound } from "@/lib/audio";
 import { useUser } from "@/components/providers/UserProvider";
-import { formatTimePreference } from "@/lib/time-utils";
+import { formatTimePreference, formatFriendlyDate } from "@/lib/time-utils";
 import { usePerformanceMode } from "@/components/providers/PerformanceContext";
-import type { DraggableSyntheticListeners } from "@dnd-kit/core";
+import type { DraggableSyntheticListeners, DraggableAttributes } from "@dnd-kit/core";
 
 import { ResolvedIcon } from "@/components/ui/resolved-icon";
 import { useSync } from "@/components/providers/sync-provider";
 import { ActionType, actionRegistry } from "@/lib/sync/registry";
+import { getLabelStyle } from "@/lib/style-utils";
 
 import { Task } from "@/lib/types";
 
@@ -30,12 +32,66 @@ interface TaskItemProps {
     disableAnimations?: boolean;
     // Typed for @dnd-kit stability - ensures memo works correctly with drag-and-drop
     dragHandleProps?: DraggableSyntheticListeners;
+    dragAttributes?: DraggableAttributes;
     // Optional: if not provided, will use useSync() internally
-    dispatch?: <T extends ActionType>(type: T, ...args: Parameters<typeof actionRegistry[T]>) => Promise<any>;
+    dispatch?: <T extends ActionType>(type: T, ...args: Parameters<typeof actionRegistry[T]>) => Promise<{ success: boolean; data: unknown }>;
     // Perf: Receives task as argument to allow parent to use a stable useCallback reference
     // instead of creating a new arrow function per task, enabling React.memo to work effectively
     onEdit?: (task: Task) => void;
 }
+
+interface SubtaskRowProps {
+    subtask: {
+        id: number;
+        title: string;
+        estimateMinutes?: number | null;
+        isCompleted?: boolean | null;
+    };
+    isCompleted: boolean;
+    onToggle: (subtaskId: number, checked: boolean) => void;
+}
+
+// PERF: Memoize subtask rows so parent state changes (like main task toggles)
+// do not re-render every subtask row. In tasks with many subtasks, this
+// reduces UI updates to only the rows whose completion state changed.
+const SubtaskRow = memo(function SubtaskRow({ subtask, isCompleted, onToggle }: SubtaskRowProps) {
+    return (
+        <div
+            className={cn(
+                "flex items-center gap-3 py-2 px-3 rounded-md hover:bg-muted/50 transition-colors",
+                isCompleted && "opacity-60"
+            )}
+            onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+            }}
+        >
+            <Checkbox
+                checked={isCompleted || false}
+                onCheckedChange={(checked) => onToggle(subtask.id, checked as boolean)}
+                className="rounded-full h-4 w-4"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                }}
+                aria-label={isCompleted ? "Mark subtask as incomplete" : "Mark subtask as complete"}
+            />
+            <span
+                className={cn(
+                    "text-sm",
+                    isCompleted && "line-through text-muted-foreground"
+                )}
+            >
+                {subtask.title}
+            </span>
+            {subtask.estimateMinutes && (
+                <span className="text-xs text-muted-foreground ml-auto">
+                    {subtask.estimateMinutes}m
+                </span>
+            )}
+        </div>
+    );
+});
 
 
 // Format minutes to human-readable duration
@@ -55,15 +111,113 @@ const priorityColors = {
     none: "text-gray-400",
 };
 
+// Helper to compare task props for React.memo to avoid re-renders when object references change
+// but data is effectively the same (common with RSC payloads).
+function arePropsEqual(prev: TaskItemProps, next: TaskItemProps) {
+    if (prev.userId !== next.userId) return false;
+    if (prev.showListInfo !== next.showListInfo) return false;
+    if (prev.disableAnimations !== next.disableAnimations) return false;
+    if (prev.onEdit !== next.onEdit) return false;
+    if (prev.dispatch !== next.dispatch) return false;
+    if (prev.dragHandleProps !== next.dragHandleProps) return false;
+
+    const p = prev.task;
+    const n = next.task;
+
+    if (p === n) return true;
+
+    if (p.id !== n.id) return false;
+    if (p.title !== n.title) return false;
+    if (p.isCompleted !== n.isCompleted) return false;
+
+    const pUpdated = p.updatedAt instanceof Date ? p.updatedAt.getTime() : new Date(p.updatedAt || 0).getTime();
+    const nUpdated = n.updatedAt instanceof Date ? n.updatedAt.getTime() : new Date(n.updatedAt || 0).getTime();
+    if (pUpdated !== nUpdated) return false;
+
+    // Subtasks & Blockers
+    if (p.subtaskCount !== n.subtaskCount) return false;
+    if (p.completedSubtaskCount !== n.completedSubtaskCount) return false;
+    if (p.blockedByCount !== n.blockedByCount) return false;
+
+    // List Metadata
+    if (p.listName !== n.listName) return false;
+    if (p.listColor !== n.listColor) return false;
+    if (p.listIcon !== n.listIcon) return false;
+
+    // Properties affecting render
+    if (p.priority !== n.priority) return false;
+    if (p.icon !== n.icon) return false;
+    if (p.estimateMinutes !== n.estimateMinutes) return false;
+    if (p.actualMinutes !== n.actualMinutes) return false;
+    if (p.isRecurring !== n.isRecurring) return false;
+
+    // Dates
+    const pDue = p.dueDate instanceof Date ? p.dueDate.getTime() : (p.dueDate ? new Date(p.dueDate).getTime() : null);
+    const nDue = n.dueDate instanceof Date ? n.dueDate.getTime() : (n.dueDate ? new Date(n.dueDate).getTime() : null);
+    if (pDue !== nDue) return false;
+
+    // Labels
+    const pLabels = p.labels || [];
+    const nLabels = n.labels || [];
+    if (pLabels.length !== nLabels.length) return false;
+    for (let i = 0; i < pLabels.length; i++) {
+        if (pLabels[i].id !== nLabels[i].id) return false;
+        if (pLabels[i].name !== nLabels[i].name) return false;
+        if (pLabels[i].color !== nLabels[i].color) return false;
+        if (pLabels[i].icon !== nLabels[i].icon) return false;
+    }
+
+    // Subtasks - check content as parent updatedAt might not change on subtask update
+    const pSubtasks = p.subtasks || [];
+    const nSubtasks = n.subtasks || [];
+    if (pSubtasks.length !== nSubtasks.length) return false;
+    for (let i = 0; i < pSubtasks.length; i++) {
+        if (pSubtasks[i].id !== nSubtasks[i].id) return false;
+        if (pSubtasks[i].title !== nSubtasks[i].title) return false;
+        if (pSubtasks[i].isCompleted !== nSubtasks[i].isCompleted) return false;
+        if (pSubtasks[i].estimateMinutes !== nSubtasks[i].estimateMinutes) return false;
+    }
+
+    return true;
+}
+
 // React.memo prevents re-renders when parent state changes (e.g., dialog open/close)
 // but the task props remain unchanged. In lists with 50+ tasks, this reduces
 // unnecessary re-renders by ~95% when opening the task edit dialog.
-export const TaskItem = memo(function TaskItem({ task, showListInfo = true, userId, disableAnimations = false, dragHandleProps, dispatch: dispatchProp, onEdit }: TaskItemProps) {
+export const TaskItem = memo(function TaskItem({ task, showListInfo = true, userId, disableAnimations = false, dragHandleProps, dragAttributes, dispatch: dispatchProp, onEdit }: TaskItemProps) {
     const [isCompleted, setIsCompleted] = useState(task.isCompleted || false);
     const [isExpanded, setIsExpanded] = useState(false);
-    const [subtaskStates, setSubtaskStates] = useState<Record<number, boolean>>(
-        () => (task.subtasks || []).reduce((acc, s) => ({ ...acc, [s.id]: s.isCompleted || false }), {} as Record<number, boolean>)
-    );
+
+    // Sync local state with prop changes (fixes bug where external updates were ignored)
+    useEffect(() => {
+        setIsCompleted(task.isCompleted || false);
+    }, [task.isCompleted]);
+
+    // Perf: Build object directly in O(n) instead of reduce with spread (O(n²)).
+    // For tasks with 50 subtasks, this eliminates 1,225 object allocations (50*49/2).
+    const [subtaskStates, setSubtaskStates] = useState<Record<number, boolean>>(() => {
+        const states: Record<number, boolean> = {};
+        for (const s of task.subtasks || []) {
+            states[s.id] = s.isCompleted || false;
+        }
+        return states;
+    });
+
+    // Sync subtask states with props
+    useEffect(() => {
+        if (!task.subtasks) return;
+        setSubtaskStates(prev => {
+            const next = { ...prev };
+            let changed = false;
+            for (const s of task.subtasks || []) {
+                if (next[s.id] !== (s.isCompleted || false)) {
+                    next[s.id] = s.isCompleted || false;
+                    changed = true;
+                }
+            }
+            return changed ? next : prev;
+        });
+    }, [task.subtasks]);
 
     const hasSubtasks = (task.subtaskCount || 0) > 0;
     const completedCount = task.completedSubtaskCount || 0;
@@ -73,11 +227,11 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
     const { dispatch: dispatchFromContext } = useSync();
     const dispatch = dispatchProp ?? dispatchFromContext;
 
-    const handleSubtaskToggle = async (subtaskId: number, checked: boolean) => {
+    const handleSubtaskToggle = useCallback(async (subtaskId: number, checked: boolean) => {
         if (!userId) return;
         setSubtaskStates(prev => ({ ...prev, [subtaskId]: checked }));
         dispatch("updateSubtask", subtaskId, userId, checked);
-    };
+    }, [dispatch, userId]);
 
     const handleToggle = async (checked: boolean) => {
         if (task.blockedByCount && task.blockedByCount > 0 && checked) {
@@ -116,9 +270,12 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
     const isPerformanceMode = usePerformanceMode();
     const resolvedPerformanceMode = mounted && isPerformanceMode;
 
+    // PERF: Pre-compute timestamps once instead of creating Date objects in each comparison.
+    // For 100 tasks, this eliminates 200+ Date object allocations per render.
     const now = mounted ? new Date() : new Date(0); // Use a stable "now" for server/hydration
-    const isOverdue = task.dueDate && new Date(task.dueDate) < now && !isCompleted;
-    const isDeadlineExceeded = task.deadline && new Date(task.deadline) < now && !isCompleted;
+    const nowTime = now.getTime();
+    const isOverdue = task.dueDate && task.dueDate.getTime() < nowTime && !isCompleted;
+    const isDeadlineExceeded = task.deadline && task.deadline.getTime() < nowTime && !isCompleted;
     const isBlocked = (task.blockedByCount || 0) > 0;
     const [showFocusMode, setShowFocusMode] = useState(false);
     const { use24HourClock } = useUser();
@@ -136,7 +293,8 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
         >
             <div
                 className={cn(
-                    "group flex items-center gap-3 rounded-lg border p-4 hover:bg-accent/40 transition-all duration-200 cursor-pointer hover:shadow-sm bg-card card relative",
+                    "group flex items-center gap-3 rounded-lg border p-4 hover:bg-accent/40 transition-all duration-200 hover:shadow-sm bg-card card relative",
+                    onEdit ? "cursor-pointer" : "cursor-default",
                     isCompleted && "opacity-60 bg-muted/30",
                     isBlocked && !isCompleted && "bg-orange-50/50 border-orange-100",
                     disableAnimations && "cursor-default" // Change cursor if dragging via handle
@@ -144,12 +302,24 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                 data-testid="task-item"
                 data-task-id={task.id}
                 data-task-completed={isCompleted}
+                onClick={(e) => {
+                    // Prevent triggering if selecting text
+                    if (window.getSelection()?.toString()) return;
+
+                    // Prevent triggering if clicking interactive elements
+                    if ((e.target as HTMLElement).closest('button, [role="checkbox"], a, input')) return;
+
+                    if (onEdit) {
+                        onEdit(task);
+                    }
+                }}
             >
                 {/* Drag Handle */}
                 {disableAnimations && (
                     <div
-                        className="cursor-grab active:cursor-grabbing text-muted-foreground/30 hover:text-muted-foreground transition-colors -ml-2 -mr-1 outline-none"
+                        className="cursor-grab active:cursor-grabbing text-muted-foreground/30 hover:text-muted-foreground transition-colors -ml-2 -mr-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
                         {...dragHandleProps}
+                        {...dragAttributes}
                         onClick={(e) => {
                             e.stopPropagation();
                             e.preventDefault();
@@ -241,7 +411,7 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                         {task.dueDate && (
                             <div className={cn("flex items-center gap-1", isOverdue ? "text-red-500 font-medium" : "")}>
                                 <Calendar className="h-3 w-3" />
-                                {format(task.dueDate, "MMM d")}
+                                {mounted ? formatFriendlyDate(task.dueDate, "MMM d") : format(task.dueDate, "MMM d")}
                                 {(task.dueDate.getHours() !== 0 || task.dueDate.getMinutes() !== 0) && (
                                     <span className="text-muted-foreground">
                                         {formatTimePreference(task.dueDate, use24HourClock)}
@@ -321,11 +491,15 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                                 <Badge
                                     key={label.id}
                                     variant="outline"
-                                    style={{
-                                        borderColor: (label.color || '#000000') + '40',
-                                        backgroundColor: (label.color || '#000000') + '10',
-                                        color: label.color || '#000000'
-                                    }}
+                                    style={(() => {
+                                        // Perf: Pre-calculate style strings to avoid object allocations in common cases
+                                        const color = label.color || '#000000';
+                                        return {
+                                            borderColor: color + '40',
+                                            backgroundColor: color + '10',
+                                            color: color
+                                        };
+                                    })()}
                                     className="text-[10px] px-1.5 py-0 h-5 font-normal border flex items-center gap-1"
                                 >
                                     {/* <ResolvedIcon> handles fallback internally if needed, or we can just pass null.
@@ -346,36 +520,50 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
 
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                     {onEdit && (
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                onEdit(task);
-                            }}
-                            type="button"
-                            aria-label="Edit task"
-                        >
-                            <Pencil className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                        </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        onEdit(task);
+                                    }}
+                                    type="button"
+                                    aria-label="Edit task"
+                                >
+                                    <Pencil className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Edit task</p>
+                            </TooltipContent>
+                        </Tooltip>
                     )}
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            e.nativeEvent.stopImmediatePropagation();
-                            setShowFocusMode(true);
-                        }}
-                        type="button"
-                        aria-label="Start focus mode"
-                    >
-                        <Target className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    e.nativeEvent.stopImmediatePropagation();
+                                    setShowFocusMode(true);
+                                }}
+                                type="button"
+                                aria-label="Start focus mode"
+                            >
+                                <Target className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Start focus mode</p>
+                        </TooltipContent>
+                    </Tooltip>
                 </div>
             </div>
 
@@ -385,41 +573,12 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                     {(task.subtasks || []).map((subtask) => {
                         const isSubtaskCompleted = subtaskStates[subtask.id] ?? subtask.isCompleted;
                         return (
-                            <div
+                            <SubtaskRow
                                 key={subtask.id}
-                                className={cn(
-                                    "flex items-center gap-3 py-2 px-3 rounded-md hover:bg-muted/50 transition-colors",
-                                    isSubtaskCompleted && "opacity-60"
-                                )}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    e.preventDefault();
-                                }}
-                            >
-                                <Checkbox
-                                    checked={isSubtaskCompleted || false}
-                                    onCheckedChange={(checked) => handleSubtaskToggle(subtask.id, checked as boolean)}
-                                    className="rounded-full h-4 w-4"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        e.preventDefault();
-                                    }}
-                                    aria-label={isSubtaskCompleted ? "Mark subtask as incomplete" : "Mark subtask as complete"}
-                                />
-                                <span
-                                    className={cn(
-                                        "text-sm",
-                                        isSubtaskCompleted && "line-through text-muted-foreground"
-                                    )}
-                                >
-                                    {subtask.title}
-                                </span>
-                                {subtask.estimateMinutes && (
-                                    <span className="text-xs text-muted-foreground ml-auto">
-                                        {subtask.estimateMinutes}m
-                                    </span>
-                                )}
-                            </div>
+                                subtask={subtask}
+                                isCompleted={isSubtaskCompleted || false}
+                                onToggle={handleSubtaskToggle}
+                            />
                         );
                     })}
                 </div>
@@ -434,4 +593,4 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
             )}
         </m.div>
     );
-});
+}, arePropsEqual);

@@ -22,7 +22,7 @@ import {
 import { requireUser } from "@/lib/auth";
 
 // Import createTask for template instantiation
-import { createTask } from "../actions";
+import { createTask } from "./tasks";
 
 /**
  * Retrieves all templates for a specific user.
@@ -257,9 +257,8 @@ async function instantiateTemplateImpl(
     const newTask = await createTask(insertData);
 
     if (subtasks && Array.isArray(subtasks)) {
-      for (const sub of subtasks) {
-        await createRecursive(sub, newTask.id);
-      }
+      // ⚡ Bolt Opt: Create sibling subtasks in parallel to reduce template instantiation latency.
+      await Promise.all(subtasks.map((sub) => createRecursive(sub, newTask.id)));
     }
     return newTask;
   }

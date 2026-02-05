@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useSync } from "@/components/providers/sync-provider";
 import { cn } from "@/lib/utils";
 import { Cloud, CloudOff, Loader2, AlertCircle } from "lucide-react";
@@ -13,10 +14,24 @@ import {
 export function SyncStatus() {
     const { status, isOnline, pendingActions } = useSync();
 
-    const pendingCount = pendingActions.filter(a => a.status === 'pending').length;
-    const failedCount = pendingActions.filter(a => a.status === 'failed').length;
+    // PERF: Memoize counts to avoid filtering the pendingActions array twice on every render.
+    // In apps with many pending actions (e.g., offline mode with 50+ queued changes),
+    // this reduces redundant array iterations from O(2n) to O(n) per render.
+    const { pendingCount, failedCount } = useMemo(() => {
+        let pending = 0;
+        let failed = 0;
+        for (const action of pendingActions) {
+            if (action.status === 'pending') pending++;
+            else if (action.status === 'failed') failed++;
+        }
+        return { pendingCount: pending, failedCount: failed };
+    }, [pendingActions]);
 
-    const getStatusInfo = () => {
+    // PERF: Memoize status info object to avoid creating new objects on every render.
+    // This prevents unnecessary re-renders of child components and reduces GC pressure.
+    // The status indicator updates frequently during sync operations, so avoiding object
+    // allocations here improves responsiveness during heavy sync activity.
+    const statusInfo = useMemo(() => {
         if (!isOnline) {
             return {
                 icon: CloudOff,
@@ -61,9 +76,9 @@ export function SyncStatus() {
             description: "All changes saved",
             className: "text-green-500",
         };
-    };
+    }, [isOnline, failedCount, status, pendingCount]);
 
-    const { icon: Icon, label, description, className } = getStatusInfo();
+    const { icon: Icon, label, description, className } = statusInfo;
 
     // Don't show indicator when everything is synced and online
     if (isOnline && status === 'online' && pendingCount === 0 && failedCount === 0) {

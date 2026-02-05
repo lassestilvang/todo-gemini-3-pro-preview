@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo } from "react";
@@ -10,6 +11,7 @@ import { useTaskStore } from "@/lib/store/task-store";
 import { useListStore } from "@/lib/store/list-store";
 import { useLabelStore } from "@/lib/store/label-store";
 import { ConflictDialog } from "@/components/sync/ConflictDialog";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface SyncContextType {
     pendingActions: PendingAction[];
@@ -43,15 +45,19 @@ function replaceIdsInPayload(payload: unknown, oldId: number, newId: number): un
 }
 
 export function SyncProvider({ children }: { children: React.ReactNode }) {
+    const queryClient = useQueryClient();
     const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
     const [status, setStatus] = useState<SyncStatus>('online');
     const [isOnline, setIsOnline] = useState(true);
     const [conflicts, setConflicts] = useState<ConflictInfo[]>([]);
+    const MAX_PENDING_QUEUE = 100;
+    const FLUSH_IDLE_TIMEOUT_MS = 200;
     const processingRef = useRef(false);
     const processQueueRef = useRef<(() => Promise<void>) | undefined>(undefined);
     const flushActionsRef = useRef<(() => Promise<void>) | undefined>(undefined);
     const pendingQueueRef = useRef<PendingAction[]>([]);
-    const flushTimerRef = useRef<number | null>(null);
+    const flushTimerRef = useRef<any>(null);
+    const flushIdleRef = useRef<any>(null);
 
     const fixupQueueIds = useCallback(async (oldId: number, newId: number) => {
         const dbCurrent = await getDB();
@@ -73,10 +79,22 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     const processQueue = useCallback(async () => {
         if (processingRef.current || !navigator.onLine) return;
 
-        const queue = await getQueue();
-        if (queue.length === 0) return;
-
         processingRef.current = true;
+
+        let queue: PendingAction[];
+        try {
+            queue = await getQueue();
+        } catch (error) {
+            console.error("Failed to fetch sync queue:", error);
+            processingRef.current = false;
+            return;
+        }
+
+        if (queue.length === 0) {
+            processingRef.current = false;
+            return;
+        }
+
         setStatus('syncing');
 
         const completedIds: string[] = [];
@@ -135,6 +153,15 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
                             listUpserts.push(result);
                         } else if (action.type.includes('Label') && typeof result === 'object' && 'id' in result) {
                             labelUpserts.push(result);
+                        }
+                    }
+
+                    // Invalidate user stats on completion toggle to update XP/Streak immediately
+                    if (action.type === 'toggleTaskCompletion') {
+                        const payload = action.payload as any[];
+                        const userId = payload[1];
+                        if (userId) {
+                            queryClient.invalidateQueries({ queryKey: ['userStats', userId] });
                         }
                     }
 
@@ -306,12 +333,43 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         if (queued.length === 0) return;
         pendingQueueRef.current = [];
 
+        if (flushTimerRef.current !== null) {
+            clearTimeout(flushTimerRef.current);
+            flushTimerRef.current = null;
+        }
+        if (flushIdleRef.current !== null && 'cancelIdleCallback' in window) {
+            (window as any).cancelIdleCallback(flushIdleRef.current);
+            flushIdleRef.current = null;
+        }
+
         // Perf: batch IDB writes + state updates for rapid dispatch bursts.
         await addToQueueBatch(queued);
         setPendingActions(prev => [...prev, ...queued]);
     }, []);
 
     flushActionsRef.current = flushQueuedActions;
+
+    const scheduleFlush = useCallback(() => {
+        if (pendingQueueRef.current.length >= MAX_PENDING_QUEUE) {
+            void flushQueuedActions();
+            return;
+        }
+
+        if (flushTimerRef.current !== null || flushIdleRef.current !== null) return;
+
+        if ('requestIdleCallback' in window) {
+            flushIdleRef.current = (window as any).requestIdleCallback(() => {
+                flushIdleRef.current = null;
+                void flushQueuedActions();
+            }, { timeout: FLUSH_IDLE_TIMEOUT_MS });
+            return;
+        }
+
+        flushTimerRef.current = setTimeout(async () => {
+            flushTimerRef.current = null;
+            await flushQueuedActions();
+        }, 50);
+    }, [flushQueuedActions]);
 
     const dispatch = useCallback(async <T extends ActionType>(type: T, ...args: Parameters<typeof actionRegistry[T]>) => {
         const id = uuidv4();
@@ -342,12 +400,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
         // Perf: batch queue writes/state updates when many actions are dispatched rapidly.
         pendingQueueRef.current.push(action);
-        if (flushTimerRef.current === null) {
-            flushTimerRef.current = window.setTimeout(async () => {
-                flushTimerRef.current = null;
-                await flushQueuedActions();
-            }, 50);
-        }
+        scheduleFlush();
 
         // Optimistic Update to Global Store
         const taskStore = useTaskStore.getState();
@@ -392,11 +445,9 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
                 }
             } else if (type === 'updateSubtask') {
                 const [id, , isCompleted] = a;
-                const task = Object.values(taskStore.tasks).find((t: any) => t.subtasks?.some((s: any) => s.id === id));
-                if (task) {
-                    const newSubtasks = task.subtasks!.map((s: any) => s.id === id ? { ...s, isCompleted } : s);
-                    taskStore.upsertTask({ ...task, subtasks: newSubtasks });
-                }
+                // Perf: update only the targeted subtask instead of mapping the entire array.
+                // Expected impact: reduces allocations and speeds up rapid subtask toggles.
+                taskStore.updateSubtaskCompletion(id, isCompleted);
             } else if (type === 'createList') {
                 const data = a[0];
                 listStore.upsertList({
@@ -441,7 +492,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         }
 
         return { id: tempId, ...(args[0] as any) }; // Approximate optimistic result
-    }, [processQueue, flushQueuedActions]);
+    }, [processQueue, scheduleFlush]);
 
     const value = useMemo(() => ({
         pendingActions,

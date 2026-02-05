@@ -1,4 +1,4 @@
-import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
+import { describe, it, expect, mock, beforeEach, afterEach, beforeAll } from "bun:test";
 import { render, screen, fireEvent, cleanup, act } from "@testing-library/react";
 import { FocusMode } from "./FocusMode";
 import { db, tasks } from "@/db";
@@ -20,10 +20,17 @@ mock.module("sonner", () => ({
 }));
 
 describe("FocusMode", () => {
-    beforeEach(async () => {
+    beforeAll(async () => {
         await setupTestDb();
         await resetTestDb();
-        setMockAuthUser({ id: "user-1", email: "test@example.com", firstName: "Test", lastName: "User", profilePictureUrl: null });
+    });
+
+    let TEST_USER_ID: string;
+
+    beforeEach(async () => {
+        // await resetTestDb();
+        TEST_USER_ID = `user_${Math.random().toString(36).substring(7)}`;
+        setMockAuthUser({ id: TEST_USER_ID, email: `${TEST_USER_ID}@example.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
     });
 
     afterEach(() => {
@@ -72,11 +79,11 @@ describe("FocusMode", () => {
 
     it("should complete task", async () => {
         await db.insert(tasks).values({
-            id: 2, title: "Task To Complete", isCompleted: false, listId: 1, userId: "user-1"
-        } as any);
+            id: 2, title: "Task To Complete", isCompleted: false, listId: 1, userId: TEST_USER_ID, position: 0
+        });
 
         const onClose = mock();
-        render(<FocusMode task={{ id: 2, title: "Task To Complete", description: "Desc", priority: "high" }} userId="user-1" onClose={onClose} />);
+        render(<FocusMode task={{ id: 2, title: "Task To Complete", description: "Desc", priority: "high" }} userId={TEST_USER_ID} onClose={onClose} />);
 
         await act(async () => {
             fireEvent.click(screen.getByLabelText("Complete Task"));

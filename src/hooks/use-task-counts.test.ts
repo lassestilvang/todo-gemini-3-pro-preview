@@ -3,11 +3,12 @@ import { renderHook } from "@testing-library/react";
 import { useTaskCounts } from "./use-task-counts";
 import { useTaskStore } from "@/lib/store/task-store";
 import { addDays, subDays } from "date-fns";
+import type { Task } from "@/lib/types";
 
 // Mock store
-const setStore = (tasks: any[]) => {
+const setStore = (tasks: Partial<Task>[]) => {
     useTaskStore.setState({
-        tasks: tasks.reduce((acc, t) => ({ ...acc, [t.id]: t }), {}),
+        tasks: tasks.reduce((acc, t) => ({ ...acc, [t.id!]: t }), {}),
         isInitialized: true
     });
 };

@@ -120,7 +120,7 @@ test.describe('Authentication Flow', () => {
       expect(await isOnLoginPage(page)).toBe(false);
 
       // Should see the inbox page content (use heading to be specific)
-      await expect(page.getByRole('heading', { name: 'Inbox' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Inbox', exact: true, level: 1 })).toBeVisible();
     });
 
     test('should allow access to protected routes after authentication', async ({ authenticatedPage: page }) => {
@@ -128,7 +128,7 @@ test.describe('Authentication Flow', () => {
       await page.waitForLoadState('load');
 
       expect(await isOnLoginPage(page)).toBe(false);
-      await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Today', exact: true, level: 1 })).toBeVisible();
     });
 
     test('should show user profile when authenticated', async ({ authenticatedPage: page }) => {
@@ -143,6 +143,8 @@ test.describe('Authentication Flow', () => {
 
   test.describe('Logout Flow', () => {
     test('should redirect to login after clearing session', async ({ page }) => {
+      // Navigate to establish origin for fetch
+      await page.goto('/');
       // First authenticate
       await authenticateTestUser(page);
 

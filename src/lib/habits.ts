@@ -1,7 +1,7 @@
 "use server";
 
 import { db, habitCompletions, tasks } from "@/db";
-import { eq, and, gte, sql, desc } from "drizzle-orm";
+import { eq, and, gte, sql, desc, asc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { startOfDay, endOfDay, subDays } from "date-fns";
 
@@ -29,7 +29,9 @@ export async function getHabitCompletions(taskId: number, days: number = 90) {
             eq(habitCompletions.taskId, taskId),
             gte(habitCompletions.completedAt, since)
         ))
-        .orderBy(desc(habitCompletions.completedAt));
+        // Perf: return oldest-first so streak calculations skip an extra in-memory sort.
+        // This removes an O(n log n) sort and avoids repeated Date allocations in the comparator.
+        .orderBy(asc(habitCompletions.completedAt));
 
     return completions;
 }
@@ -71,26 +73,27 @@ export async function calculateStreak(taskId: number): Promise<{ current: number
         return { current: 0, best: 0 };
     }
 
-    // Sort by date ascending
-    const sorted = completions.sort((a, b) =>
-        new Date(a.completedAt).getTime() - new Date(b.completedAt).getTime()
-    );
-
     let currentStreak = 0;
     let bestStreak = 0;
     let tempStreak = 0;
-    let lastDate: Date | null = null;
+    let lastDateTime: number | null = null;
 
-    const today = startOfDay(new Date());
+    const todayTime = startOfDay(new Date()).getTime();
 
-    for (const completion of sorted) {
-        const completionDate = startOfDay(new Date(completion.completedAt));
+    // Perf: avoid per-item sort and reuse timestamp math to reduce Date allocations in hot loops.
+    for (const completion of completions) {
+        const completionDate = startOfDay(
+            completion.completedAt instanceof Date
+                ? completion.completedAt
+                : new Date(completion.completedAt)
+        );
+        const completionTime = completionDate.getTime();
 
-        if (!lastDate) {
+        if (lastDateTime === null) {
             tempStreak = 1;
         } else {
             const daysDiff = Math.floor(
-                (completionDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24)
+                (completionTime - lastDateTime) / (1000 * 60 * 60 * 24)
             );
 
             if (daysDiff === 1) {
@@ -102,11 +105,11 @@ export async function calculateStreak(taskId: number): Promise<{ current: number
             // If daysDiff === 0, same day, continue streak
         }
 
-        lastDate = completionDate;
+        lastDateTime = completionTime;
 
         // Check if this is part of current streak (includes today or yesterday)
         const daysFromToday = Math.floor(
-            (today.getTime() - completionDate.getTime()) / (1000 * 60 * 60 * 24)
+            (todayTime - completionTime) / (1000 * 60 * 60 * 24)
         );
 
         if (daysFromToday <= 1) {

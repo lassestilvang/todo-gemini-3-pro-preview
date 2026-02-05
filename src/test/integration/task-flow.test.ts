@@ -1,27 +1,26 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
-import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
+import { setupTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
-import { createList, createTask, toggleTaskCompletion, getTasks, deleteTask, deleteList } from "@/lib/actions";
+import { createList, deleteList } from "@/lib/actions/lists";
+import { createTask, toggleTaskCompletion, getTasks, deleteTask } from "@/lib/actions/tasks";
 import { isSuccess } from "@/lib/action-result";
 
-// Skip in CI as this test has race condition issues with parallel execution
-// All functionality is already covered by unit tests in actions.test.ts
-const describeOrSkip = process.env.CI ? describe.skip : describe;
-
-describeOrSkip("Integration: Task Flow", () => {
+describe("Integration: Task Flow", () => {
     let testUserId: string;
 
     beforeAll(async () => {
         await setupTestDb();
+        // await resetTestDb();
     });
 
     // Ensure database is set up and clean before each test
     beforeEach(async () => {
-        await resetTestDb();
-        // Create a test user for each test
-        const user = await createTestUser("test_user_integration", "test@integration.com");
-        testUserId = user.id;
-        setMockAuthUser({ id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, profilePictureUrl: null });
+        // Use unique ID per test for isolation
+        const randomId = Math.random().toString(36).substring(7);
+        testUserId = `user_${randomId}`;
+
+        await createTestUser(testUserId, `${testUserId}@integration.com`);
+        setMockAuthUser({ id: testUserId, email: `${testUserId}@integration.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
     });
 
     it("should create a list, add a task, and complete it", async () => {

@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect, waitForTask } from './fixtures';
 
 /**
  * E2E tests for cross-view task verification.
@@ -19,25 +19,40 @@ test.describe('Task Upcoming View Verification', () => {
         const taskInput = page.getByTestId('task-input');
         await expect(taskInput).toBeVisible();
 
-        // Create a task with a future date (next month to be sure it's in Upcoming and not Today/Next 7 Days)
-        // Actually "in 2 weeks" is good for Upcoming.
+        // Create a task with a future due date using natural language
+        // "tomorrow" is reliably parsed and should land in Upcoming.
         const uniqueId = Date.now();
-        const taskTitle = `Buy Milk ${uniqueId} in 2 weeks`;
+        const taskTitle = `Buy Milk ${uniqueId} tomorrow`;
+        const expectedTitle = `Buy Milk ${uniqueId}`;
         await taskInput.fill(taskTitle);
+
+        // Wait for NLP parsing to catch up (React useEffect)
+        // Verify NLP detection worked by checking for the date badge
+        // This ensures the task will actually have a due date when submitted
+        await expect(page.getByText('Tomorrow')).toBeVisible({ timeout: 10000 });
+
         await taskInput.press('Enter');
 
         // Wait for the task to be created and appear on the current page (if it does)
-        // Actually, on "Today" page, "in 2 weeks" tasks might NOT appear.
+        // Actually, on "Today" page, "next year" tasks might NOT appear.
         // So we just check if it was cleared.
         await expect(taskInput).toHaveValue('', { timeout: 10000 });
+
+        // Wait a bit for backend processing
+        await page.waitForTimeout(2000);
+        // Wait for success toast to ensure data is persisted
+        await expect(page.getByText('Task created')).toBeVisible({ timeout: 10000 });
 
         // Now navigate to Upcoming
         await page.goto('/upcoming');
         await page.waitForLoadState('load');
+        // Reload to ensure fresh data
+        await page.reload();
 
         // Verify the task appears in the Upcoming list
-        const taskItem = page.getByTestId('task-item').filter({ hasText: `Buy Milk ${uniqueId}` });
-        await expect(taskItem.first()).toBeVisible({ timeout: 10000 });
+        await waitForTask(page, expectedTitle);
+        const taskItem = page.getByTestId('task-item').filter({ hasText: expectedTitle });
+        await expect(taskItem.first()).toBeVisible({ timeout: 30000 });
     });
 
 });

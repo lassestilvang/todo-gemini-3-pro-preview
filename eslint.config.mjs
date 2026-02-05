@@ -20,6 +20,8 @@ const eslintConfig = defineConfig([
       "react-hooks/set-state-in-effect": "off",
       // Allow explicit any in specific cases (e.g., type assertions)
       "@typescript-eslint/no-explicit-any": "warn",
+      // Allow unused vars with underscore prefix
+      "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
     },
   },
 ]);

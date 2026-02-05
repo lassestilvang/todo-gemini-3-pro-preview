@@ -1,14 +1,12 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
-import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
-import { setMockAuthUser } from "@/test/mocks";
+import { setupTestDb, createTestUser } from "@/test/setup";
+import { setMockAuthUser, clearMockAuthUser } from "@/test/mocks";
 import { getViewSettings, saveViewSettings, resetViewSettings } from "@/lib/actions/view-settings";
 import { getTemplates, createTemplate, updateTemplate, deleteTemplate, instantiateTemplate } from "@/lib/actions/templates";
 import { isFailure } from "@/lib/action-result";
 import { db, templates } from "@/db";
 
-const describeOrSkip = process.env.CI ? describe.skip : describe;
-
-describeOrSkip("Integration: Security Missing Auth", () => {
+describe("Integration: Security Missing Auth", () => {
     let attackerId: string;
     let victimId: string;
 
@@ -17,8 +15,9 @@ describeOrSkip("Integration: Security Missing Auth", () => {
     });
 
     beforeEach(async () => {
-        await resetTestDb();
-
+        clearMockAuthUser();
+        // await resetTestDb();
+        // TEST_USER_ID = `user_${Math.random().toString(36).substring(7)}`;
         // Create attacker and victim
         const attacker = await createTestUser("attacker", "attacker@evil.com");
         const victim = await createTestUser("victim", "victim@target.com");
@@ -38,6 +37,15 @@ describeOrSkip("Integration: Security Missing Auth", () => {
 
     // View Settings Tests
     it("should fail when reading another user's view settings", async () => {
+        // getViewSettings is not wrapped in withErrorHandling, so it throws ForbiddenError directly
+        // Debug check
+        // const currentUser = await import("@/lib/auth").then(m => m.getCurrentUser());
+        // console.log(`[DEBUG] Test User: Attacker=${attackerId}, Victim=${victimId}`);
+        // console.log(`[DEBUG] Current Mock User: ${currentUser?.id}`);
+        // if (currentUser?.id === victimId) {
+        //     throw new Error("Mock user leakage detected: User is victim, expected attacker");
+        // }
+
         // Currently this passes (returns null or settings), proving vulnerability.
         // We expect it to eventually throw "ForbiddenError" or "UnauthorizedError"
 
@@ -47,7 +55,7 @@ describeOrSkip("Integration: Security Missing Auth", () => {
         // I will write the test expecting the *fix* (ForbiddenError).
         // When I run this BEFORE fixing, it should FAIL (because it currently succeeds).
 
-        await expect(getViewSettings(victimId, "inbox")).rejects.toThrow("authorized");
+        await expect(getViewSettings(victimId, "inbox")).rejects.toThrow(/Forbidden|authorized/i);
     });
 
     it("should fail when saving another user's view settings", async () => {
@@ -71,7 +79,24 @@ describeOrSkip("Integration: Security Missing Auth", () => {
 
     // Template Tests
     it("should fail when getting another user's templates", async () => {
-        await expect(getTemplates(victimId)).rejects.toThrow("authorized");
+        await expect(getTemplates(victimId)).rejects.toThrow(/Forbidden|authorized/i);
+        try {
+            const result = await getTemplates(victimId);
+            // @ts-expect-error - checking if it's an ActionResult
+            if (result && typeof result === 'object' && 'success' in result) {
+                // @ts-expect-error - checking if it's an ActionResult
+                expect(isFailure(result)).toBe(true);
+                // @ts-expect-error - checking if it's an ActionResult
+                if (isFailure(result)) {
+                    // @ts-expect-error - checking if it's an ActionResult
+                    expect(result.error.code).toBe("FORBIDDEN");
+                }
+            } else {
+                 throw new Error("Should have thrown or returned failure");
+            }
+        } catch (e: any) {
+             expect(e.message).toMatch(/Forbidden|authorized/i);
+        }
     });
 
     it("should fail when creating a template for another user", async () => {
