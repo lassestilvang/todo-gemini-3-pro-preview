@@ -44,6 +44,8 @@ const workosUserArb = fc.record({
 }).map((user) => ({
   ...user,
   email: `${user.id}@example.com`,
+  // Use unique ID suffix to avoid collision between tests in same run if fast-check doesn't reset seed perfectly or runs parallel
+  id: `user_${Math.random().toString(36).substring(7)}_${user.id.substring(5)}`,
 }));
 
 describe("Property Tests: User Initialization", () => {
@@ -111,14 +113,22 @@ describe("Property Tests: User Initialization", () => {
   it("Property 2: New users get default Inbox list and initialized stats", async () => {
     await fc.assert(
       fc.asyncProperty(workosUserArb, async (workosUser) => {
-        // Create user
-        await db.insert(users).values({
-          id: workosUser.id,
-          email: workosUser.email,
-          firstName: workosUser.firstName,
-          lastName: workosUser.lastName,
-          avatarUrl: workosUser.profilePictureUrl,
-        });
+        // Create user (safe upsert)
+        await db.insert(users)
+          .values({
+            id: workosUser.id,
+            email: workosUser.email,
+            firstName: workosUser.firstName,
+            lastName: workosUser.lastName,
+            avatarUrl: workosUser.profilePictureUrl,
+          })
+          .onConflictDoUpdate({
+            target: users.id,
+            set: {
+              email: workosUser.email,
+              updatedAt: new Date(),
+            },
+          });
 
         // Initialize default data (simulating initializeUserData)
         await db.insert(lists).values({
@@ -153,14 +163,25 @@ describe("Property Tests: User Initialization", () => {
   it("User data persists with correct values after creation", async () => {
     await fc.assert(
       fc.asyncProperty(workosUserArb, async (workosUser) => {
-        // Create user
-        await db.insert(users).values({
-          id: workosUser.id,
-          email: workosUser.email,
-          firstName: workosUser.firstName,
-          lastName: workosUser.lastName,
-          avatarUrl: workosUser.profilePictureUrl,
-        });
+        // Create user (safe upsert)
+        await db.insert(users)
+          .values({
+            id: workosUser.id,
+            email: workosUser.email,
+            firstName: workosUser.firstName,
+            lastName: workosUser.lastName,
+            avatarUrl: workosUser.profilePictureUrl,
+          })
+          .onConflictDoUpdate({
+            target: users.id,
+            set: {
+              email: workosUser.email,
+              firstName: workosUser.firstName,
+              lastName: workosUser.lastName,
+              avatarUrl: workosUser.profilePictureUrl,
+              updatedAt: new Date(),
+            },
+          });
 
         const retrieved = await db.select().from(users).where(eq(users.id, workosUser.id)).limit(1);
         expect(retrieved).toHaveLength(1);

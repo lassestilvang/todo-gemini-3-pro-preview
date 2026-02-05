@@ -22,7 +22,7 @@ import {
 import { requireUser } from "@/lib/auth";
 
 // Import createTask for template instantiation
-import { createTask } from "../actions";
+import { createTask } from "./tasks";
 
 /**
  * Retrieves all templates for a specific user.

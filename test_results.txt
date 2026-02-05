@@ -1,0 +1,33 @@
+bun test v1.2.14 (6a363a38)
+
+src/components/tasks/TemplateManager.test.tsx:
+
+# Unhandled error between tests
+-------------------------------
+71 | <<<<<<< HEAD
+     ^
+error: Unexpected <<
+    at /app/src/components/tasks/TemplateManager.test.tsx:71:1
+-------------------------------
+
+
+src/components/ui/select.test.tsx:
+(pass) Select > should render trigger [99.23ms]
+(pass) Select > should open content when trigger is clicked [252.72ms]
+
+src/lib/actions/labels.security.test.ts:
+
+# Unhandled error between tests
+-------------------------------
+1 | <<<<<<< HEAD
+    ^
+error: Unexpected <<
+    at /app/src/lib/actions/labels.security.test.ts:1:1
+-------------------------------
+
+
+ 2 pass
+ 2 fail
+ 2 errors
+ 2 expect() calls
+Ran 4 tests across 3 files. [1187.00ms]
