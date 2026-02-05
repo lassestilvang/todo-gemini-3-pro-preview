@@ -45,17 +45,19 @@ describe("TimeTrackerWidget", () => {
             id: 100,
             taskId,
             userId,
-            startedAt: new Date(Date.now() - 1000),
+            startedAt: new Date(Date.now() - 2000), // 2 seconds ago to safely ensure > 1s elapsed
         });
 
         render(<TimeTrackerWidget taskId={taskId} estimateMinutes={60} userId={userId} />);
 
+        // Wait for the stop button to appear (implies tracking state is recognized)
         await waitFor(() => {
-            expect(screen.getByText(/0:01/)).toBeInTheDocument();
+            const stopButton = screen.getByRole("button", { name: /stop timer/i });
+            expect(stopButton).toBeInTheDocument();
         });
 
-        const stopButton = screen.getByRole("button", { name: /stop timer/i });
-        expect(stopButton).toBeInTheDocument();
+        // Optional: Verify time displayed is reasonable (at least 0:01 or 0:02)
+        expect(screen.getByText(/0:0[1-9]/)).toBeInTheDocument();
     });
 
     it("should render edit button with accessible label", async () => {

@@ -16,6 +16,7 @@ import { playSuccessSound } from "@/lib/audio";
 import { useUser } from "@/components/providers/UserProvider";
 import { formatTimePreference, formatFriendlyDate } from "@/lib/time-utils";
 import { usePerformanceMode } from "@/components/providers/PerformanceContext";
+import { getLabelStyle } from "@/lib/style-utils";
 import type { DraggableSyntheticListeners, DraggableAttributes } from "@dnd-kit/core";
 
 import { ResolvedIcon } from "@/components/ui/resolved-icon";
