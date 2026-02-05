@@ -57,3 +57,8 @@
 **Vulnerability:** `getTaskLogs`, `getActivityLog`, and `getCompletionHistory` in `src/lib/actions/logs.ts` were missing authorization checks. `getTaskLogs` (taking only `taskId`) allowed viewing logs of any task by ID. `getActivityLog` and `getCompletionHistory` accepted `userId` without validation.
 **Learning:** Functions that retrieve history/logs are sensitive and prone to IDOR because they often lack the "natural" user ownership context that creation/update actions have.
 **Prevention:** Added `requireUser` checks. For `getTaskLogs(taskId)`, we must fetch the current user and filter the query by `userId` to implicitly verify ownership of the task/log.
+
+## 2026-02-05 - [Critical] IDOR in Saved Views
+**Vulnerability:** `views.ts` server actions (`getSavedViews`, etc.) accepted `userId` but failed to validate it against the authenticated session, allowing users to manipulate other users' saved views.
+**Learning:** Even lower-priority features like "Saved Views" expose critical data. Consistency in security checks across ALL modules is vital.
+**Prevention:** Added `requireUser` checks to `views.ts`. Added `views.security.test.ts`.
