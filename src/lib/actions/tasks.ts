@@ -303,74 +303,85 @@ export async function getTask(id: number, userId: string) {
 export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: number[] }) {
   await requireUser(data.userId);
 
-  // Rate limit: 100 tasks per hour
-  const limit = await rateLimit(`task:create:${data.userId}`, 100, 3600);
-  if (!limit.success) {
-    throw new Error("Rate limit exceeded. Please try again later.");
+  try {
+    // Rate limit: 100 tasks per hour
+    const limit = await rateLimit(`task:create:${data.userId}`, 100, 3600);
+    if (!limit.success) {
+      throw new Error("Rate limit exceeded. Please try again later.");
+    }
+
+    const { labelIds, ...taskData } = data;
+    let finalLabelIds = labelIds || [];
+
+    // Ensure dates are parsed
+    if (typeof taskData.dueDate === 'string') {
+      taskData.dueDate = new Date(taskData.dueDate);
+    }
+    if (typeof taskData.deadline === 'string') {
+      taskData.deadline = new Date(taskData.deadline);
+    }
+
+    // Smart Tagging: If no list or labels provided, try to guess them
+    if (!taskData.listId && finalLabelIds.length === 0 && taskData.title && taskData.userId) {
+      // Perf: fetch lists + labels in parallel to cut smart-tagging latency roughly in half.
+      const [allLists, allLabels] = await Promise.all([
+        getLists(taskData.userId),
+        getLabels(taskData.userId),
+      ]);
+      const suggestions = await suggestMetadata(taskData.title, allLists, allLabels);
+
+      if (suggestions.listId) taskData.listId = suggestions.listId;
+      if (suggestions.labelIds.length > 0) finalLabelIds = suggestions.labelIds;
+    }
+
+    // Calculate position to ensure task is added to the top
+    const conditions = [
+      eq(tasks.userId, taskData.userId),
+      taskData.parentId
+        ? eq(tasks.parentId, taskData.parentId)
+        : and(
+          isNull(tasks.parentId),
+          taskData.listId ? eq(tasks.listId, taskData.listId) : isNull(tasks.listId)
+        ),
+    ];
+
+    const [minPosResult] = await db
+      .select({ min: sql<number>`min(${tasks.position})` })
+      .from(tasks)
+      .where(and(...conditions));
+
+    // Subtract 1024 to leave space and ensure it's at the top
+    const currentMin = minPosResult?.min ?? 0;
+    taskData.position = currentMin - 1024;
+
+    const result = await db.insert(tasks).values(taskData).returning();
+    const task = Array.isArray(result) ? result[0] : null;
+
+    if (!task) throw new Error("Failed to create task");
+
+    if (finalLabelIds.length > 0) {
+      await db.insert(taskLabels).values(
+        finalLabelIds.map((labelId: number) => ({
+          taskId: task.id,
+          labelId,
+        }))
+      );
+    }
+
+    await db.insert(taskLogs).values({
+      userId: taskData.userId,
+      taskId: task.id,
+      action: "created",
+      details: "Task created",
+    });
+
+    revalidatePath("/", "layout");
+    return task;
+  } catch (error) {
+    console.error("Failed to create task:", error);
+    // Rethrow to allow caller to handle, but at least we logged it
+    throw error;
   }
-
-  const { labelIds, ...taskData } = data;
-  let finalLabelIds = labelIds || [];
-
-  // Smart Tagging: If no list or labels provided, try to guess them
-  if (!taskData.listId && finalLabelIds.length === 0 && taskData.title && taskData.userId) {
-    // Perf: fetch lists + labels in parallel to cut smart-tagging latency roughly in half.
-    const [allLists, allLabels] = await Promise.all([
-      getLists(taskData.userId),
-      getLabels(taskData.userId),
-    ]);
-    const suggestions = await suggestMetadata(taskData.title, allLists, allLabels);
-
-    if (suggestions.listId) taskData.listId = suggestions.listId;
-    if (suggestions.labelIds.length > 0) finalLabelIds = suggestions.labelIds;
-  }
-
-  // Calculate position to ensure task is added to the top
-  const conditions = [
-    eq(tasks.userId, taskData.userId),
-    taskData.parentId
-      ? eq(tasks.parentId, taskData.parentId)
-      : and(
-        isNull(tasks.parentId),
-        taskData.listId ? eq(tasks.listId, taskData.listId) : isNull(tasks.listId)
-      ),
-  ];
-
-  const [minPosResult] = await db
-    .select({ min: sql<number>`min(${tasks.position})` })
-    .from(tasks)
-    .where(and(...conditions));
-
-  // Subtract 1024 to leave space and ensure it's at the top
-  // If no tasks exist (min is null), start at -1024 or 0?
-  // If we start at 0, and user drags, it works.
-  // If we start at -1024, it helps if existing tasks are at 0.
-  const currentMin = minPosResult?.min ?? 0;
-  taskData.position = currentMin - 1024;
-
-  const result = await db.insert(tasks).values(taskData).returning();
-  const task = Array.isArray(result) ? result[0] : null;
-
-  if (!task) throw new Error("Failed to create task");
-
-  if (finalLabelIds.length > 0) {
-    await db.insert(taskLabels).values(
-      finalLabelIds.map((labelId: number) => ({
-        taskId: task.id,
-        labelId,
-      }))
-    );
-  }
-
-  await db.insert(taskLogs).values({
-    userId: taskData.userId,
-    taskId: task.id,
-    action: "created",
-    details: "Task created",
-  });
-
-  revalidatePath("/", "layout");
-  return task;
 }
 
 

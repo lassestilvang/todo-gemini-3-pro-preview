@@ -66,7 +66,13 @@ export async function suggestMetadata(
         };
 
     } catch (error) {
-        console.error("Error suggesting metadata:", error);
+        // Suppress 404 errors from Gemini (model not available/found) to avoid log spam
+        const msg = error instanceof Error ? error.message : String(error);
+        if (msg.includes("404") || msg.includes("not found")) {
+            console.warn("Gemini model not found or API error (skipping smart tags):", msg);
+        } else {
+            console.error("Error suggesting metadata:", error);
+        }
         return { listId: null, labelIds: [] };
     }
 }

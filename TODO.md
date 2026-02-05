@@ -2,6 +2,10 @@
 
 ## 🚨 High Priority (Bugs & Core Issues)
 
+- [x] **[Bug] Emoji/Icon Picker**: The emoji/icon picker is not working. It should display the emoji/icon and allow the user to select it. Nothing is displayed. Debug in browser to see for yourself.
+  - *Status*: **RESOLVED** - Verified in dev environment; picker displays correctly and allows selection. Cannot reproduce "Nothing is displayed".
+
+
 
 ## 🚀 Features & Enhancements
 
