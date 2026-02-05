@@ -14,11 +14,13 @@ import {
     withErrorHandling,
     ValidationError,
 } from "./shared";
+import { requireUser } from "@/lib/auth";
 
 /**
  * Retrieves all saved views for a specific user.
  */
 export async function getSavedViews(userId: string) {
+    await requireUser(userId);
     return await db
         .select()
         .from(savedViews)
@@ -35,6 +37,8 @@ async function createSavedViewImpl(data: {
     settings: string; // JSON string
     icon?: string;
 }) {
+    await requireUser(data.userId);
+
     if (!data.name || data.name.trim().length === 0) {
         throw new ValidationError("View name is required");
     }
@@ -52,6 +56,8 @@ export const createSavedView: (
  * Deletes a saved view.
  */
 async function deleteSavedViewImpl(id: number, userId: string) {
+    await requireUser(userId);
+
     await db.delete(savedViews).where(and(eq(savedViews.id, id), eq(savedViews.userId, userId)));
     revalidatePath("/", "layout");
 }
