@@ -19,7 +19,7 @@
 **Prevention:** Audit all exported functions in `"use server"` files. Prefer keeping internal logic in separate files without `"use server"` or explicitly unexported.
 
 ## 2026-10-27 - [Critical] Unprotected View and Template Actions
-**Vulnerability:** `view-settings.ts` and `templates.ts` server actions accepted `userId` as an argument but failed to validate it against the authenticated session, allowing full IDOR (Read/Write/Delete) on other users' data.
+**Vulnerability:** `view-settings.ts` and `templates.ts` server actions accepted `userId` as an argument but failed to validate it against the session, allowing full IDOR (Read/Write/Delete) on other users' data.
 **Learning:** Checking ownership inside the query (e.g. `where userId = ?`) is insufficient if the query parameter itself is trusted input from the client.
 **Prevention:** All server actions accepting `userId` MUST call `await requireUser(userId)` as the first statement. Added regression tests in `src/test/integration/security-missing-auth.test.ts`.
 
@@ -28,7 +28,6 @@
 **Learning:** `withErrorHandling` wrapper catches `ForbiddenError` and returns a failure result, meaning tests must assert on the result object (`result.success === false`) rather than expecting a thrown error.
 **Prevention:** Added `await requireUser(userId)` to the start of every exported function in `time-tracking.ts`. Created `src/lib/actions/time-tracking.security.test.ts` to verify IDOR protection.
 
-<<<<<<< HEAD
 ## 2026-10-28 - [Critical] Unprotected Label Actions
 **Vulnerability:** `src/lib/actions/labels.ts` server actions (`getLabels`, `createLabel`, etc.) accepted `userId` but failed to validate it against the authenticated session, allowing IDOR.
 **Learning:** Systematic checks (e.g., `grep` for "userId" without "requireUser") reveal vulnerabilities that manual review might miss.
@@ -38,9 +37,23 @@
 **Vulnerability:** CI checks failed consistently on `TemplateManager` and `Select` tests due to timeouts (3000ms-15000ms), despite local success. `Select` interactions specifically failed instantly or timed out in CI due to portal rendering delays.
 **Learning:** CI environments are significantly slower than local dev machines. `waitFor` with `getByRole` can be flaky if the element isn't immediately available in the accessible tree. `findByRole` is more robust as it combines waiting and querying.
 **Prevention:** Increased test execution timeouts to 30000ms-40000ms and switched to `findByRole` with 30000ms timeout for critical UI interactions in CI.
-=======
+
 ## 2026-02-01 - [High] IDOR in Label Management
 **Vulnerability:** `src/lib/actions/labels.ts` server actions accepted `userId` as an argument without validating it against the session, allowing attackers to manage other users' labels.
 **Learning:** CRUD operations on auxiliary resources (like labels/tags) are often overlooked for security checks compared to core resources (like tasks), but they are equally vulnerable to IDOR.
 **Prevention:** Audit all resources, including "minor" ones. Ensure every exported Server Action that takes a `userId` calls `requireUser(userId)` immediately.
->>>>>>> origin/main
+
+## 2026-10-29 - [Critical] IDOR in Task Dependencies
+**Vulnerability:** `getBlockers` and `getBlockedTasks` in `src/lib/actions/dependencies.ts` accepted task IDs and returned related tasks without verifying if the user owned the task or the blocker.
+**Learning:** Checking ownership is critical for ALL read operations, not just write operations. Even "helper" data like dependencies can leak information about tasks.
+**Prevention:** Updated functions to accept `userId` and verify ownership of the primary entity (task or blocker) before returning data.
+
+## 2026-10-31 - [Critical] IDOR in Dependencies and Reminders
+**Vulnerability:** `src/lib/actions/dependencies.ts` and `src/lib/actions/reminders.ts` server actions accepted `userId` as an argument without validating it against the session, allowing attackers to manage other users' task dependencies and reminders.
+**Learning:** Even if an action is "simple" (like adding a dependency or reminder), if it takes a `userId` and writes to the DB, it must be protected. The pattern of missing checks is consistent across less "core" modules.
+**Prevention:** Applied `requireUser(userId)` to `dependencies.ts` and `reminders.ts`. Added reproduction test `src/test/integration/security-dependencies.test.ts` to catch future regressions.
+
+## 2026-02-06 - [High] IDOR in Log Retrieval
+**Vulnerability:** `getTaskLogs`, `getActivityLog`, and `getCompletionHistory` in `src/lib/actions/logs.ts` were missing authorization checks. `getTaskLogs` (taking only `taskId`) allowed viewing logs of any task by ID. `getActivityLog` and `getCompletionHistory` accepted `userId` without validation.
+**Learning:** Functions that retrieve history/logs are sensitive and prone to IDOR because they often lack the "natural" user ownership context that creation/update actions have.
+**Prevention:** Added `requireUser` checks. For `getTaskLogs(taskId)`, we must fetch the current user and filter the query by `userId` to implicitly verify ownership of the task/log.

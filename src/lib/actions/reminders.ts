@@ -15,6 +15,7 @@ import {
   withErrorHandling,
   ValidationError,
 } from "./shared";
+import { requireUser } from "@/lib/auth";
 
 /**
  * Retrieves all reminders for a specific task.
@@ -35,6 +36,8 @@ export async function getReminders(taskId: number) {
  * @throws {ValidationError} When required fields are missing
  */
 async function createReminderImpl(userId: string, taskId: number, remindAt: Date) {
+  await requireUser(userId);
+
   if (!userId) {
     throw new ValidationError("User ID is required", { userId: "User ID cannot be empty" });
   }
@@ -83,6 +86,8 @@ export const createReminder: (
  * @param id - The reminder ID to delete
  */
 async function deleteReminderImpl(userId: string, id: number) {
+  await requireUser(userId);
+
   // Get reminder to log it before deleting
   const reminder = await db.select().from(reminders).where(eq(reminders.id, id)).limit(1);
   if (reminder.length > 0) {

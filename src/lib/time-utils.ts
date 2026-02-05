@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { format, isToday, isTomorrow, isYesterday } from "date-fns";
 
 /**
  * Detects if the system is set to 24-hour clock.
@@ -35,4 +35,18 @@ export function formatTimePreference(
 
     // default 'time'
     return format(date, is24h ? "HH:mm" : "h:mm a");
+}
+
+/**
+ * Formats a date to "Today", "Tomorrow", "Yesterday", or a fallback format.
+ *
+ * @param date - The date to format
+ * @param fallbackFormat - Format string to use if not today/tomorrow/yesterday (default: "PPP")
+ */
+export function formatFriendlyDate(date: Date | number, fallbackFormat: string = "PPP"): string {
+    const d = new Date(date);
+    if (isToday(d)) return "Today";
+    if (isTomorrow(d)) return "Tomorrow";
+    if (isYesterday(d)) return "Yesterday";
+    return format(d, fallbackFormat);
 }
