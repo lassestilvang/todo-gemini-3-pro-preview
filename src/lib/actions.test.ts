@@ -552,9 +552,13 @@ describe("Server Actions", () => {
              try {
                 await getActivityLog("other_user");
                 expect(true).toBe(false); // Should not reach here
-             } catch (error: any) {
-                 expect(error.message).toBe("Forbidden");
-                 expect(error.name).toBe("ForbiddenError");
+             } catch (error) {
+                 if (error instanceof Error) {
+                     expect(error.message).toBe("Forbidden");
+                     expect(error.name).toBe("ForbiddenError");
+                 } else {
+                     throw error;
+                 }
              }
         });
     });

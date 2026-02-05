@@ -3,13 +3,18 @@ import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/re
 import { PlanningRitual } from "./PlanningRitual";
 import React from "react";
 import { sqliteConnection } from "@/db";
-import * as actionsMocks from "@/test/mocks/actions";
-
-// Mock actions locally
-mock.module("@/lib/actions", () => actionsMocks);
+import { setMockAuthUser } from "@/test/mocks";
+// Mocks should be targeted and not leak to other tests
 
 describe("PlanningRitual", () => {
     beforeEach(async () => {
+        setMockAuthUser({
+            id: "test_user_123",
+            email: "test@example.com",
+            firstName: "Test",
+            lastName: "User",
+            profilePictureUrl: null,
+        });
         sqliteConnection.run("INSERT OR IGNORE INTO users (id, email, is_initialized) VALUES ('test_user_123', 'test@example.com', 1)");
     });
 

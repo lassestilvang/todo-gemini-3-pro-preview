@@ -5,7 +5,7 @@
 
 ## 🚀 Features & Enhancements
 
-- [ ] **[Feature] Calendar View**: Add a visual calendar component for task scheduling and overview.
+- [ ] **[Feature] Calendar Version 2**: New page: /calendar2. Use Full Calendar instead of the current implementation. It should support drag and drop of tasks to reschedule them. It should also support multiple calendars. It should be possible to create a new task by clicking on a date in the calendar. It should support multiple views (month, week, day).
 - [ ] **[Feature] Board/Calendar View on Lists**: Enable different layouts for task lists, selectable via the "View" settings modal.
   - **Board View**: A Trello-style Kanban board grouping tasks by status (To Do, In Progress, Done) or priority.
   - **Calendar View**: A grid-based month/week view showing tasks on their due dates with drag-and-drop rescheduling.
@@ -24,7 +24,8 @@
   - **Combined View**: Display all favorited items in a new "Favorites" section at the top of the sidebar.
   - **Reordering**: Allow manual reordering within the Favorites section.
   - **UX**: This is especially helpful for users with many lists and labels, providing a way to pin the most important ones.
-- [ ] **[Feature] Sidebar Visibility Toggle**: Add a toggle to the sidebar to hide and show the sidebar.
+- [ ] **[Feature] Slim Sidebar**: Add a slim version of the sidebar that only shows the icons.
+- [ ] **[Feature] Sidebar Toggle**: Add a toggle to the sidebar to toggle between slim, normal and hidden sidebar. When hidden we should have a small icon in the top left corner to toggle it back.
 - [ ] **[Infra] Privacy-Friendly Analytics**: Connect WebVitals/page-events to a provider (Plausible/PostHog) with opt-out.
 - [ ] **[Infra] Real-User Monitoring (RUM) Dashboard**: Dashboard for Web Vitals metrics.
 - [ ] **[Infra] Feature-Flag System**: Simple flag mechanism to toggle experimental features.

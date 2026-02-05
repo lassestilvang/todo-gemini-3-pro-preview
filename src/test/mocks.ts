@@ -6,10 +6,15 @@
 import { mock } from "bun:test";
 import React from "react";
 
+// Ensure DB module initializes in test mode even if NODE_ENV isn't set.
+if (!process.env.NODE_ENV) {
+    (process.env as any).NODE_ENV = "test";
+}
+
 // Mock react cache to prevent state leakage across tests in the same worker
 mock.module("react", () => ({
     ...React,
-    cache: (fn: any) => fn,
+    cache: <T,>(fn: T) => fn,
 }));
 
 // Mock next/navigation globally - must be before any component imports
@@ -33,7 +38,7 @@ mock.module("next/navigation", () => ({
 mock.module("next/cache", () => ({
     revalidatePath: () => { },
     revalidateTag: () => { },
-    unstable_cache: (fn: unknown) => fn,
+    unstable_cache: <T,>(fn: T) => fn,
 }));
 
 // Mock next/headers globally
@@ -149,31 +154,6 @@ export function runInAuthContext<T>(user: MockAuthUser | null, fn: () => T): T {
     }
 }
 
-/**
- * Runs a function within a specific authentication context.
- * This is the preferred way to set a mock user for a specific test block.
- * When in an auth context, getMockAuthUser will prioritize this user.
- */
-export function runInAuthContext<T>(user: MockAuthUser | null, fn: () => T): T {
-    const previousUser = mockState.__mockAuthUser;
-    mockState.__mockAuthUser = user;
-
-    try {
-        const result = authStorage.run(user, fn);
-        if (result && typeof (result as unknown as Promise<unknown>).finally === "function") {
-            return (result as unknown as Promise<unknown>).finally(() => {
-                mockState.__mockAuthUser = previousUser;
-            }) as T;
-        }
-
-        mockState.__mockAuthUser = previousUser;
-        return result;
-    } catch (error) {
-        mockState.__mockAuthUser = previousUser;
-        throw error;
-    }
-}
-
 export function setMockAuthUser(user: MockAuthUser | null) {
     mockState[GLOBAL_MOCK_USER_KEY] = user;
 }
@@ -183,19 +163,7 @@ export function clearMockAuthUser() {
 }
 
 export function resetMockAuthUser() {
-    mockState[GLOBAL_MOCK_USER_KEY] = DEFAULT_MOCK_USER;
-}
-
-export function resetMockAuthUser() {
-    mockState.__mockAuthUser = DEFAULT_MOCK_USER;
-}
-
-export function resetMockAuthUser() {
-    mockState.__mockAuthUser = DEFAULT_MOCK_USER;
-}
-
-export function resetMockAuthUser() {
-    mockState.__mockAuthUser = DEFAULT_MOCK_USER;
+    mockState[GLOBAL_MOCK_USER_KEY] = null;
 }
 
 export function getMockAuthUser(): MockAuthUser | null {

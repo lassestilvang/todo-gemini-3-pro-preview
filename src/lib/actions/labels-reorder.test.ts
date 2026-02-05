@@ -3,14 +3,14 @@ import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
 import { getLabels, reorderLabels } from "./labels";
 import { isSuccess } from "../action-result";
-import { sqliteConnection } from "@/db";
+import { db, labels } from "@/db";
 
 // Explicitly mock next/cache to match other test files and ensure isolation
 mock.module("next/cache", () => ({
     revalidatePath: () => { },
     revalidateTag: () => { },
-    unstable_cache: (fn: any) => fn,
-    cache: (fn: any) => fn,
+    unstable_cache: <T,>(fn: T) => fn,
+    cache: <T,>(fn: T) => fn,
 }));
 
 describe("reorderLabels", () => {
@@ -35,9 +35,11 @@ describe("reorderLabels", () => {
 
     it("should reorder labels correctly", async () => {
         // Direct DB insertion to bypass any potential action mocks
-        sqliteConnection.run("INSERT INTO labels (id, user_id, name, position) VALUES (100, ?, 'L1', 0)", [testUserId]);
-        sqliteConnection.run("INSERT INTO labels (id, user_id, name, position) VALUES (101, ?, 'L2', 0)", [testUserId]);
-        sqliteConnection.run("INSERT INTO labels (id, user_id, name, position) VALUES (102, ?, 'L3', 0)", [testUserId]);
+        await db.insert(labels).values([
+            { id: 100, userId: testUserId, name: "L1", position: 0 },
+            { id: 101, userId: testUserId, name: "L2", position: 1 },
+            { id: 102, userId: testUserId, name: "L3", position: 2 },
+        ]);
 
         // Verify initial state via getLabels (which queries DB)
         const initial = await getLabels(testUserId);
@@ -56,14 +58,14 @@ describe("reorderLabels", () => {
             throw new Error(`reorderLabels failed: ${JSON.stringify(reorderResult)}`);
         }
 
-        const labels = await getLabels(testUserId);
+        const reorderedLabels = await getLabels(testUserId);
         // getLabels sorts by position (asc) and then id (asc)
 
-        expect(labels[0].id).toBe(102);
-        expect(labels[0].position).toBe(0);
-        expect(labels[1].id).toBe(100);
-        expect(labels[1].position).toBe(1);
-        expect(labels[2].id).toBe(101);
-        expect(labels[2].position).toBe(2);
+        expect(reorderedLabels[0].id).toBe(102);
+        expect(reorderedLabels[0].position).toBe(0);
+        expect(reorderedLabels[1].id).toBe(100);
+        expect(reorderedLabels[1].position).toBe(1);
+        expect(reorderedLabels[2].id).toBe(101);
+        expect(reorderedLabels[2].position).toBe(2);
     });
 });

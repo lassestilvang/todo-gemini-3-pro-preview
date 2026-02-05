@@ -2,11 +2,18 @@ import { describe, it, expect, beforeEach } from "bun:test";
 import { createTestUser } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
 import { startTimeEntry, getTimeStats } from "./time-tracking";
+import { db, tasks } from "@/db";
 
 describe("Security Tests: Time Tracking Actions", () => {
     let attackerId: string;
     let victimId: string;
-    let attackerUser: any;
+    let attackerUser: {
+        id: string;
+        email: string;
+        firstName: string;
+        lastName: string;
+        profilePictureUrl: string | null;
+    };
 
     beforeEach(async () => {
         attackerId = `attacker_${Math.random().toString(36).substring(7)}`;
@@ -26,7 +33,12 @@ describe("Security Tests: Time Tracking Actions", () => {
 
     it("should prevent cross-user start time entry (IDOR)", async () => {
         setMockAuthUser(attackerUser);
-        const result = await startTimeEntry(999, victimId); // Try to start time for victim
+        const [task] = await db.insert(tasks).values({
+            userId: victimId,
+            title: "Victim Task",
+            position: 0,
+        }).returning();
+        const result = await startTimeEntry(task.id, victimId); // Try to start time for victim
 
         expect(result.success).toBe(false);
         if (!result.success) {

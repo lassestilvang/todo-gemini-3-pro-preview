@@ -1,6 +1,7 @@
 [test]
 preload = ["./src/test/register-dom.ts", "./src/test/mocks.ts", "./src/test/setup.tsx"]
 concurrent = false
+maxConcurrency = 1
 # Coverage is enabled via --coverage flag
 # Target thresholds: 70% for src/lib, 60% for src/components
 # Exclude e2e tests - they run via Playwright
@@ -8,3 +9,4 @@ root = "./src"
 
 [test.env]
 NODE_ENV = "test"
+BUN_TEST_MAX_CONCURRENCY = "1"

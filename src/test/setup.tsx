@@ -1,8 +1,9 @@
 import { expect, afterEach, mock, beforeEach } from "bun:test";
 // GlobalRegistrator is now loaded via register-dom.ts in bunfig.toml
 import * as matchers from "@testing-library/jest-dom/matchers";
-import { sqliteConnection } from "@/db";
-import { getMockAuthUser, DEFAULT_MOCK_USER, setMockAuthUser } from "./mocks";
+import { db, sqliteConnection } from "@/db";
+import { labels, lists, tasks, timeEntries, templates, userStats, achievements, userAchievements, viewSettings, savedViews, rateLimits, taskDependencies, taskLabels, reminders, habitCompletions, taskLogs } from "@/db";
+import { getMockAuthUser, resetMockAuthUser } from "./mocks";
 import React from "react";
 import { cleanup } from "@testing-library/react";
 import { ForbiddenError, UnauthorizedError } from "@/lib/auth-errors";
@@ -322,7 +323,6 @@ mock.module("@/lib/auth", () => ({
     }),
     requireUser: mock(async (userId: string) => {
         const user = getMockAuthUser();
-        // console.log("requireUser called with:", userId, "Mock user:", user?.id);
         if (!user) throw new UnauthorizedError();
         if (user.id !== userId) {
             const err = new ForbiddenError("Forbidden");
@@ -349,7 +349,7 @@ mock.module("@/lib/auth", () => ({
         }
     }),
     signOut: mock(async () => { }),
-    syncUser: mock(async (workosUser: any) => ({
+    syncUser: mock(async (workosUser: { id: string; email: string; firstName?: string | null; lastName?: string | null; profilePictureUrl?: string | null }) => ({
         id: workosUser.id,
         email: workosUser.email,
         firstName: workosUser.firstName ?? null,
@@ -366,15 +366,26 @@ mock.module("@/lib/auth", () => ({
     }),
 }));
 
-beforeEach(() => {
-    setMockAuthUser(DEFAULT_MOCK_USER);
+// Note: Tests are responsible for setting auth context explicitly.
+
+let testMutex = Promise.resolve();
+
+beforeEach(async () => {
+    let release: () => void;
+    const next = new Promise<void>((resolve) => {
+        release = resolve;
+    });
+    const previous = testMutex;
+    testMutex = next;
+    await previous;
+    (globalThis as { __testMutexRelease?: () => void }).__testMutexRelease = release!;
 });
 
 let isDbSetup = false;
 
 // Mock next/cache
 mock.module("next/cache", () => ({
-    unstable_cache: (fn: any) => fn,
+    unstable_cache: <T,>(fn: T) => fn,
     revalidateTag: mock(() => { }),
     revalidatePath: mock(() => { }),
 }));
@@ -416,31 +427,42 @@ export async function createTestUser(id: string, email: string) {
 /**
  * Reset database tables for test isolation.
  */
+let resetQueue = Promise.resolve();
+
 export async function resetTestDb() {
-    try {
-        sqliteConnection.run("DELETE FROM time_entries");
-        sqliteConnection.run("DELETE FROM saved_views");
-        sqliteConnection.run("DELETE FROM user_achievements");
-        sqliteConnection.run("DELETE FROM achievements");
-        sqliteConnection.run("DELETE FROM view_settings");
-        sqliteConnection.run("DELETE FROM user_stats");
-        sqliteConnection.run("DELETE FROM task_logs");
-        sqliteConnection.run("DELETE FROM reminders");
-        sqliteConnection.run("DELETE FROM habit_completions");
-        sqliteConnection.run("DELETE FROM task_dependencies");
-        sqliteConnection.run("DELETE FROM task_labels");
-        sqliteConnection.run("DELETE FROM tasks");
-        sqliteConnection.run("DELETE FROM labels");
-        sqliteConnection.run("DELETE FROM lists");
-        sqliteConnection.run("DELETE FROM templates");
-        sqliteConnection.run("DELETE FROM users");
-        sqliteConnection.run("DELETE FROM rate_limits");
-    } catch {
-        // Ignore errors if tables don't exist yet
-    }
+    resetQueue = resetQueue.then(async () => {
+        try {
+            await db.delete(timeEntries);
+            await db.delete(savedViews);
+            await db.delete(userAchievements);
+            await db.delete(achievements);
+            await db.delete(viewSettings);
+            await db.delete(userStats);
+            await db.delete(taskLogs);
+            await db.delete(reminders);
+            await db.delete(habitCompletions);
+            await db.delete(taskDependencies);
+            await db.delete(taskLabels);
+            await db.delete(tasks);
+            await db.delete(labels);
+            await db.delete(lists);
+            await db.delete(templates);
+            await db.delete(rateLimits);
+            await sqliteConnection.run("DELETE FROM users");
+        } catch {
+            // Ignore errors if tables don't exist yet
+        }
+    });
+    await resetQueue;
 }
 
 afterEach(() => {
+    const release = (globalThis as { __testMutexRelease?: () => void }).__testMutexRelease;
+    if (release) {
+        release();
+        (globalThis as { __testMutexRelease?: () => void }).__testMutexRelease = undefined;
+    }
+
     try {
         cleanup();
     } catch { }
@@ -448,6 +470,8 @@ afterEach(() => {
     if (typeof document !== 'undefined') {
         document.body.innerHTML = "";
     }
+
+    resetMockAuthUser();
 });
 
 // Run setup immediately

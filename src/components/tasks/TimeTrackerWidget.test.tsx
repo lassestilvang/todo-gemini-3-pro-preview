@@ -3,24 +3,29 @@ import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/re
 import { TimeTrackerWidget } from "./TimeTrackerWidget";
 import React from "react";
 
-// Mock server actions
-const mockStartTimeEntry = mock(() => Promise.resolve({ success: true, data: { id: 100 } }));
-const mockStopTimeEntry = mock(() => Promise.resolve({ success: true, data: { id: 100 } }));
-const mockGetActiveTimeEntry = mock(() => Promise.resolve({ success: true, data: null }));
+// Mocks should be targeted and not leak to other tests
 
-mock.module("@/lib/actions", () => ({
-    startTimeEntry: mockStartTimeEntry,
-    stopTimeEntry: mockStopTimeEntry,
-    getActiveTimeEntry: mockGetActiveTimeEntry,
-}));
+import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
+import { db } from "@/db";
+import { timeEntries, tasks } from "@/db/schema-sqlite";
+import { setMockAuthUser } from "@/test/mocks";
 
 describe("TimeTrackerWidget", () => {
-    beforeEach(() => {
-        mockStartTimeEntry.mockClear();
-        mockStopTimeEntry.mockClear();
-        mockGetActiveTimeEntry.mockClear();
-        // Default to no active entry
-        mockGetActiveTimeEntry.mockResolvedValue({ success: true, data: null });
+    const userId = "user1";
+    const taskId = 1;
+
+    beforeEach(async () => {
+        await setupTestDb();
+        await resetTestDb();
+        await createTestUser(userId, `${userId}@example.com`);
+        setMockAuthUser({ id: userId, email: `${userId}@example.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
+
+        // Insert a task to satisfy foreign key
+        await db.insert(tasks).values({
+            id: taskId,
+            userId,
+            title: "Test Task",
+        });
     });
 
     afterEach(() => {
@@ -28,25 +33,22 @@ describe("TimeTrackerWidget", () => {
     });
 
     it("should render start button with accessible label", async () => {
-        render(<TimeTrackerWidget taskId={1} estimateMinutes={60} userId="user1" />);
+        render(<TimeTrackerWidget taskId={taskId} estimateMinutes={60} userId={userId} />);
 
-        // Wait for active entry check
-        await waitFor(() => {
-            expect(mockGetActiveTimeEntry).toHaveBeenCalled();
-        });
-
-        const startButton = screen.getByRole("button", { name: /start timer/i });
+        const startButton = await screen.findByRole("button", { name: /start timer/i });
         expect(startButton).toBeInTheDocument();
     });
 
     it("should render stop button with accessible label when tracking", async () => {
-        // Mock active entry
-        mockGetActiveTimeEntry.mockResolvedValue({
-            success: true,
-            data: { id: 100, startedAt: new Date(Date.now() - 1000).toISOString() }
+        // Insert active entry into DB
+        await db.insert(timeEntries).values({
+            id: 100,
+            taskId,
+            userId,
+            startedAt: new Date(Date.now() - 1000),
         });
 
-        render(<TimeTrackerWidget taskId={1} estimateMinutes={60} userId="user1" />);
+        render(<TimeTrackerWidget taskId={taskId} estimateMinutes={60} userId={userId} />);
 
         await waitFor(() => {
             expect(screen.getByText(/0:01/)).toBeInTheDocument();
@@ -57,7 +59,7 @@ describe("TimeTrackerWidget", () => {
     });
 
     it("should render edit button with accessible label", async () => {
-        const handleEdit = mock(() => {});
+        const handleEdit = mock(() => { });
         render(<TimeTrackerWidget taskId={1} estimateMinutes={60} userId="user1" onEditClick={handleEdit} />);
 
         const editButton = screen.getByRole("button", { name: /edit time entry/i });
