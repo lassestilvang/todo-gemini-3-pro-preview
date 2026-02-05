@@ -3,11 +3,7 @@ import { describe, it, expect, afterEach, mock, beforeEach } from "bun:test";
 // Mock MUST happen before components are imported
 const mockCreateTask = mock(() => Promise.resolve({ success: true, data: { id: 1 } }));
 
-mock.module("@/lib/actions", () => ({
-    getLists: mock(() => Promise.resolve([])),
-    getLabels: mock(() => Promise.resolve([])),
-    createTask: mockCreateTask,
-}));
+// Mocks should be targeted and not leak to other tests
 
 // Local UI Mocks
 mock.module("@/components/ui/dialog", () => ({

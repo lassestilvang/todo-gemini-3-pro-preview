@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, mock, beforeAll } from "bun:test";
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import React from "react";
+import { setMockAuthUser } from "@/test/mocks";
 
 mock.module("@/components/gamification/XPBar", () => ({
     XPBar: () => <div data-testid="xp-bar">XP Bar</div>
@@ -59,6 +60,13 @@ describe("MainLayout", () => {
     });
 
     it("should render layout with children", async () => {
+        setMockAuthUser({
+            id: "test_user_123",
+            email: "test@example.com",
+            firstName: "Test",
+            lastName: "User",
+            profilePictureUrl: null,
+        });
         // MainLayout is an async component, so we need to await it
         const Component = await MainLayout({ children: <div data-testid="child">Child Content</div> });
         render(Component);

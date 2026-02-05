@@ -94,8 +94,12 @@ describe("Integration: Security Missing Auth", () => {
             } else {
                  throw new Error("Should have thrown or returned failure");
             }
-        } catch (e: any) {
-             expect(e.message).toMatch(/Forbidden|authorized/i);
+        } catch (e) {
+            if (e instanceof Error) {
+                expect(e.message).toMatch(/Forbidden|authorized/i);
+            } else {
+                throw e;
+            }
         }
     });
 

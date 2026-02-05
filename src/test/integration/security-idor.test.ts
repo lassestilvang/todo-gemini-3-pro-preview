@@ -8,7 +8,6 @@ import { isFailure } from "@/lib/action-result";
 
 describe("Integration: Security IDOR", () => {
     let victimId: string;
-    let ATTACKER_ID: string;
 
     beforeAll(async () => {
         await setupTestDb();
@@ -16,8 +15,8 @@ describe("Integration: Security IDOR", () => {
 
     beforeEach(async () => {
         // await resetTestDb();
-        ATTACKER_ID = `attacker_${Math.random().toString(36).substring(7)}`;
-        const attacker = await createTestUser("attacker", "attacker@evil.com");
+        const attackerId = `attacker_${Math.random().toString(36).substring(7)}`;
+        const attacker = await createTestUser(attackerId, "attacker@evil.com");
         const victim = await createTestUser("victim", "victim@target.com");
 
         victimId = victim.id;

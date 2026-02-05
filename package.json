@@ -14,7 +14,7 @@
     "db:migrate:ci": "bun scripts/db-migrate-ci.ts",
     "db:seed": "bun src/db/seed.ts",
     "db:reset-dev": "neonctl branches reset dev --parent",
-    "test": "bun test",
+    "test": "bun test --max-concurrency=1",
     "test:coverage": "bun test --coverage",
     "test:e2e": "bunx playwright test",
     "test:e2e:ui": "bunx playwright test --ui",

@@ -21,7 +21,6 @@ import type { DraggableSyntheticListeners, DraggableAttributes } from "@dnd-kit/
 import { ResolvedIcon } from "@/components/ui/resolved-icon";
 import { useSync } from "@/components/providers/sync-provider";
 import { ActionType, actionRegistry } from "@/lib/sync/registry";
-import { getLabelStyle } from "@/lib/style-utils";
 
 import { Task } from "@/lib/types";
 

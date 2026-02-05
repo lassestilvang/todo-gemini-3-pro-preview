@@ -236,7 +236,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             processingRef.current = false;
             setStatus('online');
         }
-    }, [fixupQueueIds]);
+    }, [fixupQueueIds, queryClient]);
 
     // Initial load
     useEffect(() => {

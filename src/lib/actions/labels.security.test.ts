@@ -7,7 +7,13 @@ describe("Labels Security (IDOR)", () => {
   let ATTACKER_ID: string;
   let VICTIM_ID: string;
   let AUTHORIZED_ID: string;
-  let ATTACKER_USER: any;
+  let ATTACKER_USER: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    profilePictureUrl: string | null;
+  };
 
   // Zero-Shared-State Strategy: Rely purely on unique IDs and AsyncLocalStorage
 

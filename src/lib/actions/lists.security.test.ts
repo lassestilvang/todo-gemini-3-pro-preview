@@ -6,7 +6,13 @@ import { getLists, createList, updateList, deleteList, reorderLists, getList } f
 describe("Lists Security (IDOR)", () => {
   let ATTACKER_ID: string;
   let VICTIM_ID: string;
-  let ATTACKER_USER: any;
+  let ATTACKER_USER: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    profilePictureUrl: string | null;
+  };
 
   beforeEach(async () => {
     ATTACKER_ID = `attacker_${Math.random().toString(36).substring(7)}`;
