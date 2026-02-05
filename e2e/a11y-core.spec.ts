@@ -1,9 +1,8 @@
 import { expect, test } from "./fixtures";
 import AxeBuilder from '@axe-core/playwright';
 
-test.describe('Accessibility', () => {
+test.describe('Accessibility: Core Pages', () => {
     test('should not have any automatically detectable accessibility issues on landing page', async ({ authenticatedPage: page }) => {
-        // Authenticate and go to landing/today page
         await page.goto('/today');
         await page.waitForLoadState('networkidle');
 
@@ -31,25 +30,5 @@ test.describe('Accessibility', () => {
         }
 
         expect(accessibilityScanResults.violations).toEqual([]);
-    });
-
-    test('should not have any automatically detectable accessibility issues on upcoming page', async ({ authenticatedPage: page }) => {
-        await page.goto('/upcoming');
-        await page.waitForLoadState('networkidle');
-
-        const accessibilityScanResults = await new AxeBuilder({ page })
-            .exclude('[data-react-grab="true"]')
-            .analyze();
-
-        if (accessibilityScanResults.violations.length > 0) {
-            console.log('Violations on upcoming page:', JSON.stringify(accessibilityScanResults.violations, null, 2));
-        }
-
-        expect(accessibilityScanResults.violations).toEqual([]);
-    });
-
-    // Test Settings Dialog/Page if possible, strictly following typical user flow
-    test.skip('should not have any automatically detectable accessibility issues on settings', async () => {
-        // TODO: Implement navigation to settings and check A11y
     });
 });
