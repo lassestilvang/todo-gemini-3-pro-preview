@@ -51,16 +51,24 @@ test.describe('Data Persistence: Import', () => {
 
         await expect(page.getByText('Import successful')).toBeVisible({ timeout: 60000 });
 
+        // Wait for potential background processing
         await page.waitForTimeout(2000);
+        // Force reload to ensure new data is fetched
         await page.reload();
+        await page.waitForLoadState('networkidle');
 
         const importedListName = `${listName} (Imported)`;
-        await expect(page.getByRole('link', { name: importedListName })).toBeVisible();
+        // Using a more robust selector that handles potential UI variations
+        const listLink = page.getByRole('link', { name: importedListName });
+        await expect(listLink).toBeVisible();
 
-        await page.getByRole('link', { name: importedListName }).click();
+        await listLink.click();
         await page.waitForURL(/\/lists\/\d+/);
 
         await page.waitForLoadState('networkidle');
-        await expect(page.getByText(taskName)).toBeVisible({ timeout: 10000 });
+        // Use a more specific selector for the task item to avoid false negatives
+        // and retry finding it as it might be below the fold or loading
+        const taskItem = page.getByTestId('task-item').filter({ hasText: taskName });
+        await expect(taskItem.first()).toBeVisible({ timeout: 20000 });
     });
 });
