@@ -1,5 +1,5 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
@@ -125,37 +125,34 @@ describe("TemplateManager", () => {
     });
 
     it("should open template list dialog when Templates button is clicked", async () => {
-      const user = userEvent.setup();
       render(<TemplateManager userId="test_user_123" />);
 
-      await user.click(screen.getByText("Templates"));
+      fireEvent.click(screen.getByText("Templates"));
 
-      // Explicitly wait for dialog
+      // Explicitly wait for dialog with increased timeout for CI
       await waitFor(() => {
         expect(screen.getByRole("dialog")).toBeInTheDocument();
-      });
+      }, { timeout: 5000 });
 
       await waitFor(() => {
         expect(screen.getByText("Task Templates")).toBeInTheDocument();
-      }, { timeout: 30000 });
-    }, 40000);
+      }, { timeout: 5000 });
+    });
 
     it("should load and display templates when dialog opens", async () => {
-      const user = userEvent.setup();
       render(<TemplateManager userId="test_user_123" />);
 
-      await user.click(screen.getByText("Templates"));
+      fireEvent.click(screen.getByText("Templates"));
 
-      expect(await screen.findByText("Task Templates", {}, { timeout: 30000 })).toBeInTheDocument();
+      expect(await screen.findByText("Task Templates", {}, { timeout: 5000 })).toBeInTheDocument();
 
       await waitFor(() => {
         expect(screen.getByText("Weekly Report")).toBeInTheDocument();
         expect(screen.getByText("Daily Standup")).toBeInTheDocument();
-      }, { timeout: 30000 });
-    }, 40000);
+      }, { timeout: 5000 });
+    });
 
     it("should show empty state when no templates exist", async () => {
-      const user = userEvent.setup();
       templatesState = [];
       // Delete templates for this specific test
       const { templates } = await import("@/db/schema-sqlite");
@@ -164,144 +161,135 @@ describe("TemplateManager", () => {
 
       render(<TemplateManager userId="test_user_123" />);
 
-      await user.click(screen.getByText("Templates"));
+      fireEvent.click(screen.getByText("Templates"));
 
       await waitFor(() => {
         expect(screen.getByText("No templates found. Create one to get started.")).toBeInTheDocument();
-      }, { timeout: 30000 });
-    }, 40000);
+      }, { timeout: 5000 });
+    });
   });
 
   describe("create dialog", () => {
     it("should open create dialog when New Template button is clicked", async () => {
-      const user = userEvent.setup();
       render(<TemplateManager userId="test_user_123" />);
 
-      await user.click(screen.getByText("Templates"));
+      fireEvent.click(screen.getByText("Templates"));
 
-      expect(await screen.findByTestId("new-template-button", {}, { timeout: 30000 })).toBeInTheDocument();
+      expect(await screen.findByTestId("new-template-button", {}, { timeout: 5000 })).toBeInTheDocument();
 
-      await user.click(screen.getByTestId("new-template-button"));
+      fireEvent.click(screen.getByTestId("new-template-button"));
 
-      expect(await screen.findByRole("heading", { name: "Create Template" }, { timeout: 30000 })).toBeInTheDocument();
+      expect(await screen.findByRole("heading", { name: "Create Template" }, { timeout: 5000 })).toBeInTheDocument();
       expect(screen.getByTestId("template-name-input")).toBeInTheDocument();
-    }, 40000);
+    });
 
     it("should show empty form fields in create mode", async () => {
-      const user = userEvent.setup();
       render(<TemplateManager userId="test_user_123" />);
 
       // Open template list dialog
-      await user.click(screen.getByText("Templates"));
+      fireEvent.click(screen.getByText("Templates"));
 
       await waitFor(() => {
         expect(screen.getByTestId("new-template-button")).toBeInTheDocument();
-      }, { timeout: 30000 });
+      }, { timeout: 5000 });
 
       // Click New Template button
-      await user.click(screen.getByTestId("new-template-button"));
+      fireEvent.click(screen.getByTestId("new-template-button"));
 
       await waitFor(() => {
         const nameInput = screen.getByTestId("template-name-input") as HTMLInputElement;
         const titleInput = screen.getByTestId("task-title-input") as HTMLInputElement;
         expect(nameInput.value).toBe("");
         expect(titleInput.value).toBe("");
-      }, { timeout: 30000 });
-    }, 40000);
+      }, { timeout: 5000 });
+    });
   });
 
   describe("edit dialog", () => {
     it("should render edit button for each template", async () => {
-      const user = userEvent.setup();
       render(<TemplateManager userId="test_user_123" />);
 
-      await user.click(screen.getByText("Templates"));
+      fireEvent.click(screen.getByText("Templates"));
 
-      expect(await screen.findByTestId(`edit-template-${templateIds[0]}`, {}, { timeout: 30000 })).toBeInTheDocument();
+      expect(await screen.findByTestId(`edit-template-${templateIds[0]}`, {}, { timeout: 5000 })).toBeInTheDocument();
       expect(screen.getByTestId(`edit-template-${templateIds[1]}`)).toBeInTheDocument();
-    }, 40000);
+    });
 
     it("should open edit dialog with template data when edit button is clicked", async () => {
-      const user = userEvent.setup();
       render(<TemplateManager userId="test_user_123" />);
 
-      await user.click(screen.getByText("Templates"));
+      fireEvent.click(screen.getByText("Templates"));
 
       await waitFor(() => {
         expect(screen.getByTestId("edit-template-1")).toBeInTheDocument();
-      }, { timeout: 15000 });
+      }, { timeout: 5000 });
 
-      const editBtn = await screen.findByTestId(`edit-template-${templateIds[0]}`, {}, { timeout: 30000 });
-      await user.click(editBtn);
+      const editBtn = await screen.findByTestId(`edit-template-${templateIds[0]}`, {}, { timeout: 5000 });
+      fireEvent.click(editBtn);
 
-      const nameInput = await screen.findByTestId("template-name-input", {}, { timeout: 30000 }) as HTMLInputElement;
+      const nameInput = await screen.findByTestId("template-name-input", {}, { timeout: 5000 }) as HTMLInputElement;
       expect(nameInput.value).toBe("Weekly Report");
-      // Relaxed check for happy-dom which struggles with portals/visibility
+
       await waitFor(() => {
-        // Check for the input directly as it's the critical part of the edit form
         const nameInput = screen.getByTestId("template-name-input") as HTMLInputElement;
         expect(nameInput).toBeInTheDocument();
         expect(nameInput.value).toBe("Weekly Report");
-      }, { timeout: 15000 });
-    }, 40000);
+      }, { timeout: 5000 });
+    });
 
     it("should pre-populate task title from template content", async () => {
-      const user = userEvent.setup();
       render(<TemplateManager userId="test_user_123" />);
 
       // Open template list dialog
-      await user.click(screen.getByText("Templates"));
+      fireEvent.click(screen.getByText("Templates"));
 
       await waitFor(() => {
         expect(screen.getByTestId(`edit-template-${templateIds[0]}`)).toBeInTheDocument();
-      }, { timeout: 30000 });
+      }, { timeout: 5000 });
 
       // Click edit button for first template
-      await user.click(screen.getByTestId(`edit-template-${templateIds[0]}`));
+      fireEvent.click(screen.getByTestId(`edit-template-${templateIds[0]}`));
 
       await waitFor(() => {
         const titleInput = screen.getByTestId("task-title-input") as HTMLInputElement;
         expect(titleInput.value).toBe("Weekly Report Task");
-      }, { timeout: 30000 });
-    }, 40000);
+      }, { timeout: 5000 });
+    });
   });
 
   describe("template actions", () => {
     it("should render Use button for each template", async () => {
-      const user = userEvent.setup();
       render(<TemplateManager userId="test_user_123" />);
 
-      await user.click(screen.getByText("Templates"));
+      fireEvent.click(screen.getByText("Templates"));
 
       await waitFor(() => {
         expect(screen.getByTestId(`use-template-${templateIds[0]}`)).toBeInTheDocument();
         expect(screen.getByTestId(`use-template-${templateIds[1]}`)).toBeInTheDocument();
-      }, { timeout: 30000 });
-    }, 40000);
+      }, { timeout: 5000 });
+    });
 
     it("should render delete button for each template", async () => {
-      const user = userEvent.setup();
       render(<TemplateManager userId="test_user_123" />);
 
-      await user.click(screen.getByText("Templates"));
+      fireEvent.click(screen.getByText("Templates"));
 
       await waitFor(() => {
         expect(screen.getByTestId(`delete-template-${templateIds[0]}`)).toBeInTheDocument();
         expect(screen.getByTestId(`delete-template-${templateIds[1]}`)).toBeInTheDocument();
-      }, { timeout: 30000 });
-    }, 40000);
+      }, { timeout: 5000 });
+    });
 
     it("should have accessible labels for action buttons", async () => {
-      const user = userEvent.setup();
       render(<TemplateManager userId="test_user_123" />);
 
-      await user.click(screen.getByText("Templates"));
+      fireEvent.click(screen.getByText("Templates"));
 
       await waitFor(() => {
         expect(screen.getByTestId(`edit-template-${templateIds[0]}`)).toHaveAttribute("aria-label", "Edit template");
         expect(screen.getByTestId(`delete-template-${templateIds[0]}`)).toHaveAttribute("aria-label", "Delete template");
-      }, { timeout: 30000 });
-    }, 40000);
+      }, { timeout: 5000 });
+    });
   });
 
   describe("without userId", () => {

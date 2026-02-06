@@ -107,28 +107,8 @@ describe("Integration: Security Missing Auth", () => {
 
     // Template Tests
     it("should fail when getting another user's templates", async () => {
+        // getTemplates is NOT wrapped, so it throws directly
         await expect(getTemplates(victimId)).rejects.toThrow(/Forbidden|authorized/i);
-        try {
-            const result = await getTemplates(victimId);
-            // @ts-expect-error - checking if it's an ActionResult
-            if (result && typeof result === 'object' && 'success' in result) {
-                // @ts-expect-error - checking if it's an ActionResult
-                expect(isFailure(result)).toBe(true);
-                // @ts-expect-error - checking if it's an ActionResult
-                if (isFailure(result)) {
-                    // @ts-expect-error - checking if it's an ActionResult
-                    expect(result.error.code).toBe("FORBIDDEN");
-                }
-            } else {
-                 throw new Error("Should have thrown or returned failure");
-            }
-        } catch (e) {
-            if (e instanceof Error) {
-                expect(e.message).toMatch(/Forbidden|authorized/i);
-            } else {
-                throw e;
-            }
-        }
     });
 
     it("should fail when creating a template for another user", async () => {
@@ -187,17 +167,6 @@ describe("Integration: Security Missing Auth", () => {
         }).returning();
 
         setMockAuthUser({ id: attackerId, email: "attacker@evil.com" });
-
-        // Even if I try to instantiate it as MYSELF (using attackerId),
-        // the function signature is `instantiateTemplate(userId, templateId)`.
-        // If I pass `attackerId`, I am creating tasks for ME.
-        // But the template belongs to victim.
-        // Does `instantiateTemplate` check if template belongs to `userId`?
-        // Yes: `where(and(eq(templates.id, templateId), eq(templates.userId, userId)))`
-        // So if I call `instantiateTemplate(attackerId, victimTemplateId)`, it will fail NotFound (good).
-
-        // BUT, if I call `instantiateTemplate(victimId, victimTemplateId)`, I am instantiating tasks FOR VICTIM.
-        // This allows me to spam victim with tasks.
 
         const result = await instantiateTemplate(victimId, victimTemplate.id);
 
