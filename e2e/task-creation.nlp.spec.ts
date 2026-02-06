@@ -10,21 +10,26 @@ test.describe('Task Creation: NLP', () => {
     const taskInput = page.getByTestId('task-input');
     await expect(taskInput).toBeVisible();
 
-    const taskTitle = `Meeting tomorrow ${Date.now()} `;
+    const uniqueId = Date.now();
+    const taskTitle = `Meeting tomorrow ${uniqueId} `;
     await taskInput.fill(taskTitle);
     await taskInput.press('Enter');
 
-    // Verify task creation via toast first
+    // Ensure the input is cleared to confirm submission
+    await expect(taskInput).toHaveValue('', { timeout: 10000 });
+    
+    // Task with "tomorrow" will be in Upcoming, not Today.
+    // Wait for the "Task created" toast or check the Upcoming view.
     await expect(page.getByText('Task created')).toBeVisible();
 
-    // Navigate to Upcoming view since the task is due tomorrow
     await page.goto('/upcoming');
-    await page.waitForLoadState('load');
+    await page.waitForLoadState('networkidle'); // Better wait for data fetch
 
-    // Now wait for the task in the Upcoming list
     await waitForTask(page, 'Meeting');
 
-    const taskItem = page.getByTestId('task-item').filter({ hasText: 'Meeting' });
+    await waitForTask(page, `Meeting tomorrow ${uniqueId}`);
+
+    const taskItem = page.getByTestId('task-item').filter({ hasText: `Meeting tomorrow ${uniqueId}` });
     await expect(taskItem.first()).toBeVisible();
   });
 
@@ -32,13 +37,17 @@ test.describe('Task Creation: NLP', () => {
     const taskInput = page.getByTestId('task-input');
     await expect(taskInput).toBeVisible();
 
-    const taskTitle = `Urgent task!high ${Date.now()} `;
+    const uniqueId = Date.now();
+    const taskTitle = `Urgent task!high ${uniqueId} `;
     await taskInput.fill(taskTitle);
     await taskInput.press('Enter');
 
-    await waitForTask(page, 'Urgent task');
+    // Ensure the input is cleared to confirm submission
+    await expect(taskInput).toHaveValue('', { timeout: 10000 });
 
-    const taskItem = page.getByTestId('task-item').filter({ hasText: 'Urgent task' });
+    await waitForTask(page, `Urgent task!high ${uniqueId}`);
+
+    const taskItem = page.getByTestId('task-item').filter({ hasText: `Urgent task!high ${uniqueId}` });
     await expect(taskItem.first()).toBeVisible();
   });
 });

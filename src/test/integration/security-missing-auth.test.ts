@@ -1,6 +1,21 @@
-import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
+import { describe, it, expect, beforeEach, beforeAll, mock } from "bun:test";
 import { setupTestDb, createTestUser } from "@/test/setup";
-import { setMockAuthUser, clearMockAuthUser } from "@/test/mocks";
+import { setMockAuthUser, clearMockAuthUser, runInAuthContext, getMockAuthUser } from "@/test/mocks";
+import { ForbiddenError, UnauthorizedError } from "@/lib/auth-errors";
+
+// Explicitly mock auth to ensure CI environment uses the correct mock state
+mock.module("@/lib/auth", () => ({
+    requireUser: async (userId: string) => {
+        const user = getMockAuthUser();
+        if (!user) throw new UnauthorizedError();
+        if (user.id !== userId) {
+            throw new ForbiddenError("Forbidden");
+        }
+        return user;
+    },
+    getCurrentUser: async () => getMockAuthUser(),
+}));
+
 let getViewSettings: typeof import("@/lib/actions/view-settings").getViewSettings;
 let saveViewSettings: typeof import("@/lib/actions/view-settings").saveViewSettings;
 let resetViewSettings: typeof import("@/lib/actions/view-settings").resetViewSettings;
@@ -83,6 +98,16 @@ describe("Integration: Security Missing Auth", () => {
             // If it throws, verify it's a Forbidden/Unauthorized error
             expect(e.message).toMatch(/Forbidden|authorized|Authentication/i);
         }
+        // Manually set auth to attacker for this test to avoid context switching issues in CI
+        setMockAuthUser({
+            id: attackerId,
+            email: "attacker@evil.com",
+            firstName: "Test",
+            lastName: "User",
+            profilePictureUrl: null
+        });
+
+        await expect(getViewSettings(victimId, "inbox")).rejects.toThrow(/Forbidden|authorized/i);
     });
 
     it("should fail when saving another user's view settings", async () => {
@@ -129,6 +154,8 @@ describe("Integration: Security Missing Auth", () => {
         } catch (e: any) {
             expect(e.message).toMatch(/Forbidden|authorized|Authentication/i);
         }
+        // getTemplates is NOT wrapped, so it throws directly
+        await expect(getTemplates(victimId)).rejects.toThrow(/Forbidden|authorized/i);
     });
 
     it("should fail when creating a template for another user", async () => {

@@ -5,6 +5,7 @@ test.describe('Authentication: Protected Routes', () => {
     await clearTestSession(page);
 
     await page.goto('/inbox', { waitUntil: 'domcontentloaded' });
+    await page.waitForURL(/\/login|authkit/, { timeout: 10000 }).catch(() => {});
 
     expect(await isOnLoginPage(page)).toBe(true);
   });
@@ -13,6 +14,7 @@ test.describe('Authentication: Protected Routes', () => {
     await clearTestSession(page);
 
     await page.goto('/today', { waitUntil: 'domcontentloaded' });
+    await page.waitForURL(/\/login|authkit/, { timeout: 10000 }).catch(() => {});
 
     expect(await isOnLoginPage(page)).toBe(true);
   });
@@ -21,6 +23,7 @@ test.describe('Authentication: Protected Routes', () => {
     await clearTestSession(page);
 
     await page.goto('/calendar', { waitUntil: 'domcontentloaded' });
+    await page.waitForURL(/\/login|authkit/, { timeout: 10000 }).catch(() => {});
 
     expect(await isOnLoginPage(page)).toBe(true);
   });
@@ -29,7 +32,7 @@ test.describe('Authentication: Protected Routes', () => {
     await clearTestSession(page);
 
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForURL(/\/login|authkit/, { timeout: 10000 }).catch(() => { });
+    await page.waitForURL(/\/login|.*authkit\.app.*/, { timeout: 10000 });
 
     expect(await isOnLoginPage(page)).toBe(true);
   });
@@ -38,7 +41,7 @@ test.describe('Authentication: Protected Routes', () => {
     await clearTestSession(page);
 
     await page.goto('/analytics', { waitUntil: 'domcontentloaded' });
-    await page.waitForURL(/\/login|authkit/, { timeout: 10000 }).catch(() => { });
+    await page.waitForURL(/\/login|.*authkit\.app.*/, { timeout: 10000 });
 
     expect(await isOnLoginPage(page)).toBe(true);
   });
