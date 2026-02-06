@@ -29,21 +29,8 @@ const defaultTemplates = [
 
 let templatesState = [...defaultTemplates];
 
-// Mock actions to avoid DB dependencies and improve test stability
-const mockGetTemplates = mock(async () => templatesState);
-
-const mockDeleteTemplate = mock(async () => { });
-const mockInstantiateTemplate = mock(async () => { });
-const mockUpdateTemplate = mock(async () => ({ success: true }));
-const mockCreateTemplate = mock(async () => ({ success: true }));
-
-mock.module("@/lib/actions", () => ({
-  getTemplates: mockGetTemplates,
-  deleteTemplate: mockDeleteTemplate,
-  instantiateTemplate: mockInstantiateTemplate,
-  updateTemplate: mockUpdateTemplate,
-  createTemplate: mockCreateTemplate,
-}));
+// Use real actions (which use in-memory SQLite) to avoid mock leakage issues
+// The test DB is set up in beforeEach
 
 // Mock window.confirm
 const originalConfirm = globalThis.confirm;
@@ -107,7 +94,7 @@ describe("TemplateManager", () => {
 
     templateIds = [1, 2];
 
-    // Dynamic import to ensure mock is applied
+    // Dynamic import to ensure fresh module state
     const importedModule = await import("./TemplateManager");
     TemplateManager = importedModule.TemplateManager;
 
