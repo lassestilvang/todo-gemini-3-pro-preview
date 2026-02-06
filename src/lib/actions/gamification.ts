@@ -25,6 +25,7 @@ import {
   calculateStreakUpdate,
 } from "./shared";
 import { requireUser } from "@/lib/auth";
+import { unstable_cache } from "next/cache";
 
 /**
  * Retrieves user stats (XP, level, streak) for a specific user.
@@ -60,6 +61,20 @@ export async function addXP(userId: string, amount: number) {
 }
 
 /**
+ * Retrieves all available achievements.
+ * Cached to prevent unnecessary DB lookups on high-frequency actions.
+ *
+ * @returns Array of all achievements
+ */
+export const getAchievements = unstable_cache(
+  async () => {
+    return await db.select().from(achievements);
+  },
+  ['achievements-list'],
+  { tags: ['achievements'] }
+);
+
+/**
  * Updates user progress (Streak + XP) in a single transaction.
  * Optimized to reduce database roundtrips during high-frequency actions like task completion.
  * Refactored to handle achievement unlocks iteratively instead of recursively.
@@ -78,7 +93,7 @@ export async function updateUserProgress(userId: string, xpAmount: number) {
 
   const [stats, allAchievements, [taskCounts], unlockedEntries] = await Promise.all([
     getUserStats(userId),
-    db.select().from(achievements),
+    getAchievements(),
     db.select({
       totalCompleted: sql<number>`count(*)`,
       dailyCompleted: sql<number>`count(case when ${and(gte(tasks.completedAt, todayStart), lte(tasks.completedAt, todayEnd))} then 1 else null end)`
@@ -282,15 +297,6 @@ function checkAchievementsPure(
   }
 
   return { unlocked: newlyUnlocked, totalReward };
-}
-
-/**
- * Retrieves all available achievements.
- *
- * @returns Array of all achievements
- */
-export async function getAchievements() {
-  return await db.select().from(achievements);
 }
 
 /**
