@@ -19,7 +19,7 @@ test.describe('Task Creation: NLP', () => {
     await expect(page.getByText('Task created')).toBeVisible();
 
     await page.goto('/upcoming');
-    await page.waitForLoadState('load');
+    await page.waitForLoadState('networkidle'); // Better wait for data fetch
 
     await waitForTask(page, 'Meeting');
 
