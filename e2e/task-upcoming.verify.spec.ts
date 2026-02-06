@@ -18,7 +18,8 @@ test.describe('Task Upcoming: Verify', () => {
             month: 'short',
             day: 'numeric',
         });
-        const dueLabel = page.getByText('Tomorrow').or(page.getByText(formattedTomorrow));
+        // Scope to badge to avoid matching date picker buttons
+        const dueLabel = page.locator('[data-slot="badge"]').getByText('Tomorrow').or(page.locator('[data-slot="badge"]').getByText(formattedTomorrow));
         await expect(dueLabel).toBeVisible({ timeout: 10000 });
         await taskInput.press('Enter');
         await expect(taskInput).toHaveValue('', { timeout: 10000 });

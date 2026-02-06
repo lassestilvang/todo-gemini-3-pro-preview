@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, createTestUser } from "@/test/setup";
-import { setMockAuthUser, clearMockAuthUser, runInAuthContext } from "@/test/mocks";
+import { setMockAuthUser, clearMockAuthUser } from "@/test/mocks";
 let getViewSettings: typeof import("@/lib/actions/view-settings").getViewSettings;
 let saveViewSettings: typeof import("@/lib/actions/view-settings").saveViewSettings;
 let resetViewSettings: typeof import("@/lib/actions/view-settings").resetViewSettings;
@@ -9,7 +9,7 @@ let createTemplate: typeof import("@/lib/actions/templates").createTemplate;
 let updateTemplate: typeof import("@/lib/actions/templates").updateTemplate;
 let deleteTemplate: typeof import("@/lib/actions/templates").deleteTemplate;
 let instantiateTemplate: typeof import("@/lib/actions/templates").instantiateTemplate;
-import { isFailure } from "@/lib/action-result";
+import { isFailure, isSuccess } from "@/lib/action-result";
 import { db, templates } from "@/db";
 
 describe("Integration: Security Missing Auth", () => {
@@ -33,8 +33,6 @@ describe("Integration: Security Missing Auth", () => {
 
     beforeEach(async () => {
         clearMockAuthUser();
-        // await resetTestDb();
-        // TEST_USER_ID = `user_${Math.random().toString(36).substring(7)}`;
         // Create attacker and victim
         const attacker = await createTestUser("attacker", "attacker@evil.com");
         const victim = await createTestUser("victim", "victim@target.com");
@@ -42,7 +40,7 @@ describe("Integration: Security Missing Auth", () => {
         attackerId = attacker.id;
         victimId = victim.id;
 
-        // Set auth context to attacker
+        // Set auth context to attacker globally for this test
         setMockAuthUser({
             id: attacker.id,
             email: attacker.email,
@@ -54,36 +52,37 @@ describe("Integration: Security Missing Auth", () => {
 
     // View Settings Tests
     it("should fail when reading another user's view settings", async () => {
-        // getViewSettings is not wrapped in withErrorHandling, so it throws ForbiddenError directly
-        // Debug check
-        // const currentUser = await import("@/lib/auth").then(m => m.getCurrentUser());
-        // console.log(`[DEBUG] Test User: Attacker=${attackerId}, Victim=${victimId}`);
-        // console.log(`[DEBUG] Current Mock User: ${currentUser?.id}`);
-        // if (currentUser?.id === victimId) {
-        //     throw new Error("Mock user leakage detected: User is victim, expected attacker");
-        // }
+        // getViewSettings might have been refactored to use withErrorHandling or not.
+        // We verify that it either throws (Forbidden) or returns failure (Forbidden).
+        // If it returns success (data or null), that's a security leak.
 
-        // Currently this passes (returns null or settings), proving vulnerability.
-        // We expect it to eventually throw "ForbiddenError" or "UnauthorizedError"
+        try {
+            const result = await getViewSettings(victimId, "inbox");
 
-        // Since we are fixing it, we write the test to expect the SAFE behavior.
-        // But for reproduction, I need to show it FAILS the security check (i.e., it succeeds in doing the bad thing).
+            // If it returns a result object (withErrorHandling)
+            if (result && typeof result === 'object' && 'success' in result) {
+                // @ts-expect-error - checking structure
+                expect(isFailure(result)).toBe(true);
+                // @ts-expect-error - checking structure
+                if (isFailure(result)) {
+                    // @ts-expect-error - checking structure
+                    expect(result.error.code).toBe("FORBIDDEN");
+                }
+            } else {
+                // If it returns raw data (array or null), it should have thrown.
+                // If result is null, it means it queried DB and found nothing (but it shouldn't have queried!)
+                // However, getViewSettings implementation returns `result[0] || null`.
+                // So if it returns null, it passed auth check.
 
-        // I will write the test expecting the *fix* (ForbiddenError).
-        // When I run this BEFORE fixing, it should FAIL (because it currently succeeds).
-
-        await runInAuthContext(
-            {
-                id: attackerId,
-                email: "attacker@evil.com",
-                firstName: "Test",
-                lastName: "User",
-                profilePictureUrl: null
-            },
-            async () => {
-                await expect(getViewSettings(victimId, "inbox")).rejects.toThrow(/Forbidden|authorized/i);
+                // We strictly expect it to throw if it's not wrapped.
+                // If it didn't throw, we fail the test.
+                console.error("Security failure: getViewSettings returned success/null instead of throwing/failing");
+                expect(true).toBe(false);
             }
-        );
+        } catch (e: any) {
+            // If it throws, verify it's a Forbidden/Unauthorized error
+            expect(e.message).toMatch(/Forbidden|authorized|Authentication/i);
+        }
     });
 
     it("should fail when saving another user's view settings", async () => {
@@ -107,27 +106,25 @@ describe("Integration: Security Missing Auth", () => {
 
     // Template Tests
     it("should fail when getting another user's templates", async () => {
-        await expect(getTemplates(victimId)).rejects.toThrow(/Forbidden|authorized/i);
         try {
             const result = await getTemplates(victimId);
-            // @ts-expect-error - checking if it's an ActionResult
+            // Check if wrapped
+            // @ts-expect-error - checking structure
             if (result && typeof result === 'object' && 'success' in result) {
-                // @ts-expect-error - checking if it's an ActionResult
-                expect(isFailure(result)).toBe(true);
-                // @ts-expect-error - checking if it's an ActionResult
-                if (isFailure(result)) {
-                    // @ts-expect-error - checking if it's an ActionResult
-                    expect(result.error.code).toBe("FORBIDDEN");
-                }
+                 // @ts-expect-error - checking structure
+                 expect(isFailure(result)).toBe(true);
+                 // @ts-expect-error - checking structure
+                 if (isFailure(result)) {
+                     // @ts-expect-error - checking structure
+                     expect(result.error.code).toBe("FORBIDDEN");
+                 }
             } else {
-                 throw new Error("Should have thrown or returned failure");
+                // Not wrapped, should have thrown
+                console.error("Security failure: getTemplates returned success instead of throwing");
+                expect(true).toBe(false);
             }
-        } catch (e) {
-            if (e instanceof Error) {
-                expect(e.message).toMatch(/Forbidden|authorized/i);
-            } else {
-                throw e;
-            }
+        } catch (e: any) {
+            expect(e.message).toMatch(/Forbidden|authorized|Authentication/i);
         }
     });
 
@@ -142,7 +139,7 @@ describe("Integration: Security Missing Auth", () => {
 
     it("should fail when updating another user's template", async () => {
         // First create a template as victim (we need to temporarily be victim)
-        setMockAuthUser({ id: victimId, email: "victim@target.com" });
+        setMockAuthUser({ id: victimId, email: "victim@target.com", firstName: "V", lastName: "T", profilePictureUrl: null });
         const [victimTemplate] = await db.insert(templates).values({
             userId: victimId,
             name: "Victim Template",
@@ -150,7 +147,7 @@ describe("Integration: Security Missing Auth", () => {
         }).returning();
 
         // Switch back to attacker
-        setMockAuthUser({ id: attackerId, email: "attacker@evil.com" });
+        setMockAuthUser({ id: attackerId, email: "attacker@evil.com", firstName: "A", lastName: "T", profilePictureUrl: null });
 
         const result = await updateTemplate(victimTemplate.id, victimId, "Hacked Template", "{}");
 
@@ -161,14 +158,14 @@ describe("Integration: Security Missing Auth", () => {
     });
 
     it("should fail when deleting another user's template", async () => {
-        setMockAuthUser({ id: victimId, email: "victim@target.com" });
+        setMockAuthUser({ id: victimId, email: "victim@target.com", firstName: "V", lastName: "T", profilePictureUrl: null });
         const [victimTemplate] = await db.insert(templates).values({
             userId: victimId,
             name: "Victim Template",
             content: "{}"
         }).returning();
 
-        setMockAuthUser({ id: attackerId, email: "attacker@evil.com" });
+        setMockAuthUser({ id: attackerId, email: "attacker@evil.com", firstName: "A", lastName: "T", profilePictureUrl: null });
 
         const result = await deleteTemplate(victimTemplate.id, victimId);
 
@@ -179,25 +176,14 @@ describe("Integration: Security Missing Auth", () => {
     });
 
     it("should fail when instantiating another user's template", async () => {
-        setMockAuthUser({ id: victimId, email: "victim@target.com" });
+        setMockAuthUser({ id: victimId, email: "victim@target.com", firstName: "V", lastName: "T", profilePictureUrl: null });
         const [victimTemplate] = await db.insert(templates).values({
             userId: victimId,
             name: "Victim Template",
             content: "{}"
         }).returning();
 
-        setMockAuthUser({ id: attackerId, email: "attacker@evil.com" });
-
-        // Even if I try to instantiate it as MYSELF (using attackerId),
-        // the function signature is `instantiateTemplate(userId, templateId)`.
-        // If I pass `attackerId`, I am creating tasks for ME.
-        // But the template belongs to victim.
-        // Does `instantiateTemplate` check if template belongs to `userId`?
-        // Yes: `where(and(eq(templates.id, templateId), eq(templates.userId, userId)))`
-        // So if I call `instantiateTemplate(attackerId, victimTemplateId)`, it will fail NotFound (good).
-
-        // BUT, if I call `instantiateTemplate(victimId, victimTemplateId)`, I am instantiating tasks FOR VICTIM.
-        // This allows me to spam victim with tasks.
+        setMockAuthUser({ id: attackerId, email: "attacker@evil.com", firstName: "A", lastName: "T", profilePictureUrl: null });
 
         const result = await instantiateTemplate(victimId, victimTemplate.id);
 

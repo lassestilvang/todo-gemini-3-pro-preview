@@ -14,6 +14,14 @@ test.describe('Task Creation: NLP', () => {
     await taskInput.fill(taskTitle);
     await taskInput.press('Enter');
 
+    // Verify task creation via toast first
+    await expect(page.getByText('Task created')).toBeVisible();
+
+    // Navigate to Upcoming view since the task is due tomorrow
+    await page.goto('/upcoming');
+    await page.waitForLoadState('load');
+
+    // Now wait for the task in the Upcoming list
     await waitForTask(page, 'Meeting');
 
     const taskItem = page.getByTestId('task-item').filter({ hasText: 'Meeting' });
