@@ -18,6 +18,7 @@ test.describe('Task Upcoming: Verify', () => {
             month: 'short',
             day: 'numeric',
         });
+        // Scope to badge to avoid strict mode violation with date picker buttons
         const dueLabel = page.locator('[data-slot="badge"]').filter({ hasText: new RegExp(`Tomorrow|${formattedTomorrow}`) }).first();
         await expect(dueLabel).toBeVisible({ timeout: 10000 });
         await taskInput.press('Enter');
