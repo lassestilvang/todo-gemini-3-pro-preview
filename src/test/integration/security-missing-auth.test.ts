@@ -106,6 +106,9 @@ describe("Integration: Security Missing Auth", () => {
 
     // Template Tests
     it("should fail when getting another user's templates", async () => {
+        // Ensure mock user is attacker
+        setMockAuthUser({ id: attackerId, email: "attacker@evil.com", firstName: "A", lastName: "T", profilePictureUrl: null });
+
         try {
             const result = await getTemplates(victimId);
             // Check if wrapped
@@ -129,6 +132,9 @@ describe("Integration: Security Missing Auth", () => {
     });
 
     it("should fail when creating a template for another user", async () => {
+        // Ensure mock user is attacker
+        setMockAuthUser({ id: attackerId, email: "attacker@evil.com", firstName: "A", lastName: "T", profilePictureUrl: null });
+
         const result = await createTemplate(victimId, "Evil Template", "{}");
 
         expect(isFailure(result)).toBe(true);

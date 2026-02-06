@@ -69,6 +69,6 @@ test.describe('Data Persistence: Import', () => {
         // Use a more specific selector for the task item to avoid false negatives
         // and retry finding it as it might be below the fold or loading
         const taskItem = page.getByTestId('task-item').filter({ hasText: taskName });
-        await expect(taskItem).toBeVisible({ timeout: 20000 });
+        await expect(taskItem.first()).toBeVisible({ timeout: 20000 });
     });
 });
