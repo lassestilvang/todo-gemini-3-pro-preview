@@ -9,7 +9,7 @@ import {
   isDevBypassEnabled,
   normalizeIp,
   signAuthBypassPayload,
-} from './src/lib/auth-bypass';
+} from '@/lib/auth-bypass';
 
 function testModeMiddleware(request: NextRequest) {
   const testSession = request.cookies.get('wos-session-test');
@@ -106,8 +106,4 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
   return workosMiddleware(request, event);
 }
 
-export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|manifest.json|icon-.*\\.png|.*\\.svg).*)',
-  ],
-};
+
