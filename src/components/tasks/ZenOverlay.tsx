@@ -172,7 +172,7 @@ export function ZenOverlay({ children }: { children: React.ReactNode }) {
                                         <Timer className="h-4 w-4 text-indigo-500" />
                                         Pomodoro
                                     </h3>
-                                    <Button variant="ghost" size="icon" onClick={() => setTimerOpen(false)} className="h-8 w-8 rounded-full" aria-label="Close timer panel">
+                                    <Button variant="ghost" size="icon" onClick={() => setTimerOpen(false)} className="h-8 w-8 rounded-full" aria-label="Close timer panel" title="Close timer panel">
                                         <ChevronRight className="h-4 w-4" />
                                     </Button>
                                 </div>
