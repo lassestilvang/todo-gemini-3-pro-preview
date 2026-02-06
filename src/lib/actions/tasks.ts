@@ -318,15 +318,20 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
 
     // Smart Tagging: If no list or labels provided, try to guess them
     if (!taskData.listId && finalLabelIds.length === 0 && taskData.title && taskData.userId) {
-      // Perf: fetch lists + labels in parallel to cut smart-tagging latency roughly in half.
-      const [allLists, allLabels] = await Promise.all([
-        getLists(taskData.userId),
-        getLabels(taskData.userId),
-      ]);
-      const suggestions = await suggestMetadata(taskData.title, allLists, allLabels);
+      try {
+        // Perf: fetch lists + labels in parallel to cut smart-tagging latency roughly in half.
+        const [allLists, allLabels] = await Promise.all([
+          getLists(taskData.userId),
+          getLabels(taskData.userId),
+        ]);
+        const suggestions = await suggestMetadata(taskData.title, allLists, allLabels);
 
-      if (suggestions.listId) taskData.listId = suggestions.listId;
-      if (suggestions.labelIds.length > 0) finalLabelIds = suggestions.labelIds;
+        if (suggestions.listId) taskData.listId = suggestions.listId;
+        if (suggestions.labelIds.length > 0) finalLabelIds = suggestions.labelIds;
+      } catch (error) {
+        // Silently fail smart tagging if AI service is unavailable
+        console.warn("Smart tagging failed:", error);
+      }
     }
 
     // Calculate position to ensure task is added to the top
@@ -358,12 +363,22 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
     if (!task) throw new Error("Failed to create task");
 
     if (finalLabelIds.length > 0) {
-      await db.insert(taskLabels).values(
-        finalLabelIds.map((labelId: number) => ({
-          taskId: task.id,
-          labelId,
-        }))
-      );
+      // Validate label ownership to prevent IDOR
+      const validLabels = await db
+        .select({ id: labels.id })
+        .from(labels)
+        .where(and(eq(labels.userId, taskData.userId), inArray(labels.id, finalLabelIds)));
+
+      const validLabelIds = validLabels.map((l) => l.id);
+
+      if (validLabelIds.length > 0) {
+        await db.insert(taskLabels).values(
+          validLabelIds.map((labelId: number) => ({
+            taskId: task.id,
+            labelId,
+          }))
+        );
+      }
     }
 
     await db.insert(taskLogs).values({
@@ -428,12 +443,22 @@ export async function updateTask(
     // Replace labels
     await db.delete(taskLabels).where(eq(taskLabels.taskId, id));
     if (labelIds.length > 0) {
-      await db.insert(taskLabels).values(
-        labelIds.map((labelId: number) => ({
-          taskId: id,
-          labelId,
-        }))
-      );
+      // Validate label ownership to prevent IDOR
+      const validLabels = await db
+        .select({ id: labels.id })
+        .from(labels)
+        .where(and(eq(labels.userId, userId), inArray(labels.id, labelIds)));
+
+      const validLabelIds = validLabels.map((l) => l.id);
+
+      if (validLabelIds.length > 0) {
+        await db.insert(taskLabels).values(
+          validLabelIds.map((labelId: number) => ({
+            taskId: id,
+            labelId,
+          }))
+        );
+      }
     }
   }
 

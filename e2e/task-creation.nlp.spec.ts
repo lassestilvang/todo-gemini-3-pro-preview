@@ -17,6 +17,15 @@ test.describe('Task Creation: NLP', () => {
 
     // Ensure the input is cleared to confirm submission
     await expect(taskInput).toHaveValue('', { timeout: 10000 });
+    
+    // Task with "tomorrow" will be in Upcoming, not Today.
+    // Wait for the "Task created" toast or check the Upcoming view.
+    await expect(page.getByText('Task created')).toBeVisible();
+
+    await page.goto('/upcoming');
+    await page.waitForLoadState('networkidle'); // Better wait for data fetch
+
+    await waitForTask(page, 'Meeting');
 
     await waitForTask(page, `Meeting tomorrow ${uniqueId}`);
 

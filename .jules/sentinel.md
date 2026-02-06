@@ -62,3 +62,8 @@
 **Vulnerability:** `views.ts` server actions (`getSavedViews`, etc.) accepted `userId` but failed to validate it against the authenticated session, allowing users to manipulate other users' saved views.
 **Learning:** Even lower-priority features like "Saved Views" expose critical data. Consistency in security checks across ALL modules is vital.
 **Prevention:** Added `requireUser` checks to `views.ts`. Added `views.security.test.ts`.
+
+## 2026-02-12 - [Critical] IDOR in Task Label Assignment
+**Vulnerability:** `createTask` and `updateTask` allowed linking arbitrary label IDs to a task without verifying ownership. This allowed attackers to enumerate and view details (name, color, icon) of other users' labels by linking them to their own tasks.
+**Learning:** Checking `requireUser(userId)` protects the main entity (Task) but not related entities (Labels) referenced by ID. Relational data integrity must be enforced explicitly.
+**Prevention:** Validate ownership of ALL foreign keys/related IDs passed from the client before inserting into junction tables. Filter or reject invalid IDs.
