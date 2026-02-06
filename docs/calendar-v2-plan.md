@@ -1,7 +1,7 @@
-# Calendar V2 — Implementation Plan
+# Calendar V2 — Implementation Plan (Revised)
 
-> **Route:** `/calendar2`  
-> **Library:** [FullCalendar v7](https://fullcalendar.io) with native shadcn integration  
+> **Route:** `/calendar2` (beta)  \
+> **Library:** FullCalendar v7  \
 > **Goal:** Replace the current read-only month grid with a best-in-class interactive calendar rivaling Google Calendar and Fantastical
 
 ---
@@ -19,7 +19,7 @@
 9. [Theme & Dark Mode Integration](#9-theme--dark-mode-integration)
 10. [Performance Strategy](#10-performance-strategy)
 11. [Recurring Tasks](#11-recurring-tasks)
-12. [Server Actions](#12-server-actions)
+12. [Server Actions & Offline Sync](#12-server-actions--offline-sync)
 13. [Mobile & Responsive Design](#13-mobile--responsive-design)
 14. [Testing Strategy](#14-testing-strategy)
 15. [File Structure](#15-file-structure)
@@ -40,7 +40,9 @@ The current calendar (`/calendar`) is a custom month-only grid with no interacti
 - **Filter** by priority, labels, energy level, and context
 - **Navigate** with keyboard shortcuts for power users
 
-The shadcn integration means every button, popover, and surface automatically inherits the app's design system — including glassmorphism, synthwave, and performance themes.
+**Route strategy:** `/calendar2` is a beta route. The existing `/calendar` remains untouched for now.
+
+**Time semantics:** timestamps are stored without timezone in the DB. For display, FullCalendar renders in the user’s local timezone. A due date at midnight is treated as **all-day**.
 
 ---
 
@@ -91,38 +93,28 @@ src/app/calendar2/page.tsx              (RSC — auth, fetch lists)
 
 ## 3. Installation & Setup
 
-### 3.1 Install FullCalendar v7 via shadcn Registry
+### 3.1 Required FullCalendar Packages
 
-The shadcn integration is the recommended approach — it generates components that inherit the app's design tokens automatically.
-
-```bash
-# Add the FullCalendar shadcn registry to components.json
-# Then install the event calendar component
-npx shadcn@latest add @fullcalendar-monarch/event-calendar
-```
-
-This will scaffold:
-- `src/components/event-calendar.tsx` — A pre-configured FullCalendar component
-- `src/components/event-calendar-demo.tsx` — Demo (delete after setup)
-
-The Monarch flavor aligns well with shadcn's `new-york` style.
-
-### 3.2 Additional Dependencies
+Install FullCalendar core and plugins explicitly:
 
 ```bash
-bun add temporal-polyfill    # Required peer dependency for FC v7
-bun add rrule                # For recurring task expansion (if not already present)
+bun add @fullcalendar/core @fullcalendar/react @fullcalendar/daygrid @fullcalendar/timegrid @fullcalendar/list @fullcalendar/interaction
 ```
 
-### 3.3 Update `components.json`
+### 3.2 CSS Imports
 
-```jsonc
-{
-  "registries": {
-    "@fullcalendar-monarch": "https://shadcn-registry.fullcalendar.io/monarch/{name}.json"
-  }
-}
+Import FullCalendar styles in the calendar bundle (or a calendar CSS module):
+
+```ts
+import "@fullcalendar/core/index.css";
+import "@fullcalendar/daygrid/index.css";
+import "@fullcalendar/timegrid/index.css";
+import "@fullcalendar/list/index.css";
 ```
+
+### 3.3 Optional shadcn Registry
+
+If the shadcn registry works well for the team, it can be used as a scaffold. Otherwise, use manual integration and map shadcn CSS variables.
 
 ---
 
@@ -130,7 +122,7 @@ bun add rrule                # For recurring task expansion (if not already pres
 
 ### 4.1 Mapping Function
 
-A pure function that converts the app's `Task` type into FullCalendar's `EventInput`:
+A pure function that converts the app’s `Task` type into FullCalendar’s `EventInput`:
 
 ```typescript
 // src/components/calendar2/utils/task-to-event.ts
@@ -138,19 +130,25 @@ A pure function that converts the app's `Task` type into FullCalendar's `EventIn
 import type { Task } from "@/lib/types";
 import type { EventInput } from "@fullcalendar/react";
 
-export function taskToEvent(task: Task): EventInput | null {
-  if (!task.dueDate) return null;
+function normalizeDate(value: Date | string | null): Date | null {
+  if (!value) return null;
+  return value instanceof Date ? value : new Date(value);
+}
 
-  const hasTime = hasTimeComponent(task.dueDate);
-  const isAllDay = !hasTime;
+function hasTimeComponent(date: Date): boolean {
+  return date.getHours() !== 0 || date.getMinutes() !== 0 || date.getSeconds() !== 0;
+}
+
+export function taskToEvent(task: Task): EventInput | null {
+  const dueDate = normalizeDate(task.dueDate);
+  if (!dueDate) return null;
+
+  const isAllDay = !hasTimeComponent(dueDate);
 
   return {
     id: `task:${task.id}`,
     title: task.icon ? `${task.icon} ${task.title}` : task.title,
-    start: task.dueDate,
-    end: hasTime && task.estimateMinutes
-      ? addMinutes(task.dueDate, task.estimateMinutes)
-      : undefined,
+    start: dueDate,
     allDay: isAllDay,
     backgroundColor: task.listColor || undefined,
     borderColor: task.listColor || undefined,
@@ -160,7 +158,7 @@ export function taskToEvent(task: Task): EventInput | null {
     ].filter(Boolean),
     extendedProps: {
       taskId: task.id,
-      listId: task.listId,
+      listId: task.listId, // null = Inbox
       listName: task.listName,
       listColor: task.listColor,
       listIcon: task.listIcon,
@@ -174,6 +172,7 @@ export function taskToEvent(task: Task): EventInput | null {
       isRecurring: task.isRecurring,
       recurringRule: task.recurringRule,
       description: task.description,
+      updatedAt: task.updatedAt,
     },
   };
 }
@@ -183,18 +182,18 @@ export function taskToEvent(task: Task): EventInput | null {
 
 | Scenario | Behavior |
 |----------|----------|
-| Task has dueDate with time + estimateMinutes | Timed event with visible duration block |
-| Task has dueDate with time, no estimate | Timed event, default 30min duration |
+| Task has dueDate with time + estimateMinutes | Timed event with duration block |
+| Task has dueDate with time, no estimate | Timed event with default duration (via `defaultTimedEventDuration`) |
 | Task has dueDate (date-only, midnight) | All-day event in month/week header |
-| Task has no dueDate | Not shown on calendar; appears in "Unscheduled" tray |
+| Task has no dueDate | Not shown on calendar; appears in Unscheduled tray |
 | Task is completed | Shown with reduced opacity + strikethrough, toggleable via filter |
 | Task has deadline | Small deadline indicator (⚠️) on event chip |
 
 ### 4.3 Time Zone Rule
 
-- Dates stored as UTC timestamps in the database
-- FullCalendar renders in the user's local timezone by default
-- "Date-only" detection: if hours/minutes/seconds are all 0, treat as all-day
+- Dates are stored as DB timestamps without timezone.
+- FullCalendar renders in the user’s local timezone.
+- “Date-only” detection: if hours/minutes/seconds are all 0, treat as all-day.
 
 ---
 
@@ -202,17 +201,16 @@ export function taskToEvent(task: Task): EventInput | null {
 
 ### 5.1 Concept
 
-Each **List** in the app maps to a separate "calendar" with its own color and toggle. This mirrors Google Calendar's multi-calendar model.
+Each **List** in the app maps to a separate "calendar" with its own color and toggle. This mirrors Google Calendar’s multi-calendar model.
 
 ### 5.2 Event Sources
 
-Instead of passing a flat `events` array, use FullCalendar's `eventSources` — one per list plus one for "No List" (Inbox) tasks:
+Use FullCalendar’s `eventSources` — one per list plus one for Inbox (`listId: null`). Visible lists are stored as a list of list IDs plus a `null` sentinel.
 
 ```typescript
 const eventSources = useMemo(() => {
   const sources: EventSourceInput[] = [];
 
-  // One source per visible list
   for (const list of lists) {
     if (!visibleListIds.has(list.id)) continue;
     sources.push({
@@ -223,7 +221,7 @@ const eventSources = useMemo(() => {
   }
 
   // Inbox (tasks with no list)
-  if (visibleListIds.has(0)) {
+  if (visibleListIds.has(null)) {
     sources.push({
       id: "list:inbox",
       events: getEventsForList(null, filters),
@@ -237,13 +235,12 @@ const eventSources = useMemo(() => {
 
 ### 5.3 List Toggle UI
 
-In the Calendar Sidebar, render each list with:
-- A **colored checkbox** (matching list color)
-- The **list icon** and **name**
-- A **task count** badge
-- An "**All on/off**" master toggle at the top
+- Colored checkbox (matching list color)
+- List icon + name
+- Task count badge
+- “All on/off” master toggle
 
-Toggling a list instantly shows/hides its events on the calendar.
+**Note:** Dragging across list sources is not supported directly (requires FullCalendar Resources). Use the context menu “Move to List” instead.
 
 ---
 
@@ -251,52 +248,47 @@ Toggling a list instantly shows/hides its events on the calendar.
 
 ### 6.1 Drag-and-Drop Rescheduling
 
+Use offline-first dispatch via `SyncProvider`:
+
 ```typescript
-const handleEventDrop = async (info: EventDropArg) => {
+const handleEventDrop = (info: EventDropArg) => {
   const taskId = info.event.extendedProps.taskId;
   const newDueDate = info.event.start;
-  const wasAllDay = info.oldEvent.allDay;
-  const isNowAllDay = info.event.allDay;
 
   // Optimistic update in Zustand store
-  taskStore.updateTask(taskId, { dueDate: newDueDate });
-
-  const result = await updateTaskSchedule(taskId, userId, {
+  useTaskStore.getState().upsertTask({
+    ...task,
     dueDate: newDueDate,
   });
 
-  if (!result.success) {
-    info.revert(); // FullCalendar reverts the visual change
-    toast.error("Failed to reschedule task");
-  } else {
-    toast.success("Task rescheduled");
-  }
+  // Queue update via sync provider
+  dispatch("updateTask", taskId, userId, {
+    dueDate: newDueDate,
+    expectedUpdatedAt: info.event.extendedProps.updatedAt ?? null,
+  });
 };
 ```
 
-**Edge cases handled:**
-- Month → Month (date change only, stay all-day)
-- Month → Week/Day time slot (gains specific time)
-- Week/Day → Month (becomes all-day)
-- Cross-list drag: also update `listId` if dropped on a different calendar source
+**Conflict behavior:** If a conflict occurs, SyncProvider surfaces a conflict dialog; do not immediately revert the UI. (Optional: show a “pending sync” toast.)
 
 ### 6.2 Resize to Change Duration
 
 ```typescript
-const handleEventResize = async (info: EventResizeArg) => {
+const handleEventResize = (info: EventResizeArg) => {
   const taskId = info.event.extendedProps.taskId;
   const start = info.event.start!;
   const end = info.event.end!;
   const estimateMinutes = Math.round((end.getTime() - start.getTime()) / 60000);
 
-  taskStore.updateTask(taskId, { estimateMinutes });
+  useTaskStore.getState().upsertTask({
+    ...task,
+    estimateMinutes,
+  });
 
-  const result = await updateTaskSchedule(taskId, userId, { estimateMinutes });
-
-  if (!result.success) {
-    info.revert();
-    toast.error("Failed to update duration");
-  }
+  dispatch("updateTask", taskId, userId, {
+    estimateMinutes,
+    expectedUpdatedAt: info.event.extendedProps.updatedAt ?? null,
+  });
 };
 ```
 
@@ -304,41 +296,17 @@ const handleEventResize = async (info: EventResizeArg) => {
 
 **Month view — `dateClick`:**
 - Opens `CalendarQuickCreateDialog` with dueDate prefilled (all-day)
-- User enters title, optionally picks list/priority
-- Submit creates task and it appears on calendar
 
 **Week/Day view — `select` (drag to create):**
-- User drags across a time range
 - Opens `CalendarQuickCreateDialog` with:
   - `dueDate` = selection start
   - `estimateMinutes` = selection duration
-- Provides a richer creation experience with time already set
 
 ### 6.4 Event Click → Detail Panel
 
-```typescript
-const handleEventClick = (info: EventClickArg) => {
-  const taskId = info.event.extendedProps.taskId;
-  setSelectedTaskId(taskId);
-  setDetailPanelOpen(true);
-};
-```
-
-The detail panel shows:
-- Task title (editable inline)
-- Completion checkbox
-- Due date & time picker
-- Duration/estimate
-- List selector
-- Priority selector
-- Labels
-- Description (expandable)
-- "Open full details" link to TaskDialog
-- Delete button
+Selecting an event opens the task detail panel with quick edit (title, due date/time, list, priority, labels, estimate, completion, delete).
 
 ### 6.5 Right-Click Context Menu
-
-Using shadcn's `ContextMenu` component on calendar events:
 
 | Action | Description |
 |--------|-------------|
@@ -356,128 +324,101 @@ Using shadcn's `ContextMenu` component on calendar events:
 
 ### 7.1 Mini Month Navigator
 
-A small month grid in the calendar sidebar. Clicking a day calls `calendarApi.gotoDate(date)`. The current view's date range is highlighted, providing spatial awareness of which dates are visible.
+Use existing `Calendar` UI primitive (`react-day-picker`). Clicking a day calls `calendarApi.gotoDate(date)`.
 
-Uses the existing `Calendar` UI primitive from `src/components/ui/calendar.tsx` (react-day-picker) — already respects `weekStartsOn` user preference.
+### 7.2 Unscheduled Tasks Tray
 
-### 7.2 Unscheduled Tasks Tray (Power Feature)
+- Shows tasks **without dueDate**
+- Drag from tray → calendar to schedule
+- Filtered by list visibility
 
-A collapsible section at the bottom of the calendar sidebar showing tasks **without a dueDate**:
-
-- Displays as a compact scrollable list with priority colors
-- **Drag from tray → calendar** to schedule a task (sets dueDate)
-- Filter by list (only show tasks from visible lists)
-- Count badge shows number of unscheduled tasks
-
-This is a standout feature that bridges the gap between task management and calendar scheduling — most todo apps lack this.
-
-**Implementation:** Use FullCalendar's [External Dragging](https://fullcalendar.io/docs/external-dragging) API with `Draggable` from the interaction plugin.
+Implementation uses FullCalendar’s `Draggable` from the interaction plugin.
 
 ### 7.3 Keyboard Shortcuts
+
+Scope to the calendar page/container to avoid global conflicts. Avoid `?` and `Shift+C`.
 
 | Key | Action |
 |-----|--------|
 | `T` | Jump to today |
-| `←` / `→` | Navigate prev / next period |
-| `M` | Switch to month view |
-| `W` | Switch to week view |
-| `D` | Switch to day view |
-| `A` | Switch to agenda (list) view |
+| `[` / `]` | Prev / next period |
+| `M` | Month view |
+| `W` | Week view |
+| `D` | Day view |
+| `A` | Agenda (list) view |
 | `N` | Open quick create dialog |
-| `Esc` | Close detail panel / dialog |
-| `F` | Toggle filter sidebar |
-| `?` | Show keyboard shortcut help |
-
-Scoped to the calendar page via a `useEffect` key listener that checks `document.activeElement` to avoid conflicts with input fields.
+| `Esc` | Close panel / dialog |
 
 ### 7.4 Agenda/List View
 
-FullCalendar v7 includes a `listWeek` / `listMonth` plugin that renders events as a vertical scrollable agenda. This is:
-- The **default on mobile** (replacing the dense grid)
-- Available as a 4th view option in the toolbar
-- Shows events grouped by day with full task details
+Use `listWeek` (or `listMonth`) plugin:
+- Default on mobile
+- Accessible in toolbar on desktop
 
 ### 7.5 Today Indicator & Now Line
 
-- In week/day views: a red horizontal line showing the current time
-- Auto-scrolls to "now" when switching to week/day view
-- The "Today" button in the toolbar gets a subtle badge/dot when viewing a different date range
+- Now line in week/day views
+- Auto-scroll to “now” when switching to week/day
+- “Today” button gets a subtle badge when off-range
 
 ### 7.6 Smart Event Colors
 
-Events inherit their **list color** as the primary color, with visual modifiers:
+Events inherit list color and apply modifiers:
+- Priority border accents
+- Completed = muted + strikethrough
+- Deadline/overdue indicators
+- Recurring badge (🔄)
 
-| State | Visual Treatment |
-|-------|-----------------|
-| Incomplete, no priority | List color at full opacity |
-| Incomplete, high priority | List color + red left border accent |
-| Incomplete, medium priority | List color + yellow left border accent |
-| Incomplete, low priority | List color + blue left border accent |
-| Completed | Muted/gray, reduced opacity, strikethrough title |
-| Has deadline approaching | Small ⚠️ icon in event chip |
-| Overdue | Red background tint |
-| Recurring | Small 🔄 icon |
+### 7.7 Quick Add From Toolbar
 
-### 7.7 Quick Add from Toolbar
-
-A persistent "+" button in the calendar toolbar for creating tasks without clicking a time slot. Opens a minimal form:
-- Title (autofocus, press Enter to save)
-- Date defaults to the currently viewed date
-- List defaults to Inbox
+A persistent “+” button opens a minimal task form with date defaulted to the currently viewed date.
 
 ---
 
 ## 8. Calendar Settings & Persistence
 
-### 8.1 Calendar-Specific Settings
+### 8.1 Persisted Settings (View Settings Columns)
 
-Extend the existing `ViewSettings` system using `getViewId("calendar2")`:
+Add explicit calendar columns to `view_settings`:
 
-```typescript
-interface CalendarViewSettings {
-  // Calendar-specific
-  viewType: "dayGridMonth" | "timeGridWeek" | "timeGridDay" | "listWeek";
-  visibleListIds: number[]; // Which lists/calendars are shown
-  showWeekends: boolean;
-  showCompletedTasks: boolean;
-  slotMinTime: string;      // e.g., "06:00:00"
-  slotMaxTime: string;      // e.g., "22:00:00"
-  slotDuration: string;     // e.g., "00:30:00" or "01:00:00"
-  sidebarCollapsed: boolean;
-  detailPanelCollapsed: boolean;
+- `calendar_view_type` (text) — `dayGridMonth` | `timeGridWeek` | `timeGridDay` | `listWeek`
+- `calendar_visible_list_ids` (text) — JSON array of list IDs, include `null` for Inbox
+- `calendar_show_weekends` (boolean)
+- `calendar_slot_min_time` (text, e.g., `"06:00:00"`)
+- `calendar_slot_max_time` (text, e.g., `"22:00:00"`)
+- `calendar_slot_duration` (text, e.g., `"00:30:00"`)
+- `calendar_sidebar_collapsed` (boolean)
+- `calendar_detail_panel_collapsed` (boolean)
 
-  // Filters
-  filterPriority: string | null;
-  filterLabelId: number | null;
-  filterEnergyLevel: string | null;
-  filterContext: string | null;
-}
-```
+Update:
+- `src/db/schema.ts`
+- `src/db/schema-sqlite.ts`
+- `src/lib/actions/view-settings.ts` (`ViewSettingsConfig`)
+- `src/lib/view-settings.ts` (mapping defaults)
 
-### 8.2 Persistence Approach
+### 8.2 Defaults
 
-Store as a JSON string in the existing `view_settings` table using the `calendarSettings` field pattern:
-
-- **View ID:** `"calendar2"`
-- **On change:** Debounced save (500ms) to avoid excessive writes during rapid navigation
-- **Default settings:** Month view, all lists visible, weekends shown, completed tasks hidden, 06:00–22:00 time range
+- View: Month
+- All lists visible (including Inbox)
+- Weekends shown
+- Completed tasks hidden (`showCompleted = false` for calendar view only)
+- Time range: 06:00–22:00
+- Slot duration: 30 minutes
 
 ### 8.3 Settings UI
 
-A settings popover in the calendar toolbar (gear icon) with:
+A toolbar settings popover with:
 - Show weekends toggle
 - Show completed tasks toggle
-- Time range slider (business hours start/end)
-- Slot duration selector (15m / 30m / 1h)
-- Reset to defaults button
+- Time range slider
+- Slot duration selector
+- Reset to defaults
 
 ---
 
 ## 9. Theme & Dark Mode Integration
 
-### 9.1 Dark Mode
-
-FullCalendar v7 supports dark mode via `data-color-scheme="dark"` attribute. Wrap the calendar container:
+Use `data-color-scheme` and rely on CSS variables:
 
 ```tsx
 <div data-color-scheme={resolvedTheme === "dark" ? "dark" : "light"}>
@@ -485,193 +426,67 @@ FullCalendar v7 supports dark mode via `data-color-scheme="dark"` attribute. Wra
 </div>
 ```
 
-The shadcn integration automatically maps `--background`, `--foreground`, `--primary`, etc. to FullCalendar's internal variables.
-
-### 9.2 Theme-Specific Handling
-
-| Theme | Calendar Behavior |
-|-------|-------------------|
-| Light / Dark | Standard shadcn color inheritance |
-| Glassmorphism | Semi-transparent calendar background; `backdrop-blur` on the container |
-| Synthwave | Calendar surfaces use synthwave color tokens; neon accent on today/events |
-| Performance | Disable all FullCalendar transitions; set `rerenderDelay: 0`; skip animation classes |
-
-### 9.3 Custom Event Styling
-
-Use `eventContent` to render a custom React component for each event, styled with Tailwind classes that respect CSS variables:
-
-```tsx
-function CalendarEventContent({ event, timeText }: EventContentArg) {
-  const { priority, isCompleted, listColor } = event.extendedProps;
-
-  return (
-    <div className={cn(
-      "flex items-center gap-1 px-1 py-0.5 text-xs truncate rounded",
-      isCompleted && "opacity-50 line-through"
-    )}>
-      {timeText && <span className="font-medium">{timeText}</span>}
-      <span className="truncate">{event.title}</span>
-    </div>
-  );
-}
-```
+Map FullCalendar variables to existing shadcn tokens in `globals.css` to preserve glassmorphism/synthwave themes.
 
 ---
 
 ## 10. Performance Strategy
 
-### 10.1 Range-Based Event Loading
+### 10.1 Client-Side Range Filtering (Initial)
 
-Do NOT pass all tasks to FullCalendar. Use the `events` function callback per event source to filter by the visible date range:
-
-```typescript
-events: (fetchInfo, successCallback) => {
-  const filtered = tasks.filter(task =>
-    task.dueDate &&
-    task.dueDate >= fetchInfo.start &&
-    task.dueDate < fetchInfo.end &&
-    task.listId === listId
-  );
-  successCallback(filtered.map(taskToEvent));
-}
-```
+The app already loads tasks into the client store (`DataLoader`), so filter tasks by date range on the client.
 
 ### 10.2 Memoization
 
-- Memoize event sources by `(visibleListIds, filters, taskStoreVersion)`
-- Memoize the `taskToEvent` mapping with a `useMemo` that depends on the task store snapshot
-- Use `React.memo` on the event content renderer
+- Memoize event sources
+- Memoize task-to-event mapping
+- Use `React.memo` for event content renderer
 
 ### 10.3 Large Dataset Optimizations
 
-| Technique | Benefit |
-|-----------|---------|
-| `dayMaxEvents: 4` with "+N more" popover | Prevents rendering 100+ events on a single day cell |
-| `eventDisplay: "block"` in month view | Simpler rendering than `"auto"` |
-| Native `title` tooltips on dense days | Avoid mounting shadcn `Tooltip` per event |
-| `lazyFetching: true` | Only refetch when the view date range changes |
-| Debounced filter changes | Avoid re-rendering on every keystroke |
-
-### 10.4 Dynamic Import
-
-Load FullCalendar client-side only (it needs DOM):
-
-```typescript
-const Calendar2Client = dynamic(
-  () => import("@/components/calendar2/Calendar2Client"),
-  { ssr: false, loading: () => <CalendarSkeleton /> }
-);
-```
+- `dayMaxEvents: 4`
+- `eventDisplay: "block"` in month view
+- native `title` tooltips for dense days
+- debounced filters
 
 ---
 
 ## 11. Recurring Tasks
 
-### 11.1 V1 Approach: Read-Only Expansion
+### 11.1 V1: Read-Only Expansion
 
-For the initial release, handle recurring tasks as **display-only expanded occurrences**:
-
-1. Parse `recurringRule` (RRule string) using the `rrule` library
-2. Expand occurrences within the visible date range
-3. Render each occurrence as an event with a 🔄 badge
-4. Each occurrence links back to the parent task
+- Parse `recurringRule` with `rrule`
+- Expand occurrences within visible range
+- Each occurrence gets a unique ID: `task:${id}:${occurrenceISO}`
+- Use `groupId: task:${id}` to link series
 
 ### 11.2 Interaction Restrictions
 
-- **Drag/resize recurring events:** Disabled with a tooltip: "Editing individual occurrences of recurring tasks is not yet supported. Edit the task directly to change the schedule."
-- **Click:** Opens the parent task in the detail panel with the recurring rule displayed
-- **Context menu:** Limited to "Open Task" and "Mark Complete" (for the specific occurrence)
-
-### 11.3 Future: Exception Model (V2)
-
-If/when needed, add a `task_recurrence_exceptions` table:
-```sql
-CREATE TABLE task_recurrence_exceptions (
-  id SERIAL PRIMARY KEY,
-  task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
-  original_date TIMESTAMP NOT NULL,
-  new_date TIMESTAMP,
-  is_cancelled BOOLEAN DEFAULT false,
-  override_title TEXT,
-  override_estimate INTEGER
-);
-```
-
-This allows editing or deleting individual occurrences without modifying the base rule.
+- Disable drag/resize for recurring occurrences
+- Context menu: “Open Task” only (no per-occurrence completion in V1)
 
 ---
 
-## 12. Server Actions
+## 12. Server Actions & Offline Sync
 
-### 12.1 New Action: `updateTaskSchedule`
+Calendar interactions should use existing actions through `SyncProvider`:
 
-A lightweight, focused action optimized for calendar drag/drop operations:
+- `createTask`
+- `updateTask`
+- `toggleTaskCompletion`
+- `deleteTask`
 
-```typescript
-// src/lib/actions/tasks.ts
-"use server";
-
-export async function updateTaskSchedule(
-  taskId: number,
-  userId: string,
-  data: {
-    dueDate?: Date | null;
-    estimateMinutes?: number | null;
-    listId?: number | null;
-  }
-): Promise<ActionResult<void>> {
-  // 1. Verify task ownership
-  // 2. Validate listId belongs to user (if provided)
-  // 3. Validate estimateMinutes bounds (0–1440)
-  // 4. Update only provided fields + updatedAt
-  // 5. Revalidate paths
-}
-```
-
-### 12.2 Existing Actions (No Changes Needed)
-
-| Action | Usage in Calendar |
-|--------|-------------------|
-| `createTask` | Click-to-create with dueDate, estimateMinutes, listId |
-| `updateTask` | Full edits from the detail panel |
-| `updateTaskSafe` | Safe wrapper for client-side mutations |
-| `toggleTaskComplete` | Completion checkbox in detail panel & context menu |
-| `deleteTask` | Delete from context menu |
-
-### 12.3 Optimistic Updates Pattern
-
-All calendar interactions follow this pattern:
-
-1. **Immediate visual feedback** — FullCalendar updates the event position
-2. **Zustand store update** — Local state reflects the change
-3. **Server action call** — Persist to database
-4. **On failure** — Call `info.revert()` + revert Zustand + show error toast
+If a future lightweight `updateTaskSchedule` is added, it must be registered in `src/lib/sync/registry.ts` and used via `dispatch` to preserve offline behavior.
 
 ---
 
 ## 13. Mobile & Responsive Design
 
-### 13.1 Layout Breakpoints
-
 | Breakpoint | Layout |
-|------------|--------|
-| Desktop (≥1024px) | Full 3-pane: sidebar + calendar + detail panel |
-| Tablet (768–1023px) | 2-pane: calendar + sidebar as overlay Sheet |
-| Mobile (<768px) | Single pane: agenda/list view default; sidebar via hamburger |
-
-### 13.2 Mobile-Specific Behaviors
-
-- **Default view:** `listWeek` (agenda) instead of month grid
-- **Event tap:** Opens a bottom Sheet with task details (not a side panel)
-- **Create:** FAB (floating action button) for quick task creation
-- **Navigation:** Swipe left/right for prev/next (FullCalendar supports touch)
-- **Calendar sidebar:** Full-screen overlay triggered by filter icon
-
-### 13.3 Touch Interactions
-
-- **Long-press to drag** (native FullCalendar behavior on touch)
-- **Tap** to view details
-- **Pinch-to-zoom** time slots in week/day view (if supported by FC v7)
+|-----------|--------|
+| Desktop (≥1024px) | 3-pane layout |
+| Tablet (768–1023px) | Calendar + sidebar overlay sheet |
+| Mobile (<768px) | Agenda view default; details open in bottom sheet |
 
 ---
 
@@ -679,39 +494,26 @@ All calendar interactions follow this pattern:
 
 ### 14.1 Unit Tests
 
-```
-src/components/calendar2/utils/task-to-event.test.ts
-```
-
-- Test all mapping scenarios (with/without time, with/without estimate, completed, overdue, recurring)
-- Test filter logic for list visibility and priority filters
-- Test settings serialization/deserialization
+- Task → event mapping
+- Settings serialization/deserialization
+- Recurring expansion logic
 
 ### 14.2 Integration Tests
 
-```
-src/test/integration/calendar-schedule.test.ts
-```
-
-- `updateTaskSchedule` action: verify dueDate/estimateMinutes updates
-- Authorization: user cannot reschedule another user's tasks
-- Validation: estimateMinutes bounds, invalid listId
+- Update task via drag/resize (through `updateTask`)
+- Authorization enforcement
+- Invalid list ID handling
 
 ### 14.3 E2E Tests
 
-```
-e2e/calendar-v2.spec.ts
-```
+- View switching
+- Event render
+- Drag-and-drop
+- Click-to-create
+- List toggle filtering
+- Mobile agenda default
 
-| Test | Description |
-|------|-------------|
-| Navigation | Month/Week/Day/Agenda view switching |
-| Event display | Tasks with due dates appear on correct days |
-| Drag-and-drop | Reschedule a task by dragging to a new date |
-| Click-to-create | Create a task by clicking a date |
-| List toggles | Hiding a list removes its events |
-| Completion | Toggle task completion from calendar |
-| Responsive | Agenda view on mobile viewport |
+**Note:** FullCalendar components may need test mocks (Bun + happy-dom).
 
 ---
 
@@ -721,97 +523,86 @@ e2e/calendar-v2.spec.ts
 src/
 ├── app/
 │   └── calendar2/
-│       └── page.tsx                         # RSC entry point
+│       └── page.tsx
 │
 ├── components/
 │   └── calendar2/
-│       ├── Calendar2Client.tsx              # Main client component
-│       ├── CalendarMain.tsx                 # FullCalendar wrapper
-│       ├── CalendarToolbar.tsx              # Custom toolbar (views, nav, settings)
-│       ├── CalendarEventContent.tsx         # Custom event renderer
-│       ├── CalendarSidebar.tsx              # Left sidebar container
+│       ├── Calendar2Client.tsx
+│       ├── CalendarMain.tsx
+│       ├── CalendarToolbar.tsx
+│       ├── CalendarEventContent.tsx
+│       ├── CalendarSidebar.tsx
 │       │
 │       ├── sidebar/
-│       │   ├── MiniMonthPicker.tsx          # Jump-to-date mini calendar
-│       │   ├── CalendarListToggles.tsx      # List visibility checkboxes
-│       │   ├── CalendarFilters.tsx          # Priority, label, energy filters
-│       │   └── UnscheduledTasksTray.tsx     # Drag-to-schedule tray
+│       │   ├── MiniMonthPicker.tsx
+│       │   ├── CalendarListToggles.tsx
+│       │   ├── CalendarFilters.tsx
+│       │   └── UnscheduledTasksTray.tsx
 │       │
-│       ├── CalendarDetailPanel.tsx          # Right panel for task details
-│       ├── CalendarQuickCreateDialog.tsx    # Task creation from time slot
-│       ├── CalendarContextMenu.tsx          # Right-click menu
-│       ├── CalendarSettingsPopover.tsx      # Gear icon settings
+│       ├── CalendarDetailPanel.tsx
+│       ├── CalendarQuickCreateDialog.tsx
+│       ├── CalendarContextMenu.tsx
+│       ├── CalendarSettingsPopover.tsx
 │       │
 │       └── utils/
-│           ├── task-to-event.ts             # Task → EventInput mapping
-│           ├── task-to-event.test.ts        # Unit tests
-│           ├── calendar-settings.ts         # Settings type & defaults
-│           └── recurring-expander.ts        # RRule → occurrences
-│
-└── lib/
-    └── actions/
-        └── tasks.ts                         # Add updateTaskSchedule action
+│           ├── task-to-event.ts
+│           ├── task-to-event.test.ts
+│           ├── calendar-settings.ts
+│           └── recurring-expander.ts
 ```
 
 ---
 
 ## 16. Implementation Phases
 
-### Phase 1: Foundation (Core Calendar) ⏱️ ~4-6h
-
-1. Install FullCalendar v7 via shadcn registry + dependencies
+### Phase 1: Foundation (Core Calendar)
+1. Install FullCalendar packages and CSS imports
 2. Create `/calendar2` route with auth
-3. Build `Calendar2Client` with FullCalendar rendering tasks from Zustand store
-4. Implement `taskToEvent` mapping function with tests
-5. Add month/week/day/agenda view switching
+3. Build `Calendar2Client` with FullCalendar rendering tasks from store
+4. Implement `taskToEvent` mapping with tests
+5. Add view switching (month/week/day/agenda)
 6. Add navigation (prev/next/today)
 7. Add sidebar navigation entry
 8. Wire up dark mode via `data-color-scheme`
 
-**Milestone:** Tasks with due dates are visible on the calendar in all 4 views.
+**Milestone:** Tasks with due dates render in all views.
 
-### Phase 2: Interactions ⏱️ ~3-4h
+### Phase 2: Interactions
+1. Drag-and-drop rescheduling via `dispatch("updateTask")`
+2. Resize to change duration
+3. Click-to-create / drag-to-create dialog
+4. Event click → detail panel
+5. Context menu actions
 
-1. Enable drag-and-drop rescheduling with `updateTaskSchedule` action
-2. Enable resize to change duration
-3. Implement click-to-create / drag-to-create with `CalendarQuickCreateDialog`
-4. Add event click → detail panel with quick edit
-5. Add right-click context menu
-6. Add optimistic updates with rollback
+**Milestone:** Full CRUD interactions from calendar.
 
-**Milestone:** Full CRUD interaction — create, reschedule, resize, edit, complete, delete from calendar.
+### Phase 3: Multi-Calendar & Filters
+1. Event sources per list + Inbox (null listId)
+2. List toggles
+3. Filters (priority, label, energy, context)
+4. Show/hide completed toggle
+5. Persist settings in `view_settings`
 
-### Phase 3: Multi-Calendar & Filters ⏱️ ~2-3h
+**Milestone:** List toggles + filters working and persisted.
 
-1. Implement event sources per list
-2. Build `CalendarListToggles` with colored checkboxes
-3. Build `CalendarFilters` (priority, label, energy, context)
-4. Implement show/hide completed tasks toggle
-5. Wire up filter persistence to ViewSettings
+### Phase 4: Enhanced UX
+1. Mini month picker
+2. Unscheduled tasks tray with drag support
+3. Keyboard shortcuts (scoped)
+4. Smart event colors
+5. Recurring task display (read-only)
+6. Settings popover (weekends/time range/slot duration)
 
-**Milestone:** Users can toggle list visibility and filter events like Google Calendar.
+**Milestone:** Power-user features complete.
 
-### Phase 4: Enhanced UX ⏱️ ~3-4h
+### Phase 5: Polish & Testing
+1. Mobile responsive layout
+2. Theme verification (glassmorphism, synthwave, performance)
+3. Performance tuning
+4. E2E tests
+5. Accessibility audit
 
-1. Build `MiniMonthPicker` with date range highlighting
-2. Build `UnscheduledTasksTray` with external drag support
-3. Add keyboard shortcuts
-4. Add smart event colors (priority borders, overdue tint, completion styling)
-5. Add recurring task display (read-only expansion)
-6. Add `CalendarSettingsPopover` (weekends, time range, slot duration)
-
-**Milestone:** Power-user features complete — keyboard nav, unscheduled tray, recurring display.
-
-### Phase 5: Polish & Testing ⏱️ ~2-3h
-
-1. Mobile/responsive layout with agenda default
-2. Theme integration testing (glassmorphism, synthwave, performance)
-3. Performance optimization (dayMaxEvents, memoization, lazy loading)
-4. Write E2E tests
-5. Persist all settings
-6. Accessibility audit (ARIA labels, focus management, keyboard navigation)
-
-**Milestone:** Production-ready, tested, performant across all themes and devices.
+**Milestone:** Production-ready, tested, performant.
 
 ---
 
@@ -819,13 +610,12 @@ src/
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| FullCalendar v7 is in beta | Breaking changes possible | Pin to specific `@beta` version; isolate FC in wrapper component |
-| Time zone ambiguity (date-only vs timed) | Events appear on wrong days | Clear rule: midnight UTC = all-day; any other time = timed event |
-| Recurring task editing complexity | Data integrity issues | V1: read-only display of occurrences; series editing only via TaskDialog |
-| Performance with 5000+ tasks | Calendar becomes sluggish | Range-based filtering, `dayMaxEvents`, memoized event sources |
-| shadcn registry not fully stable for FC v7 | Installation issues | Fallback: manual React integration with stock theme + CSS var mapping |
-| Mobile drag-and-drop UX | Difficult on small screens | Default to agenda view on mobile; long-press hint tooltip |
-| Optimistic update conflicts | Stale data after offline sync | Use Zustand store version + `updatedAt` for conflict detection; revert on mismatch |
+| FullCalendar v7 beta changes | Breaking updates | Pin version; isolate in wrapper component |
+| Time semantics ambiguity | Events render on wrong day | Clear rule: midnight = all‑day |
+| Recurring edit complexity | Data integrity issues | V1 display-only; series edits via TaskDialog |
+| Performance with large datasets | Sluggish UI | Range filtering + dayMaxEvents + memoization |
+| Mobile drag UX | Frustration on small screens | Agenda default on mobile; long-press hints |
+| Offline conflicts | Stale UI | SyncProvider conflict dialog with expectedUpdatedAt |
 
 ---
 
@@ -842,6 +632,5 @@ src/
 | Recurring tasks | Not shown | Expanded occurrences displayed |
 | Mobile | Same dense grid | Responsive agenda view |
 | Unscheduled tasks | Not accessible | Drag-from-tray to schedule |
-| Keyboard shortcuts | None | Full keyboard navigation |
-| Performance | Custom, fast | FullCalendar with range-based loading |
-| Theme support | Manual CSS | Automatic via shadcn integration |
+| Keyboard shortcuts | None | Scoped calendar shortcuts |
+| Theme support | Manual CSS | Automatic via CSS var mapping |
