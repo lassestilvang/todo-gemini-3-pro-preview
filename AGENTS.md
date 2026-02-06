@@ -79,6 +79,32 @@ E2E tests are located in `e2e/` and cover:
 - Gamification (XP, streaks)
 - Search functionality (latency verification)
 
+## Auth Bypass (Dev + IP Allowlist)
+
+Development mode disables authentication automatically (`NODE_ENV=development`). Customize the dev user with:
+
+```bash
+DEV_AUTH_BYPASS_USER_ID=dev_user
+DEV_AUTH_BYPASS_EMAIL=dev@local
+DEV_AUTH_BYPASS_FIRST_NAME=Dev
+DEV_AUTH_BYPASS_LAST_NAME=User
+```
+
+Production bypass requires an IP allowlist and HMAC secret. It is ignored unless all required values are set:
+
+```bash
+AUTH_BYPASS_IPS=128.76.228.251
+AUTH_BYPASS_SECRET=your-long-random-secret-here
+AUTH_BYPASS_USER_ID=prod_bypass_user
+AUTH_BYPASS_EMAIL=prod-bypass@example.com
+```
+
+Security notes:
+- Bypass is gated by client IP in middleware and signed with `AUTH_BYPASS_SECRET`.
+- The server verifies the signature before trusting the bypass user.
+- Use only behind a trusted proxy/CDN that sets the real client IP.
+- Separate multiple IPs in `AUTH_BYPASS_IPS` with commas or whitespace.
+
 ### Command Notes
 
 - `bun test` - Uses in-memory SQLite via `bun:sqlite` for fast test execution

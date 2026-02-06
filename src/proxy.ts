@@ -1,16 +1,27 @@
 import { authkitMiddleware } from '@workos-inc/authkit-nextjs';
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import {
+  AUTH_BYPASS_HEADER,
+  AUTH_BYPASS_SIGNATURE_HEADER,
+  getAuthBypassIpAllowlist,
+  getAuthBypassSecret,
+  getProdBypassUserConfig,
+  isDevBypassEnabled,
+  normalizeIp,
+  signAuthBypassPayload,
+} from '@/lib/auth-bypass';
 
 /**
- * Custom middleware that supports E2E test mode.
- * 
+ * Custom middleware that supports E2E test mode and auth bypass.
+ *
  * When E2E_TEST_MODE=true, it checks for a test session cookie
  * and allows access to protected routes for authenticated test users.
+ *
+ * When auth bypass is enabled (dev or IP allowlist), it marks the request
+ * for downstream auth resolution without invoking WorkOS.
  */
-async function testModeMiddleware(request: NextRequest) {
-  const cookieStore = await cookies();
-  const testSession = cookieStore.get('wos-session-test');
+function testModeMiddleware(request: NextRequest) {
+  const testSession = request.cookies.get('wos-session-test');
 
   if (testSession) {
     try {
@@ -36,22 +47,89 @@ async function testModeMiddleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-// Use test mode middleware when E2E_TEST_MODE is enabled
-const middleware = process.env.E2E_TEST_MODE === 'true'
-  ? testModeMiddleware
-  : authkitMiddleware({
-    middlewareAuth: {
-      enabled: true,
-      unauthenticatedPaths: [
-        '/',
-        '/login',
-        '/auth/callback',
-        '/sw.js',
-        // API routes should be handled separately or excluded
-        '/api/:path*',
-      ],
-    },
+const workosMiddleware = authkitMiddleware({
+  middlewareAuth: {
+    enabled: true,
+    unauthenticatedPaths: [
+      '/',
+      '/login',
+      '/auth/callback',
+      '/sw.js',
+      // API routes should be handled separately or excluded
+      '/api/:path*',
+    ],
+  },
+});
+
+function getRequestIp(request: NextRequest): string | null {
+  return normalizeIp(request.ip ?? null);
+}
+
+async function maybeBypassAuth(request: NextRequest): Promise<NextResponse | null> {
+  if (process.env.E2E_TEST_MODE === 'true') {
+    return null;
+  }
+
+  if (isDevBypassEnabled()) {
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set(AUTH_BYPASS_HEADER, '1');
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
+
+  const allowlist = getAuthBypassIpAllowlist();
+  if (allowlist.length === 0) {
+    return null;
+  }
+
+  const clientIp = getRequestIp(request);
+  if (!clientIp || !allowlist.includes(clientIp)) {
+    return null;
+  }
+
+  const bypassUser = getProdBypassUserConfig();
+  const secret = getAuthBypassSecret();
+  if (!bypassUser || !secret) {
+    return null;
+  }
+
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(AUTH_BYPASS_HEADER, '1');
+  requestHeaders.set(
+    AUTH_BYPASS_SIGNATURE_HEADER,
+    await signAuthBypassPayload(bypassUser.userId, secret)
+  );
+
+  return NextResponse.next({ request: { headers: requestHeaders } });
+}
+
+function stripBypassHeaders(request: NextRequest): NextRequest {
+  const sanitized = new Headers(request.headers);
+  sanitized.delete(AUTH_BYPASS_HEADER);
+  sanitized.delete(AUTH_BYPASS_SIGNATURE_HEADER);
+  return new NextRequest(request.url, {
+    method: request.method,
+    headers: sanitized,
+    body: request.body,
+    geo: request.geo,
+    ip: request.ip,
+    nextConfig: request.nextConfig,
   });
+}
+
+const middleware = async (request: NextRequest) => {
+  const bypassResponse = await maybeBypassAuth(request);
+  if (bypassResponse) {
+    return bypassResponse;
+  }
+
+  const sanitizedRequest = stripBypassHeaders(request);
+
+  if (process.env.E2E_TEST_MODE === 'true') {
+    return testModeMiddleware(sanitizedRequest);
+  }
+
+  return workosMiddleware(sanitizedRequest);
+};
 
 export default middleware;
 

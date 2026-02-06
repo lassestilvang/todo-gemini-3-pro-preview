@@ -141,10 +141,37 @@ This is configured in `next.config.ts` and requires no additional setup for prev
 
 ### Authentication Flow
 
-- Unauthenticated users are redirected to `/login`
+- Unauthenticated users are redirected to `/login` (unless auth bypass is enabled)
 - After successful authentication, users are redirected to `/inbox`
 - Each user has isolated data (tasks, lists, labels, etc.)
 - User profile and sign-out available in the sidebar
+
+### Auth Bypass (Dev + IP Allowlist)
+
+Development mode disables authentication automatically (`NODE_ENV=development`). You can customize the dev user:
+
+```bash
+DEV_AUTH_BYPASS_USER_ID=dev_user
+DEV_AUTH_BYPASS_EMAIL=dev@local
+DEV_AUTH_BYPASS_FIRST_NAME=Dev
+DEV_AUTH_BYPASS_LAST_NAME=User
+```
+
+Production bypass is **only** enabled for allowlisted IPs **and** requires an HMAC secret. It is ignored unless all required values are set:
+
+```bash
+AUTH_BYPASS_IPS=128.76.228.251
+AUTH_BYPASS_SECRET=your-long-random-secret-here
+AUTH_BYPASS_USER_ID=prod_bypass_user
+AUTH_BYPASS_EMAIL=prod-bypass@example.com
+```
+
+Security notes:
+- The middleware gates bypass by client IP, then signs an internal header.
+- The server verifies the signature before treating the request as authenticated.
+- Keep `AUTH_BYPASS_SECRET` private and rotate it if exposed.
+- Only use this behind a trusted proxy/CDN that sets the real client IP.
+- Separate multiple IPs in `AUTH_BYPASS_IPS` with commas or whitespace.
 
 ## 🗄️ Database Branching
 

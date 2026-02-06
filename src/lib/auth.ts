@@ -4,9 +4,21 @@ import { withAuth, signOut as workosSignOut } from "@workos-inc/authkit-nextjs";
 import { db, users, lists, userStats } from "@/db";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { UnauthorizedError, ForbiddenError } from "./auth-errors";
 import { cache } from "react";
+import {
+  AUTH_BYPASS_HEADER,
+  AUTH_BYPASS_SIGNATURE_HEADER,
+  getAuthBypassIpAllowlist,
+  getAuthBypassSecret,
+  getDevBypassUserConfig,
+  getProdBypassUserConfig,
+  isDevBypassEnabled,
+  normalizeIp,
+  verifyAuthBypassSignature,
+  type BypassUserConfig,
+} from "./auth-bypass";
 
 export interface AuthUser {
   id: string;
@@ -62,15 +74,121 @@ async function getTestUser(): Promise<AuthUser | null> {
   return null;
 }
 
+async function getOrCreateBypassUser(
+  config: BypassUserConfig
+): Promise<AuthUser> {
+  const [dbUser] = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      avatarUrl: users.avatarUrl,
+      isInitialized: users.isInitialized,
+      use24HourClock: users.use24HourClock,
+      weekStartsOnMonday: users.weekStartsOnMonday,
+      calendarUseNativeTooltipsOnDenseDays: users.calendarUseNativeTooltipsOnDenseDays,
+      calendarDenseTooltipThreshold: users.calendarDenseTooltipThreshold,
+    })
+    .from(users)
+    .where(eq(users.id, config.userId))
+    .limit(1);
+
+  if (!dbUser || !dbUser.isInitialized) {
+    return syncUser({
+      id: config.userId,
+      email: config.email,
+      firstName: config.firstName ?? undefined,
+      lastName: config.lastName ?? undefined,
+      profilePictureUrl: config.avatarUrl ?? undefined,
+    });
+  }
+
+  return {
+    id: dbUser.id,
+    email: dbUser.email,
+    firstName: dbUser.firstName ?? config.firstName ?? null,
+    lastName: dbUser.lastName ?? config.lastName ?? null,
+    avatarUrl: dbUser.avatarUrl ?? config.avatarUrl ?? null,
+    use24HourClock: dbUser.use24HourClock ?? null,
+    weekStartsOnMonday: dbUser.weekStartsOnMonday ?? null,
+    calendarUseNativeTooltipsOnDenseDays: dbUser.calendarUseNativeTooltipsOnDenseDays ?? null,
+    calendarDenseTooltipThreshold: dbUser.calendarDenseTooltipThreshold ?? null,
+  };
+}
+
+function getServerRequestIp(headerStore: Headers): string | null {
+  const xff = headerStore.get("x-forwarded-for");
+  const first = xff?.split(",")[0]?.trim();
+  const real = headerStore.get("x-real-ip");
+  return normalizeIp(first ?? real ?? null);
+}
+
+async function getBypassUser(): Promise<AuthUser | null> {
+  if (process.env.E2E_TEST_MODE === "true") {
+    return null;
+  }
+
+  if (isDevBypassEnabled()) {
+    return getOrCreateBypassUser(getDevBypassUserConfig());
+  }
+
+  const bypassConfig = getProdBypassUserConfig();
+  if (!bypassConfig) {
+    return null;
+  }
+
+  const secret = getAuthBypassSecret();
+  if (!secret) {
+    return null;
+  }
+
+  const headerStore = await headers();
+
+  const clientIp = getServerRequestIp(headerStore);
+  const allowlist = getAuthBypassIpAllowlist();
+  if (!clientIp || !allowlist.includes(clientIp)) {
+    return null;
+  }
+
+  const bypassHeader = headerStore.get(AUTH_BYPASS_HEADER);
+  if (bypassHeader !== "1") {
+    return null;
+  }
+
+  const signature = headerStore.get(AUTH_BYPASS_SIGNATURE_HEADER);
+  if (!signature) {
+    return null;
+  }
+
+  const isValid = await verifyAuthBypassSignature(
+    bypassConfig.userId,
+    secret,
+    signature
+  );
+
+  if (!isValid) {
+    return null;
+  }
+
+  return getOrCreateBypassUser(bypassConfig);
+}
+
 /**
  * Get the current authenticated user from the session.
  * Returns null if not authenticated.
  * In E2E test mode, checks for test session cookie instead of WorkOS.
+ * In dev or IP-allowlisted bypass mode, uses the configured bypass user.
  */
 async function getCurrentUserImpl(): Promise<AuthUser | null> {
   // In E2E test mode, only use test session (skip WorkOS entirely)
   if (process.env.E2E_TEST_MODE === 'true') {
     return getTestUser();
+  }
+
+  const bypassUser = await getBypassUser();
+  if (bypassUser) {
+    return bypassUser;
   }
 
   const { user } = await withAuth();
