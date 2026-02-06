@@ -318,15 +318,20 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
 
     // Smart Tagging: If no list or labels provided, try to guess them
     if (!taskData.listId && finalLabelIds.length === 0 && taskData.title && taskData.userId) {
-      // Perf: fetch lists + labels in parallel to cut smart-tagging latency roughly in half.
-      const [allLists, allLabels] = await Promise.all([
-        getLists(taskData.userId),
-        getLabels(taskData.userId),
-      ]);
-      const suggestions = await suggestMetadata(taskData.title, allLists, allLabels);
+      try {
+        // Perf: fetch lists + labels in parallel to cut smart-tagging latency roughly in half.
+        const [allLists, allLabels] = await Promise.all([
+          getLists(taskData.userId),
+          getLabels(taskData.userId),
+        ]);
+        const suggestions = await suggestMetadata(taskData.title, allLists, allLabels);
 
-      if (suggestions.listId) taskData.listId = suggestions.listId;
-      if (suggestions.labelIds.length > 0) finalLabelIds = suggestions.labelIds;
+        if (suggestions.listId) taskData.listId = suggestions.listId;
+        if (suggestions.labelIds.length > 0) finalLabelIds = suggestions.labelIds;
+      } catch (error) {
+        // Silently fail smart tagging if AI service is unavailable
+        console.warn("Smart tagging failed:", error);
+      }
     }
 
     // Calculate position to ensure task is added to the top
