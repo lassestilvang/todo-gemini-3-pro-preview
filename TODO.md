@@ -1,19 +1,16 @@
 # Project Improvements & TODOs
 
+Starred tasks?
+
 ## 🚨 High Priority (Bugs & Core Issues)
 
-- [x] **[Bug] Emoji/Icon Picker**: The emoji/icon picker is not working. It should display the emoji/icon and allow the user to select it. Nothing is displayed. Debug in browser to see for yourself.
-  - *Status*: **RESOLVED** - Verified in dev environment; picker displays correctly and allows selection. Cannot reproduce "Nothing is displayed".
 
-workos dashboard link
-
-bypass - kan den auth til min db/user?
 
 ## 🚀 Features & Enhancements
 
-- [ ] **[Feature] Calendar Version 2**: New page: /calendar2. Use Full Calendar instead of the current implementation. It should support drag and drop of tasks to reschedule them. It should also support multiple calendars. It should be possible to create a new task by clicking on a date in the calendar. It should support multiple views (month, week, day).
+- [ ] **[Feature] Calendar Version 2**: New page: /calendar2. Use "Full Calendar v7" instead of the current implementation. It should support drag and drop of tasks to reschedule them. It should support resizing to change the duration of a task. It should also support multiple calendars. It should be possible to create a new task by clicking on a date in the calendar. It should support multiple views (month, week, day). The installation guide is here: https://raw.githubusercontent.com/fullcalendar/fullcalendar-docs/refs/heads/v7/INSTALL-GUIDE.md
 - [ ] **[Feature] Board/Calendar View on Lists**: Enable different layouts for task lists, selectable via the "View" settings modal.
-  - **Board View**: A Trello-style Kanban board grouping tasks by status (To Do, In Progress, Done) or priority.
+  - **Board View**: A Trello-style Kanban board grouping tasks by status (To Do, In Progress, Done) or priority or dates.
   - **Calendar View**: A grid-based month/week view showing tasks on their due dates with drag-and-drop rescheduling.
   - **State Management**: Persist view preference per list/view using the existing `ViewSettings` system.
   - **Responsive Design**: Ensure Board and Calendar views are usable on mobile with horizontal scrolling or simplified layouts.
@@ -40,6 +37,8 @@ bypass - kan den auth til min db/user?
 
 - [ ] **[UX] Sidebar Resize**: Make the sidebar resizable.
 - [ ] **[UX] Performance Theme**: Should have no CSS animations or transitions anywhere - just instant rendering. Pure speed!
+- [ ] **[UX] Keyboard Shortcuts**: Add keyboard shortcuts for common actions.
+- [ ] **[UX] WorkOS User Profile Link**: Add a link to the WorkOS user profile in the settings page. It should open the user profile in a new tab - or even better, open the WorkOS user profile in a modal dialog if possible. Investigate their documentation to see if this is possible.
 
 ## 🛠 Engineering & Quality
 
@@ -59,6 +58,8 @@ bypass - kan den auth til min db/user?
 
 ## ✅ Completed
 
+- [x] **[Bug] Emoji/Icon Picker**: The emoji/icon picker is not working. It should display the emoji/icon and allow the user to select it. Nothing is displayed. Debug in browser to see for yourself.
+  - *Status*: **RESOLVED** - Verified in dev environment; picker displays correctly and allows selection. Cannot reproduce "Nothing is displayed".
 - [x] **[Feature] View Setting Indicator**: Show indicator/text next to the view button to indicate active settings.
   - **Logic**: Implemented in `TaskListWithSettings` to show "Sort: [Value]", "Group: [Value]", or "Filter: Active", prioritized in that order.
   - *Status*: **RESOLVED** - Verified "Sort: Created" appears when sorted by creation date.
