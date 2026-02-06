@@ -27,6 +27,17 @@ import {
 import { requireUser } from "@/lib/auth";
 import { unstable_cache } from "next/cache";
 
+type UnstableCache = <T extends (...args: unknown[]) => Promise<unknown>>(
+  fn: T,
+  keyParts?: string[],
+  options?: { tags?: string[] },
+) => T;
+
+const cache: UnstableCache =
+  typeof unstable_cache === "function"
+    ? unstable_cache
+    : ((fn) => fn);
+
 /**
  * Retrieves user stats (XP, level, streak) for a specific user.
  * Creates initial stats if they don't exist.
@@ -66,7 +77,7 @@ export async function addXP(userId: string, amount: number) {
  *
  * @returns Array of all achievements
  */
-export const getAchievements = unstable_cache(
+export const getAchievements = cache(
   async () => {
     return db.select().from(achievements);
   },
