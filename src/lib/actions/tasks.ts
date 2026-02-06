@@ -358,12 +358,22 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
     if (!task) throw new Error("Failed to create task");
 
     if (finalLabelIds.length > 0) {
-      await db.insert(taskLabels).values(
-        finalLabelIds.map((labelId: number) => ({
-          taskId: task.id,
-          labelId,
-        }))
-      );
+      // Validate label ownership to prevent IDOR
+      const validLabels = await db
+        .select({ id: labels.id })
+        .from(labels)
+        .where(and(eq(labels.userId, taskData.userId), inArray(labels.id, finalLabelIds)));
+
+      const validLabelIds = validLabels.map((l) => l.id);
+
+      if (validLabelIds.length > 0) {
+        await db.insert(taskLabels).values(
+          validLabelIds.map((labelId: number) => ({
+            taskId: task.id,
+            labelId,
+          }))
+        );
+      }
     }
 
     await db.insert(taskLogs).values({
@@ -428,12 +438,22 @@ export async function updateTask(
     // Replace labels
     await db.delete(taskLabels).where(eq(taskLabels.taskId, id));
     if (labelIds.length > 0) {
-      await db.insert(taskLabels).values(
-        labelIds.map((labelId: number) => ({
-          taskId: id,
-          labelId,
-        }))
-      );
+      // Validate label ownership to prevent IDOR
+      const validLabels = await db
+        .select({ id: labels.id })
+        .from(labels)
+        .where(and(eq(labels.userId, userId), inArray(labels.id, labelIds)));
+
+      const validLabelIds = validLabels.map((l) => l.id);
+
+      if (validLabelIds.length > 0) {
+        await db.insert(taskLabels).values(
+          validLabelIds.map((labelId: number) => ({
+            taskId: id,
+            labelId,
+          }))
+        );
+      }
     }
   }
 
