@@ -1,6 +1,21 @@
-import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
+import { describe, it, expect, beforeEach, beforeAll, mock } from "bun:test";
 import { setupTestDb, createTestUser } from "@/test/setup";
-import { setMockAuthUser, clearMockAuthUser, runInAuthContext } from "@/test/mocks";
+import { setMockAuthUser, clearMockAuthUser, runInAuthContext, getMockAuthUser } from "@/test/mocks";
+import { ForbiddenError, UnauthorizedError } from "@/lib/auth-errors";
+
+// Explicitly mock auth to ensure CI environment uses the correct mock state
+mock.module("@/lib/auth", () => ({
+    requireUser: async (userId: string) => {
+        const user = getMockAuthUser();
+        if (!user) throw new UnauthorizedError();
+        if (user.id !== userId) {
+            throw new ForbiddenError("Forbidden");
+        }
+        return user;
+    },
+    getCurrentUser: async () => getMockAuthUser(),
+}));
+
 let getViewSettings: typeof import("@/lib/actions/view-settings").getViewSettings;
 let saveViewSettings: typeof import("@/lib/actions/view-settings").saveViewSettings;
 let resetViewSettings: typeof import("@/lib/actions/view-settings").resetViewSettings;

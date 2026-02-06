@@ -14,6 +14,13 @@ test.describe('Task Creation: NLP', () => {
     await taskInput.fill(taskTitle);
     await taskInput.press('Enter');
 
+    // Task with "tomorrow" will be in Upcoming, not Today.
+    // Wait for the "Task created" toast or check the Upcoming view.
+    await expect(page.getByText('Task created')).toBeVisible();
+
+    await page.goto('/upcoming');
+    await page.waitForLoadState('load');
+
     await waitForTask(page, 'Meeting');
 
     const taskItem = page.getByTestId('task-item').filter({ hasText: 'Meeting' });
