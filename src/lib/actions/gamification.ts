@@ -68,7 +68,7 @@ export async function addXP(userId: string, amount: number) {
  */
 export const getAchievements = unstable_cache(
   async () => {
-    return await db.select().from(achievements);
+    return db.select().from(achievements);
   },
   ['achievements-list'],
   { tags: ['achievements'] }
