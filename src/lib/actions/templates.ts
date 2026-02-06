@@ -17,6 +17,7 @@ import {
   withErrorHandling,
   ValidationError,
   NotFoundError,
+  AuthorizationError,
 } from "./shared";
 
 import { requireUser } from "@/lib/auth";
@@ -31,7 +32,9 @@ import { createTask } from "./tasks";
  * @returns Array of templates ordered by creation date (newest first)
  */
 export async function getTemplates(userId: string) {
+  // Validate that the requester is the same as the requested userId
   await requireUser(userId);
+
   return await db
     .select()
     .from(templates)
@@ -48,6 +51,7 @@ export async function getTemplates(userId: string) {
  * @throws {ValidationError} When required fields are missing
  */
 async function createTemplateImpl(userId: string, name: string, content: string) {
+  // Validate that the requester is the same as the userId passed in
   await requireUser(userId);
 
   if (!userId) {
@@ -91,6 +95,7 @@ export const createTemplate: (
  * @param userId - The ID of the user who owns the template
  */
 async function deleteTemplateImpl(id: number, userId: string) {
+  // Validate that the requester is the same as the userId passed in
   await requireUser(userId);
   await db.delete(templates).where(and(eq(templates.id, id), eq(templates.userId, userId)));
   revalidatePath("/");
@@ -120,6 +125,7 @@ export const deleteTemplate: (
  * @throws {NotFoundError} When template is not found or user doesn't own it
  */
 async function updateTemplateImpl(id: number, userId: string, name: string, content: string) {
+  // Validate that the requester is the same as the userId passed in
   await requireUser(userId);
 
   if (!userId) {
@@ -140,6 +146,11 @@ async function updateTemplateImpl(id: number, userId: string, name: string, cont
     .limit(1);
 
   if (existing.length === 0) {
+    // If it doesn't exist for this user, it's either not found or not owned by them
+    // For security, we just say not found (or forbidden if we checked ownership separately)
+    // But since the query filters by userId, we can just say NotFound.
+    // However, if we wanted to be strict about IDOR, we could check if it exists at all.
+    // But standard practice is usually to filter by owner.
     throw new NotFoundError("Template not found");
   }
 
@@ -205,6 +216,7 @@ async function instantiateTemplateImpl(
   templateId: number,
   listId: number | null = null
 ) {
+  // Validate that the requester is the same as the userId passed in
   await requireUser(userId);
 
   const template = await db
