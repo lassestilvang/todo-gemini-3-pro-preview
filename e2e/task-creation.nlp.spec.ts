@@ -10,13 +10,17 @@ test.describe('Task Creation: NLP', () => {
     const taskInput = page.getByTestId('task-input');
     await expect(taskInput).toBeVisible();
 
-    const taskTitle = `Meeting tomorrow ${Date.now()} `;
+    const uniqueId = Date.now();
+    const taskTitle = `Meeting tomorrow ${uniqueId} `;
     await taskInput.fill(taskTitle);
     await taskInput.press('Enter');
 
-    await waitForTask(page, 'Meeting');
+    // Ensure the input is cleared to confirm submission
+    await expect(taskInput).toHaveValue('', { timeout: 10000 });
 
-    const taskItem = page.getByTestId('task-item').filter({ hasText: 'Meeting' });
+    await waitForTask(page, `Meeting tomorrow ${uniqueId}`);
+
+    const taskItem = page.getByTestId('task-item').filter({ hasText: `Meeting tomorrow ${uniqueId}` });
     await expect(taskItem.first()).toBeVisible();
   });
 
@@ -24,13 +28,17 @@ test.describe('Task Creation: NLP', () => {
     const taskInput = page.getByTestId('task-input');
     await expect(taskInput).toBeVisible();
 
-    const taskTitle = `Urgent task!high ${Date.now()} `;
+    const uniqueId = Date.now();
+    const taskTitle = `Urgent task!high ${uniqueId} `;
     await taskInput.fill(taskTitle);
     await taskInput.press('Enter');
 
-    await waitForTask(page, 'Urgent task');
+    // Ensure the input is cleared to confirm submission
+    await expect(taskInput).toHaveValue('', { timeout: 10000 });
 
-    const taskItem = page.getByTestId('task-item').filter({ hasText: 'Urgent task' });
+    await waitForTask(page, `Urgent task!high ${uniqueId}`);
+
+    const taskItem = page.getByTestId('task-item').filter({ hasText: `Urgent task!high ${uniqueId}` });
     await expect(taskItem.first()).toBeVisible();
   });
 });
