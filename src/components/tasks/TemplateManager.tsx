@@ -131,10 +131,10 @@ export function TemplateManager({ userId }: TemplateManagerProps) {
                                             <Play className="h-3 w-3 mr-1" />
                                             Use
                                         </Button>
-                                        <Button size="icon" variant="ghost" onClick={() => handleOpenEditDialog(template)} data-testid={`edit-template-${template.id}`}>
+                                        <Button size="icon" variant="ghost" onClick={() => handleOpenEditDialog(template)} data-testid={`edit-template-${template.id}`} aria-label="Edit template">
                                             <Pencil className="h-4 w-4" />
                                         </Button>
-                                        <Button size="icon" variant="ghost" onClick={() => handleDelete(template.id)} data-testid={`delete-template-${template.id}`}>
+                                        <Button size="icon" variant="ghost" onClick={() => handleDelete(template.id)} data-testid={`delete-template-${template.id}`} aria-label="Delete template">
                                             <Trash2 className="h-4 w-4 text-destructive" />
                                         </Button>
                                     </div>

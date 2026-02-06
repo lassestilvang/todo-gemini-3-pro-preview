@@ -194,6 +194,7 @@ export function SidebarLabels({ labels: ssrLabels, userId }: SidebarLabelsProps)
                         className="h-7 w-7"
                         onClick={() => setIsReordering(!isReordering)}
                         title={isReordering ? "Done reordering" : "Reorder labels"}
+                        aria-label={isReordering ? "Done reordering" : "Reorder labels"}
                     >
                         <ArrowUpDown className="h-3.5 w-3.5" />
                     </Button>

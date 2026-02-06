@@ -290,6 +290,18 @@ describe("TemplateManager", () => {
         expect(screen.getByTestId(`delete-template-${templateIds[1]}`)).toBeInTheDocument();
       }, { timeout: 30000 });
     }, 40000);
+
+    it("should have accessible labels for action buttons", async () => {
+      const user = userEvent.setup();
+      render(<TemplateManager userId="test_user_123" />);
+
+      await user.click(screen.getByText("Templates"));
+
+      await waitFor(() => {
+        expect(screen.getByTestId(`edit-template-${templateIds[0]}`)).toHaveAttribute("aria-label", "Edit template");
+        expect(screen.getByTestId(`delete-template-${templateIds[0]}`)).toHaveAttribute("aria-label", "Delete template");
+      }, { timeout: 30000 });
+    }, 40000);
   });
 
   describe("without userId", () => {

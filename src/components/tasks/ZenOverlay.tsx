@@ -41,6 +41,7 @@ export function ZenOverlay({ children }: { children: React.ReactNode }) {
                                 onClick={() => setTimerOpen(!timerOpen)}
                                 className={cn("rounded-full transition-colors", timerOpen && "bg-muted")}
                                 title="Toggle Pomodoro Timer"
+                                aria-label="Toggle Pomodoro Timer"
                             >
                                 <Timer className="h-5 w-5" />
                             </Button>
@@ -50,6 +51,7 @@ export function ZenOverlay({ children }: { children: React.ReactNode }) {
                                 onClick={toggleZenMode}
                                 className="rounded-full"
                                 title="Exit Zen Mode (Esc)"
+                                aria-label="Exit Zen Mode"
                             >
                                 <X className="h-5 w-5" />
                             </Button>
@@ -87,7 +89,7 @@ export function ZenOverlay({ children }: { children: React.ReactNode }) {
                                                 <Timer className="h-4 w-4 text-indigo-500" />
                                                 Pomodoro
                                             </h3>
-                                            <Button variant="ghost" size="icon" onClick={() => setTimerOpen(false)} className="h-8 w-8 rounded-full">
+                                            <Button variant="ghost" size="icon" onClick={() => setTimerOpen(false)} className="h-8 w-8 rounded-full" aria-label="Close timer panel">
                                                 <ChevronRight className="h-4 w-4" />
                                             </Button>
                                         </div>
@@ -135,6 +137,7 @@ export function ZenOverlay({ children }: { children: React.ReactNode }) {
                             onClick={() => setTimerOpen(!timerOpen)}
                             className={cn("rounded-full", timerOpen && "bg-muted")}
                             title="Toggle Pomodoro Timer"
+                            aria-label="Toggle Pomodoro Timer"
                         >
                             <Timer className="h-5 w-5" />
                         </Button>
@@ -144,6 +147,7 @@ export function ZenOverlay({ children }: { children: React.ReactNode }) {
                             onClick={toggleZenMode}
                             className="rounded-full"
                             title="Exit Zen Mode (Esc)"
+                            aria-label="Exit Zen Mode"
                         >
                             <X className="h-5 w-5" />
                         </Button>
@@ -168,7 +172,7 @@ export function ZenOverlay({ children }: { children: React.ReactNode }) {
                                         <Timer className="h-4 w-4 text-indigo-500" />
                                         Pomodoro
                                     </h3>
-                                    <Button variant="ghost" size="icon" onClick={() => setTimerOpen(false)} className="h-8 w-8 rounded-full">
+                                    <Button variant="ghost" size="icon" onClick={() => setTimerOpen(false)} className="h-8 w-8 rounded-full" aria-label="Close timer panel">
                                         <ChevronRight className="h-4 w-4" />
                                     </Button>
                                 </div>
