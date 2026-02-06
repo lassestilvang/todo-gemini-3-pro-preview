@@ -1,8 +1,14 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser, clearMockAuthUser, runInAuthContext } from "@/test/mocks";
-import { getViewSettings, saveViewSettings, resetViewSettings } from "@/lib/actions/view-settings";
-import { getTemplates, createTemplate, updateTemplate, deleteTemplate, instantiateTemplate } from "@/lib/actions/templates";
+let getViewSettings: typeof import("@/lib/actions/view-settings").getViewSettings;
+let saveViewSettings: typeof import("@/lib/actions/view-settings").saveViewSettings;
+let resetViewSettings: typeof import("@/lib/actions/view-settings").resetViewSettings;
+let getTemplates: typeof import("@/lib/actions/templates").getTemplates;
+let createTemplate: typeof import("@/lib/actions/templates").createTemplate;
+let updateTemplate: typeof import("@/lib/actions/templates").updateTemplate;
+let deleteTemplate: typeof import("@/lib/actions/templates").deleteTemplate;
+let instantiateTemplate: typeof import("@/lib/actions/templates").instantiateTemplate;
 import { isFailure } from "@/lib/action-result";
 import { db, templates } from "@/db";
 
@@ -12,6 +18,17 @@ describe("Integration: Security Missing Auth", () => {
 
     beforeAll(async () => {
         await setupTestDb();
+        const viewSettingsActions = await import("@/lib/actions/view-settings");
+        getViewSettings = viewSettingsActions.getViewSettings;
+        saveViewSettings = viewSettingsActions.saveViewSettings;
+        resetViewSettings = viewSettingsActions.resetViewSettings;
+
+        const templateActions = await import("@/lib/actions/templates");
+        getTemplates = templateActions.getTemplates;
+        createTemplate = templateActions.createTemplate;
+        updateTemplate = templateActions.updateTemplate;
+        deleteTemplate = templateActions.deleteTemplate;
+        instantiateTemplate = templateActions.instantiateTemplate;
     });
 
     beforeEach(async () => {

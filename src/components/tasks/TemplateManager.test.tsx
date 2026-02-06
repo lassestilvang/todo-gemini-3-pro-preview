@@ -10,8 +10,7 @@ import { eq } from "drizzle-orm";
 
 // Mocks should be targeted and not leak to other tests
 
-// Mock actions to avoid DB dependencies and improve test stability
-const mockGetTemplates = mock(async () => [
+const defaultTemplates = [
   {
     id: 1,
     userId: "test_user_123",
@@ -26,12 +25,25 @@ const mockGetTemplates = mock(async () => [
     content: JSON.stringify({ title: "Daily Standup Task", priority: "medium" }),
     createdAt: new Date("2024-01-16"),
   }
-]);
+];
+
+let templatesState = [...defaultTemplates];
+
+// Mock actions to avoid DB dependencies and improve test stability
+const mockGetTemplates = mock(async () => templatesState);
 
 const mockDeleteTemplate = mock(async () => { });
 const mockInstantiateTemplate = mock(async () => { });
 const mockUpdateTemplate = mock(async () => ({ success: true }));
 const mockCreateTemplate = mock(async () => ({ success: true }));
+
+mock.module("@/lib/actions", () => ({
+  getTemplates: mockGetTemplates,
+  deleteTemplate: mockDeleteTemplate,
+  instantiateTemplate: mockInstantiateTemplate,
+  updateTemplate: mockUpdateTemplate,
+  createTemplate: mockCreateTemplate,
+}));
 
 // Mock window.confirm
 const originalConfirm = globalThis.confirm;
@@ -45,6 +57,7 @@ describe("TemplateManager", () => {
   const testUserId = "test_user_123";
 
   beforeEach(async () => {
+    templatesState = [...defaultTemplates];
     // PointerEvent mocks are provided globally in setup.tsx (upstream change),
     // but adding them here defensively to ensure tests pass in all environments
     if (!Element.prototype.setPointerCapture) {
@@ -143,6 +156,7 @@ describe("TemplateManager", () => {
 
     it("should show empty state when no templates exist", async () => {
       const user = userEvent.setup();
+      templatesState = [];
       // Delete templates for this specific test
       const { templates } = await import("@/db/schema-sqlite");
       const { db } = await import("@/db");

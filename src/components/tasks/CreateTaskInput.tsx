@@ -27,6 +27,9 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
     const [dueDate, setDueDate] = useState<Date | undefined>(
         defaultDueDate ? new Date(defaultDueDate) : undefined
     );
+    const [dueDateSource, setDueDateSource] = useState<"default" | "nlp" | "manual" | "none">(
+        defaultDueDate ? "default" : "none"
+    );
     const [priority, setPriority] = useState<"none" | "low" | "medium" | "high">("none");
     const [energyLevel, setEnergyLevel] = useState<"high" | "medium" | "low" | undefined>(undefined);
     const [context, setContext] = useState<"computer" | "phone" | "errands" | "meeting" | "home" | "anywhere" | undefined>(undefined);
@@ -48,12 +51,15 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
         if (title.trim()) {
             const parsed = parseNaturalLanguage(title);
             if (parsed.priority && priority === "none") setPriority(parsed.priority);
-            if (parsed.dueDate && !dueDate) setDueDate(parsed.dueDate);
+            if (parsed.dueDate && dueDateSource !== "manual") {
+                setDueDate(parsed.dueDate);
+                setDueDateSource("nlp");
+            }
             if (parsed.energyLevel && !energyLevel) setEnergyLevel(parsed.energyLevel);
             if (parsed.context && !context) setContext(parsed.context);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [title]);
+    }, [title, dueDateSource]);
 
     const handleAiEnhance = async () => {
         if (!title.trim()) return;
@@ -101,6 +107,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
 
             setTitle("");
             setDueDate(defaultDueDate ? new Date(defaultDueDate) : undefined);
+            setDueDateSource(defaultDueDate ? "default" : "none");
             setPriority("none");
             setEnergyLevel(undefined);
             setContext(undefined);
@@ -206,6 +213,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                                             selected={dueDate}
                                             onSelect={(date) => {
                                                 setDueDate(date);
+                                                setDueDateSource("manual");
                                                 setIsCalendarOpen(false);
                                             }}
                                             initialFocus
