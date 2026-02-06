@@ -93,30 +93,17 @@ async function maybeBypassAuth(request: NextRequest): Promise<NextResponse | nul
   return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
-function stripBypassHeaders(request: NextRequest): NextRequest {
-  const sanitized = new Headers(request.headers);
-  sanitized.delete(AUTH_BYPASS_HEADER);
-  sanitized.delete(AUTH_BYPASS_SIGNATURE_HEADER);
-  return new NextRequest(request.url, {
-    method: request.method,
-    headers: sanitized,
-    body: request.body,
-  });
-}
-
 export default async function proxy(request: NextRequest, event: NextFetchEvent) {
   const bypassResponse = await maybeBypassAuth(request);
   if (bypassResponse) {
     return bypassResponse;
   }
 
-  const sanitizedRequest = stripBypassHeaders(request);
-
   if (process.env.E2E_TEST_MODE === 'true') {
-    return testModeMiddleware(sanitizedRequest);
+    return testModeMiddleware(request);
   }
 
-  return workosMiddleware(sanitizedRequest, event);
+  return workosMiddleware(request, event);
 }
 
 export const config = {
