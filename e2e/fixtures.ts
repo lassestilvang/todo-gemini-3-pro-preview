@@ -60,13 +60,12 @@ export async function authenticateTestUser(page: Page): Promise<boolean> {
       expiresAt: Date.now() + 24 * 60 * 60 * 1000,
     });
 
-    const baseUrl = new URL(page.url() || 'http://localhost:3000');
-    const domain = baseUrl.hostname || 'localhost';
+    // Explicitly set the session cookie in the browser context to avoid racey cookie propagation.
+    // We omit the domain to let Playwright/Browser handle localhost/127.0.0.1 correctly.
     await page.context().addCookies([
       {
         name: 'wos-session-test',
         value: sessionValue,
-        domain,
         path: "/",
         httpOnly: true,
         secure: false,
