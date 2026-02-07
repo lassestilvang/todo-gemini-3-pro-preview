@@ -67,3 +67,8 @@
 **Vulnerability:** `createTask` and `updateTask` allowed linking arbitrary label IDs to a task without verifying ownership. This allowed attackers to enumerate and view details (name, color, icon) of other users' labels by linking them to their own tasks.
 **Learning:** Checking `requireUser(userId)` protects the main entity (Task) but not related entities (Labels) referenced by ID. Relational data integrity must be enforced explicitly.
 **Prevention:** Validate ownership of ALL foreign keys/related IDs passed from the client before inserting into junction tables. Filter or reject invalid IDs.
+
+## 2026-02-13 - [Critical] IDOR in Subtask Creation
+**Vulnerability:** `createSubtask` and `createTask` (with `parentId`) allowed creating a task linked to ANY parent task ID, even if owned by another user. This created an unauthorized relationship between users' data.
+**Learning:** When implementing Server Actions that create or link entities (e.g., subtasks with `parentId`), explicitly query the database to verify the parent entity belongs to the authenticated user before proceeding, to prevent IDOR.
+**Prevention:** Added explicit parent task ownership checks (`select ... where id = ? and userId = ?`) in `createTask` and `createSubtask`.
