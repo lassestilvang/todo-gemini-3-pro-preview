@@ -1,13 +1,24 @@
 import { format, isToday, isTomorrow, isYesterday } from "date-fns";
 
+let cachedIs24Hour: boolean | null = null;
+
 /**
  * Detects if the system is set to 24-hour clock.
  */
 export function isSystem24Hour(): boolean {
-    if (typeof window === "undefined") return false;
-    return !new Intl.DateTimeFormat(undefined, { hour: "numeric" })
+    if (cachedIs24Hour !== null) {
+        return cachedIs24Hour;
+    }
+
+    if (typeof window === "undefined") {
+        return false;
+    }
+
+    cachedIs24Hour = !new Intl.DateTimeFormat(undefined, { hour: "numeric" })
         .formatToParts(new Date())
         .some((part) => part.type === "dayPeriod");
+
+    return cachedIs24Hour;
 }
 
 /**
@@ -44,7 +55,9 @@ export function formatTimePreference(
  * @param fallbackFormat - Format string to use if not today/tomorrow/yesterday (default: "PPP")
  */
 export function formatFriendlyDate(date: Date | number, fallbackFormat: string = "PPP"): string {
-    const d = new Date(date);
+    // Optimization: Avoid cloning Date if it's already a Date object
+    const d = date instanceof Date ? date : new Date(date);
+
     if (isToday(d)) return "Today";
     if (isTomorrow(d)) return "Tomorrow";
     if (isYesterday(d)) return "Yesterday";
