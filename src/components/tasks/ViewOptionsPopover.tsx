@@ -155,22 +155,21 @@ export function ViewOptionsPopover({ viewId, userId, settings: propSettings, onS
 
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <div className="flex-1 cursor-not-allowed">
-                                        <button
-                                            disabled
-                                            role="radio"
-                                            aria-checked={settings.layout === "board"}
-                                            aria-label="Board layout (coming soon)"
-                                            className={cn(
-                                                "w-full h-full flex flex-col items-center gap-1 p-3 rounded-lg border transition-colors opacity-50 pointer-events-none",
-                                                settings.layout === "board"
-                                                    ? "border-primary bg-primary/5"
-                                                    : "border-border"
-                                            )}
-                                        >
-                                            <LayoutGrid className="h-5 w-5" />
-                                            <span className="text-xs">Board</span>
-                                        </button>
+                                    <div
+                                        role="radio"
+                                        aria-checked={settings.layout === "board"}
+                                        aria-disabled="true"
+                                        aria-label="Board layout (coming soon)"
+                                        tabIndex={0}
+                                        className={cn(
+                                            "flex-1 flex flex-col items-center gap-1 p-3 rounded-lg border transition-colors opacity-50 cursor-not-allowed",
+                                            settings.layout === "board"
+                                                ? "border-primary bg-primary/5"
+                                                : "border-border"
+                                        )}
+                                    >
+                                        <LayoutGrid className="h-5 w-5" />
+                                        <span className="text-xs">Board</span>
                                     </div>
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -180,22 +179,21 @@ export function ViewOptionsPopover({ viewId, userId, settings: propSettings, onS
 
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <div className="flex-1 cursor-not-allowed">
-                                        <button
-                                            disabled
-                                            role="radio"
-                                            aria-checked={settings.layout === "calendar"}
-                                            aria-label="Calendar layout (coming soon)"
-                                            className={cn(
-                                                "w-full h-full flex flex-col items-center gap-1 p-3 rounded-lg border transition-colors opacity-50 pointer-events-none",
-                                                settings.layout === "calendar"
-                                                    ? "border-primary bg-primary/5"
-                                                    : "border-border"
-                                            )}
-                                        >
-                                            <Calendar className="h-5 w-5" />
-                                            <span className="text-xs">Calendar</span>
-                                        </button>
+                                    <div
+                                        role="radio"
+                                        aria-checked={settings.layout === "calendar"}
+                                        aria-disabled="true"
+                                        aria-label="Calendar layout (coming soon)"
+                                        tabIndex={0}
+                                        className={cn(
+                                            "flex-1 flex flex-col items-center gap-1 p-3 rounded-lg border transition-colors opacity-50 cursor-not-allowed",
+                                            settings.layout === "calendar"
+                                                ? "border-primary bg-primary/5"
+                                                : "border-border"
+                                        )}
+                                    >
+                                        <Calendar className="h-5 w-5" />
+                                        <span className="text-xs">Calendar</span>
                                     </div>
                                 </TooltipTrigger>
                                 <TooltipContent>
