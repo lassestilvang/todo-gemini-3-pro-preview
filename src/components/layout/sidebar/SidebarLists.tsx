@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, memo, useMemo } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Plus, GripVertical, ArrowUpDown } from "lucide-react";
@@ -52,12 +52,14 @@ interface SidebarListsProps {
 // this reduces unnecessary re-renders by ~90% during reordering mode toggling.
 const SortableListItem = memo(function SortableListItem({
     list,
-    pathname,
+    href,
+    isActive,
     isReordering,
     count
 }: {
     list: List;
-    pathname: string;
+    href: string;
+    isActive: boolean;
     isReordering: boolean;
     count: number;
 }) {
@@ -100,11 +102,11 @@ const SortableListItem = memo(function SortableListItem({
                 className={cn(
                     "flex-1 justify-start font-normal hover:bg-transparent px-2 min-w-0",
                     !isReordering && "pl-4",
-                    pathname === `/lists/${list.id}` ? "bg-secondary" : ""
+                    isActive ? "bg-secondary" : ""
                 )}
                 asChild
             >
-                <Link href={`/lists/${list.id}`} className="w-full flex items-center min-w-0">
+                <Link href={href} className="w-full flex items-center min-w-0">
                     <ResolvedIcon
                         icon={list.icon}
                         className="mr-2 h-4 w-4 shrink-0 transition-colors"
@@ -114,7 +116,7 @@ const SortableListItem = memo(function SortableListItem({
                     {count > 0 && !isReordering && (
                         <span className={cn(
                             "ml-auto text-xs font-medium px-2 py-0.5 rounded-full transition-colors",
-                            pathname === `/lists/${list.id}`
+                            isActive
                                 ? "bg-primary/20 text-primary"
                                 : "text-muted-foreground group-hover:text-foreground group-hover:bg-muted"
                         )}>
@@ -129,6 +131,7 @@ const SortableListItem = memo(function SortableListItem({
 
 export function SidebarLists({ lists: ssrLists, userId }: SidebarListsProps) {
     const pathname = usePathname();
+    const searchParams = useSearchParams();
     const storeLists = useListStore(state => state.lists);
     const setStoreLists = useListStore(state => state.setLists);
     const { listCounts } = useTaskCounts();
@@ -145,6 +148,17 @@ export function SidebarLists({ lists: ssrLists, userId }: SidebarListsProps) {
     const items = useMemo(() => {
         return Object.values(storeLists).sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
     }, [storeLists]);
+
+    const isCalendar3 = pathname?.startsWith("/calendar3");
+    const calendar3Param = searchParams.get("listId");
+    const calendar3Parsed = calendar3Param ? Number(calendar3Param) : null;
+    const calendar3SelectedListId = useMemo(() => {
+        if (!isCalendar3) return null;
+        if (calendar3Parsed !== null && !Number.isNaN(calendar3Parsed) && items.some((item) => item.id === calendar3Parsed)) {
+            return calendar3Parsed;
+        }
+        return items[0]?.id ?? null;
+    }, [calendar3Parsed, isCalendar3, items]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -221,15 +235,20 @@ export function SidebarLists({ lists: ssrLists, userId }: SidebarListsProps) {
                     strategy={verticalListSortingStrategy}
                 >
                     <div className="space-y-1 py-2">
-                        {items.map((list) => (
+                        {items.map((list) => {
+                            const href = isCalendar3 ? `/calendar3?listId=${list.id}` : `/lists/${list.id}`;
+                            const isActive = pathname === `/lists/${list.id}` || (isCalendar3 && calendar3SelectedListId === list.id);
+                            return (
                             <SortableListItem
                                 key={list.id}
                                 list={list}
-                                pathname={pathname}
+                                href={href}
+                                isActive={isActive}
                                 isReordering={isReordering}
                                 count={listCounts[list.id] || 0}
                             />
-                        ))}
+                            );
+                        })}
                     </div>
                 </SortableContext>
             </DndContext>
