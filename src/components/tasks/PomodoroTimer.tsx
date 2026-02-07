@@ -6,6 +6,7 @@ import { Play, Pause, RotateCcw, Coffee, Brain, Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { m } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { usePerformanceMode } from "@/components/providers/PerformanceContext";
 
 type TimerMode = "pomodoro" | "shortBreak" | "longBreak";
 
@@ -16,6 +17,7 @@ const MODES: Record<TimerMode, { label: string; duration: number; icon: React.Re
 };
 
 export function PomodoroTimer() {
+    const isPerformanceMode = usePerformanceMode();
     const [mode, setMode] = useState<TimerMode>("pomodoro");
     const [timeLeft, setTimeLeft] = useState(MODES.pomodoro.duration);
     const [isActive, setIsActive] = useState(false);
@@ -89,21 +91,35 @@ export function PomodoroTimer() {
                         fill="transparent"
                         className="text-muted/20"
                     />
-                    <m.circle
-                        cx="128"
-                        cy="128"
-                        r="120"
-                        stroke="currentColor"
-                        strokeWidth="8"
-                        fill="transparent"
-                        strokeDasharray={753.98} // 2 * pi * 120
-                        initial={{ strokeDashoffset: 753.98 }}
-                        animate={{ strokeDashoffset: 753.98 * (1 - progress / 100) }}
-                        className={cn(
-                            "transition-colors duration-500",
-                            mode === "pomodoro" ? "text-indigo-500" : "text-emerald-500"
-                        )}
-                    />
+                    {isPerformanceMode ? (
+                        <circle
+                            cx="128"
+                            cy="128"
+                            r="120"
+                            stroke="currentColor"
+                            strokeWidth="8"
+                            fill="transparent"
+                            strokeDasharray={753.98}
+                            strokeDashoffset={753.98 * (1 - progress / 100)}
+                            className={mode === "pomodoro" ? "text-indigo-500" : "text-emerald-500"}
+                        />
+                    ) : (
+                        <m.circle
+                            cx="128"
+                            cy="128"
+                            r="120"
+                            stroke="currentColor"
+                            strokeWidth="8"
+                            fill="transparent"
+                            strokeDasharray={753.98}
+                            initial={{ strokeDashoffset: 753.98 }}
+                            animate={{ strokeDashoffset: 753.98 * (1 - progress / 100) }}
+                            className={cn(
+                                "transition-colors duration-500",
+                                mode === "pomodoro" ? "text-indigo-500" : "text-emerald-500"
+                            )}
+                        />
+                    )}
                 </svg>
                 <div className="absolute flex flex-col items-center" role="timer">
                     <span className="text-6xl font-bold tracking-tighter tabular-nums">

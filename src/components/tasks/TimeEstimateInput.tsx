@@ -5,6 +5,7 @@ import { m, AnimatePresence } from "framer-motion";
 import { Clock, ChevronDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { usePerformanceMode } from "@/components/providers/PerformanceContext";
 import {
     Popover,
     PopoverContent,
@@ -38,6 +39,7 @@ function formatTime(minutes: number): string {
 export function TimeEstimateInput({ value, onChange, className }: TimeEstimateInputProps) {
     const [customOpen, setCustomOpen] = React.useState(false);
     const [sliderValue, setSliderValue] = React.useState(value || 30);
+    const isPerformanceMode = usePerformanceMode();
 
     const isPreset = value !== null && PRESETS.some(p => p.value === value);
 
@@ -46,11 +48,9 @@ export function TimeEstimateInput({ value, onChange, className }: TimeEstimateIn
             {/* Preset Buttons */}
             <div className="flex flex-wrap gap-2">
                 {PRESETS.map((preset) => (
-                    <m.button
+                    <button
                         key={preset.value}
                         type="button"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
                         onClick={() => onChange(preset.value)}
                         className={cn(
                             "px-3 py-1.5 text-sm font-medium rounded-full border transition-all duration-200",
@@ -60,16 +60,14 @@ export function TimeEstimateInput({ value, onChange, className }: TimeEstimateIn
                         )}
                     >
                         {preset.label}
-                    </m.button>
+                    </button>
                 ))}
 
                 {/* Custom Popover */}
                 <Popover open={customOpen} onOpenChange={setCustomOpen}>
                     <PopoverTrigger asChild>
-                        <m.button
+                        <button
                             type="button"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
                             className={cn(
                                 "px-3 py-1.5 text-sm font-medium rounded-full border transition-all duration-200 flex items-center gap-1",
                                 value !== null && !isPreset
@@ -79,7 +77,7 @@ export function TimeEstimateInput({ value, onChange, className }: TimeEstimateIn
                         >
                             {value !== null && !isPreset ? formatTime(value) : "Custom"}
                             <ChevronDown className="h-3 w-3" />
-                        </m.button>
+                        </button>
                     </PopoverTrigger>
                     <PopoverContent className="w-72 p-4" align="start">
                         <div className="space-y-4">
@@ -156,14 +154,9 @@ export function TimeEstimateInput({ value, onChange, className }: TimeEstimateIn
             </div>
 
             {/* Selected Value Display with Progress */}
-            <AnimatePresence>
-                {value !== null && (
-                    <m.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="overflow-hidden"
-                    >
+            {isPerformanceMode ? (
+                value !== null && (
+                    <div className="overflow-hidden">
                         <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 border border-border/50">
                             <Clock className="h-4 w-4 text-muted-foreground" />
                             <div className="flex-1">
@@ -171,13 +164,11 @@ export function TimeEstimateInput({ value, onChange, className }: TimeEstimateIn
                                     <span className="text-muted-foreground">Estimate</span>
                                     <span className="font-medium">{formatTime(value)}</span>
                                 </div>
-                                {/* Visual Progress Bar */}
                                 <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
-                                    <m.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${Math.min((value / 480) * 100, 100)}%` }}
-                                        className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-amber-500 to-red-500"
+                                    <div
+                                        className="h-full rounded-full"
                                         style={{
+                                            width: `${Math.min((value / 480) * 100, 100)}%`,
                                             background: value <= 60
                                                 ? "linear-gradient(to right, #10b981, #10b981)"
                                                 : value <= 120
@@ -199,9 +190,55 @@ export function TimeEstimateInput({ value, onChange, className }: TimeEstimateIn
                                 <X className="h-3 w-3" />
                             </Button>
                         </div>
-                    </m.div>
-                )}
-            </AnimatePresence>
+                    </div>
+                )
+            ) : (
+                <AnimatePresence>
+                    {value !== null && (
+                        <m.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="overflow-hidden"
+                        >
+                            <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 border border-border/50">
+                                <Clock className="h-4 w-4 text-muted-foreground" />
+                                <div className="flex-1">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-muted-foreground">Estimate</span>
+                                        <span className="font-medium">{formatTime(value)}</span>
+                                    </div>
+                                    <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
+                                        <m.div
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${Math.min((value / 480) * 100, 100)}%` }}
+                                            className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-amber-500 to-red-500"
+                                            style={{
+                                                background: value <= 60
+                                                    ? "linear-gradient(to right, #10b981, #10b981)"
+                                                    : value <= 120
+                                                        ? "linear-gradient(to right, #10b981, #f59e0b)"
+                                                        : value <= 240
+                                                            ? "linear-gradient(to right, #10b981, #f59e0b, #ef4444)"
+                                                            : "linear-gradient(to right, #10b981, #f59e0b, #ef4444, #dc2626)"
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 shrink-0"
+                                    onClick={() => onChange(null)}
+                                >
+                                    <X className="h-3 w-3" />
+                                </Button>
+                            </div>
+                        </m.div>
+                    )}
+                </AnimatePresence>
+            )}
         </div>
     );
 }

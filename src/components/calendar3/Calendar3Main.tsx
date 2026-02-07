@@ -76,7 +76,7 @@ export function Calendar3Main({
         eventResizableFromStart
         defaultTimedEventDuration="00:30:00"
         eventTimeFormat={{ hour: "numeric", minute: "2-digit", hour12: !use24h }}
-        // @ts-expect-error - slotLabelFormat is missing in v7 beta types but works at runtime
+
         {...({ slotLabelFormat: { hour: "numeric", minute: "2-digit", hour12: !use24h } } as any)}
       />
     </div>

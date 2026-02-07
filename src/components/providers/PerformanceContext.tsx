@@ -18,7 +18,7 @@ export function PerformanceProvider({ children }: { children: ReactNode }) {
     }, []);
 
     // Always false during SSR and initial hydration to match server output
-    const isPerformanceMode = mounted ? theme === "performance" : false;
+    const isPerformanceMode = mounted ? (theme === "performance" || theme === "performance-dark") : false;
 
     return (
         <PerformanceContext.Provider value={isPerformanceMode}>
