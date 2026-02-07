@@ -60,13 +60,11 @@ export async function authenticateTestUser(page: Page): Promise<boolean> {
       expiresAt: Date.now() + 24 * 60 * 60 * 1000,
     });
 
-    const baseUrl = new URL(page.url() || 'http://localhost:3000');
-    const domain = baseUrl.hostname || 'localhost';
+    // Omit domain to allow cookie to apply to the current context url (localhost/127.0.0.1) automatically
     await page.context().addCookies([
       {
         name: 'wos-session-test',
         value: sessionValue,
-        domain,
         path: "/",
         httpOnly: true,
         secure: false,

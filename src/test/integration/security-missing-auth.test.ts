@@ -3,18 +3,10 @@ import { setupTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser, clearMockAuthUser, runInAuthContext, getMockAuthUser } from "@/test/mocks";
 import { ForbiddenError, UnauthorizedError } from "@/lib/auth-errors";
 
-// Explicitly mock auth to ensure CI environment uses the correct mock state
-mock.module("@/lib/auth", () => ({
-    requireUser: async (userId: string) => {
-        const user = getMockAuthUser();
-        if (!user) throw new UnauthorizedError();
-        if (user.id !== userId) {
-            throw new ForbiddenError("Forbidden");
-        }
-        return user;
-    },
-    getCurrentUser: async () => getMockAuthUser(),
-}));
+// Note: @/lib/auth is already mocked in src/test/setup.tsx which uses getMockAuthUser.
+// Re-mocking here caused conflicts in CI where the module might be re-evaluated
+// with a stale closure. We rely on the global setup mock which correctly
+// delegates to the shared mock state.
 
 let getViewSettings: typeof import("@/lib/actions/view-settings").getViewSettings;
 let saveViewSettings: typeof import("@/lib/actions/view-settings").saveViewSettings;
