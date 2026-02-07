@@ -316,6 +316,19 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
     const { labelIds, ...taskData } = parsedData;
     let finalLabelIds = labelIds || [];
 
+    // Validate parent task ownership if parentId is provided to prevent IDOR
+    if (taskData.parentId) {
+      const parentTask = await db
+        .select({ id: tasks.id })
+        .from(tasks)
+        .where(and(eq(tasks.id, taskData.parentId), eq(tasks.userId, taskData.userId)))
+        .limit(1);
+
+      if (parentTask.length === 0) {
+        throw new NotFoundError("Parent task not found or access denied");
+      }
+    }
+
     // Smart Tagging: If no list or labels provided, try to guess them
     if (!taskData.listId && finalLabelIds.length === 0 && taskData.title && taskData.userId) {
       try {
@@ -785,6 +798,17 @@ export async function createSubtask(
   estimateMinutes?: number
 ) {
   await requireUser(userId);
+
+  // Validate parent task ownership to prevent IDOR
+  const parentTask = await db
+    .select({ id: tasks.id })
+    .from(tasks)
+    .where(and(eq(tasks.id, parentId), eq(tasks.userId, userId)))
+    .limit(1);
+
+  if (parentTask.length === 0) {
+    throw new NotFoundError("Parent task not found or access denied");
+  }
 
   const result = await db
     .insert(tasks)

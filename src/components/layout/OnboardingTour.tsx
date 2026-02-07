@@ -2,6 +2,7 @@
 
 import { m } from "framer-motion";
 import { useOnboarding } from "@/components/providers/OnboardingProvider";
+import { usePerformanceMode } from "@/components/providers/PerformanceContext";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -11,6 +12,7 @@ export function OnboardingTour() {
     const { isTourOpen, currentStep, steps, nextStep, prevStep, endTour } = useOnboarding();
     const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
     const [mounted, setMounted] = useState(false);
+    const isPerformanceMode = usePerformanceMode();
 
     useEffect(() => {
         setMounted(true);
@@ -134,44 +136,82 @@ export function OnboardingTour() {
             />
 
             {/* Tooltip */}
-            <m.div
-                initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                className="absolute bg-card text-card-foreground p-6 rounded-xl shadow-2xl border w-80 pointer-events-auto z-[101]"
-                style={{
-                    ...tooltipStyles,
-                    transform: step.position === 'top' || step.position === 'bottom' ? 'translateX(-50%)' : 'translateY(-50%)',
-                }}
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="tour-step-title"
-            >
-                <div className="flex justify-between items-start mb-2">
-                    <h2 id="tour-step-title" className="font-bold text-lg">{step.title}</h2>
-                    <button onClick={endTour} className="p-1 hover:bg-muted rounded-full transition-colors" aria-label="Close tour">
-                        <X className="h-4 w-4" />
-                    </button>
-                </div>
-                <p className="text-sm text-muted-foreground mb-6 line-height-relaxed">
-                    {step.content}
-                </p>
-                <div className="flex items-center justify-between">
-                    <div className="text-xs text-muted-foreground">
-                        {currentStep + 1} of {steps.length}
+            {isPerformanceMode ? (
+                <div
+                    className="absolute bg-card text-card-foreground p-6 rounded-xl shadow-2xl border w-80 pointer-events-auto z-[101]"
+                    style={{
+                        ...tooltipStyles,
+                        transform: step.position === 'top' || step.position === 'bottom' ? 'translateX(-50%)' : 'translateY(-50%)',
+                    }}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="tour-step-title"
+                >
+                    <div className="flex justify-between items-start mb-2">
+                        <h2 id="tour-step-title" className="font-bold text-lg">{step.title}</h2>
+                        <button onClick={endTour} className="p-1 hover:bg-muted rounded-full transition-colors" aria-label="Close tour">
+                            <X className="h-4 w-4" />
+                        </button>
                     </div>
-                    <div className="flex gap-2">
-                        {currentStep > 0 && (
-                            <Button variant="outline" size="sm" onClick={prevStep}>
-                                Back
+                    <p className="text-sm text-muted-foreground mb-6 line-height-relaxed">
+                        {step.content}
+                    </p>
+                    <div className="flex items-center justify-between">
+                        <div className="text-xs text-muted-foreground">
+                            {currentStep + 1} of {steps.length}
+                        </div>
+                        <div className="flex gap-2">
+                            {currentStep > 0 && (
+                                <Button variant="outline" size="sm" onClick={prevStep}>
+                                    Back
+                                </Button>
+                            )}
+                            <Button size="sm" onClick={nextStep} className="bg-indigo-600 hover:bg-indigo-700">
+                                {currentStep === steps.length - 1 ? "Finish" : "Next"}
                             </Button>
-                        )}
-                        <Button size="sm" onClick={nextStep} className="bg-indigo-600 hover:bg-indigo-700">
-                            {currentStep === steps.length - 1 ? "Finish" : "Next"}
-                        </Button>
+                        </div>
                     </div>
                 </div>
-            </m.div>
+            ) : (
+                <m.div
+                    initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                    className="absolute bg-card text-card-foreground p-6 rounded-xl shadow-2xl border w-80 pointer-events-auto z-[101]"
+                    style={{
+                        ...tooltipStyles,
+                        transform: step.position === 'top' || step.position === 'bottom' ? 'translateX(-50%)' : 'translateY(-50%)',
+                    }}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="tour-step-title"
+                >
+                    <div className="flex justify-between items-start mb-2">
+                        <h2 id="tour-step-title" className="font-bold text-lg">{step.title}</h2>
+                        <button onClick={endTour} className="p-1 hover:bg-muted rounded-full transition-colors" aria-label="Close tour">
+                            <X className="h-4 w-4" />
+                        </button>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-6 line-height-relaxed">
+                        {step.content}
+                    </p>
+                    <div className="flex items-center justify-between">
+                        <div className="text-xs text-muted-foreground">
+                            {currentStep + 1} of {steps.length}
+                        </div>
+                        <div className="flex gap-2">
+                            {currentStep > 0 && (
+                                <Button variant="outline" size="sm" onClick={prevStep}>
+                                    Back
+                                </Button>
+                            )}
+                            <Button size="sm" onClick={nextStep} className="bg-indigo-600 hover:bg-indigo-700">
+                                {currentStep === steps.length - 1 ? "Finish" : "Next"}
+                            </Button>
+                        </div>
+                    </div>
+                </m.div>
+            )}
         </div>,
         document.body
     );

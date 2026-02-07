@@ -15,6 +15,8 @@ interface CalendarSidebarProps {
   visibleListIds: Set<number | null>;
   onToggleList: (listId: number | null) => void;
   onToggleAll: (nextChecked: boolean) => void;
+  selectedListId: number | null;
+  onSelectList: (listId: number | null) => void;
 }
 
 export function CalendarSidebar({
@@ -22,56 +24,72 @@ export function CalendarSidebar({
   visibleListIds,
   onToggleList,
   onToggleAll,
+  selectedListId,
+  onSelectList,
 }: CalendarSidebarProps) {
-  const totalCount = lists.length + 1; // + Inbox
+  const totalCount = lists.length + 1;
   const visibleCount = visibleListIds.size;
   const allChecked = visibleCount === totalCount;
 
   return (
-    <aside className="w-64 shrink-0 border-r bg-card/50 backdrop-blur-xl p-4 flex flex-col gap-4">
-      <div>
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+    <aside className="w-52 shrink-0 border-r bg-card/30 backdrop-blur-xl flex flex-col">
+      <div className="px-4 py-3 border-b">
+        <h2 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
           Calendars
         </h2>
       </div>
 
-      <label className="flex items-center gap-2 text-sm">
-        <Checkbox
-          checked={allChecked}
-          onCheckedChange={(checked) => onToggleAll(checked === true)}
-        />
-        <span>All</span>
-      </label>
+      <div className="p-2 space-y-px overflow-y-auto calendar2-column flex-1">
+        <label className="flex items-center gap-2.5 text-sm px-2 py-1.5 rounded-md hover:bg-muted/50 transition-colors cursor-pointer">
+          <Checkbox
+            checked={allChecked}
+            onCheckedChange={(checked) => onToggleAll(checked === true)}
+            className="h-4 w-4"
+          />
+          <span className="text-muted-foreground font-medium text-xs">All</span>
+        </label>
 
-      <div className="space-y-2">
-        <label className="flex items-center gap-2 text-sm">
+        <div
+          className={cn(
+            "flex items-center gap-2.5 text-sm px-2 py-1.5 rounded-md cursor-pointer transition-colors",
+            selectedListId === null ? "bg-accent" : "hover:bg-muted/50"
+          )}
+          onClick={() => onSelectList(null)}
+        >
           <Checkbox
             checked={visibleListIds.has(null)}
             onCheckedChange={() => onToggleList(null)}
+            onClick={(e) => e.stopPropagation()}
+            className="h-4 w-4"
           />
-          <span className="flex items-center gap-2">
-            <span className="inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
-            Inbox
-          </span>
-        </label>
+          <span className="inline-flex h-2 w-2 rounded-full bg-primary shrink-0" />
+          <span className="text-xs truncate">Inbox</span>
+        </div>
 
         {lists.map((list) => (
-          <label key={list.id} className="flex items-center gap-2 text-sm">
+          <div
+            key={list.id}
+            className={cn(
+              "flex items-center gap-2.5 text-sm px-2 py-1.5 rounded-md cursor-pointer transition-colors",
+              selectedListId === list.id ? "bg-accent" : "hover:bg-muted/50"
+            )}
+            onClick={() => onSelectList(list.id)}
+          >
             <Checkbox
               checked={visibleListIds.has(list.id)}
               onCheckedChange={() => onToggleList(list.id)}
+              onClick={(e) => e.stopPropagation()}
+              className="h-4 w-4"
             />
-            <span className="flex items-center gap-2 min-w-0">
-              <span
-                className={cn(
-                  "inline-flex h-2.5 w-2.5 rounded-full",
-                  !list.color && "bg-muted"
-                )}
-                style={list.color ? { backgroundColor: list.color } : undefined}
-              />
-              <span className="truncate">{list.name}</span>
-            </span>
-          </label>
+            <span
+              className={cn(
+                "inline-flex h-2 w-2 rounded-full shrink-0",
+                !list.color && "bg-muted-foreground/40"
+              )}
+              style={list.color ? { backgroundColor: list.color } : undefined}
+            />
+            <span className="text-xs truncate">{list.name}</span>
+          </div>
         ))}
       </div>
     </aside>

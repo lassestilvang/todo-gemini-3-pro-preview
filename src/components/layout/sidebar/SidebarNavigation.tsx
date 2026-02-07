@@ -23,6 +23,7 @@ export const mainNav = [
     { name: "All Tasks", href: "/all", icon: ListTodo, color: "text-gray-500" },
     { name: "Calendar", href: "/calendar", icon: CalendarDays, color: "text-indigo-500" },
     { name: "Calendar V2", href: "/calendar2", icon: CalendarDays, color: "text-sky-500" },
+    { name: "Calendar V3", href: "/calendar3", icon: CalendarDays, color: "text-emerald-500" },
     { name: "Achievements", href: "/achievements", icon: Trophy, color: "text-yellow-500" },
     { name: "Analytics", href: "/analytics", icon: BarChart2, color: "text-green-500" },
     { name: "Activity Log", href: "/activity", icon: History, color: "text-orange-500" },

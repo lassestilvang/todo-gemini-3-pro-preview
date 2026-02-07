@@ -6,6 +6,7 @@ import { Play, Square, Clock, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { usePerformanceMode } from "@/components/providers/PerformanceContext";
 import { toast } from "sonner";
 import {
     startTimeEntry,
@@ -58,6 +59,7 @@ export function TimeTrackerWidget({
     const [elapsedSeconds, setElapsedSeconds] = React.useState(0);
     const [isExpanded, setIsExpanded] = React.useState(false);
     const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
+    const isPerformanceMode = usePerformanceMode();
 
     // Check for active entry on mount
     React.useEffect(() => {
@@ -134,7 +136,7 @@ export function TimeTrackerWidget({
     // Compact display for task list
     if (compact && !isExpanded && !isTracking) {
         return (
-            <m.button
+            <button
                 type="button"
                 onClick={(e) => {
                     e.stopPropagation();
@@ -146,8 +148,6 @@ export function TimeTrackerWidget({
                     isOverEstimate && "text-red-500",
                     className
                 )}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
             >
                 <Clock className="h-3 w-3" />
                 {trackedMinutes && trackedMinutes > 0 ? (
@@ -160,14 +160,12 @@ export function TimeTrackerWidget({
                 ) : (
                     <span className="text-muted-foreground">Track</span>
                 )}
-            </m.button>
+            </button>
         );
     }
 
     return (
-        <m.div
-            initial={compact ? { opacity: 0, scale: 0.95 } : false}
-            animate={{ opacity: 1, scale: 1 }}
+        <div
             className={cn(
                 "rounded-lg border bg-card p-3 shadow-sm",
                 isTracking && "border-primary/50 bg-primary/5",
@@ -220,11 +218,15 @@ export function TimeTrackerWidget({
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             {isTracking && (
-                                <m.span
-                                    animate={{ opacity: [1, 0.5, 1] }}
-                                    transition={{ repeat: Infinity, duration: 1.5 }}
-                                    className="w-2 h-2 rounded-full bg-red-500"
-                                />
+                                isPerformanceMode ? (
+                                    <span className="w-2 h-2 rounded-full bg-red-500" />
+                                ) : (
+                                    <m.span
+                                        animate={{ opacity: [1, 0.5, 1] }}
+                                        transition={{ repeat: Infinity, duration: 1.5 }}
+                                        className="w-2 h-2 rounded-full bg-red-500"
+                                    />
+                                )
                             )}
                             <span className={cn(
                                 "font-mono text-lg font-semibold",
@@ -247,18 +249,32 @@ export function TimeTrackerWidget({
                     {/* Progress Bar */}
                     {estimateMinutes && (
                         <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
-                            <m.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${progress}%` }}
-                                className={cn(
-                                    "h-full rounded-full transition-all",
-                                    isOverEstimate
-                                        ? "bg-red-500"
-                                        : progress > 80
-                                            ? "bg-amber-500"
-                                            : "bg-emerald-500"
-                                )}
-                            />
+                            {isPerformanceMode ? (
+                                <div
+                                    style={{ width: `${progress}%` }}
+                                    className={cn(
+                                        "h-full rounded-full",
+                                        isOverEstimate
+                                            ? "bg-red-500"
+                                            : progress > 80
+                                                ? "bg-amber-500"
+                                                : "bg-emerald-500"
+                                    )}
+                                />
+                            ) : (
+                                <m.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${progress}%` }}
+                                    className={cn(
+                                        "h-full rounded-full transition-all",
+                                        isOverEstimate
+                                            ? "bg-red-500"
+                                            : progress > 80
+                                                ? "bg-amber-500"
+                                                : "bg-emerald-500"
+                                    )}
+                                />
+                            )}
                         </div>
                     )}
                 </div>
@@ -301,6 +317,6 @@ export function TimeTrackerWidget({
                     </Tooltip>
                 )}
             </div>
-        </m.div>
+        </div>
     );
 }

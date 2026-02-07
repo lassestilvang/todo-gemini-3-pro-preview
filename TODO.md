@@ -1,10 +1,13 @@
 # Project Improvements & TODOs
 
 Starred tasks?
+#pfa i ToDone? Så har jeg mine link-ups…
+Tasks denne uge/måned
 
 ## 🚨 High Priority (Bugs & Core Issues)
 
-
+Sync issues
+Sync status
 
 ## 🚀 Features & Enhancements
 
@@ -36,7 +39,6 @@ Starred tasks?
 ## 🎨 UI/UX Polish
 
 - [ ] **[UX] Sidebar Resize**: Make the sidebar resizable.
-- [ ] **[UX] Performance Theme**: Should have no CSS animations or transitions anywhere - just instant rendering. Pure speed!
 - [ ] **[UX] Keyboard Shortcuts**: Add keyboard shortcuts for common actions.
 - [ ] **[UX] WorkOS User Profile Link**: Add a link to the WorkOS user profile in the settings page. It should open the user profile in a new tab - or even better, open the WorkOS user profile in a modal dialog if possible. Investigate their documentation to see if this is possible.
 
@@ -58,6 +60,7 @@ Starred tasks?
 
 ## ✅ Completed
 
+- [x] **[UX] Performance Theme**: Should have no CSS animations or transitions anywhere - just instant rendering. Pure speed!
 - [x] **[Bug] Emoji/Icon Picker**: The emoji/icon picker is not working. It should display the emoji/icon and allow the user to select it. Nothing is displayed. Debug in browser to see for yourself.
   - *Status*: **RESOLVED** - Verified in dev environment; picker displays correctly and allows selection. Cannot reproduce "Nothing is displayed".
 - [x] **[Feature] View Setting Indicator**: Show indicator/text next to the view button to indicate active settings.

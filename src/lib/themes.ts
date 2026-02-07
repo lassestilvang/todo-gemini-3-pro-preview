@@ -14,6 +14,7 @@ export const AVAILABLE_THEMES = [
     "minimalist",
     "synthwave",
     "performance",
+    "performance-dark",
     "system",
 ] as const;
 
@@ -67,6 +68,11 @@ export const THEME_METADATA: Record<AppTheme, {
         label: "Performance",
         description: "Zero animations, maximum speed",
         previewColor: "bg-white border-black border-2",
+    },
+    "performance-dark": {
+        label: "Performance Dark",
+        description: "Zero animations, pure dark speed",
+        previewColor: "bg-[#0a0a0a] border-[#2a2a2a] border-2",
     },
     system: {
         label: "System",
