@@ -16,17 +16,8 @@ export default async function Calendar2Page() {
   ]);
 
   return (
-    <div className="container mx-auto p-6 h-full flex flex-col">
-      <div className="mb-4">
-        <h1 className="text-3xl font-bold">Calendar V2</h1>
-        <p className="text-muted-foreground mt-1">
-          Plan your schedule with FullCalendar v7.
-        </p>
-      </div>
-
-      <div className="flex-1 min-h-0">
-        <Calendar2Loader initialTasks={tasks} initialLists={lists} />
-      </div>
+    <div className="h-full flex flex-col min-h-0">
+      <Calendar2Loader initialTasks={tasks} initialLists={lists} />
     </div>
   );
 }

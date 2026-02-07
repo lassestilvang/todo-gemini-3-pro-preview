@@ -4,16 +4,26 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DateClickData, DateSelectData, EventDropData, EventResizeDoneData } from "@fullcalendar/react";
 import { CalendarMain } from "@/components/calendar2/CalendarMain";
 import { CalendarSidebar } from "@/components/calendar2/CalendarSidebar";
+import { CalendarPlanningLayout } from "@/components/calendar2/CalendarPlanningLayout";
+import { UnplannedColumn } from "@/components/calendar2/UnplannedColumn";
+import { TodayColumn } from "@/components/calendar2/TodayColumn";
 import { CalendarQuickCreateDialog } from "@/components/calendar2/CalendarQuickCreateDialog";
+import { TaskDialog } from "@/components/tasks/TaskDialog";
 import { useTaskStore } from "@/lib/store/task-store";
 import { useListStore } from "@/lib/store/list-store";
 import { useSync } from "@/components/providers/sync-provider";
 import { useUser } from "@/components/providers/UserProvider";
+import { startOfDay, isToday } from "date-fns";
 import type { Task } from "@/lib/types";
 
 interface Calendar2ClientProps {
   initialTasks: Task[];
   initialLists: Array<{ id: number; name: string; color: string | null; icon: string | null; slug: string }>;
+}
+
+function normalizeDate(d: Date | string | null): Date | null {
+  if (!d) return null;
+  return d instanceof Date ? d : new Date(d);
 }
 
 export function Calendar2Client({ initialTasks, initialLists }: Calendar2ClientProps) {
@@ -32,6 +42,7 @@ export function Calendar2Client({ initialTasks, initialLists }: Calendar2ClientP
     return storeLists.length > 0 ? storeLists : initialLists;
   }, [listMap, initialLists]);
 
+  // --- List visibility (for calendar filtering) ---
   const [visibleListIds, setVisibleListIds] = useState<Set<number | null>>(
     () => new Set([null])
   );
@@ -76,6 +87,44 @@ export function Calendar2Client({ initialTasks, initialLists }: Calendar2ClientP
     }
   }, [lists]);
 
+  // --- Selected list for left column ---
+  const [selectedListId, setSelectedListId] = useState<number | null>(null);
+
+  const selectedListName = useMemo(() => {
+    if (selectedListId === null) return "Inbox";
+    const list = lists.find((l) => l.id === selectedListId);
+    return list?.name ?? "Inbox";
+  }, [selectedListId, lists]);
+
+  // --- Task selectors ---
+  const unplannedTasks = useMemo(() => {
+    return tasks.filter((t) => {
+      const listId = t.listId === undefined ? null : t.listId;
+      return listId === selectedListId && !normalizeDate(t.dueDate) && !t.isCompleted;
+    });
+  }, [tasks, selectedListId]);
+
+  const todayTasks = useMemo(() => {
+    return tasks
+      .filter((t) => {
+        const d = normalizeDate(t.dueDate);
+        return d && isToday(d) && !t.isCompleted;
+      })
+      .sort((a, b) => {
+        const da = normalizeDate(a.dueDate)!;
+        const db = normalizeDate(b.dueDate)!;
+        return da.getTime() - db.getTime();
+      });
+  }, [tasks]);
+
+  const todayDoneTasks = useMemo(() => {
+    return tasks.filter((t) => {
+      const d = normalizeDate(t.dueDate);
+      return d && isToday(d) && t.isCompleted;
+    });
+  }, [tasks]);
+
+  // --- Quick create dialog ---
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const [quickCreateDate, setQuickCreateDate] = useState<Date | undefined>(undefined);
 
@@ -84,6 +133,14 @@ export function Calendar2Client({ initialTasks, initialLists }: Calendar2ClientP
     setQuickCreateOpen(true);
   }, []);
 
+  // --- Task edit dialog ---
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+
+  const handleEditTask = useCallback((task: Task) => {
+    setEditingTask(task);
+  }, []);
+
+  // --- Event handlers ---
   const handleEventDrop = useCallback((info: EventDropData) => {
     const taskId = Number(info.event.extendedProps.taskId);
     if (!taskId || !userId) return;
@@ -136,23 +193,63 @@ export function Calendar2Client({ initialTasks, initialLists }: Calendar2ClientP
     openQuickCreate(info.start);
   }, [openQuickCreate]);
 
+  const handleExternalDrop = useCallback((taskId: number, date: Date, allDay: boolean) => {
+    if (!userId) return;
+
+    const existing = taskMap[taskId];
+    if (!existing) return;
+
+    const newDueDate = allDay ? startOfDay(date) : date;
+
+    useTaskStore.getState().upsertTask({
+      ...existing,
+      dueDate: newDueDate,
+    });
+
+    dispatch("updateTask", taskId, userId, {
+      dueDate: newDueDate,
+      expectedUpdatedAt: existing.updatedAt ?? null,
+    });
+  }, [dispatch, taskMap, userId]);
+
   return (
-    <div className="flex h-full min-h-0 border rounded-lg overflow-hidden bg-background shadow-sm">
+    <div className="flex h-full min-h-0">
       <CalendarSidebar
         lists={lists}
         visibleListIds={visibleListIds}
         onToggleList={toggleList}
         onToggleAll={toggleAll}
+        selectedListId={selectedListId}
+        onSelectList={setSelectedListId}
       />
 
-      <div className="flex-1 min-h-0 p-4">
-        <CalendarMain
-          tasks={tasks}
-          visibleListIds={visibleListIds}
-          onEventDrop={handleEventDrop}
-          onEventResize={handleEventResize}
-          onDateClick={handleDateClick}
-          onSelect={handleSelect}
+      <div className="flex-1 min-h-0 min-w-0">
+        <CalendarPlanningLayout
+          left={
+            <UnplannedColumn
+              tasks={unplannedTasks}
+              listName={selectedListName}
+              onEditTask={handleEditTask}
+            />
+          }
+          middle={
+            <TodayColumn
+              tasks={todayTasks}
+              doneTasks={todayDoneTasks}
+              onEditTask={handleEditTask}
+            />
+          }
+          right={
+            <CalendarMain
+              tasks={tasks}
+              visibleListIds={visibleListIds}
+              onEventDrop={handleEventDrop}
+              onEventResize={handleEventResize}
+              onDateClick={handleDateClick}
+              onSelect={handleSelect}
+              onExternalDrop={handleExternalDrop}
+            />
+          }
         />
       </div>
 
@@ -160,6 +257,31 @@ export function Calendar2Client({ initialTasks, initialLists }: Calendar2ClientP
         open={quickCreateOpen}
         onOpenChange={setQuickCreateOpen}
         defaultDueDate={quickCreateDate}
+        userId={userId}
+      />
+
+      <TaskDialog
+        task={editingTask ? {
+          id: editingTask.id,
+          title: editingTask.title,
+          description: editingTask.description,
+          icon: editingTask.icon ?? null,
+          priority: editingTask.priority,
+          listId: editingTask.listId,
+          dueDate: normalizeDate(editingTask.dueDate),
+          deadline: normalizeDate(editingTask.deadline),
+          isRecurring: editingTask.isRecurring,
+          recurringRule: editingTask.recurringRule,
+          energyLevel: editingTask.energyLevel,
+          context: editingTask.context,
+          isHabit: editingTask.isHabit,
+          estimateMinutes: editingTask.estimateMinutes,
+          labels: editingTask.labels,
+        } : undefined}
+        open={!!editingTask}
+        onOpenChange={(open) => {
+          if (!open) setEditingTask(null);
+        }}
         userId={userId}
       />
     </div>

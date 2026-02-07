@@ -23,6 +23,7 @@ interface CalendarMainProps {
   onEventResize: (arg: Parameters<NonNullable<ComponentProps<typeof FullCalendar>["eventResize"]>>[0]) => void;
   onDateClick: (arg: Parameters<NonNullable<ComponentProps<typeof FullCalendar>["dateClick"]>>[0]) => void;
   onSelect: (arg: Parameters<NonNullable<ComponentProps<typeof FullCalendar>["select"]>>[0]) => void;
+  onExternalDrop?: (taskId: number, date: Date, allDay: boolean) => void;
 }
 
 export function CalendarMain({
@@ -32,6 +33,7 @@ export function CalendarMain({
   onEventResize,
   onDateClick,
   onSelect,
+  onExternalDrop,
 }: CalendarMainProps) {
   const { resolvedTheme } = useTheme();
   const { getWeekStartDay, use24HourClock } = useUser();
@@ -58,33 +60,47 @@ export function CalendarMain({
     <div className="flex-1 min-h-0" data-color-scheme={resolvedTheme === "dark" ? "dark" : "light"}>
       <FullCalendar
         plugins={[classicThemePlugin, dayGridPlugin, timeGridPlugin, interactionPlugin]}
-        initialView="dayGridMonth"
+        initialView="timeGridThreeDay"
+        views={{
+          timeGridThreeDay: {
+            type: "timeGrid",
+            duration: { days: 3 },
+          },
+        }}
         headerToolbar={{
           left: "prev,next today",
           center: "title",
-          right: "dayGridMonth,timeGridWeek,timeGridDay",
+          right: "timeGridThreeDay,timeGridWeek,dayGridMonth",
         }}
-        height="auto"
-        contentHeight="auto"
+        height="100%"
         expandRows
         editable
         selectable
         selectMirror
         dayMaxEvents={4}
         nowIndicator
+        allDaySlot
+        droppable
         firstDay={getWeekStartDay()}
         events={events as any}
         eventDrop={onEventDrop}
         eventResize={onEventResize}
         dateClick={onDateClick}
         select={onSelect}
+        eventReceive={(info) => {
+          const taskId = Number(info.event.extendedProps.taskId);
+          const start = info.event.start;
+          const allDay = info.event.allDay;
+          info.event.remove();
+          if (taskId && start && onExternalDrop) {
+            onExternalDrop(taskId, start, allDay);
+          }
+        }}
         eventDurationEditable
         eventResizableFromStart
         defaultTimedEventDuration="00:30:00"
         eventTimeFormat={{ hour: "numeric", minute: "2-digit", hour12: !use24h }}
-        // @ts-expect-error - slotLabelFormat is missing in v7 beta types but works at runtime
-        {...({ slotLabelFormat: { hour: "numeric", minute: "2-digit", hour12: !use24h } } as any)}
-
+        {...({ slotLabelFormat: { hour: "numeric", minute: "2-digit", hour12: !use24h } } as Record<string, unknown>)}
       />
     </div>
   );
