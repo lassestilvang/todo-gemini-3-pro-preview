@@ -127,7 +127,7 @@ describe("TemplateManager", () => {
       await waitFor(() => {
         expect(screen.getByText("Task Templates")).toBeInTheDocument();
       }, { timeout: 15000 });
-    });
+    }, 20000);
 
     it("should load and display templates when dialog opens", async () => {
       render(<TemplateManager userId="test_user_123" />);
@@ -140,7 +140,7 @@ describe("TemplateManager", () => {
         expect(screen.getByText("Weekly Report")).toBeInTheDocument();
         expect(screen.getByText("Daily Standup")).toBeInTheDocument();
       }, { timeout: 15000 });
-    });
+    }, 20000);
 
     it("should show empty state when no templates exist", async () => {
       templatesState = [];
@@ -156,7 +156,7 @@ describe("TemplateManager", () => {
       await waitFor(() => {
         expect(screen.getByText("No templates found. Create one to get started.")).toBeInTheDocument();
       }, { timeout: 15000 });
-    });
+    }, 20000);
   });
 
   describe("create dialog", () => {
@@ -171,7 +171,7 @@ describe("TemplateManager", () => {
 
       expect(await screen.findByRole("heading", { name: "Create Template" }, { timeout: 15000 })).toBeInTheDocument();
       expect(screen.getByTestId("template-name-input")).toBeInTheDocument();
-    });
+    }, 20000);
 
     it("should show empty form fields in create mode", async () => {
       render(<TemplateManager userId="test_user_123" />);
@@ -192,7 +192,7 @@ describe("TemplateManager", () => {
         expect(nameInput.value).toBe("");
         expect(titleInput.value).toBe("");
       }, { timeout: 15000 });
-    });
+    }, 20000);
   });
 
   describe("edit dialog", () => {
@@ -203,7 +203,7 @@ describe("TemplateManager", () => {
 
       expect(await screen.findByTestId(`edit-template-${templateIds[0]}`, {}, { timeout: 15000 })).toBeInTheDocument();
       expect(screen.getByTestId(`edit-template-${templateIds[1]}`)).toBeInTheDocument();
-    });
+    }, 20000);
 
     it("should open edit dialog with template data when edit button is clicked", async () => {
       render(<TemplateManager userId="test_user_123" />);
@@ -225,7 +225,7 @@ describe("TemplateManager", () => {
         expect(nameInput).toBeInTheDocument();
         expect(nameInput.value).toBe("Weekly Report");
       }, { timeout: 15000 });
-    });
+    }, 20000);
 
     it("should pre-populate task title from template content", async () => {
       render(<TemplateManager userId="test_user_123" />);
@@ -244,7 +244,7 @@ describe("TemplateManager", () => {
         const titleInput = screen.getByTestId("task-title-input") as HTMLInputElement;
         expect(titleInput.value).toBe("Weekly Report Task");
       }, { timeout: 15000 });
-    });
+    }, 20000);
   });
 
   describe("template actions", () => {
@@ -257,7 +257,7 @@ describe("TemplateManager", () => {
         expect(screen.getByTestId(`use-template-${templateIds[0]}`)).toBeInTheDocument();
         expect(screen.getByTestId(`use-template-${templateIds[1]}`)).toBeInTheDocument();
       }, { timeout: 15000 });
-    });
+    }, 20000);
 
     it("should render delete button for each template", async () => {
       render(<TemplateManager userId="test_user_123" />);
@@ -268,7 +268,7 @@ describe("TemplateManager", () => {
         expect(screen.getByTestId(`delete-template-${templateIds[0]}`)).toBeInTheDocument();
         expect(screen.getByTestId(`delete-template-${templateIds[1]}`)).toBeInTheDocument();
       }, { timeout: 15000 });
-    });
+    }, 20000);
 
     it("should have accessible labels for action buttons", async () => {
       render(<TemplateManager userId="test_user_123" />);
@@ -279,7 +279,7 @@ describe("TemplateManager", () => {
         expect(screen.getByTestId(`edit-template-${templateIds[0]}`)).toHaveAttribute("aria-label", "Edit template");
         expect(screen.getByTestId(`delete-template-${templateIds[0]}`)).toHaveAttribute("aria-label", "Delete template");
       }, { timeout: 15000 });
-    });
+    }, 20000);
   });
 
   describe("without userId", () => {

@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ChevronDown, ChevronUp, Settings2, List, LayoutGrid, Calendar, RotateCcw } from "lucide-react";
 import { ViewSettings, defaultViewSettings } from "@/lib/view-settings";
 import { saveViewSettings, resetViewSettings } from "@/lib/actions/view-settings";
@@ -135,9 +136,12 @@ export function ViewOptionsPopover({ viewId, userId, settings: propSettings, onS
                     {/* Layout Section */}
                     <div>
                         <div className="text-sm font-medium mb-3">Layout</div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2" role="radiogroup" aria-label="Layout view">
                             <button
                                 onClick={() => updateSetting("layout", "list")}
+                                role="radio"
+                                aria-checked={settings.layout === "list"}
+                                aria-label="List layout"
                                 className={cn(
                                     "flex-1 flex flex-col items-center gap-1 p-3 rounded-lg border transition-colors",
                                     settings.layout === "list"
@@ -148,32 +152,54 @@ export function ViewOptionsPopover({ viewId, userId, settings: propSettings, onS
                                 <List className="h-5 w-5" />
                                 <span className="text-xs">List</span>
                             </button>
-                            <button
-                                onClick={() => updateSetting("layout", "board")}
-                                disabled
-                                className={cn(
-                                    "flex-1 flex flex-col items-center gap-1 p-3 rounded-lg border transition-colors opacity-50 cursor-not-allowed",
-                                    settings.layout === "board"
-                                        ? "border-primary bg-primary/5"
-                                        : "border-border"
-                                )}
-                            >
-                                <LayoutGrid className="h-5 w-5" />
-                                <span className="text-xs">Board</span>
-                            </button>
-                            <button
-                                onClick={() => updateSetting("layout", "calendar")}
-                                disabled
-                                className={cn(
-                                    "flex-1 flex flex-col items-center gap-1 p-3 rounded-lg border transition-colors opacity-50 cursor-not-allowed",
-                                    settings.layout === "calendar"
-                                        ? "border-primary bg-primary/5"
-                                        : "border-border"
-                                )}
-                            >
-                                <Calendar className="h-5 w-5" />
-                                <span className="text-xs">Calendar</span>
-                            </button>
+
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div
+                                        role="radio"
+                                        aria-checked={settings.layout === "board"}
+                                        aria-disabled="true"
+                                        aria-label="Board layout (coming soon)"
+                                        tabIndex={0}
+                                        className={cn(
+                                            "flex-1 flex flex-col items-center gap-1 p-3 rounded-lg border transition-colors opacity-50 cursor-not-allowed",
+                                            settings.layout === "board"
+                                                ? "border-primary bg-primary/5"
+                                                : "border-border"
+                                        )}
+                                    >
+                                        <LayoutGrid className="h-5 w-5" />
+                                        <span className="text-xs">Board</span>
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Board view coming soon</p>
+                                </TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div
+                                        role="radio"
+                                        aria-checked={settings.layout === "calendar"}
+                                        aria-disabled="true"
+                                        aria-label="Calendar layout (coming soon)"
+                                        tabIndex={0}
+                                        className={cn(
+                                            "flex-1 flex flex-col items-center gap-1 p-3 rounded-lg border transition-colors opacity-50 cursor-not-allowed",
+                                            settings.layout === "calendar"
+                                                ? "border-primary bg-primary/5"
+                                                : "border-border"
+                                        )}
+                                    >
+                                        <Calendar className="h-5 w-5" />
+                                        <span className="text-xs">Calendar</span>
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Calendar view coming soon</p>
+                                </TooltipContent>
+                            </Tooltip>
                         </div>
                     </div>
 
@@ -192,6 +218,8 @@ export function ViewOptionsPopover({ viewId, userId, settings: propSettings, onS
                     <div>
                         <button
                             onClick={() => setSortExpanded(!sortExpanded)}
+                            aria-expanded={sortExpanded}
+                            aria-controls="sort-options"
                             className="flex items-center justify-between w-full text-sm font-medium"
                         >
                             Sort
@@ -202,7 +230,7 @@ export function ViewOptionsPopover({ viewId, userId, settings: propSettings, onS
                             )}
                         </button>
                         {sortExpanded && (
-                            <div className="mt-3 space-y-3">
+                            <div id="sort-options" className="mt-3 space-y-3">
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm text-muted-foreground">Grouping</span>
                                     <Select
@@ -254,6 +282,8 @@ export function ViewOptionsPopover({ viewId, userId, settings: propSettings, onS
                     <div>
                         <button
                             onClick={() => setFilterExpanded(!filterExpanded)}
+                            aria-expanded={filterExpanded}
+                            aria-controls="filter-options"
                             className="flex items-center justify-between w-full text-sm font-medium"
                         >
                             Filter
@@ -264,7 +294,7 @@ export function ViewOptionsPopover({ viewId, userId, settings: propSettings, onS
                             )}
                         </button>
                         {filterExpanded && (
-                            <div className="mt-3 space-y-3">
+                            <div id="filter-options" className="mt-3 space-y-3">
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm text-muted-foreground">Date</span>
                                     <Select
@@ -370,6 +400,7 @@ export function ViewOptionsPopover({ viewId, userId, settings: propSettings, onS
                                 placeholder="View name..."
                                 value={viewName}
                                 onChange={(e) => setViewName(e.target.value)}
+                                aria-label="View name"
                                 className="flex-1 px-2 py-1 text-xs border rounded bg-background"
                             />
                             <Button
