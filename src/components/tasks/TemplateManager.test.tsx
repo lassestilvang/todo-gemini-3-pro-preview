@@ -64,6 +64,7 @@ describe("TemplateManager", () => {
     await createTestUser(testUserId, `${testUserId}@example.com`);
 
     // Set mock user to match the one expected by tests
+    // Using global state to ensure it persists across async operations
     setMockAuthUser({
       id: testUserId,
       email: `${testUserId}@example.com`,
@@ -107,11 +108,13 @@ describe("TemplateManager", () => {
 
   describe("template list dialog", () => {
     it("should render Templates button", () => {
+      setMockAuthUser({ id: testUserId, email: "test@example.com", firstName: "Test", lastName: "User", profilePictureUrl: null });
       render(<TemplateManager userId="test_user_123" />);
       expect(screen.getByText("Templates")).toBeInTheDocument();
     });
 
     it("should open template list dialog when Templates button is clicked", async () => {
+      setMockAuthUser({ id: testUserId, email: "test@example.com", firstName: "Test", lastName: "User", profilePictureUrl: null });
       render(<TemplateManager userId="test_user_123" />);
 
       fireEvent.click(screen.getByText("Templates"));
