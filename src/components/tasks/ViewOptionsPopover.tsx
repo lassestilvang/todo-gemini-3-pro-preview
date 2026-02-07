@@ -159,7 +159,7 @@ export function ViewOptionsPopover({ viewId, userId, settings: propSettings, onS
                                         role="radio"
                                         aria-checked={settings.layout === "board"}
                                         aria-disabled="true"
-                                        aria-label="Board layout"
+                                        aria-label="Board layout (coming soon)"
                                         tabIndex={0}
                                         className={cn(
                                             "flex-1 flex flex-col items-center gap-1 p-3 rounded-lg border transition-colors opacity-50 cursor-not-allowed",
@@ -183,7 +183,7 @@ export function ViewOptionsPopover({ viewId, userId, settings: propSettings, onS
                                         role="radio"
                                         aria-checked={settings.layout === "calendar"}
                                         aria-disabled="true"
-                                        aria-label="Calendar layout"
+                                        aria-label="Calendar layout (coming soon)"
                                         tabIndex={0}
                                         className={cn(
                                             "flex-1 flex flex-col items-center gap-1 p-3 rounded-lg border transition-colors opacity-50 cursor-not-allowed",
