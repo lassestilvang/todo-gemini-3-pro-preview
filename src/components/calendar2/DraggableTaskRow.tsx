@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, memo } from "react";
+import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -20,11 +21,11 @@ interface DraggableTaskRowProps {
   onEdit?: (task: Task) => void;
 }
 
-const priorityColors = {
+const priorityColors: Record<string, string> = {
   high: "text-red-500",
   medium: "text-orange-500",
   low: "text-blue-500",
-  none: "text-gray-400",
+  none: "text-muted-foreground",
 };
 
 function formatDuration(minutes: number): string {
@@ -69,23 +70,24 @@ export const DraggableTaskRow = memo(function DraggableTaskRow({
     [dispatch, task.id, userId]
   );
 
-  const hasTime =
-    task.dueDate &&
-    (task.dueDate instanceof Date
-      ? task.dueDate.getHours() !== 0 || task.dueDate.getMinutes() !== 0
-      : new Date(task.dueDate).getHours() !== 0 || new Date(task.dueDate).getMinutes() !== 0);
-
   const dueDate = task.dueDate
     ? task.dueDate instanceof Date
       ? task.dueDate
       : new Date(task.dueDate)
     : null;
 
+  const hasTime = dueDate
+    ? dueDate.getHours() !== 0 || dueDate.getMinutes() !== 0
+    : false;
+
+  const isOverdue = dueDate && !isCompleted && dueDate < new Date();
+
   return (
     <div
       className={cn(
-        "fc-external-task group flex items-center gap-3 px-3 py-2.5 rounded-lg border border-transparent hover:border-border hover:bg-muted/50 transition-all cursor-grab active:cursor-grabbing",
-        isCompleted && "opacity-50"
+        "fc-external-task group flex items-start gap-2.5 px-2.5 py-2 rounded-md",
+        "hover:bg-muted/50 transition-colors cursor-grab active:cursor-grabbing",
+        isCompleted && "opacity-40"
       )}
       data-task-id={task.id}
       data-task-title={task.icon ? `${task.icon} ${task.title}` : task.title}
@@ -93,43 +95,63 @@ export const DraggableTaskRow = memo(function DraggableTaskRow({
       data-list-color={task.listColor || ""}
       onClick={() => onEdit?.(task)}
     >
-      <GripVertical className="h-4 w-4 text-muted-foreground/40 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-
-      <Checkbox
-        checked={isCompleted}
-        onCheckedChange={handleToggle}
-        className="rounded-full h-5 w-5 border-2 border-muted-foreground/30 shrink-0"
-        onClick={(e) => e.stopPropagation()}
-      />
+      <div className="flex items-center gap-2 pt-0.5 shrink-0">
+        <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <Checkbox
+          checked={isCompleted}
+          onCheckedChange={handleToggle}
+          className={cn(
+            "rounded-full h-[18px] w-[18px] border-[1.5px]",
+            isCompleted
+              ? "border-green-500 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+              : "border-muted-foreground/30"
+          )}
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
 
       <div className="flex-1 min-w-0">
-        <div className={cn("text-sm font-medium truncate flex items-center gap-1.5", isCompleted && "line-through text-muted-foreground")}>
-          {task.icon && <ResolvedIcon icon={task.icon} className="h-4 w-4 shrink-0" />}
-          <span className="truncate">{task.title}</span>
-        </div>
-
-        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1.5">
           {showTime && hasTime && dueDate && (
-            <span className="inline-flex items-center gap-1 bg-muted px-1.5 py-0.5 rounded text-[11px] font-medium text-foreground">
+            <span className={cn(
+              "inline-flex items-center px-1.5 py-px rounded text-[10px] font-semibold tabular-nums shrink-0",
+              isOverdue
+                ? "bg-red-500/15 text-red-400"
+                : "bg-muted text-foreground/80"
+            )}>
               {formatTimePreference(dueDate, use24HourClock)}
             </span>
           )}
+          {showTime && !hasTime && dueDate && isOverdue && (
+            <span className="inline-flex items-center px-1.5 py-px rounded text-[10px] font-semibold bg-red-500/15 text-red-400 shrink-0">
+              {format(dueDate, "MMM d")}
+            </span>
+          )}
+          <span className={cn(
+            "text-sm leading-snug truncate",
+            isCompleted && "line-through text-muted-foreground"
+          )}>
+            {task.icon && <span className="mr-1">{task.icon}</span>}
+            {task.title}
+          </span>
+        </div>
 
+        <div className="flex items-center gap-2 mt-1 text-[11px] text-muted-foreground">
           {task.priority && task.priority !== "none" && (
             <Flag className={cn("h-3 w-3", priorityColors[task.priority])} />
           )}
 
           {task.estimateMinutes && (
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-0.5">
               <Clock className="h-3 w-3" />
               {formatDuration(task.estimateMinutes)}
             </span>
           )}
 
           {task.listName && (
-            <span className="flex items-center gap-1 text-[10px]">
-              <ResolvedIcon icon={task.listIcon || null} className="w-3 h-3" color={task.listColor} />
-              {task.listName}
+            <span className="flex items-center gap-1 truncate">
+              <ResolvedIcon icon={task.listIcon || null} className="w-3 h-3 shrink-0" color={task.listColor} />
+              <span className="truncate">{task.listName}</span>
             </span>
           )}
         </div>
@@ -141,7 +163,7 @@ export const DraggableTaskRow = memo(function DraggableTaskRow({
                 key={label.id}
                 variant="outline"
                 style={getLabelStyle(label.color)}
-                className="text-[10px] px-1.5 py-0 h-4 font-normal"
+                className="text-[9px] px-1 py-0 h-[14px] font-normal leading-none"
               >
                 {label.name}
               </Badge>

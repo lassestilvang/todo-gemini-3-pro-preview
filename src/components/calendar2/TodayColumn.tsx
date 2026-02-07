@@ -1,10 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { DraggableTaskRow } from "./DraggableTaskRow";
 import { useExternalDrag } from "./hooks/useExternalDrag";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Task } from "@/lib/types";
 
@@ -23,18 +22,21 @@ export function TodayColumn({ tasks, doneTasks, onEditTask }: TodayColumnProps) 
     <div className="flex flex-col h-full min-h-0">
       <div className="px-4 py-3 border-b shrink-0">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Today</h2>
-          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+          <h2 className="text-base font-semibold tracking-tight">Today</h2>
+          <span className="text-[11px] text-muted-foreground tabular-nums">
             {tasks.length}
           </span>
         </div>
       </div>
 
-      <ScrollArea className="flex-1 min-h-0">
-        <div ref={containerRef} className="p-2 space-y-0.5">
+      <div
+        ref={containerRef}
+        className="flex-1 min-h-0 overflow-y-auto calendar2-column"
+      >
+        <div className="p-1.5 space-y-px">
           {tasks.length === 0 ? (
-            <div className="text-center py-8 text-sm text-muted-foreground">
-              No tasks for today.
+            <div className="flex items-center justify-center h-32 text-sm text-muted-foreground/60">
+              No tasks for today
             </div>
           ) : (
             tasks.map((task) => (
@@ -44,25 +46,26 @@ export function TodayColumn({ tasks, doneTasks, onEditTask }: TodayColumnProps) 
         </div>
 
         {doneTasks.length > 0 && (
-          <div className="px-2 pb-2">
+          <div className="border-t mt-1">
             <button
               onClick={() => setShowDone(!showDone)}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
+              className="flex items-center gap-2 px-4 py-2.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full"
             >
               <ChevronDown
                 className={cn(
-                  "h-4 w-4 transition-transform",
+                  "h-3.5 w-3.5 transition-transform duration-200",
                   !showDone && "-rotate-90"
                 )}
               />
-              <span>Done</span>
-              <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              <span className="font-medium">Done</span>
+              <span className="text-[11px] text-muted-foreground/60 tabular-nums">
                 {doneTasks.length}
               </span>
             </button>
 
             {showDone && (
-              <div className="space-y-0.5">
+              <div className="px-1.5 pb-1.5 space-y-px">
                 {doneTasks.map((task) => (
                   <DraggableTaskRow key={task.id} task={task} showTime onEdit={onEditTask} />
                 ))}
@@ -70,7 +73,7 @@ export function TodayColumn({ tasks, doneTasks, onEditTask }: TodayColumnProps) 
             )}
           </div>
         )}
-      </ScrollArea>
+      </div>
     </div>
   );
 }

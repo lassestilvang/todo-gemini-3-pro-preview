@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { DraggableTaskRow } from "./DraggableTaskRow";
 import { useExternalDrag } from "./hooks/useExternalDrag";
 import type { Task } from "@/lib/types";
@@ -20,27 +19,28 @@ export function UnplannedColumn({ tasks, listName, onEditTask }: UnplannedColumn
     <div className="flex flex-col h-full min-h-0">
       <div className="px-4 py-3 border-b shrink-0">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">{listName}</h2>
-          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+          <h2 className="text-base font-semibold tracking-tight">{listName}</h2>
+          <span className="text-[11px] text-muted-foreground tabular-nums">
             {tasks.length}
           </span>
         </div>
-        <p className="text-xs text-muted-foreground mt-0.5">Unplanned tasks</p>
+        <p className="text-[11px] text-muted-foreground/70 mt-0.5">Unplanned</p>
       </div>
 
-      <ScrollArea className="flex-1 min-h-0">
-        <div ref={containerRef} className="p-2 space-y-0.5">
-          {tasks.length === 0 ? (
-            <div className="text-center py-8 text-sm text-muted-foreground">
-              No unplanned tasks in this list.
-            </div>
-          ) : (
-            tasks.map((task) => (
-              <DraggableTaskRow key={task.id} task={task} onEdit={onEditTask} />
-            ))
-          )}
-        </div>
-      </ScrollArea>
+      <div
+        ref={containerRef}
+        className="flex-1 min-h-0 overflow-y-auto calendar2-column p-1.5 space-y-px"
+      >
+        {tasks.length === 0 ? (
+          <div className="flex items-center justify-center h-32 text-sm text-muted-foreground/60">
+            No unplanned tasks
+          </div>
+        ) : (
+          tasks.map((task) => (
+            <DraggableTaskRow key={task.id} task={task} onEdit={onEditTask} />
+          ))
+        )}
+      </div>
     </div>
   );
 }

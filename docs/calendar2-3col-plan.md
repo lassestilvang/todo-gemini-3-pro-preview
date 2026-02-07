@@ -264,19 +264,29 @@ Tasks from the left and middle columns are **draggable onto the calendar**, whic
 | Phase 4: Today Column | 2–3 hours | ✅ Done |
 | Phase 5: Calendar Reconfiguration | 1 hour | ✅ Done |
 | Phase 6: External Drag Integration | 3–4 hours | ✅ Done |
-| Phase 7: Styling & Polish | 3–4 hours | ⬜ Not started |
+| Phase 7: Styling & Polish | 3–4 hours | ✅ Done |
 | Phase 8: Task Interaction | 2 hours | ✅ Done |
 | **Total** | **~2 days** | |
 
 ## Implementation Notes
 
-### Completed (Phase 1–6, 8)
+### Completed (All Phases)
 
-All core functionality is implemented and builds successfully:
+All functionality and styling is implemented. Build and lint pass cleanly.
 
-- **`Draggable` from `@fullcalendar/react`** is bundled in the v7 package — no extra dependency needed
-- **`CalendarSidebar`** — lists are now clickable to select which list shows in the left column (highlighted with `bg-accent`), checkboxes still control calendar visibility
-- **`CalendarMain`** — defaults to `timeGridThreeDay` (3-day time grid), with `droppable` + `eventReceive` for accepting external drops. `eventReceive` calls `info.event.remove()` to prevent duplicates since we use controlled events
-- **`Calendar2Client`** — orchestrates state: `selectedListId`, memoized selectors for unplanned/today/done tasks, `handleExternalDrop` for drag-to-calendar, `TaskDialog` for editing
-- **Type fix**: `slotLabelFormat` spread uses `Record<string, unknown>` instead of `@ts-expect-error` (the directive was flagged as unused after config changes)
-- **Pre-existing test failure**: Property test `createTask accepts ISO date strings` fails independently of these changes
+**Phase 1–6, 8 (Core):**
+- `Draggable` from `@fullcalendar/react` is bundled in v7 — no extra dependency needed
+- `CalendarSidebar` — clickable list selection (highlighted with `bg-accent`), checkboxes for calendar visibility
+- `CalendarMain` — `timeGridThreeDay` default, `droppable` + `eventReceive` for external drops, `info.event.remove()` prevents duplicates
+- `Calendar2Client` — orchestrates state: `selectedListId`, memoized task selectors, `handleExternalDrop`, `TaskDialog` for editing
+- Type fix: `slotLabelFormat` uses `Record<string, unknown>` spread instead of `@ts-expect-error`
+
+**Phase 7 (Styling & Polish):**
+- FullCalendar dark theme CSS variables overriding `--fc-classic-*` to match app theme (background, borders, now indicator in orange)
+- Thin scrollbars via `.calendar2-column` class — hidden by default, thin on hover
+- `DraggableTaskRow` — compact task cards with time badges (green/red for overdue), priority flags, grab cursor, green completion checkbox
+- `CalendarSidebar` — compact `w-52` with `text-xs`, hover states, color dots
+- `UnplannedColumn` / `TodayColumn` — native `overflow-y-auto` replacing ScrollArea, `bg-card/30` backgrounds
+- `CalendarPlanningLayout` — 300px columns with `bg-card/30`, no outer border
+- Done section with `CheckCircle2` icon and border-top separator
+- `.calendar-event-completed` class for strikethrough completed events on calendar

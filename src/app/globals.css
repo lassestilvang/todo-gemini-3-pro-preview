@@ -691,3 +691,69 @@ html.synthwave textarea:focus {
 .custom-scrollbar:hover::-webkit-scrollbar-thumb:hover {
   background-color: oklch(0.5 0 0 / 50%);
 }
+
+/* -------------------------------------------------------------------------- */
+/*                     Calendar2 Planning View Styles                         */
+/* -------------------------------------------------------------------------- */
+
+/* FullCalendar classic theme overrides for Calendar2 */
+[data-color-scheme="dark"] {
+  --fc-classic-background: oklch(0.12 0.02 260);
+  --fc-classic-border: oklch(0.25 0.04 260 / 20%);
+  --fc-classic-strong-border: oklch(0.3 0.04 260 / 30%);
+  --fc-classic-faint: oklch(1 0 0 / 4%);
+  --fc-classic-muted: oklch(1 0 0 / 8%);
+  --fc-classic-strong: oklch(1 0 0 / 14%);
+  --fc-classic-faint-foreground: oklch(0.5 0.02 260);
+  --fc-classic-muted-foreground: oklch(0.6 0.02 260);
+  --fc-classic-today: oklch(0.7 0.15 65 / 10%);
+  --fc-classic-now: #f97316;
+  --fc-classic-highlight: oklch(0.6 0.15 260 / 15%);
+}
+
+[data-color-scheme="light"] {
+  --fc-classic-now: #f97316;
+}
+
+/* Calendar2 column scrollbar styling */
+.calendar2-column {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.calendar2-column:hover {
+  scrollbar-color: oklch(0.5 0 0 / 30%) transparent;
+}
+
+.calendar2-column::-webkit-scrollbar {
+  width: 4px;
+}
+
+.calendar2-column::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.calendar2-column::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 2px;
+}
+
+.calendar2-column:hover::-webkit-scrollbar-thumb {
+  background-color: oklch(0.5 0 0 / 30%);
+}
+
+/* Calendar event completed state */
+.calendar-event-completed {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+/* External drag ghost styling */
+.fc-external-task {
+  touch-action: none;
+}
+
+.fc-external-task.fc-dragging {
+  opacity: 0.7;
+  z-index: 9999;
+}
