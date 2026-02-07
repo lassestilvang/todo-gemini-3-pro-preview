@@ -1,24 +1,24 @@
 import { format, isToday, isTomorrow, isYesterday } from "date-fns";
 
-let cachedIs24Hour: boolean | null = null;
-
 /**
  * Detects if the system is set to 24-hour clock.
+ * Note: We do not cache this value to avoid potential state pollution in tests
+ * where the environment (window/Intl) might change or be mocked differently between runs.
  */
 export function isSystem24Hour(): boolean {
-    if (cachedIs24Hour !== null) {
-        return cachedIs24Hour;
-    }
-
     if (typeof window === "undefined") {
         return false;
     }
 
-    cachedIs24Hour = !new Intl.DateTimeFormat(undefined, { hour: "numeric" })
-        .formatToParts(new Date())
-        .some((part) => part.type === "dayPeriod");
-
-    return cachedIs24Hour;
+    try {
+        return !new Intl.DateTimeFormat(undefined, { hour: "numeric" })
+            .formatToParts(new Date())
+            .some((part) => part.type === "dayPeriod");
+    } catch (e) {
+        // Fallback if Intl fails
+        console.error("Failed to check 12/24h clock preference", e);
+        return false;
+    }
 }
 
 /**
@@ -56,6 +56,7 @@ export function formatTimePreference(
  */
 export function formatFriendlyDate(date: Date | number, fallbackFormat: string = "PPP"): string {
     // Optimization: Avoid cloning Date if it's already a Date object
+    // This is safe because date-fns treats Date objects as immutable
     const d = date instanceof Date ? date : new Date(date);
 
     if (isToday(d)) return "Today";
