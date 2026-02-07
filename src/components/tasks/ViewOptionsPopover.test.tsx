@@ -4,6 +4,8 @@ import { ViewOptionsPopover } from "./ViewOptionsPopover";
 import React from "react";
 
 // Mock server actions
+// Note: sonner is mocked globally in src/test/setup.tsx
+
 mock.module("@/lib/actions/labels", () => ({
     getLabels: mock(async () => []),
 }));
@@ -15,14 +17,6 @@ mock.module("@/lib/actions/view-settings", () => ({
 
 mock.module("@/lib/actions/views", () => ({
     createSavedView: mock(async () => ({ success: true, data: { id: 1 } })),
-}));
-
-// Mock sonner
-mock.module("sonner", () => ({
-    toast: {
-        success: mock(() => {}),
-        error: mock(() => {}),
-    },
 }));
 
 describe("ViewOptionsPopover", () => {
