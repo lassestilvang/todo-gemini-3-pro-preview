@@ -67,6 +67,15 @@ describe("Integration: Security Missing Auth", () => {
 
     // View Settings Tests
     it("should fail when reading another user's view settings", async () => {
+        // Explicitly set attacker as current user to ensure test isolation in CI
+        setMockAuthUser({
+            id: attackerId,
+            email: "attacker@evil.com",
+            firstName: "Test",
+            lastName: "User",
+            profilePictureUrl: null
+        });
+
         // getViewSettings might have been refactored to use withErrorHandling or not.
         // We verify that it either throws (Forbidden) or returns failure (Forbidden).
         // If it returns success (data or null), that's a security leak.
@@ -98,15 +107,8 @@ describe("Integration: Security Missing Auth", () => {
             // If it throws, verify it's a Forbidden/Unauthorized error
             expect(e.message).toMatch(/Forbidden|authorized|Authentication/i);
         }
-        // Manually set auth to attacker for this test to avoid context switching issues in CI
-        setMockAuthUser({
-            id: attackerId,
-            email: "attacker@evil.com",
-            firstName: "Test",
-            lastName: "User",
-            profilePictureUrl: null
-        });
 
+        // Verify strictly that it throws if attempting again
         await expect(getViewSettings(victimId, "inbox")).rejects.toThrow(/Forbidden|authorized/i);
     });
 
