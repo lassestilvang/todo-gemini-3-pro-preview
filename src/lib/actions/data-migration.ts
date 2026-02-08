@@ -96,6 +96,36 @@ export async function exportUserData() {
     return backup
 }
 
+
+const batchInsert = async <T>(
+    values: T[],
+    insertFn: (batch: T[]) => Promise<NeonHttpQueryResult<unknown>>,
+    batchSize = 500
+): Promise<void> => {
+    // ⚡ Bolt Opt: Chunk inserts and process concurrently to maximize throughput.
+    const chunks: T[][] = [];
+    for (let i = 0; i < values.length; i += batchSize) {
+        chunks.push(values.slice(i, i + batchSize));
+    }
+
+    const concurrency = 5;
+    let index = 0;
+
+    const next = async (): Promise<void> => {
+        while (index < chunks.length) {
+            const chunk = chunks[index++];
+            if (chunk) {
+                await insertFn(chunk);
+            }
+        }
+    };
+
+    const workers = [];
+    for (let i = 0; i < Math.min(concurrency, chunks.length); i++) {
+        workers.push(next());
+    }
+    await Promise.all(workers);
+}
 export async function importUserData(jsonData: unknown) {
     const user = await getCurrentUser()
     if (!user) throw new Error("Unauthorized")
@@ -115,16 +145,6 @@ export async function importUserData(jsonData: unknown) {
     const labelMap = new Map<number, number>()
     const taskMap = new Map<number, number>()
 
-    const batchInsert = async <T>(
-        values: T[],
-        insertFn: (batch: T[]) => Promise<NeonHttpQueryResult<unknown>>,
-        batchSize = 500
-    ): Promise<void> => {
-        // ⚡ Bolt Opt: Chunk inserts to keep SQL payloads small while reducing roundtrips.
-        for (let i = 0; i < values.length; i += batchSize) {
-            await insertFn(values.slice(i, i + batchSize))
-        }
-    }
 
     try {
         // 1. Import Lists
