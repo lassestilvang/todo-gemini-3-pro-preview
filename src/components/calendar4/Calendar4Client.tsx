@@ -3,15 +3,16 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { EventCalendar } from "@/components/calendar4/event-calendar";
 import { CalendarSidebar } from "@/components/calendar2/CalendarSidebar";
+import { UnplannedColumn } from "./UnplannedColumn";
+import { TodayColumn } from "./TodayColumn";
 import { CalendarQuickCreateDialog } from "@/components/calendar2/CalendarQuickCreateDialog";
 import { TaskDialog } from "@/components/tasks/TaskDialog";
 import { useTaskStore } from "@/lib/store/task-store";
 import { useListStore } from "@/lib/store/list-store";
 import { useSync } from "@/components/providers/sync-provider";
 import { useUser } from "@/components/providers/UserProvider";
-import { addMinutes, startOfDay } from "date-fns";
+import { addMinutes, startOfDay, isSameDay, isToday } from "date-fns";
 import type { Task } from "@/lib/types";
-
 
 interface Calendar4ClientProps {
     initialTasks: Task[];
@@ -78,6 +79,27 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
 
     const [selectedListId, setSelectedListId] = useState<number | null>(null);
 
+    // --- Task Filtering ---
+    const unplannedTasks = useMemo(() => {
+        return tasks.filter(t => !t.isCompleted && !t.dueDate && (selectedListId === null || t.listId === selectedListId));
+    }, [tasks, selectedListId]);
+
+    const todayTasks = useMemo(() => {
+        const now = new Date();
+        return tasks.filter(t => {
+            const d = normalizeDate(t.dueDate);
+            return !t.isCompleted && d && isSameDay(d, now);
+        });
+    }, [tasks]);
+
+    const todayDoneTasks = useMemo(() => {
+        const now = new Date();
+        return tasks.filter(t => {
+            const d = normalizeDate(t.dueDate);
+            return t.isCompleted && d && isSameDay(d, now);
+        });
+    }, [tasks]);
+
     // --- Event Mapping ---
     const events = useMemo(() => {
         return tasks
@@ -100,7 +122,7 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
                     backgroundColor: color,
                     borderColor: color,
                     extendedProps: { taskId: t.id },
-                    allDay: !t.estimateMinutes, // If no duration, treat as all day (or specific logic)
+                    allDay: !t.estimateMinutes,
                 };
             });
     }, [tasks, visibleListIds, lists]);
@@ -114,7 +136,7 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
         if (!existing) return;
 
         const newDueDate = info.event.start;
-        if (!newDueDate) return; // Should not happen
+        if (!newDueDate) return;
 
         upsertTask({ ...existing, dueDate: newDueDate });
         dispatch("updateTask", taskId, userId, { dueDate: newDueDate, expectedUpdatedAt: existing.updatedAt ?? null });
@@ -137,13 +159,40 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
         dispatch("updateTask", taskId, userId, { estimateMinutes, expectedUpdatedAt: existing.updatedAt ?? null });
     }, [dispatch, taskMap, userId, upsertTask]);
 
+    const handleEventReceive = useCallback((info: any) => {
+        const taskId = Number(info.event.extendedProps.taskId);
+        if (!taskId || !userId) return;
+
+        const existing = taskMap[taskId];
+        // If task is internal drag (shouldn't happen with droppable=true + external, but good to check)
+        // Actually eventReceive is for external events.
+
+        // We need to remove the temporary element fullcalendar creates? 
+        // No, FullCalendar handles the DOM. We just update state.
+        // But wait, if we update state, the event will come back via `events` prop.
+        // We should ensure we remove the event that FullCalendar added locally?
+        // info.revert() removes the element if we want to manage it purely via state. 
+        // Usually with React + FullCalendar managed events, we revert and let state update rendering.
+        info.revert();
+
+        if (!existing) return;
+
+        const newDueDate = info.event.start;
+        if (!newDueDate) return;
+
+        // If dropped on all-day slot, it might not have time.
+        // Check info.view.type or info.event.allDay
+
+        upsertTask({ ...existing, dueDate: newDueDate });
+        dispatch("updateTask", taskId, userId, { dueDate: newDueDate, expectedUpdatedAt: existing.updatedAt ?? null });
+    }, [dispatch, taskMap, userId, upsertTask]);
+
+
     // --- Quick Create ---
     const [quickCreateOpen, setQuickCreateOpen] = useState(false);
     const [quickCreateDate, setQuickCreateDate] = useState<Date | undefined>(undefined);
 
     const handleDateClick = useCallback((info: any) => {
-        // In v7 DateClickArg might have different structure, checking docs implied standard interactions
-        // Assuming standard fullcalendar interaction plugin
         setQuickCreateDate(info.date);
         setQuickCreateOpen(true);
     }, []);
@@ -157,8 +206,14 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
         if (task) setEditingTask(task);
     }, [taskMap]);
 
+    const selectedListName = useMemo(() => {
+        if (!selectedListId) return "Unplanned";
+        const list = lists.find(l => l.id === selectedListId);
+        return list ? list.name : "Unplanned";
+    }, [selectedListId, lists]);
+
     return (
-        <div className="flex h-screen bg-background">
+        <div className="flex h-screen bg-background overflow-hidden relative">
             <CalendarSidebar
                 lists={lists}
                 visibleListIds={visibleListIds}
@@ -168,26 +223,49 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
                 onSelectList={setSelectedListId}
             />
 
-            <div className="flex-1 flex flex-col min-w-0">
-                <EventCalendar
-                    height="100%"
-                    initialView="dayGridMonth"
-                    headerToolbar={{
-                        left: 'prev,next today',
-                        center: 'title',
-                        right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
-                    }}
-                    events={events}
-                    editable={true}
-                    droppable={true}
-                    selectable={true}
-                    dateClick={handleDateClick} // Requires interaction plugin
-                    eventClick={handleEventClick}
-                    eventDrop={handleEventDrop}
-                    eventResize={handleEventResize}
-                    // Add Shadcn specific props or custom views if needed
-                    availableViews={['dayGridMonth', 'timeGridWeek', 'timeGridDay', 'listWeek']}
-                />
+            {/* 3-Column Layout Container */}
+            <div className="flex-1 flex min-w-0">
+                {/* Column 1: Unplanned */}
+                <div className="w-[300px] shrink-0 border-r flex flex-col min-h-0 bg-background/50">
+                    <UnplannedColumn
+                        tasks={unplannedTasks}
+                        listName={selectedListName}
+                        onEditTask={setEditingTask}
+                    />
+                </div>
+
+                {/* Column 2: Today */}
+                <div className="w-[300px] shrink-0 border-r flex flex-col min-h-0 bg-background/50">
+                    <TodayColumn
+                        tasks={todayTasks}
+                        doneTasks={todayDoneTasks}
+                        onEditTask={setEditingTask}
+                    />
+                </div>
+
+                {/* Column 3: Calendar */}
+                <div className="flex-1 min-w-0 flex flex-col bg-background">
+                    <EventCalendar
+                        height="100%"
+                        initialView="timeGridWeek" // Default to week view as per screenshot usually? Or Month. Let's keep Month or switch to timeGridWeek as it fits drag-drop better for time assignment.
+                        // Screenshot showed "Jan 2024 3W" -> looks like a week view.
+                        headerToolbar={{
+                            left: 'prev,next today',
+                            center: 'title',
+                            right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+                        }}
+                        events={events}
+                        editable={true}
+                        droppable={true}
+                        selectable={true}
+                        dateClick={handleDateClick}
+                        eventClick={handleEventClick}
+                        eventDrop={handleEventDrop}
+                        eventResize={handleEventResize}
+                        eventReceive={handleEventReceive}
+                        availableViews={['dayGridMonth', 'timeGridWeek', 'timeGridDay', 'listWeek']}
+                    />
+                </div>
             </div>
 
             <CalendarQuickCreateDialog
