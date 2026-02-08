@@ -7,12 +7,15 @@
 
 import {
   db,
+  tasks,
   reminders,
   taskLogs,
   eq,
+  and,
   revalidatePath,
   type ActionResult,
   withErrorHandling,
+  NotFoundError,
 } from "./shared";
 import { requireUser } from "@/lib/auth";
 import { createReminderSchema } from "@/lib/validation/reminders";
@@ -39,6 +42,17 @@ async function createReminderImpl(userId: string, taskId: number, remindAt: Date
   await requireUser(userId);
 
   createReminderSchema.parse({ userId, taskId, remindAt });
+
+  // Validate task ownership to prevent IDOR
+  const task = await db
+    .select({ id: tasks.id })
+    .from(tasks)
+    .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)))
+    .limit(1);
+
+  if (task.length === 0) {
+    throw new NotFoundError("Task not found or access denied");
+  }
 
   await db.insert(reminders).values({
     taskId,
@@ -80,16 +94,28 @@ export const createReminder: (
 async function deleteReminderImpl(userId: string, id: number) {
   await requireUser(userId);
 
-  // Get reminder to log it before deleting
-  const reminder = await db.select().from(reminders).where(eq(reminders.id, id)).limit(1);
-  if (reminder.length > 0) {
-    await db.insert(taskLogs).values({
-      userId,
-      taskId: reminder[0].taskId,
-      action: "reminder_removed",
-      details: `Reminder removed for ${reminder[0].remindAt.toLocaleString()}`,
-    });
+  // Get reminder to log it before deleting and verify ownership
+  const reminder = await db
+    .select({
+      id: reminders.id,
+      taskId: reminders.taskId,
+      remindAt: reminders.remindAt,
+    })
+    .from(reminders)
+    .innerJoin(tasks, eq(reminders.taskId, tasks.id))
+    .where(and(eq(reminders.id, id), eq(tasks.userId, userId)))
+    .limit(1);
+
+  if (reminder.length === 0) {
+    throw new NotFoundError("Reminder not found or access denied");
   }
+
+  await db.insert(taskLogs).values({
+    userId,
+    taskId: reminder[0].taskId,
+    action: "reminder_removed",
+    details: `Reminder removed for ${reminder[0].remindAt.toLocaleString()}`,
+  });
 
   await db.delete(reminders).where(eq(reminders.id, id));
   revalidatePath("/");
