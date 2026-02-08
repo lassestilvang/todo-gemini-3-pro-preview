@@ -3,11 +3,8 @@
 ## 💡 Ideas
 
 - Snooze? Eller er det bare "This week"? 
-- This month?
-- This year?
-- Som Hey?
+- Som Hey/Timestripe?
 - Timeline view?
-- tests?
 - blacksmith/depot?
 
 ## 🚨 High Priority (Bugs & Core Issues)

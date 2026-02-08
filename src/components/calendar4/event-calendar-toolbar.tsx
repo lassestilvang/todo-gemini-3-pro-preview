@@ -26,7 +26,7 @@ export function EventCalendarToolbar({
       <div className='flex items-center shrink-0 gap-3'>
         {addButton && (
           <Button
-            onClick={addButton.click as React.MouseEventHandler<HTMLButtonElement>}
+            onClick={() => addButton.click?.(new MouseEvent('click'))}
             aria-label={addButton.hint}
           >{addButton.text}</Button>
         )}
