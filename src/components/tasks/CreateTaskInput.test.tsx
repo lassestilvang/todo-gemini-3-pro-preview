@@ -119,4 +119,23 @@ describe("CreateTaskInput", () => {
         // Expect input to be focused
         expect(document.activeElement).toBe(input);
     });
+
+    it("should open syntax guide when keyboard icon is clicked", async () => {
+        const user = userEvent.setup();
+        render(<CreateTaskInput userId="test_user_123" />);
+        const input = screen.getByPlaceholderText(/Add a task/i);
+
+        // Expand input
+        await user.click(input);
+
+        // Find and click syntax guide button
+        const guideButton = await screen.findByLabelText("Smart syntax guide");
+        await user.click(guideButton);
+
+        // Check content
+        await waitFor(() => {
+            expect(screen.getByText("Smart Syntax")).toBeDefined();
+            expect(screen.getByText("!high")).toBeDefined();
+        });
+    });
 });

@@ -72,3 +72,8 @@
 **Vulnerability:** `createSubtask` and `createTask` (with `parentId`) allowed creating a task linked to ANY parent task ID, even if owned by another user. This created an unauthorized relationship between users' data.
 **Learning:** When implementing Server Actions that create or link entities (e.g., subtasks with `parentId`), explicitly query the database to verify the parent entity belongs to the authenticated user before proceeding, to prevent IDOR.
 **Prevention:** Added explicit parent task ownership checks (`select ... where id = ? and userId = ?`) in `createTask` and `createSubtask`.
+
+## 2026-02-14 - [Critical] IDOR in Dependencies and Reminders (Related Entities)
+**Vulnerability:** `addDependency`, `removeDependency`, `createReminder`, and `deleteReminder` accepted `taskId` or `blockerId` arguments without verifying if these tasks belonged to the authenticated `userId`. This allowed users to link/block other users' tasks or manage reminders for tasks they don't own.
+**Learning:** `requireUser(userId)` only validates the session user. It does NOT automatically validate that foreign keys (like `taskId`) belong to that user. Explicit ownership checks are mandatory for all relational IDs.
+**Prevention:** Before inserting/deleting dependent records (dependencies, reminders, subtasks), always query the parent `tasks` table with `where(and(eq(tasks.id, foreignId), eq(tasks.userId, userId)))` to confirm ownership.

@@ -12,10 +12,12 @@ import {
   taskLogs,
   eq,
   and,
+  inArray,
   revalidatePath,
   type ActionResult,
   withErrorHandling,
   ValidationError,
+  NotFoundError,
 } from "./shared";
 import { requireUser } from "@/lib/auth";
 
@@ -34,6 +36,16 @@ async function addDependencyImpl(userId: string, taskId: number, blockerId: numb
     throw new ValidationError("Task cannot block itself", {
       blockerId: "A task cannot be its own blocker",
     });
+  }
+
+  // Validate ownership of both tasks to prevent IDOR
+  const tasksCheck = await db
+    .select({ id: tasks.id })
+    .from(tasks)
+    .where(and(eq(tasks.userId, userId), inArray(tasks.id, [taskId, blockerId])));
+
+  if (tasksCheck.length !== 2) {
+    throw new NotFoundError("One or both tasks not found or access denied");
   }
 
   // Check for circular dependency (simple check: is blocker blocked by task?)
@@ -88,6 +100,16 @@ export const addDependency: (
  */
 async function removeDependencyImpl(userId: string, taskId: number, blockerId: number) {
   await requireUser(userId);
+
+  // Validate ownership of both tasks to prevent IDOR
+  const tasksCheck = await db
+    .select({ id: tasks.id })
+    .from(tasks)
+    .where(and(eq(tasks.userId, userId), inArray(tasks.id, [taskId, blockerId])));
+
+  if (tasksCheck.length !== 2) {
+    throw new NotFoundError("One or both tasks not found or access denied");
+  }
 
   await db
     .delete(taskDependencies)
