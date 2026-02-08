@@ -7,6 +7,8 @@
 - This year?
 - Som Hey?
 - Timeline view?
+- tests?
+
 
 ## 🚨 High Priority (Bugs & Core Issues)
 
