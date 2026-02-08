@@ -1,22 +1,16 @@
 # Project Improvements & TODOs
 
-Starred tasks?
 #pfa i ToDone? Så har jeg mine link-ups…
 Tasks denne uge/måned
 
 ## 🚨 High Priority (Bugs & Core Issues)
 
-Sync issues
-Sync status
+- [ ] **[Bug] Sync Issues**:
 
 ## 🚀 Features & Enhancements
 
-- [ ] **[Feature] Calendar Version 2**: New page: /calendar2. Use "Full Calendar v7" instead of the current implementation. It should support drag and drop of tasks to reschedule them. It should support resizing to change the duration of a task. It should also support multiple calendars. It should be possible to create a new task by clicking on a date in the calendar. It should support multiple views (month, week, day). The installation guide is here: https://raw.githubusercontent.com/fullcalendar/fullcalendar-docs/refs/heads/v7/INSTALL-GUIDE.md
-- [ ] **[Feature] Board/Calendar View on Lists**: Enable different layouts for task lists, selectable via the "View" settings modal (there are placeholder buttons for it).
-  - **Board View**: A Trello-style Kanban board grouping tasks by status (To Do, In Progress, Done) or priority or dates.
-  - **Calendar View**: A grid-based month/week view showing tasks on their due dates with drag-and-drop rescheduling.
-  - **State Management**: Persist view preference per list/view using the existing `ViewSettings` system.
-  - **Responsive Design**: Ensure Board and Calendar views are usable on mobile with horizontal scrolling or simplified layouts.
+- [ ] **[Feature] Sync Status**: When the Sync Error/Pending icon is shown, it should be possible to click on it to see the sync issues / what is pending sync.
+- [ ] **[Feature] Calendar Version 4**: New page: /calendar4 and add it to the sidebar. Use "Full Calendar v7". It should support drag and drop of tasks to reschedule them. It should support resizing to change the duration of a task. It should also support multiple lists/calendars. It should be possible to create a new task by clicking on a date in the calendar. It should support multiple views (month, week, day). The installation guide is here: https://raw.githubusercontent.com/fullcalendar/fullcalendar-docs/refs/heads/v7/INSTALL-GUIDE.md
 - [ ] **[Feature] AI-Powered Task Suggestions**: Leverage Gemini to suggest next tasks based on user habits and patterns.
 - [ ] **[Feature] Internationalization (i18n)**: Add language files, locale-switcher, and Next.js i18n routing.
 - [ ] **[UX] Task List Density Options**: Introduce selectable density views for task lists to improve visibility and focus.
@@ -24,6 +18,7 @@ Sync status
   - **Standard**: The current default layout and spacing.
   - **Spacious**: Increased padding and vertical rhythm for better readability and focus.
   - **Settings**: Integrate density selection into the `ViewOptionsPopover` and persist it per view using the `ViewSettings` system.
+- [ ] **[Feature] Starred tasks**: Allow users to mark tasks as starred.
 - [ ] **[Feature] Sidebar Favorites**: Allow users to favorite lists and labels for quick access.
   - **Logic**: Add a `isFavorite` or `favorite` field to the `lists` and `labels` tables.
   - **UI**: Add a "star" or "favorite" icon toggle in the sidebar (next to titles) and in the manage dialogs.
@@ -60,6 +55,11 @@ Sync status
 
 ## ✅ Completed
 
+- [x] **[Feature] Board/Calendar View on Lists**: Enable different layouts for task lists, selectable via the "View" settings modal (there are placeholder buttons for it).
+  - **Board View**: A Trello-style Kanban board grouping tasks by status (To Do, In Progress, Done) or priority or dates.
+  - **Calendar View**: A grid-based month/week view showing tasks on their due dates with drag-and-drop rescheduling.
+  - **State Management**: Persist view preference per list/view using the existing `ViewSettings` system.
+  - **Responsive Design**: Ensure Board and Calendar views are usable on mobile with horizontal scrolling or simplified layouts.
 - [x] **[UX] Performance Theme**: Should have no CSS animations or transitions anywhere - just instant rendering. Pure speed!
 - [x] **[Bug] Emoji/Icon Picker**: The emoji/icon picker is not working. It should display the emoji/icon and allow the user to select it. Nothing is displayed. Debug in browser to see for yourself.
   - _Status_: **RESOLVED** - Verified in dev environment; picker displays correctly and allows selection. Cannot reproduce "Nothing is displayed".

@@ -20,6 +20,11 @@ interface SyncContextType {
     isOnline: boolean;
     conflicts: ConflictInfo[];
     resolveConflict: (actionId: string, resolution: 'local' | 'server' | 'merge', mergedData?: unknown) => Promise<void>;
+    retryAction: (actionId: string) => Promise<void>;
+    dismissAction: (actionId: string) => Promise<void>;
+    retryAllFailed: () => Promise<void>;
+    dismissAllFailed: () => Promise<void>;
+    syncNow: () => void;
 }
 
 const SyncContext = createContext<SyncContextType | null>(null);
@@ -494,6 +499,32 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         return { id: tempId, ...(args[0] as any) }; // Approximate optimistic result
     }, [processQueue, scheduleFlush]);
 
+    const retryAction = useCallback(async (actionId: string) => {
+        await updateActionStatus(actionId, 'pending');
+        setPendingActions(prev => prev.map(a => a.id === actionId ? { ...a, status: 'pending' as const, error: undefined } : a));
+        processQueue();
+    }, [processQueue]);
+
+    const dismissAction = useCallback(async (actionId: string) => {
+        await removeFromQueue(actionId);
+        setPendingActions(prev => prev.filter(a => a.id !== actionId));
+    }, []);
+
+    const retryAllFailed = useCallback(async () => {
+        const failedIds = pendingActions.filter(a => a.status === 'failed').map(a => a.id);
+        if (failedIds.length === 0) return;
+        await updateActionStatusBatch(failedIds.map(id => ({ id, status: 'pending' as const })));
+        setPendingActions(prev => prev.map(a => a.status === 'failed' ? { ...a, status: 'pending' as const, error: undefined } : a));
+        processQueue();
+    }, [pendingActions, processQueue]);
+
+    const dismissAllFailed = useCallback(async () => {
+        const failedIds = pendingActions.filter(a => a.status === 'failed').map(a => a.id);
+        if (failedIds.length === 0) return;
+        await removeFromQueueBatch(failedIds);
+        setPendingActions(prev => prev.filter(a => a.status !== 'failed'));
+    }, [pendingActions]);
+
     const value = useMemo(() => ({
         pendingActions,
         dispatch,
@@ -501,7 +532,12 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         isOnline,
         conflicts,
         resolveConflict,
-    }), [pendingActions, dispatch, status, isOnline, conflicts, resolveConflict]);
+        retryAction,
+        dismissAction,
+        retryAllFailed,
+        dismissAllFailed,
+        syncNow: processQueue,
+    }), [pendingActions, dispatch, status, isOnline, conflicts, resolveConflict, retryAction, dismissAction, retryAllFailed, dismissAllFailed, processQueue]);
 
     const currentConflict = conflicts.length > 0 ? conflicts[0] : null;
 
