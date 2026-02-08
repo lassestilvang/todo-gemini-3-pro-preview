@@ -1,19 +1,30 @@
 import { format, isToday, isTomorrow, isYesterday } from "date-fns";
 
+let cachedIs24Hour: boolean | null = null;
+
 /**
  * Detects if the system is set to 24-hour clock.
- * Note: We do not cache this value to avoid potential state pollution in tests
- * where the environment (window/Intl) might change or be mocked differently between runs.
+ * Note: We cache this value for performance, but bypass cache in tests
+ * to avoid state pollution where the environment (window/Intl) might be mocked.
  */
 export function isSystem24Hour(): boolean {
     if (typeof window === "undefined") {
         return false;
     }
 
+    // Perf: Cache the result to avoid expensive Intl instantiation on every call.
+    // Bypass cache in test environment to allow mocking.
+    if (cachedIs24Hour !== null && process.env.NODE_ENV !== "test") {
+        return cachedIs24Hour;
+    }
+
     try {
-        return !new Intl.DateTimeFormat(undefined, { hour: "numeric" })
+        const is24h = !new Intl.DateTimeFormat(undefined, { hour: "numeric" })
             .formatToParts(new Date())
             .some((part) => part.type === "dayPeriod");
+
+        cachedIs24Hour = is24h;
+        return is24h;
     } catch (e) {
         // Fallback if Intl fails
         console.error("Failed to check 12/24h clock preference", e);
