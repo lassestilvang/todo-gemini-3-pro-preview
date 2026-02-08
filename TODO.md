@@ -3,6 +3,8 @@
 ## 💡 Ideas
 
 - Snooze? Eller er det bare "This week"? 
+- This month?
+- This year?
 
 ## 🚨 High Priority (Bugs & Core Issues)
 
