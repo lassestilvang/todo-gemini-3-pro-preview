@@ -1,6 +1,8 @@
+import { Suspense } from "react";
 import { getList } from "@/lib/actions";
 import { getCurrentUser } from "@/lib/auth";
 import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
+import { TaskListSkeleton } from "@/components/tasks/TaskListSkeleton";
 import { CreateTaskInput } from "@/components/tasks/CreateTaskInput";
 import { notFound, redirect } from "next/navigation";
 import { ManageListDialog } from "@/components/tasks/ManageListDialog";
@@ -18,6 +20,39 @@ import { getViewSettings } from "@/lib/actions/view-settings";
 import { mapDbSettingsToViewSettings } from "@/lib/view-settings";
 import { getTasks } from "@/lib/actions/tasks";
 
+async function ListTaskSection({
+    userId,
+    listId,
+}: {
+    userId: string;
+    listId: number;
+}) {
+    const [tasks, dbSettings] = await Promise.all([
+        getTasks(userId, listId),
+        getViewSettings(userId, `list-${listId}`),
+    ]);
+    let initialSettings = mapDbSettingsToViewSettings(dbSettings);
+
+    // Default to "Created" descending for Lists if no settings exist
+    if (!dbSettings) {
+        initialSettings = {
+            ...initialSettings,
+            sortBy: "created",
+            sortOrder: "desc",
+        };
+    }
+
+    return (
+        <TaskListWithSettings
+            tasks={tasks}
+            listId={listId}
+            viewId={`list-${listId}`}
+            userId={userId}
+            initialSettings={initialSettings}
+        />
+    );
+}
+
 export default async function ListPage({ params }: ListPageProps) {
     const user = await getCurrentUser();
     if (!user) {
@@ -31,22 +66,6 @@ export default async function ListPage({ params }: ListPageProps) {
     // Blocking List Fetch (Fast, single row) needed for Title/404
     const list = await getList(listId, user.id);
     if (!list) return notFound();
-
-    // Restore blocking task fetch
-    const tasks = await getTasks(user.id, listId);
-
-    // Fetch view settings on server to prevent flash
-    const dbSettings = await getViewSettings(user.id, `list-${listId}`);
-    let initialSettings = mapDbSettingsToViewSettings(dbSettings);
-
-    // Default to "Created" descending for Lists if no settings exist
-    if (!dbSettings) {
-        initialSettings = {
-            ...initialSettings,
-            sortBy: "created",
-            sortOrder: "desc"
-        };
-    }
 
     return (
         <div className="container max-w-4xl py-6 lg:py-10">
@@ -75,13 +94,9 @@ export default async function ListPage({ params }: ListPageProps) {
 
                 <CreateTaskInput listId={listId} userId={user.id} />
 
-                <TaskListWithSettings
-                    tasks={tasks}
-                    listId={listId}
-                    viewId={`list-${listId}`}
-                    userId={user.id}
-                    initialSettings={initialSettings}
-                />
+                <Suspense fallback={<TaskListSkeleton />}>
+                    <ListTaskSection userId={user.id} listId={listId} />
+                </Suspense>
             </div>
         </div>
     );

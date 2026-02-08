@@ -1,23 +1,36 @@
+import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth";
 import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
+import { TaskListSkeleton } from "@/components/tasks/TaskListSkeleton";
 import { CreateTaskInput } from "@/components/tasks/CreateTaskInput";
 import { redirect } from "next/navigation";
 import { getViewSettings } from "@/lib/actions/view-settings";
 import { mapDbSettingsToViewSettings } from "@/lib/view-settings";
 import { getTasks } from "@/lib/actions/tasks";
 
+async function UpcomingTaskSection({ userId }: { userId: string }) {
+    const [tasks, dbSettings] = await Promise.all([
+        getTasks(userId, null, "upcoming"),
+        getViewSettings(userId, "upcoming"),
+    ]);
+    const initialSettings = mapDbSettingsToViewSettings(dbSettings);
+
+    return (
+        <TaskListWithSettings
+            tasks={tasks}
+            viewId="upcoming"
+            userId={userId}
+            filterType="upcoming"
+            initialSettings={initialSettings}
+        />
+    );
+}
+
 export default async function UpcomingPage() {
     const user = await getCurrentUser();
     if (!user) {
         redirect("/login");
     }
-
-    // Restore blocking data fetch
-    const tasks = await getTasks(user.id, null, "upcoming");
-
-    // Fetch view settings on server to prevent flash
-    const dbSettings = await getViewSettings(user.id, "upcoming");
-    const initialSettings = mapDbSettingsToViewSettings(dbSettings);
 
     return (
         <div className="container max-w-4xl py-6 lg:py-10">
@@ -31,13 +44,9 @@ export default async function UpcomingPage() {
 
                 <CreateTaskInput userId={user.id} />
 
-                <TaskListWithSettings
-                    tasks={tasks}
-                    viewId="upcoming"
-                    userId={user.id}
-                    filterType="upcoming"
-                    initialSettings={initialSettings}
-                />
+                <Suspense fallback={<TaskListSkeleton />}>
+                    <UpcomingTaskSection userId={user.id} />
+                </Suspense>
             </div>
         </div>
     );

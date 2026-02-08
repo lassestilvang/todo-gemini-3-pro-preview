@@ -1,6 +1,8 @@
+import { Suspense } from "react";
 import { getLabel } from "@/lib/actions";
 import { getCurrentUser } from "@/lib/auth";
 import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
+import { TaskListSkeleton } from "@/components/tasks/TaskListSkeleton";
 import { CreateTaskInput } from "@/components/tasks/CreateTaskInput";
 import { notFound, redirect } from "next/navigation";
 import { ManageLabelDialog } from "@/components/tasks/ManageLabelDialog";
@@ -18,6 +20,30 @@ import { getViewSettings } from "@/lib/actions/view-settings";
 import { mapDbSettingsToViewSettings } from "@/lib/view-settings";
 import { getTasks } from "@/lib/actions/tasks";
 
+async function LabelTaskSection({
+    userId,
+    labelId,
+}: {
+    userId: string;
+    labelId: number;
+}) {
+    const [tasks, dbSettings] = await Promise.all([
+        getTasks(userId, undefined, undefined, labelId),
+        getViewSettings(userId, `label-${labelId}`),
+    ]);
+    const initialSettings = mapDbSettingsToViewSettings(dbSettings);
+
+    return (
+        <TaskListWithSettings
+            tasks={tasks}
+            labelId={labelId}
+            viewId={`label-${labelId}`}
+            userId={userId}
+            initialSettings={initialSettings}
+        />
+    );
+}
+
 export default async function LabelPage({ params }: LabelPageProps) {
     const user = await getCurrentUser();
     if (!user) {
@@ -31,13 +57,6 @@ export default async function LabelPage({ params }: LabelPageProps) {
     const label = await getLabel(labelId, user.id);
 
     if (!label) return notFound();
-
-    // Restore blocking task fetch
-    const tasks = await getTasks(user.id, undefined, undefined, labelId);
-
-    // Fetch view settings on server to prevent flash
-    const dbSettings = await getViewSettings(user.id, `label-${labelId}`);
-    const initialSettings = mapDbSettingsToViewSettings(dbSettings);
 
     return (
         <div className="container max-w-4xl py-6 lg:py-10">
@@ -66,13 +85,9 @@ export default async function LabelPage({ params }: LabelPageProps) {
 
                 <CreateTaskInput userId={user.id} defaultLabelIds={[labelId]} />
 
-                <TaskListWithSettings
-                    tasks={tasks}
-                    labelId={labelId}
-                    viewId={`label-${labelId}`}
-                    userId={user.id}
-                    initialSettings={initialSettings}
-                />
+                <Suspense fallback={<TaskListSkeleton />}>
+                    <LabelTaskSection userId={user.id} labelId={labelId} />
+                </Suspense>
             </div>
         </div>
     );

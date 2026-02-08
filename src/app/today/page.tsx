@@ -1,23 +1,44 @@
+import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth";
 import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
+import { TaskListSkeleton } from "@/components/tasks/TaskListSkeleton";
 import { CreateTaskInput } from "@/components/tasks/CreateTaskInput";
 import { redirect } from "next/navigation";
 import { getViewSettings } from "@/lib/actions/view-settings";
 import { mapDbSettingsToViewSettings } from "@/lib/view-settings";
 import { getTasks } from "@/lib/actions/tasks";
 
+async function TodayTaskSection({
+    userId,
+    defaultDueDate,
+}: {
+    userId: string;
+    defaultDueDate: string;
+}) {
+    const [tasks, dbSettings] = await Promise.all([
+        getTasks(userId, null, "today"),
+        getViewSettings(userId, "today"),
+    ]);
+    const initialSettings = mapDbSettingsToViewSettings(dbSettings);
+
+    return (
+        <TaskListWithSettings
+            tasks={tasks}
+            defaultDueDate={defaultDueDate}
+            viewId="today"
+            userId={userId}
+            filterType="today"
+            initialSettings={initialSettings}
+        />
+    );
+}
+
 export default async function TodayPage() {
     const user = await getCurrentUser();
     if (!user) {
         redirect("/login");
     }
-
-    // Restore blocking data fetch
-    const tasks = await getTasks(user.id, null, "today");
-
-    // Fetch view settings on server to prevent flash
-    const dbSettings = await getViewSettings(user.id, "today");
-    const initialSettings = mapDbSettingsToViewSettings(dbSettings);
+    const defaultDueDate = new Date().toISOString();
 
     return (
         <div className="container max-w-4xl py-6 lg:py-10">
@@ -29,16 +50,11 @@ export default async function TodayPage() {
                     </p>
                 </div>
 
-                <CreateTaskInput defaultDueDate={new Date().toISOString()} userId={user.id} />
+                <CreateTaskInput defaultDueDate={defaultDueDate} userId={user.id} />
 
-                <TaskListWithSettings
-                    tasks={tasks}
-                    defaultDueDate={new Date().toISOString()}
-                    viewId="today"
-                    userId={user.id}
-                    filterType="today"
-                    initialSettings={initialSettings}
-                />
+                <Suspense fallback={<TaskListSkeleton />}>
+                    <TodayTaskSection userId={user.id} defaultDueDate={defaultDueDate} />
+                </Suspense>
             </div>
         </div>
     );
