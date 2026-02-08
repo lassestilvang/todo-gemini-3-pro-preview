@@ -2,7 +2,6 @@ import { describe, it, expect, mock, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, createTestUser } from "../test/setup";
 import { db, tasks } from "@/db";
 import { eq } from "drizzle-orm";
-import { generateSubtasks, extractDeadline, generateSmartSchedule, analyzePriorities, applyScheduleSuggestion } from "./smart-scheduler";
 
 // Mock the Gemini client
 const mockGenerateContent = mock(() => Promise.resolve({
@@ -19,17 +18,32 @@ const mockGetGeminiClient = mock(() => ({
     getGenerativeModel: mockGetGenerativeModel
 }));
 
-// Mock the module
+// Declare variables for dynamic imports
+let generateSubtasks: typeof import("./smart-scheduler").generateSubtasks;
+let extractDeadline: typeof import("./smart-scheduler").extractDeadline;
+let generateSmartSchedule: typeof import("./smart-scheduler").generateSmartSchedule;
+let analyzePriorities: typeof import("./smart-scheduler").analyzePriorities;
+let applyScheduleSuggestion: typeof import("./smart-scheduler").applyScheduleSuggestion;
+
 describe("smart-scheduler", () => {
     let testUserId: string;
 
     beforeAll(async () => {
+        // Mock the module BEFORE importing the SUT
         mock.module("@/lib/gemini", () => ({
             getGeminiClient: mockGetGeminiClient,
             GEMINI_MODEL: "gemini-pro"
         }));
+
+        // Dynamically import SUT to ensure it uses the mock
+        const scheduler = await import("./smart-scheduler");
+        generateSubtasks = scheduler.generateSubtasks;
+        extractDeadline = scheduler.extractDeadline;
+        generateSmartSchedule = scheduler.generateSmartSchedule;
+        analyzePriorities = scheduler.analyzePriorities;
+        applyScheduleSuggestion = scheduler.applyScheduleSuggestion;
+
         await setupTestDb();
-        // await resetTestDb();
     });
 
     beforeEach(async () => {
@@ -138,7 +152,6 @@ describe("smart-scheduler", () => {
         });
     });
 
-    // Skip tests that require database mocking to avoid interference with other tests
     describe("generateSmartSchedule", () => {
         it("generates schedule for unscheduled tasks", async () => {
             const suggestions = await generateSmartSchedule();

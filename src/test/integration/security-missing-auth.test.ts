@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, createTestUser } from "@/test/setup";
-import { setMockAuthUser, clearMockAuthUser } from "@/test/mocks";
+import { setMockAuthUser, clearMockAuthUser, getMockAuthUser } from "@/test/mocks";
 
 // Note: @/lib/auth is already mocked in src/test/setup.tsx which uses getMockAuthUser.
 // Re-mocking here caused conflicts in CI where the module might be re-evaluated
@@ -67,6 +67,10 @@ describe("Integration: Security Missing Auth", () => {
             profilePictureUrl: null
         });
 
+        // Debug verification
+        const currentUser = getMockAuthUser();
+        expect(currentUser?.id).toBe(attackerId);
+
         // getViewSettings might have been refactored to use withErrorHandling or not.
         // We verify that it either throws (Forbidden) or returns failure (Forbidden).
         // If it returns success (data or null), that's a security leak.
@@ -91,8 +95,12 @@ describe("Integration: Security Missing Auth", () => {
 
                 // We strictly expect it to throw if it's not wrapped.
                 // If it didn't throw, we fail the test.
-                console.error("Security failure: getViewSettings returned success/null instead of throwing/failing");
-                expect(true).toBe(false);
+                console.error("Security failure: getViewSettings returned success/null instead of throwing/failing. Result:", result);
+                console.error("Current Mock User:", getMockAuthUser());
+                console.error("Target Victim ID:", victimId);
+
+                // Fail with descriptive message
+                expect(result).toBe("SHOULD_HAVE_THROWN_FORBIDDEN");
             }
         } catch (e: unknown) {
             // If it throws, verify it's a Forbidden/Unauthorized error
