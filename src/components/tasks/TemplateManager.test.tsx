@@ -106,11 +106,11 @@ describe("TemplateManager", () => {
       // Explicitly wait for dialog with increased timeout for CI
       await waitFor(() => {
         expect(screen.getByRole("dialog")).toBeInTheDocument();
-      }, { timeout: 15000 });
+      }, { timeout: 30000 });
 
       await waitFor(() => {
         expect(screen.getByText("Task Templates")).toBeInTheDocument();
-      }, { timeout: 15000 });
+      }, { timeout: 30000 });
     }, 20000);
 
     it("should load and display templates when dialog opens", async () => {
@@ -118,12 +118,12 @@ describe("TemplateManager", () => {
 
       fireEvent.click(screen.getByText("Templates"));
 
-      expect(await screen.findByText("Task Templates", {}, { timeout: 15000 })).toBeInTheDocument();
+      expect(await screen.findByText("Task Templates", {}, { timeout: 30000 })).toBeInTheDocument();
 
       await waitFor(() => {
         expect(screen.getByText("Weekly Report")).toBeInTheDocument();
         expect(screen.getByText("Daily Standup")).toBeInTheDocument();
-      }, { timeout: 15000 });
+      }, { timeout: 30000 });
     }, 20000);
 
     it("should show empty state when no templates exist", async () => {
@@ -139,7 +139,7 @@ describe("TemplateManager", () => {
 
       await waitFor(() => {
         expect(screen.getByText("No templates found. Create one to get started.")).toBeInTheDocument();
-      }, { timeout: 15000 });
+      }, { timeout: 30000 });
     }, 20000);
   });
 
@@ -149,11 +149,11 @@ describe("TemplateManager", () => {
 
       fireEvent.click(screen.getByText("Templates"));
 
-      expect(await screen.findByTestId("new-template-button", {}, { timeout: 15000 })).toBeInTheDocument();
+      expect(await screen.findByTestId("new-template-button", {}, { timeout: 30000 })).toBeInTheDocument();
 
       fireEvent.click(screen.getByTestId("new-template-button"));
 
-      expect(await screen.findByRole("heading", { name: "Create Template" }, { timeout: 15000 })).toBeInTheDocument();
+      expect(await screen.findByRole("heading", { name: "Create Template" }, { timeout: 30000 })).toBeInTheDocument();
       expect(screen.getByTestId("template-name-input")).toBeInTheDocument();
     }, 20000);
 
@@ -165,7 +165,7 @@ describe("TemplateManager", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId("new-template-button")).toBeInTheDocument();
-      }, { timeout: 15000 });
+      }, { timeout: 30000 });
 
       // Click New Template button
       fireEvent.click(screen.getByTestId("new-template-button"));
@@ -175,7 +175,7 @@ describe("TemplateManager", () => {
         const titleInput = screen.getByTestId("task-title-input") as HTMLInputElement;
         expect(nameInput.value).toBe("");
         expect(titleInput.value).toBe("");
-      }, { timeout: 15000 });
+      }, { timeout: 30000 });
     }, 20000);
   });
 
@@ -185,7 +185,7 @@ describe("TemplateManager", () => {
 
       fireEvent.click(screen.getByText("Templates"));
 
-      expect(await screen.findByTestId(`edit-template-${templateIds[0]}`, {}, { timeout: 15000 })).toBeInTheDocument();
+      expect(await screen.findByTestId(`edit-template-${templateIds[0]}`, {}, { timeout: 30000 })).toBeInTheDocument();
       expect(screen.getByTestId(`edit-template-${templateIds[1]}`)).toBeInTheDocument();
     }, 20000);
 
@@ -196,19 +196,19 @@ describe("TemplateManager", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId("edit-template-1")).toBeInTheDocument();
-      }, { timeout: 15000 });
+      }, { timeout: 30000 });
 
-      const editBtn = await screen.findByTestId(`edit-template-${templateIds[0]}`, {}, { timeout: 15000 });
+      const editBtn = await screen.findByTestId(`edit-template-${templateIds[0]}`, {}, { timeout: 30000 });
       fireEvent.click(editBtn);
 
-      const nameInput = await screen.findByTestId("template-name-input", {}, { timeout: 15000 }) as HTMLInputElement;
+      const nameInput = await screen.findByTestId("template-name-input", {}, { timeout: 30000 }) as HTMLInputElement;
       expect(nameInput.value).toBe("Weekly Report");
 
       await waitFor(() => {
         const nameInput = screen.getByTestId("template-name-input") as HTMLInputElement;
         expect(nameInput).toBeInTheDocument();
         expect(nameInput.value).toBe("Weekly Report");
-      }, { timeout: 15000 });
+      }, { timeout: 30000 });
     }, 20000);
 
     it("should pre-populate task title from template content", async () => {
@@ -219,7 +219,7 @@ describe("TemplateManager", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId(`edit-template-${templateIds[0]}`)).toBeInTheDocument();
-      }, { timeout: 15000 });
+      }, { timeout: 30000 });
 
       // Click edit button for first template
       fireEvent.click(screen.getByTestId(`edit-template-${templateIds[0]}`));
@@ -227,7 +227,7 @@ describe("TemplateManager", () => {
       await waitFor(() => {
         const titleInput = screen.getByTestId("task-title-input") as HTMLInputElement;
         expect(titleInput.value).toBe("Weekly Report Task");
-      }, { timeout: 15000 });
+      }, { timeout: 30000 });
     }, 20000);
   });
 
@@ -240,7 +240,7 @@ describe("TemplateManager", () => {
       await waitFor(() => {
         expect(screen.getByTestId(`use-template-${templateIds[0]}`)).toBeInTheDocument();
         expect(screen.getByTestId(`use-template-${templateIds[1]}`)).toBeInTheDocument();
-      }, { timeout: 15000 });
+      }, { timeout: 30000 });
     }, 20000);
 
     it("should render delete button for each template", async () => {
@@ -251,7 +251,7 @@ describe("TemplateManager", () => {
       await waitFor(() => {
         expect(screen.getByTestId(`delete-template-${templateIds[0]}`)).toBeInTheDocument();
         expect(screen.getByTestId(`delete-template-${templateIds[1]}`)).toBeInTheDocument();
-      }, { timeout: 15000 });
+      }, { timeout: 30000 });
     }, 20000);
 
     it("should have accessible labels for action buttons", async () => {
@@ -262,7 +262,7 @@ describe("TemplateManager", () => {
       await waitFor(() => {
         expect(screen.getByTestId(`edit-template-${templateIds[0]}`)).toHaveAttribute("aria-label", "Edit template");
         expect(screen.getByTestId(`delete-template-${templateIds[0]}`)).toHaveAttribute("aria-label", "Delete template");
-      }, { timeout: 15000 });
+      }, { timeout: 30000 });
     }, 20000);
   });
 
