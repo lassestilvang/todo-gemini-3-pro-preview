@@ -491,13 +491,14 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             }
         } catch (e) { console.error("Optimistic store update failed", e); }
 
-        // Attempt Sync
+        // Attempt Sync — flush pending writes to IndexedDB first so processQueue sees them
         if (navigator.onLine) {
+            await flushQueuedActions();
             processQueue();
         }
 
         return { id: tempId, ...(args[0] as any) }; // Approximate optimistic result
-    }, [processQueue, scheduleFlush]);
+    }, [processQueue, scheduleFlush, flushQueuedActions]);
 
     const retryAction = useCallback(async (actionId: string) => {
         await updateActionStatus(actionId, 'pending');
