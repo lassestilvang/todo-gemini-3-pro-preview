@@ -8,6 +8,7 @@
  */
 
 import { ForbiddenError as AuthForbiddenError, UnauthorizedError as AuthUnauthorizedError } from "./auth-errors";
+import { ZodError } from "zod";
 
 /**
  * Error codes for categorizing Server Action failures
@@ -169,7 +170,12 @@ export class ConflictError extends Error {
   constructor(message: string = "The resource was modified by another client", serverData?: unknown) {
     super(message);
     this.name = "ConflictError";
+    this.code = "CONFLICT";
     this.serverData = serverData;
+
+    // Ensure properties are enumerable for JSON serialization if needed
+    Object.defineProperty(this, 'code', { enumerable: true });
+    Object.defineProperty(this, 'serverData', { enumerable: true });
   }
 }
 
@@ -187,62 +193,85 @@ export function withErrorHandling<T, Args extends unknown[]>(
       const result = await fn(...args);
       return success(result);
     } catch (error) {
-      // Log sanitized error for debugging
-      console.error("[Server Action Error]", sanitizeError(error));
+      // 1. Conflict Errors (priority for sync)
+      const err = error as any;
+      const isConflict = error instanceof ConflictError ||
+        err?.code === "CONFLICT" ||
+        err?.name === "ConflictError" ||
+        err?.message?.includes("modified by another device");
 
-      // Return appropriate error response based on error type
-      if (error instanceof ValidationError) {
-        return failure({
-          code: "VALIDATION_ERROR",
-          message: error.message,
-          details: error.fieldErrors,
-        });
-      }
-
-      if (error instanceof AuthorizationError || error instanceof AuthForbiddenError) {
-        return failure({
-          code: "FORBIDDEN",
-          message: "You do not have permission to perform this action",
-        });
-      }
-
-      if (error instanceof AuthUnauthorizedError) {
-        return failure({
-          code: "UNAUTHORIZED",
-          message: "Authentication required",
-        });
-      }
-
-      if (error instanceof NotFoundError) {
-        return failure({
-          code: "NOT_FOUND",
-          message: error.message,
-        });
-      }
-
-      if (error instanceof DatabaseError) {
-        return failure({
-          code: "DATABASE_ERROR",
-          message: "Unable to complete the operation. Please try again.",
-        });
-      }
-
-      if (error instanceof NetworkError) {
-        return failure({
-          code: "NETWORK_ERROR",
-          message: "A network error occurred. Please check your connection and try again.",
-        });
-      }
-
-      if (error instanceof ConflictError) {
+      if (isConflict) {
         return failure({
           code: "CONFLICT",
-          message: error.message,
-          details: error.serverData ? { serverData: JSON.stringify(error.serverData) } : undefined,
+          message: err.message || "This task was modified by another device. Please review the changes.",
+          details: err.serverData
+            ? { serverData: typeof err.serverData === 'string' ? err.serverData : JSON.stringify(err.serverData) }
+            : undefined,
         });
       }
 
-      // Generic error for unexpected exceptions
+      // 2. Auth Errors
+      if (error instanceof AuthorizationError || (error as any)?.code === "FORBIDDEN" || error instanceof AuthForbiddenError) {
+        return failure({
+          code: "FORBIDDEN",
+          message: (error as any).message || "You do not have permission to perform this action",
+        });
+      }
+
+      if (error instanceof AuthUnauthorizedError || (error as any)?.code === "UNAUTHORIZED") {
+        return failure({
+          code: "UNAUTHORIZED",
+          message: (error as any).message || "Authentication required",
+        });
+      }
+
+      // 3. Validation Errors
+      if (error instanceof ValidationError || (error as any)?.code === "VALIDATION_ERROR") {
+        return failure({
+          code: "VALIDATION_ERROR",
+          message: (error as any).message || "Validation failed",
+          details: (error as any).fieldErrors || (error as any).details,
+        });
+      }
+
+      if (error instanceof ZodError) {
+        const fieldErrors: Record<string, string> = {};
+        error.issues.forEach((err) => {
+          if (err.path.length > 0) {
+            fieldErrors[err.path.join(".")] = err.message;
+          }
+        });
+
+        return failure({
+          code: "VALIDATION_ERROR",
+          message: "Validation failed",
+          details: fieldErrors,
+        });
+      }
+
+      // 4. Other Domain Errors
+      if (error instanceof NotFoundError || (error as any)?.code === "NOT_FOUND") {
+        return failure({
+          code: "NOT_FOUND",
+          message: (error as any).message || "Resource not found",
+        });
+      }
+
+      if (error instanceof DatabaseError || (error as any)?.code === "DATABASE_ERROR") {
+        return failure({
+          code: "DATABASE_ERROR",
+          message: (error as any).message || "Database error",
+        });
+      }
+
+      if (error instanceof NetworkError || (error as any)?.code === "NETWORK_ERROR") {
+        return failure({
+          code: "NETWORK_ERROR",
+          message: (error as any).message || "Network error",
+        });
+      }
+
+      // 5. Generic error for unexpected exceptions
       return failure({
         code: "UNKNOWN_ERROR",
         message: "An unexpected error occurred. Please try again.",

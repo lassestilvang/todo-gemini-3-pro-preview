@@ -126,7 +126,20 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
                     statusUpdates.push({ id: action.id, status: 'processing' });
 
                     // Execute Server Action
-                    const result = await (fn as (...args: any[]) => Promise<any>)(...(action.payload as any[]));
+                    const actionResult = await (fn as (...args: any[]) => Promise<any>)(...(action.payload as any[]));
+
+                    // If it's an ActionResult (wrapped with withErrorHandling), handle success/failure
+                    let result: any;
+                    if (actionResult && typeof actionResult === 'object' && 'success' in actionResult) {
+                        if (!actionResult.success) {
+                            // Throw the error so it's caught by the catch block below
+                            throw actionResult.error;
+                        }
+                        result = actionResult.data;
+                    } else {
+                        // Support legacy raw actions if any are added back
+                        result = actionResult;
+                    }
 
                     // If this action created a temp ID, we need to fix up future actions
                     if (action.tempId && result && result.id) {
@@ -181,7 +194,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
                         (typeof err === 'object' && err?.error?.code === 'CONFLICT');
 
                     if (isConflict) {
-                        const serverData = err?.serverData || err?.error?.details?.serverData;
+                        const serverData = err?.details?.serverData || err?.serverData || err?.error?.details?.serverData;
                         const payload = action.payload as any[];
                         conflictUpdates.push({
                             actionId: action.id,
@@ -197,7 +210,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
                     // If network error, stop processing and retry later
                     // If logical error (400/500), maybe remove or stash?
-                    statusUpdates.push({ id: action.id, status: 'failed', error: String(error) });
+                    const errorMessage = err?.message || String(error);
+                    statusUpdates.push({ id: action.id, status: 'failed', error: errorMessage });
 
                     // Stop processing on error to preserve order if dependency exists
                     break;
