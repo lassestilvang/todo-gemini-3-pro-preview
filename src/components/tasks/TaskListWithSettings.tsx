@@ -10,7 +10,7 @@ import { getViewSettings } from "@/lib/actions/view-settings";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { ActionType, actionRegistry } from "@/lib/sync/registry";
-import { Inbox, Calendar, CheckCircle, Layers, ClipboardList } from "lucide-react";
+import { Inbox, Calendar, CheckCircle, Layers, ClipboardList, ChevronDown, CalendarClock } from "lucide-react";
 
 const TaskDialog = dynamic(() => import("./TaskDialog").then(mod => mod.TaskDialog), {
     ssr: false,
@@ -364,6 +364,7 @@ export function TaskListWithSettings({
     // Trust server-provided data/defaults; assume mounted to avoid skeleton flicker
     const [mounted, setMounted] = useState(true);
     const [activeId, setActiveId] = useState<number | null>(null);
+    const [overdueCollapsed, setOverdueCollapsed] = useState(false);
 
     const { dispatch } = useSync();
 
@@ -428,7 +429,8 @@ export function TaskListWithSettings({
             } else if (filterType === "today") {
                 if (!task.dueDate) continue;
                 const dueTime = task.dueDate.getTime();
-                if (dueTime < todayStartTime || dueTime > todayEndTime) continue;
+                if (dueTime > todayEndTime) continue;
+                if (dueTime < todayStartTime && task.isCompleted) continue;
             } else if (filterType === "upcoming") {
                 if (!task.dueDate) continue;
                 if (task.dueDate.getTime() <= nowTime) continue;
@@ -486,31 +488,41 @@ export function TaskListWithSettings({
     }, [displayTasks, settings]);
 
 
-    const { activeTasks, completedTasks } = useMemo(() => {
-        // If sorting by manual, we might want to keep the order even for completed tasks?
-        // But usually completed tasks are moved to the bottom.
-        if (!settings.showCompleted) {
-            return { activeTasks: processedTasks, completedTasks: [] };
-        }
+    const { overdueTasks, activeTasks, completedTasks } = useMemo(() => {
+        const todayStart = startOfDay(new Date());
+        const todayStartTime = todayStart.getTime();
 
-        // Perf: single-pass partition avoids two filter scans.
+        const overdue: Task[] = [];
         const active: Task[] = [];
         const completed: Task[] = [];
+
         for (const task of processedTasks) {
-            (task.isCompleted ? completed : active).push(task);
+            if (task.isCompleted) {
+                if (settings.showCompleted) completed.push(task);
+            } else if (
+                task.dueDate &&
+                (task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate)).getTime() < todayStartTime
+            ) {
+                overdue.push(task);
+            } else {
+                active.push(task);
+            }
         }
-        return { activeTasks: active, completedTasks: completed };
+
+        return { overdueTasks: overdue, activeTasks: active, completedTasks: completed };
     }, [processedTasks, settings.showCompleted]);
+
+    const nonOverdueTasks = useMemo(() => {
+        return [...activeTasks, ...(settings.showCompleted ? completedTasks : [])];
+    }, [activeTasks, completedTasks, settings.showCompleted]);
 
     // Group tasks
     const groupedTasks = useMemo(() => {
         if (settings.groupBy === "none") {
-            // Perf: skip building group maps when grouping is disabled.
-            // This avoids O(n) grouping work on every render for the common default list view.
             return new Map<string, Task[]>();
         }
 
-        const tasksToGroup = processedTasks;
+        const tasksToGroup = nonOverdueTasks;
         const groups = groupTasks(tasksToGroup, settings.groupBy);
 
         // Sort groups by date if grouping by dueDate
@@ -787,8 +799,65 @@ export function TaskListWithSettings({
                     }}
                     onEdit={handleEdit}
                 />
-            ) : settings.groupBy === "none" ? (
+            ) : (
                 <div className="space-y-6">
+                    {overdueTasks.length > 0 && (
+                        <div className="rounded-lg border border-destructive/30 bg-destructive/5">
+                            <div
+                                role="button"
+                                tabIndex={0}
+                                className="flex w-full items-center justify-between px-4 py-3 cursor-pointer"
+                                onClick={() => setOverdueCollapsed(!overdueCollapsed)}
+                                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOverdueCollapsed(!overdueCollapsed); } }}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <ChevronDown
+                                        className={cn(
+                                            "h-4 w-4 text-destructive/70 transition-transform duration-200",
+                                            overdueCollapsed && "-rotate-90"
+                                        )}
+                                    />
+                                    <span className="text-sm font-semibold text-destructive">Overdue</span>
+                                    <span className="text-xs text-destructive/70 bg-destructive/10 px-1.5 py-0.5 rounded-full font-medium">
+                                        {overdueTasks.length}
+                                    </span>
+                                </div>
+                                <button
+                                    type="button"
+                                    className="flex items-center gap-1.5 text-xs font-medium text-destructive hover:text-destructive/80 transition-colors px-2 py-1 rounded-md hover:bg-destructive/10"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        const today = new Date();
+                                        for (const task of overdueTasks) {
+                                            dispatch("updateTask", task.id, userId || "", { dueDate: today });
+                                        }
+                                    }}
+                                >
+                                    <CalendarClock className="h-3.5 w-3.5" />
+                                    Reschedule
+                                </button>
+                            </div>
+
+                            {!overdueCollapsed && (
+                                <div className="px-4 pb-3 space-y-2">
+                                    {overdueTasks.map((task) => (
+                                        <TaskItem
+                                            key={task.id}
+                                            task={task}
+                                            showListInfo={!listId}
+                                            userId={userId}
+                                            disableAnimations={true}
+                                            dispatch={dispatch}
+                                            onEdit={handleEdit}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {settings.groupBy === "none" ? (
+                    <div className="space-y-6">
                     {activeTasks.length > 0 && (
                         activeTasks.length > 50 ? (
                             <Virtuoso
@@ -987,6 +1056,8 @@ export function TaskListWithSettings({
                                 </div>
                             );
                         })
+                    )}
+                </div>
                     )}
                 </div>
             )}

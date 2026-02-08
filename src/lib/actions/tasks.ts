@@ -98,7 +98,7 @@ export async function getTasks(
   const todayEnd = endOfDay(now);
 
   if (filter === "today") {
-    conditions.push(and(gte(tasks.dueDate, todayStart), lte(tasks.dueDate, todayEnd)));
+    conditions.push(lte(tasks.dueDate, todayEnd));
   } else if (filter === "upcoming") {
     conditions.push(gte(tasks.dueDate, todayStart));
   } else if (filter === "next-7-days") {
