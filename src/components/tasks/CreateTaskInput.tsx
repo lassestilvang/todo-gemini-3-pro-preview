@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Calendar, Flag, Zap, MapPin, Smile, X } from "lucide-react";
+import { Calendar, Flag, Zap, MapPin, Smile, X, Keyboard } from "lucide-react";
 import { ResolvedIcon } from "@/components/ui/resolved-icon";
 import { IconPicker } from "@/components/ui/icon-picker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -312,6 +312,52 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                                     setTitle(prev => prev ? `${prev} ${text}` : text);
                                     setIsExpanded(true);
                                 }} />
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                            aria-label="Smart syntax guide"
+                                        >
+                                            <Keyboard className="h-4 w-4" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-80">
+                                        <div className="grid gap-4">
+                                            <div className="space-y-1">
+                                                <h4 className="font-medium leading-none">Smart Syntax</h4>
+                                                <p className="text-sm text-muted-foreground">Type these to quickly set properties.</p>
+                                            </div>
+                                            <div className="grid gap-2">
+                                                <div className="grid grid-cols-3 items-center gap-4">
+                                                    <span className="text-sm font-medium">Priority</span>
+                                                    <div className="col-span-2 text-sm font-mono text-muted-foreground flex gap-1">
+                                                        <Badge variant="secondary" className="px-1 py-0 h-5 font-normal">!high</Badge>
+                                                        <Badge variant="secondary" className="px-1 py-0 h-5 font-normal">!m</Badge>
+                                                        <Badge variant="secondary" className="px-1 py-0 h-5 font-normal">!low</Badge>
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-3 items-center gap-4">
+                                                    <span className="text-sm font-medium">Context</span>
+                                                    <div className="col-span-2 text-sm font-mono text-muted-foreground flex flex-wrap gap-1">
+                                                        <Badge variant="secondary" className="px-1 py-0 h-5 font-normal">@work</Badge>
+                                                        <Badge variant="secondary" className="px-1 py-0 h-5 font-normal">@home</Badge>
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-3 items-center gap-4">
+                                                    <span className="text-sm font-medium">Date</span>
+                                                    <div className="col-span-2 text-sm font-mono text-muted-foreground flex flex-wrap gap-1">
+                                                        <Badge variant="secondary" className="px-1 py-0 h-5 font-normal">today</Badge>
+                                                        <Badge variant="secondary" className="px-1 py-0 h-5 font-normal">tomorrow</Badge>
+                                                        <Badge variant="secondary" className="px-1 py-0 h-5 font-normal">next fri</Badge>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
                                 <Button
                                     type="button"
                                     variant="ghost"
