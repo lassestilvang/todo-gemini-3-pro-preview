@@ -859,72 +859,52 @@ export function TaskListWithSettings({
                     {settings.groupBy === "none" ? (
                         <>
                             {activeTasks.length > 0 && (
-                                activeTasks.length > 50 ? (
-                                    <Virtuoso
-                                        useWindowScroll
-                                        data={activeTasks}
-                                        itemContent={(index, task) => (
-                                            <div className="mb-2">
-                                                <TaskItem
+                                <DndContext
+                                    sensors={sensors}
+                                    collisionDetection={closestCenter}
+                                    onDragStart={handleDragStart}
+                                    onDragEnd={handleDragEnd}
+                                    onDragCancel={handleDragCancel}
+                                    modifiers={[restrictToVerticalAxis]}
+                                >
+                                    <SortableContext
+                                        items={activeTasks.map(t => t.id)}
+                                        strategy={verticalListSortingStrategy}
+                                        disabled={!isDragEnabled}
+                                    >
+                                        <div className="space-y-2">
+                                            {activeTasks.map((task) => (
+                                                <SortableTaskItem
                                                     key={task.id}
                                                     task={task}
-                                                    showListInfo={!listId}
+                                                    handleEdit={handleEdit}
+                                                    listId={listId}
                                                     userId={userId}
-                                                    disableAnimations={true}
+                                                    isDragEnabled={isDragEnabled}
                                                     dispatch={dispatch}
-                                                    onEdit={handleEdit}
                                                 />
-                                            </div>
-                                        )}
-                                    />
-                                ) : (
-                                    <DndContext
-                                        sensors={sensors}
-                                        collisionDetection={closestCenter}
-                                        onDragStart={handleDragStart}
-                                        onDragEnd={handleDragEnd}
-                                        onDragCancel={handleDragCancel}
-                                        modifiers={[restrictToVerticalAxis]}
-                                    >
-                                        <SortableContext
-                                            items={activeTasks.map(t => t.id)}
-                                            strategy={verticalListSortingStrategy}
-                                            disabled={!isDragEnabled}
-                                        >
-                                            <div className="space-y-2">
-                                                {activeTasks.map((task) => (
-                                                    <SortableTaskItem
-                                                        key={task.id}
-                                                        task={task}
-                                                        handleEdit={handleEdit}
-                                                        listId={listId}
+                                            ))}
+                                        </div>
+                                    </SortableContext>
+                                    <DragOverlay>
+                                        {activeId ? (() => {
+                                            const activeTask = displayTasks.find(t => t.id === activeId);
+                                            if (!activeTask) return null;
+                                            return (
+                                                <div className="opacity-90 rotate-2 scale-105 cursor-grabbing">
+                                                    <TaskItem
+                                                        task={activeTask}
+                                                        showListInfo={!listId}
                                                         userId={userId}
-                                                        isDragEnabled={isDragEnabled}
+                                                        disableAnimations={true}
                                                         dispatch={dispatch}
+                                                        onEdit={handleEdit}
                                                     />
-                                                ))}
-                                            </div>
-                                        </SortableContext>
-                                        <DragOverlay>
-                                            {activeId ? (() => {
-                                                const activeTask = displayTasks.find(t => t.id === activeId);
-                                                if (!activeTask) return null;
-                                                return (
-                                                    <div className="opacity-90 rotate-2 scale-105 cursor-grabbing">
-                                                        <TaskItem
-                                                            task={activeTask}
-                                                            showListInfo={!listId}
-                                                            userId={userId}
-                                                            disableAnimations={true}
-                                                            dispatch={dispatch}
-                                                            onEdit={handleEdit}
-                                                        />
-                                                    </div>
-                                                );
-                                            })() : null}
-                                        </DragOverlay>
-                                    </DndContext>
-                                )
+                                                </div>
+                                            );
+                                        })() : null}
+                                    </DragOverlay>
+                                </DndContext>
                             )}
 
                             {completedTasks.length > 0 && (

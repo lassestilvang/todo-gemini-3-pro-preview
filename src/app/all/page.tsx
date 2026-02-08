@@ -36,6 +36,7 @@ export default async function AllTasksPage() {
                     tasks={tasks}
                     viewId="all"
                     userId={user.id}
+                    filterType="all"
                     initialSettings={initialSettings}
                 />
             </div>
