@@ -8,7 +8,7 @@
 - Som Hey?
 - Timeline view?
 - tests?
-- blacksmith?
+- blacksmith/depot?
 
 ## 🚨 High Priority (Bugs & Core Issues)
 
