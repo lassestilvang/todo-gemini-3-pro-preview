@@ -15,6 +15,11 @@ describe("TemplateManager", () => {
   const testUserId = "test_user_123";
 
   beforeEach(async () => {
+    // Reset DB for each test to ensure clean state
+    await setupTestDb();
+    await resetTestDb();
+
+    // Ensure element pointer methods are mocked (defensive programming for CI)
     if (!Element.prototype.setPointerCapture) {
       Element.prototype.setPointerCapture = () => { };
     }
@@ -25,8 +30,6 @@ describe("TemplateManager", () => {
       Element.prototype.hasPointerCapture = () => false;
     }
 
-    await setupTestDb();
-    await resetTestDb();
     await createTestUser(testUserId, `${testUserId}@example.com`);
 
     setMockAuthUser({
@@ -39,6 +42,8 @@ describe("TemplateManager", () => {
 
     const { templates } = await import("@/db/schema-sqlite");
     const { db } = await import("@/db");
+
+    // Insert test data
     await db.insert(templates).values([
       {
         id: 1,
@@ -79,8 +84,12 @@ describe("TemplateManager", () => {
       setMockAuthUser({ id: testUserId, email: "test@example.com", firstName: "Test", lastName: "User", profilePictureUrl: null });
       render(<TemplateManager userId="test_user_123" />);
 
-      fireEvent.click(screen.getByText("Templates"));
+      // Ensure button is present and click it
+      const button = screen.getByText("Templates");
+      expect(button).toBeInTheDocument();
+      fireEvent.click(button);
 
+      // Wait for dialog content with extremely generous timeout for CI
       await waitFor(() => {
         expect(screen.getByRole("dialog")).toBeInTheDocument();
       }, { timeout: 30000 });
@@ -241,6 +250,7 @@ describe("TemplateManager", () => {
     it("should not load templates when userId is not provided", async () => {
       render(<TemplateManager />);
 
+      // If no userId, it should not load
       await waitFor(() => {
         expect(screen.queryByText("Weekly Report")).not.toBeInTheDocument();
       }, { timeout: 5000 });
