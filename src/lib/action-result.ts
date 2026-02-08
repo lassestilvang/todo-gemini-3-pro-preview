@@ -214,14 +214,14 @@ export function withErrorHandling<T, Args extends unknown[]>(
       if (error instanceof AuthorizationError || (error as any)?.code === "FORBIDDEN" || error instanceof AuthForbiddenError) {
         return failure({
           code: "FORBIDDEN",
-          message: (error as any).message || "You do not have permission to perform this action",
+          message: "You do not have permission to perform this action",
         });
       }
 
       if (error instanceof AuthUnauthorizedError || (error as any)?.code === "UNAUTHORIZED") {
         return failure({
           code: "UNAUTHORIZED",
-          message: (error as any).message || "Authentication required",
+          message: "Authentication required",
         });
       }
 
@@ -260,14 +260,14 @@ export function withErrorHandling<T, Args extends unknown[]>(
       if (error instanceof DatabaseError || (error as any)?.code === "DATABASE_ERROR") {
         return failure({
           code: "DATABASE_ERROR",
-          message: (error as any).message || "Database error",
+          message: "Unable to complete the operation. Please try again.",
         });
       }
 
       if (error instanceof NetworkError || (error as any)?.code === "NETWORK_ERROR") {
         return failure({
           code: "NETWORK_ERROR",
-          message: (error as any).message || "Network error",
+          message: "A network error occurred. Please check your connection and try again.",
         });
       }
 

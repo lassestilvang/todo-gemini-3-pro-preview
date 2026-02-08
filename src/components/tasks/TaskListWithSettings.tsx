@@ -558,7 +558,7 @@ export function TaskListWithSettings({
         }
 
         return groups;
-    }, [processedTasks, settings.groupBy]);
+    }, [nonOverdueTasks, settings.groupBy]);
 
     const formattedGroupNames = useMemo(() => {
         // Perf: cache formatted group labels to avoid re-parsing dates per render.
