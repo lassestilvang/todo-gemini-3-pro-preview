@@ -1,15 +1,12 @@
 # Project Improvements & TODOs
 
-#pfa i ToDone? Så har jeg mine link-ups…
-Tasks denne uge/måned
-
 ## 🚨 High Priority (Bugs & Core Issues)
 
-- [ ] **[Bug] Sync Issues**:
+
 
 ## 🚀 Features & Enhancements
 
-- [ ] **[Feature] Sync Status**: When the Sync Error/Pending icon is shown, it should be possible to click on it to see the sync issues / what is pending sync.
+- [ ] **[Feature] Weekly/Monthly/Yearly Tasks**: Figure out a way to let the user schedule tasks for a specific week/month/year.
 - [ ] **[Feature] Calendar Version 4**: New page: /calendar4 and add it to the sidebar. Use "Full Calendar v7". It should support drag and drop of tasks to reschedule them. It should support resizing to change the duration of a task. It should also support multiple lists/calendars. It should be possible to create a new task by clicking on a date in the calendar. It should support multiple views (month, week, day). The installation guide is here: https://raw.githubusercontent.com/fullcalendar/fullcalendar-docs/refs/heads/v7/INSTALL-GUIDE.md
 - [ ] **[Feature] AI-Powered Task Suggestions**: Leverage Gemini to suggest next tasks based on user habits and patterns.
 - [ ] **[Feature] Internationalization (i18n)**: Add language files, locale-switcher, and Next.js i18n routing.
@@ -55,6 +52,7 @@ Tasks denne uge/måned
 
 ## ✅ Completed
 
+- [x] **[Feature] Sync Status**: When the Sync Error/Pending icon is shown, it should be possible to click on it to see the sync issues / what is pending sync.
 - [x] **[Feature] Board/Calendar View on Lists**: Enable different layouts for task lists, selectable via the "View" settings modal (there are placeholder buttons for it).
   - **Board View**: A Trello-style Kanban board grouping tasks by status (To Do, In Progress, Done) or priority or dates.
   - **Calendar View**: A grid-based month/week view showing tasks on their due dates with drag-and-drop rescheduling.
