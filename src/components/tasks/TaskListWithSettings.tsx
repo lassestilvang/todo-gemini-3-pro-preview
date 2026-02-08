@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, memo, Suspense } from "react";
 import { TaskItem } from "./TaskItem";
+import { TaskListSkeleton } from "./TaskListSkeleton";
 import { Task } from "@/lib/types";
 import { format, isToday, isTomorrow, isThisYear, startOfDay, endOfDay } from "date-fns";
 import { ViewOptionsPopover } from "./ViewOptionsPopover";
@@ -18,12 +19,12 @@ const TaskDialog = dynamic(() => import("./TaskDialog").then(mod => mod.TaskDial
 
 const TaskBoardView = dynamic(() => import("./board/TaskBoardView").then(mod => mod.TaskBoardView), {
     ssr: false,
-    loading: () => <div className="h-64 bg-muted rounded-lg animate-pulse" />,
+    loading: () => <TaskListSkeleton variant="board" compact showModes={false} />,
 });
 
 const TaskCalendarLayout = dynamic(() => import("./calendar/TaskCalendarLayout").then(mod => mod.TaskCalendarLayout), {
     ssr: false,
-    loading: () => <div className="h-64 bg-muted rounded-lg animate-pulse" />,
+    loading: () => <TaskListSkeleton variant="calendar" compact showModes={false} />,
 });
 
 interface TaskListWithSettingsProps {
@@ -736,10 +737,7 @@ export function TaskListWithSettings({
             </div>
 
             {(!mounted || !isInitialized) ? (
-                <div className="space-y-4 animate-pulse">
-                    <div className="h-10 bg-muted rounded-lg w-full" />
-                    <div className="h-64 bg-muted rounded-lg w-full" />
-                </div>
+                <TaskListSkeleton variant={settings.layout} compact showModes={false} />
             ) : processedTasks.length === 0 ? (
                 <div
                     className="flex flex-col items-center justify-center h-[300px] text-foreground border rounded-lg border-dashed bg-muted/5"
