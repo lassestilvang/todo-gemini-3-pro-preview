@@ -1,4 +1,4 @@
-import { db, rateLimits } from "@/db";
+import { db, rateLimits, sqliteConnection } from "@/db";
 import { sql } from "drizzle-orm";
 
 /**
@@ -17,15 +17,17 @@ export async function rateLimit(
     const windowMs = windowSeconds * 1000;
     const cutoff = new Date(now.getTime() - windowMs);
 
-    // In tests (SQLite), the schema uses mode: "timestamp" which stores SECONDS.
-    // So we must pass seconds to raw SQL.
-    // In production (PostgreSQL), we use Date objects for timestamp columns.
-    const isTest = process.env.NODE_ENV === 'test';
+    // Check if we are using SQLite (testing environment)
+    // In SQLite with drizzle-orm/bun-sqlite, raw SQL parameters in `sql` template
+    // must be primitive values (numbers/strings). Since our schema defines timestamps
+    // as integers (mode: 'timestamp'), we must pass seconds-based timestamps.
+    // In PostgreSQL (production), we use Date objects which the driver handles.
+    const isSqlite = !!sqliteConnection;
 
     // For SQLite: Convert ms to seconds.
     // For Postgres: Use Date object.
-    const nowValue = isTest ? Math.floor(now.getTime() / 1000) : now;
-    const cutoffValue = isTest ? Math.floor(cutoff.getTime() / 1000) : cutoff;
+    const nowValue = isSqlite ? Math.floor(now.getTime() / 1000) : now;
+    const cutoffValue = isSqlite ? Math.floor(cutoff.getTime() / 1000) : cutoff;
 
     // Atomic upsert:
     // 1. Try to insert a new record with count 1 and current time.
@@ -34,7 +36,7 @@ export async function rateLimit(
         .values({
             key,
             count: 1,
-            lastRequest: now, // Drizzle handles conversion based on schema (Date -> Seconds for SQLite)
+            lastRequest: now, // Drizzle ORM .values() handles conversion automatically based on schema
         })
         .onConflictDoUpdate({
             target: rateLimits.key,
