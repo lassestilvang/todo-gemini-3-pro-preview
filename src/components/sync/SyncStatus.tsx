@@ -95,7 +95,7 @@ function ActionItem({ action, onRetry, onDismiss }: {
 }
 
 export function SyncStatus() {
-    const { status, isOnline, pendingActions, retryAction, dismissAction, retryAllFailed, dismissAllFailed } = useSync();
+    const { status, isOnline, pendingActions, retryAction, dismissAction, retryAllFailed, dismissAllFailed, syncNow } = useSync();
     const [open, setOpen] = useState(false);
 
     const { pendingCount, failedCount } = useMemo(() => {
@@ -233,10 +233,21 @@ export function SyncStatus() {
                         )}
                         {pendingActionsList.length > 0 && (
                             <>
-                                <div className="px-2 pt-1 pb-0.5">
+                                <div className="flex items-center justify-between px-2 pt-1 pb-0.5">
                                     <span className="text-xs font-medium text-muted-foreground">
                                         Pending ({pendingActionsList.length})
                                     </span>
+                                    {isOnline && status !== 'syncing' && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-6 px-1.5 text-xs"
+                                            onClick={() => syncNow()}
+                                        >
+                                            <RefreshCw className="h-3 w-3 mr-1" />
+                                            Sync now
+                                        </Button>
+                                    )}
                                 </div>
                                 {pendingActionsList.map(action => (
                                     <ActionItem
