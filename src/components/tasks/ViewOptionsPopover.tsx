@@ -6,7 +6,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ChevronDown, ChevronUp, Settings2, List, LayoutGrid, Calendar, RotateCcw } from "lucide-react";
 import { ViewSettings, defaultViewSettings } from "@/lib/view-settings";
 import { saveViewSettings, resetViewSettings } from "@/lib/actions/view-settings";
@@ -153,53 +152,37 @@ export function ViewOptionsPopover({ viewId, userId, settings: propSettings, onS
                                 <span className="text-xs">List</span>
                             </button>
 
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <div
-                                        role="radio"
-                                        aria-checked={settings.layout === "board"}
-                                        aria-disabled="true"
-                                        aria-label="Board layout (coming soon)"
-                                        tabIndex={0}
-                                        className={cn(
-                                            "flex-1 flex flex-col items-center gap-1 p-3 rounded-lg border transition-colors opacity-50 cursor-not-allowed",
-                                            settings.layout === "board"
-                                                ? "border-primary bg-primary/5"
-                                                : "border-border"
-                                        )}
-                                    >
-                                        <LayoutGrid className="h-5 w-5" />
-                                        <span className="text-xs">Board</span>
-                                    </div>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Board view coming soon</p>
-                                </TooltipContent>
-                            </Tooltip>
+                            <button
+                                onClick={() => updateSetting("layout", "board")}
+                                role="radio"
+                                aria-checked={settings.layout === "board"}
+                                aria-label="Board layout"
+                                className={cn(
+                                    "flex-1 flex flex-col items-center gap-1 p-3 rounded-lg border transition-colors",
+                                    settings.layout === "board"
+                                        ? "border-primary bg-primary/5"
+                                        : "border-border hover:bg-accent"
+                                )}
+                            >
+                                <LayoutGrid className="h-5 w-5" />
+                                <span className="text-xs">Board</span>
+                            </button>
 
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <div
-                                        role="radio"
-                                        aria-checked={settings.layout === "calendar"}
-                                        aria-disabled="true"
-                                        aria-label="Calendar layout (coming soon)"
-                                        tabIndex={0}
-                                        className={cn(
-                                            "flex-1 flex flex-col items-center gap-1 p-3 rounded-lg border transition-colors opacity-50 cursor-not-allowed",
-                                            settings.layout === "calendar"
-                                                ? "border-primary bg-primary/5"
-                                                : "border-border"
-                                        )}
-                                    >
-                                        <Calendar className="h-5 w-5" />
-                                        <span className="text-xs">Calendar</span>
-                                    </div>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Calendar view coming soon</p>
-                                </TooltipContent>
-                            </Tooltip>
+                            <button
+                                onClick={() => updateSetting("layout", "calendar")}
+                                role="radio"
+                                aria-checked={settings.layout === "calendar"}
+                                aria-label="Calendar layout"
+                                className={cn(
+                                    "flex-1 flex flex-col items-center gap-1 p-3 rounded-lg border transition-colors",
+                                    settings.layout === "calendar"
+                                        ? "border-primary bg-primary/5"
+                                        : "border-border hover:bg-accent"
+                                )}
+                            >
+                                <Calendar className="h-5 w-5" />
+                                <span className="text-xs">Calendar</span>
+                            </button>
                         </div>
                     </div>
 

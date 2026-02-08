@@ -12,7 +12,7 @@ Sync status
 ## 🚀 Features & Enhancements
 
 - [ ] **[Feature] Calendar Version 2**: New page: /calendar2. Use "Full Calendar v7" instead of the current implementation. It should support drag and drop of tasks to reschedule them. It should support resizing to change the duration of a task. It should also support multiple calendars. It should be possible to create a new task by clicking on a date in the calendar. It should support multiple views (month, week, day). The installation guide is here: https://raw.githubusercontent.com/fullcalendar/fullcalendar-docs/refs/heads/v7/INSTALL-GUIDE.md
-- [ ] **[Feature] Board/Calendar View on Lists**: Enable different layouts for task lists, selectable via the "View" settings modal.
+- [ ] **[Feature] Board/Calendar View on Lists**: Enable different layouts for task lists, selectable via the "View" settings modal (there are placeholder buttons for it).
   - **Board View**: A Trello-style Kanban board grouping tasks by status (To Do, In Progress, Done) or priority or dates.
   - **Calendar View**: A grid-based month/week view showing tasks on their due dates with drag-and-drop rescheduling.
   - **State Management**: Persist view preference per list/view using the existing `ViewSettings` system.
@@ -62,50 +62,50 @@ Sync status
 
 - [x] **[UX] Performance Theme**: Should have no CSS animations or transitions anywhere - just instant rendering. Pure speed!
 - [x] **[Bug] Emoji/Icon Picker**: The emoji/icon picker is not working. It should display the emoji/icon and allow the user to select it. Nothing is displayed. Debug in browser to see for yourself.
-  - *Status*: **RESOLVED** - Verified in dev environment; picker displays correctly and allows selection. Cannot reproduce "Nothing is displayed".
+  - _Status_: **RESOLVED** - Verified in dev environment; picker displays correctly and allows selection. Cannot reproduce "Nothing is displayed".
 - [x] **[Feature] View Setting Indicator**: Show indicator/text next to the view button to indicate active settings.
   - **Logic**: Implemented in `TaskListWithSettings` to show "Sort: [Value]", "Group: [Value]", or "Filter: Active", prioritized in that order.
-  - *Status*: **RESOLVED** - Verified "Sort: Created" appears when sorted by creation date.
+  - _Status_: **RESOLVED** - Verified "Sort: Created" appears when sorted by creation date.
 - [x] **[Feature] Task Sorting**: Add a "Created" option to the sorting dropdown - newest on top.
   - **Logic**: Implemented "Created" sort option in `TaskListWithSettings`, updated `ViewOptionsPopover`, and set "Created" descending as default for Lists via `src/app/lists/[id]/page.tsx`.
   - **Manual Sort**: Updated `createTask` server action to insert new tasks at the top (min position - 1024) when manual sorting is active.
-  - *Status*: **RESOLVED** - Verified logic ensuring new tasks appear at top in both "Created" and "Manual" modes.
+  - _Status_: **RESOLVED** - Verified logic ensuring new tasks appear at top in both "Created" and "Manual" modes.
 - [x] **[Bug] Task Sorting**: If sorting is applied then the task list is first rendered with tasks in the wrong order, then they are sorted. So a flash of wrong order is visible.
-    - *Status*: **RESOLVED** - Fetched view settings server-side in all pagesto prevent hydration mismatch flash.
+  - _Status_: **RESOLVED** - Fetched view settings server-side in all pagesto prevent hydration mismatch flash.
 - [x] **[Feature] Sidebar Task Counts**: Add a count of tasks in each list/label to the sidebar.
 - [x] **[Infra] Offline-First Background Sync**: Implement a sync queue (e.g., Workbox or IndexedDB) for offline reliability.
 - [x] **[Perf] Fix CSP blocking `react-grab`**: Resolve content security policy violation.
-  - *Status*: **RESOLVED** - Loading `react-grab` via HTTPS to align with CSP.
+  - _Status_: **RESOLVED** - Loading `react-grab` via HTTPS to align with CSP.
 - [x] **[Perf] Optimize Initial Load**: Investigate and improve TTFB/FCP (~2.5s).
-  - *Status*: **RESOLVED** - Implemented streaming (Suspense) and parallelized data fetching.
+  - _Status_: **RESOLVED** - Implemented streaming (Suspense) and parallelized data fetching.
 - [x] **Fix Hydration Mismatch**: Warning on initial load.
-  - *Status*: **RESOLVED** - Added `suppressHydrationWarning` and fixed class mismatches.
+  - _Status_: **RESOLVED** - Added `suppressHydrationWarning` and fixed class mismatches.
 - [x] **Fix Search Indexing Latency**: New tasks not appearing immediately.
-  - *Status*: **RESOLVED** - Verified with E2E test `e2e/search-latency.spec.ts`.
+  - _Status_: **RESOLVED** - Verified with E2E test `e2e/search-latency.spec.ts`.
 - [x] **Fix Dialog Accessibility Warnings**: Missing `Description` or `aria-describedby`.
-  - *Status*: **RESOLVED** - Added `<DialogDescription className="sr-only">` to all dialogs.
+  - _Status_: **RESOLVED** - Added `<DialogDescription className="sr-only">` to all dialogs.
 - [x] **Task Estimates**: Add estimated time for tasks. Add presets for quickly selecting time (e.g. 15m, 30m, 1h, 2h, 3h, 4h, 8h) but let users set custom times as well. Add time tracking. Display time spent on tasks. Add time tracking history. Add time tracking chart. Add time tracking export. Display time estimated/spent on tasks in the task list. Use your frontend-skill to design this feature so it will be user-friendly and look great.
 - [x] **Manual Task Sorting**: Implement manual task reordering within lists.
   - **Logic**: When view sorting is set to "manual", allow users to drag-and-drop tasks to change their order.
   - **Schema**: Ensure tasks have a `position` or `sort_order` field.
   - **Consistency**: Sorting should keep todo and completed tasks separated (sorting within their respective groups).
-  - *Status*: **RESOLVED** - Added `position` column, `reorderTasks` action, and integrated `@dnd-kit` in `TaskListWithSettings`. Server query enforcing todo/completed separation.
+  - _Status_: **RESOLVED** - Added `position` column, `reorderTasks` action, and integrated `@dnd-kit` in `TaskListWithSettings`. Server query enforcing todo/completed separation.
 - [x] **Activity Log System**: Implement a detailed activity log page and sidebar entry.
   - **Tracking**: Log all actions including task completion, list renames, manual sorting, deletions, and metadata changes.
   - **Page**: Dedicated `/activity` page with a searchable/filterable audit trail.
   - **Sidebar**: Add "Activity Log" to the main navigation.
-  - *Status*: **RESOLVED** - Extended `taskLogs` schema with `listId`/`labelId`, added logging to list/label actions, built `ActivityLogContent.tsx` with search, filters, date grouping, action icons, and deep links.
+  - _Status_: **RESOLVED** - Extended `taskLogs` schema with `listId`/`labelId`, added logging to list/label actions, built `ActivityLogContent.tsx` with search, filters, date grouping, action icons, and deep links.
 - [x] **Sidebar Reordering**: Allow users to manually reorder Lists and Labels in the sidebar (drag-and-drop).
-  - *Status*: **RESOLVED** - Implemented using `@dnd-kit`, added `position` column to schema, and new server actions for reordering.
+  - _Status_: **RESOLVED** - Implemented using `@dnd-kit`, added `position` column to schema, and new server actions for reordering.
 - [x] **Inline Task Creation Refinement**:
   - **Inbox Support**: Add the `CreateTaskInput` component (inline adder) to the Inbox view.
   - **Details Toggle**: When the inline adder is active, add an option ("Full Details" button) to open the task in the full `TaskDialog` for advanced editing.
   - **UI Consolidation**: Remove the legacy "+ Add Task" button from all headers/views once the inline adder is ubiquitous to avoid duplication.
-  - *Status*: **RESOLVED** - Added `CreateTaskInput` to Inbox, implemented "Full Details" toggle which opens pre-filled `TaskDialog`, and hid legacy "Add Task" button in Inbox and List views.
+  - _Status_: **RESOLVED** - Added `CreateTaskInput` to Inbox, implemented "Full Details" toggle which opens pre-filled `TaskDialog`, and hid legacy "Add Task" button in Inbox and List views.
 - [x] **24-Hour Time Preference**: Detect user/system preference for 24-hour clock automatically, and provide a manual toggle in the Settings to override it.
   - **Logic**: Use `Intl.DateTimeFormat` for auto-detection and persist the manual override in user settings/local storage.
   - **UI**: Update all time-related displays (task due times, analytics, logs) to respect this setting.
-  - *Status*: **RESOLVED** - Added `use24HourClock` to users schema, created `TimeSettings.tsx` toggle in Settings, built `UserProvider` context and `formatTimePreference()` utility.
+  - _Status_: **RESOLVED** - Added `use24HourClock` to users schema, created `TimeSettings.tsx` toggle in Settings, built `UserProvider` context and `formatTimePreference()` utility.
 - [x] **First Day of Week Setting**: Add a user preference for the start of the week (Monday vs. Sunday).
   - **Logic**: Default to the user's locale but allow a manual override in Settings.
   - **Integration**: Ensure this setting is respected across the application, specifically in:
@@ -114,17 +114,17 @@ Sync status
     - Analytics charts (e.g., weekly productivity heatmap)
     - Calendar views (when implemented)
   - **Persistence**: Save the preference in the `users` table via Drizzle ORM.
-  - *Status*: **RESOLVED** - Added `weekStartsOnMonday` to users schema, created `WeekStartSettings.tsx`, updated `UserProvider` with `getWeekStartDay()` helper, and integrated with `CalendarView` and `react-day-picker`.
+  - _Status_: **RESOLVED** - Added `weekStartsOnMonday` to users schema, created `WeekStartSettings.tsx`, updated `UserProvider` with `getWeekStartDay()` helper, and integrated with `CalendarView` and `react-day-picker`.
 - [x] **"Upcoming" view refinement**: Group tasks by date with sticky headers for better readability.
   - **Logic**: Tasks in the /upcoming view should be grouped by their due date (e.g., Today, Tomorrow, Monday, etc.).
   - **UI**: Use sticky headers for each date group so users can easily see which day they are looking at while scrolling.
-  - *Status*: **RESOLVED** - Updated `TaskListWithSettings.tsx` with default date grouping for "upcoming" view, sticky headers, and friendly date formatting (Today, Tomorrow, weekday).
+  - _Status_: **RESOLVED** - Updated `TaskListWithSettings.tsx` with default date grouping for "upcoming" view, sticky headers, and friendly date formatting (Today, Tomorrow, weekday).
 - [x] **Descriptions for Lists and Labels**: Add a description field to lists and labels.
   - **Logic**: Allow users to provide context or instructions for specific lists and labels.
   - **Schema**: Add a `description` field to the `lists` and `labels` tables in the database.
   - **UI**: Display the description below the title in the main view (similar to the "Today" view).
   - **Editing**: Update the list and label edit dialogs to include a description input.
-  - *Status*: **RESOLVED** - Added `description` column to `lists` and `labels`, updated `ManageListDialog` and `ManageLabelDialog` with textarea inputs, and updated `ListPage` and `LabelPage` to display the description.
+  - _Status_: **RESOLVED** - Added `description` column to `lists` and `labels`, updated `ManageListDialog` and `ManageLabelDialog` with textarea inputs, and updated `ListPage` and `LabelPage` to display the description.
 - [x] **[Feature] Productivity Analytics Dashboard**: Heatmap, Radar Chart, and smart text insights.
 - [x] **[Feature] Voice Capture**: Web Speech API for voice-to-text task creation (Mobile optimized).
 - [x] **[Feature] Quick Actions**: Floating action button (FAB) for instant task creation (`QuickCapture.tsx`).
@@ -145,7 +145,7 @@ Sync status
 - [x] **[UX] Sidebar Structure**: Move "Templates" nav item below "Smart Schedule", move "I'm behind" below "Smart Schedule", relocate "Install App" to user menu, and move gamification (XP Bar) to the bottom.
 - [x] **[UX] Sidebar Reordering Toggle**: Move the list/label reordering functionality behind a toggle or icon. Since reordering is infrequent, it shouldn't be active by default to prevent accidental drags and keep the UI clean.
 - [x] **[UX] Performance Theme**: Add a new theme that has no animations, transitions or any other fancy effects. It should be super clean and fast. Focus on raw performance and a "no-nonsense" aesthetic. Use your frontend skill to create a theme that is as fast and beautiful as possible.
-  - *Status*: **RESOLVED** - Added "performance" theme to `themes.ts`, created CSS variables in `globals.css` with global animation/transition kill switch, added `PerformanceProvider` context, and updated components (`PageTransition`, `TaskItem`, `QuickCapture`, `ZenOverlay`) to skip animations.
+  - _Status_: **RESOLVED** - Added "performance" theme to `themes.ts`, created CSS variables in `globals.css` with global animation/transition kill switch, added `PerformanceProvider` context, and updated components (`PageTransition`, `TaskItem`, `QuickCapture`, `ZenOverlay`) to skip animations.
 - [x] **[Improvement] CI E2E Test Splitting**: Investigate and implement better test distribution for E2E tests.
   - **Status**: **RESOLVED** - Analyzed bottlenecks using `gh` CLI and increased shard count from 2 to 4 in `ci.yml`. This distributes the 42+ tests more evenly across runners.
 - [x] **Strict Type Checking**: TypeScript `strict: true` and zero ESLint errors.
@@ -162,5 +162,6 @@ Sync status
 ---
 
 ## 📊 Status Summary
+
 - **Verified Working**: Core features, UI polish, Performance optimizations, Testing infrastructure.
 - **Focus Areas**: Advanced features (Calendar, AI Suggestions), Offline robustness, and Refactoring (CSS, Search telemetry).

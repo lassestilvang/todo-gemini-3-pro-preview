@@ -16,6 +16,16 @@ const TaskDialog = dynamic(() => import("./TaskDialog").then(mod => mod.TaskDial
     ssr: false,
 });
 
+const TaskBoardView = dynamic(() => import("./board/TaskBoardView").then(mod => mod.TaskBoardView), {
+    ssr: false,
+    loading: () => <div className="h-64 bg-muted rounded-lg animate-pulse" />,
+});
+
+const TaskCalendarLayout = dynamic(() => import("./calendar/TaskCalendarLayout").then(mod => mod.TaskCalendarLayout), {
+    ssr: false,
+    loading: () => <div className="h-64 bg-muted rounded-lg animate-pulse" />,
+});
+
 interface TaskListWithSettingsProps {
     tasks?: Task[]; // Make optional as we might not fetch it
     title?: string;
@@ -339,6 +349,7 @@ export function TaskListWithSettings({
 }: TaskListWithSettingsProps) {
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [calendarSelectedDate, setCalendarSelectedDate] = useState<Date | undefined>(undefined);
 
     // Default to dueDate grouping for upcoming view if not set
     const effectiveInitialSettings = useMemo(() => {
@@ -658,6 +669,10 @@ export function TaskListWithSettings({
 
 
     const viewIndicator = useMemo(() => {
+        if (settings.layout !== "list") {
+            const label = { board: "Board", calendar: "Calendar" }[settings.layout];
+            return `Layout: ${label}`;
+        }
         if (settings.sortBy !== "manual") {
             const label = {
                 dueDate: "Due Date",
@@ -756,13 +771,25 @@ export function TaskListWithSettings({
                         })()}
                     </p>
                 </div>
+            ) : settings.layout === "board" ? (
+                <TaskBoardView
+                    tasks={processedTasks}
+                    userId={userId || ""}
+                    onEdit={handleEdit}
+                />
+            ) : settings.layout === "calendar" ? (
+                <TaskCalendarLayout
+                    tasks={processedTasks}
+                    onDateClick={(date) => {
+                        setEditingTask(null);
+                        setCalendarSelectedDate(date);
+                        setIsDialogOpen(true);
+                    }}
+                    onEdit={handleEdit}
+                />
             ) : settings.groupBy === "none" ? (
                 <div className="space-y-6">
-                    {/* Active Tasks */}
                     {activeTasks.length > 0 && (
-                        /* Hybrid Approach: Use Virtualization for large lists (>50) to fix rendering lag. 
-                           DnD is disabled in virtualized mode for simplicity/stability. 
-                           For small lists, keep full DnD capability. */
                         activeTasks.length > 50 ? (
                             <Virtuoso
                                 useWindowScroll
@@ -831,7 +858,6 @@ export function TaskListWithSettings({
                         )
                     )}
 
-                    {/* Completed Tasks with Sticky Header */}
                     {completedTasks.length > 0 && (
                         <div className="space-y-4 pt-2">
                             <h3 className="text-sm font-semibold text-muted-foreground bg-background/95 backdrop-blur-md sticky top-0 py-2 z-10 border-b flex items-center justify-between px-2 -mx-2 mb-2">
@@ -842,7 +868,6 @@ export function TaskListWithSettings({
                                 <Virtuoso
                                     useWindowScroll
                                     data={completedTasks}
-                                    // Perf: virtualize completed tasks for large lists to keep DOM size bounded.
                                     itemContent={(index, task) => (
                                         <div className="rounded-lg transition-all">
                                             <TaskItem
@@ -887,7 +912,6 @@ export function TaskListWithSettings({
                         <GroupedVirtuoso
                             useWindowScroll
                             groupCounts={groupedVirtualCounts}
-                            // Perf: virtualize grouped task views to avoid rendering every task at once.
                             groupContent={(index) => {
                                 const section = groupedVirtualSections[index];
                                 return (
@@ -920,7 +944,6 @@ export function TaskListWithSettings({
                         />
                     ) : (
                         groupedEntries.map(([groupName, groupTasks]) => {
-                            // Perf: partition once per group to avoid two filter scans.
                             const groupActiveTasks: Task[] = [];
                             const groupCompletedTasks: Task[] = [];
                             for (const task of groupTasks) {
@@ -973,11 +996,14 @@ export function TaskListWithSettings({
                     task={editingTask ? { ...editingTask, icon: editingTask.icon ?? null } : undefined}
                     defaultListId={listId ?? undefined}
                     defaultLabelIds={labelId ? [labelId] : undefined}
-                    defaultDueDate={defaultDueDate}
+                    defaultDueDate={calendarSelectedDate || defaultDueDate}
                     open={isDialogOpen}
                     onOpenChange={(open) => {
                         setIsDialogOpen(open);
-                        if (!open) setEditingTask(null);
+                        if (!open) {
+                            setEditingTask(null);
+                            setCalendarSelectedDate(undefined);
+                        }
                     }}
                     userId={userId}
                 />
