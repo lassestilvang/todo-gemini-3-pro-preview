@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth";
 import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
-import { TaskListSkeleton } from "@/components/tasks/TaskListSkeleton";
+import { TaskListSkeletonFallback } from "@/components/tasks/TaskListSkeletonFallback";
 import { CreateTaskInput } from "@/components/tasks/CreateTaskInput";
 import { redirect } from "next/navigation";
 
@@ -45,7 +45,7 @@ export default async function AllTasksPage() {
 
                 <CreateTaskInput userId={user.id} />
 
-                <Suspense fallback={<TaskListSkeleton />}>
+                <Suspense fallback={<TaskListSkeletonFallback viewId="all" />}>
                     <AllTasksSection userId={user.id} />
                 </Suspense>
             </div>

@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { getLabel } from "@/lib/actions";
 import { getCurrentUser } from "@/lib/auth";
 import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
-import { TaskListSkeleton } from "@/components/tasks/TaskListSkeleton";
+import { TaskListSkeletonFallback } from "@/components/tasks/TaskListSkeletonFallback";
 import { CreateTaskInput } from "@/components/tasks/CreateTaskInput";
 import { notFound, redirect } from "next/navigation";
 import { ManageLabelDialog } from "@/components/tasks/ManageLabelDialog";
@@ -85,7 +85,7 @@ export default async function LabelPage({ params }: LabelPageProps) {
 
                 <CreateTaskInput userId={user.id} defaultLabelIds={[labelId]} />
 
-                <Suspense fallback={<TaskListSkeleton />}>
+                <Suspense fallback={<TaskListSkeletonFallback viewId={`label-${labelId}`} />}>
                     <LabelTaskSection userId={user.id} labelId={labelId} />
                 </Suspense>
             </div>

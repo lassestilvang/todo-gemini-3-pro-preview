@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth";
 import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
-import { TaskListSkeleton } from "@/components/tasks/TaskListSkeleton";
+import { TaskListSkeletonFallback } from "@/components/tasks/TaskListSkeletonFallback";
 import { CreateTaskInput } from "@/components/tasks/CreateTaskInput";
 import { redirect } from "next/navigation";
 import { getViewSettings } from "@/lib/actions/view-settings";
@@ -45,7 +45,7 @@ export default async function InboxPage() {
 
                 <CreateTaskInput userId={user.id} />
 
-                <Suspense fallback={<TaskListSkeleton />}>
+                <Suspense fallback={<TaskListSkeletonFallback viewId="inbox" />}>
                     <InboxTaskSection userId={user.id} />
                 </Suspense>
             </div>

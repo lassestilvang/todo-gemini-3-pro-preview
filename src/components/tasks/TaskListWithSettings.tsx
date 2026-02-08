@@ -19,12 +19,12 @@ const TaskDialog = dynamic(() => import("./TaskDialog").then(mod => mod.TaskDial
 
 const TaskBoardView = dynamic(() => import("./board/TaskBoardView").then(mod => mod.TaskBoardView), {
     ssr: false,
-    loading: () => <TaskListSkeleton variant="board" compact showModes={false} />,
+    loading: () => <TaskListSkeleton variant="board" compact />,
 });
 
 const TaskCalendarLayout = dynamic(() => import("./calendar/TaskCalendarLayout").then(mod => mod.TaskCalendarLayout), {
     ssr: false,
-    loading: () => <TaskListSkeleton variant="calendar" compact showModes={false} />,
+    loading: () => <TaskListSkeleton variant="calendar" compact />,
 });
 
 interface TaskListWithSettingsProps {
@@ -368,6 +368,14 @@ export function TaskListWithSettings({
     const [overdueCollapsed, setOverdueCollapsed] = useState(false);
 
     const { dispatch } = useSync();
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        try {
+            window.localStorage.setItem(`tg:view-layout:${viewId}`, settings.layout);
+        } catch {
+            // Ignore storage errors (private mode, quota, etc.)
+        }
+    }, [settings.layout, viewId]);
 
     // Global Store Integration
     const { tasks: storeTasksFn, setTasks, initialize, isInitialized } = useTaskStore();
@@ -737,7 +745,7 @@ export function TaskListWithSettings({
             </div>
 
             {(!mounted || !isInitialized) ? (
-                <TaskListSkeleton variant={settings.layout} compact showModes={false} />
+                <TaskListSkeleton variant={settings.layout} compact />
             ) : processedTasks.length === 0 ? (
                 <div
                     className="flex flex-col items-center justify-center h-[300px] text-foreground border rounded-lg border-dashed bg-muted/5"

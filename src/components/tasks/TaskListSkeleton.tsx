@@ -5,15 +5,12 @@ type TaskListSkeletonVariant = "list" | "board" | "calendar";
 interface TaskListSkeletonProps {
     variant?: TaskListSkeletonVariant;
     compact?: boolean;
-    showModes?: boolean;
 }
 
 export function TaskListSkeleton({
     variant = "list",
     compact = false,
-    showModes,
 }: TaskListSkeletonProps) {
-    const resolvedShowModes = showModes ?? !compact;
     const wrapperClassName = compact
         ? "space-y-4"
         : "rounded-xl border border-border/50 bg-card/40 p-4 space-y-4";
@@ -27,20 +24,6 @@ export function TaskListSkeleton({
                         <div className="h-3 w-20 rounded bg-muted/40 animate-pulse" />
                         <div className="h-8 w-20 rounded-md bg-muted/60 animate-pulse" />
                     </div>
-                </div>
-            )}
-
-            {!compact && resolvedShowModes && (
-                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground/80">
-                    {["List", "Board", "Calendar"].map((label) => (
-                        <div
-                            key={`mode-${label}`}
-                            className="flex items-center gap-2 rounded-md border border-border/40 bg-muted/10 px-2 py-1"
-                        >
-                            <span className="h-2.5 w-2.5 rounded bg-muted/60 animate-pulse" />
-                            <span>{label}</span>
-                        </div>
-                    ))}
                 </div>
             )}
 

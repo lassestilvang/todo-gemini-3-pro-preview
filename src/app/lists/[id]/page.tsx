@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { getList } from "@/lib/actions";
 import { getCurrentUser } from "@/lib/auth";
 import { TaskListWithSettings } from "@/components/tasks/TaskListWithSettings";
-import { TaskListSkeleton } from "@/components/tasks/TaskListSkeleton";
+import { TaskListSkeletonFallback } from "@/components/tasks/TaskListSkeletonFallback";
 import { CreateTaskInput } from "@/components/tasks/CreateTaskInput";
 import { notFound, redirect } from "next/navigation";
 import { ManageListDialog } from "@/components/tasks/ManageListDialog";
@@ -94,7 +94,7 @@ export default async function ListPage({ params }: ListPageProps) {
 
                 <CreateTaskInput listId={listId} userId={user.id} />
 
-                <Suspense fallback={<TaskListSkeleton />}>
+                <Suspense fallback={<TaskListSkeletonFallback viewId={`list-${listId}`} />}>
                     <ListTaskSection userId={user.id} listId={listId} />
                 </Suspense>
             </div>
