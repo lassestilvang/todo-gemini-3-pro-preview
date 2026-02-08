@@ -857,109 +857,16 @@ export function TaskListWithSettings({
                     )}
 
                     {settings.groupBy === "none" ? (
-                    <div className="space-y-6">
-                    {activeTasks.length > 0 && (
-                        activeTasks.length > 50 ? (
-                            <Virtuoso
-                                useWindowScroll
-                                data={activeTasks}
-                                itemContent={(index, task) => (
-                                    <div className="mb-2">
-                                        <TaskItem
-                                            key={task.id}
-                                            task={task}
-                                            showListInfo={!listId}
-                                            userId={userId}
-                                            disableAnimations={true}
-                                            dispatch={dispatch}
-                                            onEdit={handleEdit}
-                                        />
-                                    </div>
-                                )}
-                            />
-                        ) : (
-                            <DndContext
-                                sensors={sensors}
-                                collisionDetection={closestCenter}
-                                onDragStart={handleDragStart}
-                                onDragEnd={handleDragEnd}
-                                onDragCancel={handleDragCancel}
-                                modifiers={[restrictToVerticalAxis]}
-                            >
-                                <SortableContext
-                                    items={activeTasks.map(t => t.id)}
-                                    strategy={verticalListSortingStrategy}
-                                    disabled={!isDragEnabled}
-                                >
-                                    <div className="space-y-2">
-                                        {activeTasks.map((task) => (
-                                            <SortableTaskItem
-                                                key={task.id}
-                                                task={task}
-                                                handleEdit={handleEdit}
-                                                listId={listId}
-                                                userId={userId}
-                                                isDragEnabled={isDragEnabled}
-                                                dispatch={dispatch}
-                                            />
-                                        ))}
-                                    </div>
-                                </SortableContext>
-                                <DragOverlay>
-                                    {activeId ? (() => {
-                                        const activeTask = displayTasks.find(t => t.id === activeId);
-                                        if (!activeTask) return null;
-                                        return (
-                                            <div className="opacity-90 rotate-2 scale-105 cursor-grabbing">
+                        <>
+                            {activeTasks.length > 0 && (
+                                activeTasks.length > 50 ? (
+                                    <Virtuoso
+                                        useWindowScroll
+                                        data={activeTasks}
+                                        itemContent={(index, task) => (
+                                            <div className="mb-2">
                                                 <TaskItem
-                                                    task={activeTask}
-                                                    showListInfo={!listId}
-                                                    userId={userId}
-                                                    disableAnimations={true}
-                                                    dispatch={dispatch}
-                                                    onEdit={handleEdit}
-                                                />
-                                            </div>
-                                        );
-                                    })() : null}
-                                </DragOverlay>
-                            </DndContext>
-                        )
-                    )}
-
-                    {completedTasks.length > 0 && (
-                        <div className="space-y-4 pt-2">
-                            <h3 className="text-sm font-semibold text-muted-foreground bg-background/95 backdrop-blur-md sticky top-0 py-2 z-10 border-b flex items-center justify-between px-2 -mx-2 mb-2">
-                                <span>Completed</span>
-                                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{completedTasks.length}</span>
-                            </h3>
-                            {completedTasks.length > 50 ? (
-                                <Virtuoso
-                                    useWindowScroll
-                                    data={completedTasks}
-                                    itemContent={(index, task) => (
-                                        <div className="rounded-lg transition-all">
-                                            <TaskItem
-                                                key={task.id}
-                                                task={task}
-                                                showListInfo={!listId}
-                                                userId={userId}
-                                                disableAnimations={true}
-                                                dispatch={dispatch}
-                                                onEdit={handleEdit}
-                                            />
-                                        </div>
-                                    )}
-                                />
-                            ) : (
-                                <div className="space-y-2">
-                                    {completedTasks.map((task) => {
-                                        return (
-                                            <div
-                                                key={task.id}
-                                                className="rounded-lg transition-all"
-                                            >
-                                                <TaskItem
+                                                    key={task.id}
                                                     task={task}
                                                     showListInfo={!listId}
                                                     userId={userId}
@@ -968,96 +875,183 @@ export function TaskListWithSettings({
                                                     onEdit={handleEdit}
                                                 />
                                             </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-            ) : (
-                <div className="space-y-6">
-                    {totalGroupedTasks > 50 ? (
-                        <GroupedVirtuoso
-                            useWindowScroll
-                            groupCounts={groupedVirtualCounts}
-                            groupContent={(index) => {
-                                const section = groupedVirtualSections[index];
-                                return (
-                                    <h3 className="text-sm font-semibold text-muted-foreground bg-background/95 backdrop-blur-md sticky top-0 py-2 z-10 border-b flex items-center justify-between px-2 -mx-2">
-                                        <span>{formattedGroupNames.get(section.groupName) ?? section.groupName}</span>
-                                        <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{section.totalCount}</span>
-                                    </h3>
-                                );
-                            }}
-                            itemContent={(index, groupIndex) => {
-                                const section = groupedVirtualSections[groupIndex];
-                                const item = section?.items[index];
-                                if (!item) return null;
-                                if (item.type === "separator") {
-                                    return <div className="ml-4 h-px bg-border/50 my-2" />;
-                                }
-                                return (
-                                    <div className="rounded-lg transition-all">
-                                        <TaskItem
-                                            task={item.task}
-                                            showListInfo={!listId}
-                                            userId={userId}
-                                            disableAnimations={true}
-                                            dispatch={dispatch}
-                                            onEdit={handleEdit}
-                                        />
-                                    </div>
-                                );
-                            }}
-                        />
-                    ) : (
-                        groupedEntries.map(([groupName, groupTasks]) => {
-                            const groupActiveTasks: Task[] = [];
-                            const groupCompletedTasks: Task[] = [];
-                            for (const task of groupTasks) {
-                                (task.isCompleted ? groupCompletedTasks : groupActiveTasks).push(task);
-                            }
-
-                            return (
-                                <div key={groupName} className="space-y-2">
-                                    <h3 className="text-sm font-semibold text-muted-foreground bg-background/95 backdrop-blur-md sticky top-0 py-2 z-10 border-b flex items-center justify-between px-2 -mx-2">
-                                        <span>{formattedGroupNames.get(groupName) ?? groupName}</span>
-                                        <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{groupTasks.length}</span>
-                                    </h3>
-                                    {groupActiveTasks.map((task) => {
-                                        return (
-                                            <div
-                                                key={task.id}
-                                                className="rounded-lg transition-all"
-                                            >
-                                                <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={handleEdit} />
-                                            </div>
-                                        );
-                                    })}
-
-                                    {groupCompletedTasks.length > 0 && (
-                                        <>
-                                            {groupActiveTasks.length > 0 && (
-                                                <div className="ml-4 h-px bg-border/50 my-2" />
-                                            )}
-                                            {groupCompletedTasks.map((task) => {
-                                                return (
-                                                    <div
+                                        )}
+                                    />
+                                ) : (
+                                    <DndContext
+                                        sensors={sensors}
+                                        collisionDetection={closestCenter}
+                                        onDragStart={handleDragStart}
+                                        onDragEnd={handleDragEnd}
+                                        onDragCancel={handleDragCancel}
+                                        modifiers={[restrictToVerticalAxis]}
+                                    >
+                                        <SortableContext
+                                            items={activeTasks.map(t => t.id)}
+                                            strategy={verticalListSortingStrategy}
+                                            disabled={!isDragEnabled}
+                                        >
+                                            <div className="space-y-2">
+                                                {activeTasks.map((task) => (
+                                                    <SortableTaskItem
                                                         key={task.id}
-                                                        className="rounded-lg transition-all"
-                                                    >
-                                                        <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={handleEdit} />
+                                                        task={task}
+                                                        handleEdit={handleEdit}
+                                                        listId={listId}
+                                                        userId={userId}
+                                                        isDragEnabled={isDragEnabled}
+                                                        dispatch={dispatch}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </SortableContext>
+                                        <DragOverlay>
+                                            {activeId ? (() => {
+                                                const activeTask = displayTasks.find(t => t.id === activeId);
+                                                if (!activeTask) return null;
+                                                return (
+                                                    <div className="opacity-90 rotate-2 scale-105 cursor-grabbing">
+                                                        <TaskItem
+                                                            task={activeTask}
+                                                            showListInfo={!listId}
+                                                            userId={userId}
+                                                            disableAnimations={true}
+                                                            dispatch={dispatch}
+                                                            onEdit={handleEdit}
+                                                        />
                                                     </div>
                                                 );
-                                            })}
-                                        </>
+                                            })() : null}
+                                        </DragOverlay>
+                                    </DndContext>
+                                )
+                            )}
+
+                            {completedTasks.length > 0 && (
+                                <div className="space-y-4 pt-2">
+                                    <h3 className="text-sm font-semibold text-muted-foreground bg-background/95 backdrop-blur-md sticky top-0 py-2 z-10 border-b flex items-center justify-between px-2 -mx-2 mb-2">
+                                        <span>Completed</span>
+                                        <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{completedTasks.length}</span>
+                                    </h3>
+                                    {completedTasks.length > 50 ? (
+                                        <Virtuoso
+                                            useWindowScroll
+                                            data={completedTasks}
+                                            itemContent={(index, task) => (
+                                                <div className="rounded-lg transition-all">
+                                                    <TaskItem
+                                                        key={task.id}
+                                                        task={task}
+                                                        showListInfo={!listId}
+                                                        userId={userId}
+                                                        disableAnimations={true}
+                                                        dispatch={dispatch}
+                                                        onEdit={handleEdit}
+                                                    />
+                                                </div>
+                                            )}
+                                        />
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {completedTasks.map((task) => (
+                                                <div
+                                                    key={task.id}
+                                                    className="rounded-lg transition-all"
+                                                >
+                                                    <TaskItem
+                                                        task={task}
+                                                        showListInfo={!listId}
+                                                        userId={userId}
+                                                        disableAnimations={true}
+                                                        dispatch={dispatch}
+                                                        onEdit={handleEdit}
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
                                     )}
                                 </div>
-                            );
-                        })
-                    )}
-                </div>
+                            )}
+                        </>
+                    ) : (
+                        <>
+                            {totalGroupedTasks > 50 ? (
+                                <GroupedVirtuoso
+                                    useWindowScroll
+                                    groupCounts={groupedVirtualCounts}
+                                    groupContent={(index) => {
+                                        const section = groupedVirtualSections[index];
+                                        return (
+                                            <h3 className="text-sm font-semibold text-muted-foreground bg-background/95 backdrop-blur-md sticky top-0 py-2 z-10 border-b flex items-center justify-between px-2 -mx-2">
+                                                <span>{formattedGroupNames.get(section.groupName) ?? section.groupName}</span>
+                                                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{section.totalCount}</span>
+                                            </h3>
+                                        );
+                                    }}
+                                    itemContent={(index, groupIndex) => {
+                                        const section = groupedVirtualSections[groupIndex];
+                                        const item = section?.items[index];
+                                        if (!item) return null;
+                                        if (item.type === "separator") {
+                                            return <div className="ml-4 h-px bg-border/50 my-2" />;
+                                        }
+                                        return (
+                                            <div className="rounded-lg transition-all">
+                                                <TaskItem
+                                                    task={item.task}
+                                                    showListInfo={!listId}
+                                                    userId={userId}
+                                                    disableAnimations={true}
+                                                    dispatch={dispatch}
+                                                    onEdit={handleEdit}
+                                                />
+                                            </div>
+                                        );
+                                    }}
+                                />
+                            ) : (
+                                groupedEntries.map(([groupName, groupTasks]) => {
+                                    const groupActiveTasks: Task[] = [];
+                                    const groupCompletedTasks: Task[] = [];
+                                    for (const task of groupTasks) {
+                                        (task.isCompleted ? groupCompletedTasks : groupActiveTasks).push(task);
+                                    }
+
+                                    return (
+                                        <div key={groupName} className="space-y-2">
+                                            <h3 className="text-sm font-semibold text-muted-foreground bg-background/95 backdrop-blur-md sticky top-0 py-2 z-10 border-b flex items-center justify-between px-2 -mx-2">
+                                                <span>{formattedGroupNames.get(groupName) ?? groupName}</span>
+                                                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{groupTasks.length}</span>
+                                            </h3>
+                                            {groupActiveTasks.map((task) => (
+                                                <div
+                                                    key={task.id}
+                                                    className="rounded-lg transition-all"
+                                                >
+                                                    <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={handleEdit} />
+                                                </div>
+                                            ))}
+
+                                            {groupCompletedTasks.length > 0 && (
+                                                <>
+                                                    {groupActiveTasks.length > 0 && (
+                                                        <div className="ml-4 h-px bg-border/50 my-2" />
+                                                    )}
+                                                    {groupCompletedTasks.map((task) => (
+                                                        <div
+                                                            key={task.id}
+                                                            className="rounded-lg transition-all"
+                                                        >
+                                                            <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={handleEdit} />
+                                                        </div>
+                                                    ))}
+                                                </>
+                                            )}
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </>
                     )}
                 </div>
             )}
