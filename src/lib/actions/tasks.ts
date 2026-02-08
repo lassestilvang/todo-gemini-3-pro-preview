@@ -370,7 +370,7 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
       position: currentMin - 1024
     };
 
-    const result = await db.insert(tasks).values(finalTaskData as any).returning();
+    const result = await db.insert(tasks).values(finalTaskData as typeof tasks.$inferInsert).returning();
     const task = Array.isArray(result) ? result[0] : null;
 
     if (!task) throw new Error("Failed to create task");
@@ -449,7 +449,7 @@ export async function updateTask(
 
   await db
     .update(tasks)
-    .set({ ...taskData, updatedAt: new Date() } as any)
+    .set({ ...taskData, updatedAt: new Date() } as Partial<typeof tasks.$inferInsert>)
     .where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
 
   if (labelIds !== undefined) {

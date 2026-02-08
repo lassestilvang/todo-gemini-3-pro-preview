@@ -1,6 +1,5 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import React from "react";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
@@ -10,24 +9,9 @@ import { eq } from "drizzle-orm";
 
 // Mocks should be targeted and not leak to other tests
 
-const defaultTemplates = [
-  {
-    id: 1,
-    userId: "test_user_123",
-    name: "Weekly Report",
-    content: JSON.stringify({ title: "Weekly Report Task", priority: "high" }),
-    createdAt: new Date("2024-01-15"),
-  },
-  {
-    id: 2,
-    userId: "test_user_123",
-    name: "Daily Standup",
-    content: JSON.stringify({ title: "Daily Standup Task", priority: "medium" }),
-    createdAt: new Date("2024-01-16"),
-  }
-];
 
-let templatesState = [...defaultTemplates];
+
+
 
 // Use real actions (which use in-memory SQLite) to avoid mock leakage issues
 // The test DB is set up in beforeEach
@@ -44,7 +28,7 @@ describe("TemplateManager", () => {
   const testUserId = "test_user_123";
 
   beforeEach(async () => {
-    templatesState = [...defaultTemplates];
+
     // PointerEvent mocks are provided globally in setup.tsx (upstream change),
     // but adding them here defensively to ensure tests pass in all environments
     if (!Element.prototype.setPointerCapture) {
@@ -143,7 +127,7 @@ describe("TemplateManager", () => {
     }, 20000);
 
     it("should show empty state when no templates exist", async () => {
-      templatesState = [];
+
       // Delete templates for this specific test
       const { templates } = await import("@/db/schema-sqlite");
       const { db } = await import("@/db");

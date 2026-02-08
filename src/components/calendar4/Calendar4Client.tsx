@@ -11,12 +11,32 @@ import { useTaskStore } from "@/lib/store/task-store";
 import { useListStore } from "@/lib/store/list-store";
 import { useSync } from "@/components/providers/sync-provider";
 import { useUser } from "@/components/providers/UserProvider";
-import { addMinutes, startOfDay, isSameDay, isToday } from "date-fns";
+import { addMinutes, isSameDay } from "date-fns";
 import type { Task } from "@/lib/types";
 
 interface Calendar4ClientProps {
     initialTasks: Task[];
     initialLists: Array<{ id: number; name: string; color: string | null; icon: string | null; slug: string }>;
+}
+
+interface CalendarEventInfo {
+    event: {
+        id: string;
+        start: Date | null;
+        end: Date | null;
+        extendedProps: Record<string, unknown>;
+        allDay?: boolean;
+    };
+    revert: () => void;
+}
+
+interface DateClickInfo {
+    date: Date;
+    dateStr: string;
+    allDay: boolean;
+    dayEl: HTMLElement;
+    jsEvent: MouseEvent;
+    view: unknown;
 }
 
 function normalizeDate(d: Date | string | null): Date | null {
@@ -128,7 +148,7 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
     }, [tasks, visibleListIds, lists]);
 
     // --- Handlers ---
-    const handleEventDrop = useCallback((info: any) => {
+    const handleEventDrop = useCallback((info: CalendarEventInfo) => {
         const taskId = Number(info.event.extendedProps.taskId);
         if (!taskId || !userId) return;
 
@@ -142,7 +162,7 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
         dispatch("updateTask", taskId, userId, { dueDate: newDueDate, expectedUpdatedAt: existing.updatedAt ?? null });
     }, [dispatch, taskMap, userId, upsertTask]);
 
-    const handleEventResize = useCallback((info: any) => {
+    const handleEventResize = useCallback((info: CalendarEventInfo) => {
         const taskId = Number(info.event.extendedProps.taskId);
         if (!taskId || !userId) return;
 
@@ -159,7 +179,7 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
         dispatch("updateTask", taskId, userId, { estimateMinutes, expectedUpdatedAt: existing.updatedAt ?? null });
     }, [dispatch, taskMap, userId, upsertTask]);
 
-    const handleEventReceive = useCallback((info: any) => {
+    const handleEventReceive = useCallback((info: CalendarEventInfo) => {
         const taskId = Number(info.event.extendedProps.taskId);
         if (!taskId || !userId) return;
 
@@ -192,7 +212,7 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
     const [quickCreateOpen, setQuickCreateOpen] = useState(false);
     const [quickCreateDate, setQuickCreateDate] = useState<Date | undefined>(undefined);
 
-    const handleDateClick = useCallback((info: any) => {
+    const handleDateClick = useCallback((info: DateClickInfo) => {
         setQuickCreateDate(info.date);
         setQuickCreateOpen(true);
     }, []);
@@ -200,7 +220,7 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
     // --- Edit Task ---
     const [editingTask, setEditingTask] = useState<Task | null>(null);
 
-    const handleEventClick = useCallback((info: any) => {
+    const handleEventClick = useCallback((info: { event: { extendedProps: Record<string, unknown> } }) => {
         const taskId = Number(info.event.extendedProps.taskId);
         const task = taskMap[taskId];
         if (task) setEditingTask(task);

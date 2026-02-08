@@ -17,7 +17,6 @@ import {
   withErrorHandling,
   ValidationError,
   NotFoundError,
-  AuthorizationError,
 } from "./shared";
 
 import { requireUser } from "@/lib/auth";

@@ -193,12 +193,22 @@ export function withErrorHandling<T, Args extends unknown[]>(
       const result = await fn(...args);
       return success(result);
     } catch (error) {
+      // 0. Define a helper type for error checking
+      const err = error as {
+        code?: string;
+        name?: string;
+        message?: string;
+        serverData?: unknown;
+        fieldErrors?: Record<string, string>;
+        details?: Record<string, string>;
+        issues?: Array<{ path: string[]; message: string }>;
+      };
+
       // 1. Conflict Errors (priority for sync)
-      const err = error as any;
       const isConflict = error instanceof ConflictError ||
         err?.code === "CONFLICT" ||
         err?.name === "ConflictError" ||
-        err?.message?.includes("modified by another device");
+        (typeof err?.message === 'string' && err.message.includes("modified by another device"));
 
       if (isConflict) {
         return failure({
@@ -211,14 +221,14 @@ export function withErrorHandling<T, Args extends unknown[]>(
       }
 
       // 2. Auth Errors
-      if (error instanceof AuthorizationError || (error as any)?.code === "FORBIDDEN" || error instanceof AuthForbiddenError) {
+      if (error instanceof AuthorizationError || err?.code === "FORBIDDEN" || error instanceof AuthForbiddenError) {
         return failure({
           code: "FORBIDDEN",
           message: "You do not have permission to perform this action",
         });
       }
 
-      if (error instanceof AuthUnauthorizedError || (error as any)?.code === "UNAUTHORIZED") {
+      if (error instanceof AuthUnauthorizedError || err?.code === "UNAUTHORIZED") {
         return failure({
           code: "UNAUTHORIZED",
           message: "Authentication required",
@@ -226,11 +236,11 @@ export function withErrorHandling<T, Args extends unknown[]>(
       }
 
       // 3. Validation Errors
-      if (error instanceof ValidationError || (error as any)?.code === "VALIDATION_ERROR") {
+      if (error instanceof ValidationError || err?.code === "VALIDATION_ERROR") {
         return failure({
           code: "VALIDATION_ERROR",
-          message: (error as any).message || "Validation failed",
-          details: (error as any).fieldErrors || (error as any).details,
+          message: err.message || "Validation failed",
+          details: err.fieldErrors || err.details,
         });
       }
 
@@ -250,21 +260,21 @@ export function withErrorHandling<T, Args extends unknown[]>(
       }
 
       // 4. Other Domain Errors
-      if (error instanceof NotFoundError || (error as any)?.code === "NOT_FOUND") {
+      if (error instanceof NotFoundError || err?.code === "NOT_FOUND") {
         return failure({
           code: "NOT_FOUND",
-          message: (error as any).message || "Resource not found",
+          message: err.message || "Resource not found",
         });
       }
 
-      if (error instanceof DatabaseError || (error as any)?.code === "DATABASE_ERROR") {
+      if (error instanceof DatabaseError || err?.code === "DATABASE_ERROR") {
         return failure({
           code: "DATABASE_ERROR",
           message: "Unable to complete the operation. Please try again.",
         });
       }
 
-      if (error instanceof NetworkError || (error as any)?.code === "NETWORK_ERROR") {
+      if (error instanceof NetworkError || err?.code === "NETWORK_ERROR") {
         return failure({
           code: "NETWORK_ERROR",
           message: "A network error occurred. Please check your connection and try again.",

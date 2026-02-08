@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { withErrorHandling, ConflictError, ValidationError } from "./action-result";
-import { ZodError, z } from "zod";
+import { z } from "zod";
 
 describe("withErrorHandling", () => {
     it("should return success for successful function", async () => {
@@ -34,7 +34,7 @@ describe("withErrorHandling", () => {
         const schema = z.object({
             title: z.string().min(1, "Title too short"),
         });
-        const fn = async (data: any) => schema.parse(data);
+        const fn = async (data: unknown) => schema.parse(data);
         const wrapped = withErrorHandling(fn);
         const result = await wrapped({ title: "" });
 

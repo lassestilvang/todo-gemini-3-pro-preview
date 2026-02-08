@@ -1,7 +1,6 @@
-import { describe, it, expect, beforeEach, beforeAll, mock } from "bun:test";
+import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, createTestUser } from "@/test/setup";
-import { setMockAuthUser, clearMockAuthUser, runInAuthContext, getMockAuthUser } from "@/test/mocks";
-import { ForbiddenError, UnauthorizedError } from "@/lib/auth-errors";
+import { setMockAuthUser, clearMockAuthUser } from "@/test/mocks";
 
 // Note: @/lib/auth is already mocked in src/test/setup.tsx which uses getMockAuthUser.
 // Re-mocking here caused conflicts in CI where the module might be re-evaluated
@@ -16,7 +15,7 @@ let createTemplate: typeof import("@/lib/actions/templates").createTemplate;
 let updateTemplate: typeof import("@/lib/actions/templates").updateTemplate;
 let deleteTemplate: typeof import("@/lib/actions/templates").deleteTemplate;
 let instantiateTemplate: typeof import("@/lib/actions/templates").instantiateTemplate;
-import { isFailure, isSuccess } from "@/lib/action-result";
+import { isFailure } from "@/lib/action-result";
 import { db, templates } from "@/db";
 
 describe("Integration: Security Missing Auth", () => {
@@ -95,9 +94,9 @@ describe("Integration: Security Missing Auth", () => {
                 console.error("Security failure: getViewSettings returned success/null instead of throwing/failing");
                 expect(true).toBe(false);
             }
-        } catch (e: any) {
+        } catch (e: unknown) {
             // If it throws, verify it's a Forbidden/Unauthorized error
-            expect(e.message).toMatch(/Forbidden|authorized|Authentication/i);
+            expect((e as Error).message).toMatch(/Forbidden|authorized|Authentication/i);
         }
 
         // Verify strictly that it throws if attempting again
@@ -133,20 +132,20 @@ describe("Integration: Security Missing Auth", () => {
             // Check if wrapped
             // @ts-expect-error - checking structure
             if (result && typeof result === 'object' && 'success' in result) {
-                 // @ts-expect-error - checking structure
-                 expect(isFailure(result)).toBe(true);
-                 // @ts-expect-error - checking structure
-                 if (isFailure(result)) {
-                     // @ts-expect-error - checking structure
-                     expect(result.error.code).toBe("FORBIDDEN");
-                 }
+                // @ts-expect-error - checking structure
+                expect(isFailure(result)).toBe(true);
+                // @ts-expect-error - checking structure
+                if (isFailure(result)) {
+                    // @ts-expect-error - checking structure
+                    expect(result.error.code).toBe("FORBIDDEN");
+                }
             } else {
                 // Not wrapped, should have thrown
                 console.error("Security failure: getTemplates returned success instead of throwing");
                 expect(true).toBe(false);
             }
-        } catch (e: any) {
-            expect(e.message).toMatch(/Forbidden|authorized|Authentication/i);
+        } catch (e: unknown) {
+            expect((e as Error).message).toMatch(/Forbidden|authorized|Authentication/i);
         }
         // getTemplates is NOT wrapped, so it throws directly
         await expect(getTemplates(victimId)).rejects.toThrow(/Forbidden|authorized/i);

@@ -13,7 +13,6 @@ import {
   revalidatePath,
   type ActionResult,
   withErrorHandling,
-  ValidationError,
 } from "./shared";
 import { requireUser } from "@/lib/auth";
 import { createReminderSchema } from "@/lib/validation/reminders";
@@ -39,8 +38,7 @@ export async function getReminders(taskId: number) {
 async function createReminderImpl(userId: string, taskId: number, remindAt: Date) {
   await requireUser(userId);
 
-  const validated = createReminderSchema.parse({ userId, taskId, remindAt });
-
+  createReminderSchema.parse({ userId, taskId, remindAt });
 
   await db.insert(reminders).values({
     taskId,

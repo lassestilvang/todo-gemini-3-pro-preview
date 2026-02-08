@@ -39,11 +39,11 @@ describe("Views Security (IDOR)", () => {
       // If it doesn't throw, we expect it to fail the test in step 2 (Verification)
       // but for step 4 (Fix), we want to see it THROW.
       // Since getSavedViews is not wrapped in withErrorHandling, it should throw ForbiddenError.
-    } catch (error: any) {
-        // Accept either specific message or generic Forbidden
-        const msg = error.message || error.toString();
-        expect(msg).toMatch(/authorized|Forbidden|Access denied/i);
-        return;
+    } catch (error: unknown) {
+      // Accept either specific message or generic Forbidden
+      const msg = (error as Error).message || (error as Error).toString();
+      expect(msg).toMatch(/authorized|Forbidden|Access denied/i);
+      return;
     } finally {
       resetMockAuthUser();
     }

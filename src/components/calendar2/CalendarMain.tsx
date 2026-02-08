@@ -82,6 +82,7 @@ export function CalendarMain({
         allDaySlot
         droppable
         firstDay={getWeekStartDay()}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         events={events as any}
         eventDrop={onEventDrop}
         eventResize={onEventResize}

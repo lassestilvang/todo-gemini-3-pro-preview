@@ -66,6 +66,7 @@ export function Calendar3Main({
         dayMaxEvents={4}
         nowIndicator
         firstDay={getWeekStartDay()}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         events={events as any}
         eventDrop={onEventDrop}
         eventResize={onEventResize}
@@ -77,7 +78,7 @@ export function Calendar3Main({
         defaultTimedEventDuration="00:30:00"
         eventTimeFormat={{ hour: "numeric", minute: "2-digit", hour12: !use24h }}
 
-        {...({ slotLabelFormat: { hour: "numeric", minute: "2-digit", hour12: !use24h } } as any)}
+        {...({ slotLabelFormat: { hour: "numeric", minute: "2-digit", hour12: !use24h } } as Record<string, unknown>)}
       />
     </div>
   );

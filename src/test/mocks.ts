@@ -8,7 +8,7 @@ import React from "react";
 
 // Ensure DB module initializes in test mode even if NODE_ENV isn't set.
 if (!process.env.NODE_ENV) {
-    (process.env as any).NODE_ENV = "test";
+    (process.env as Record<string, string | undefined>).NODE_ENV = "test";
 }
 
 // Mock react cache to prevent state leakage across tests in the same worker
