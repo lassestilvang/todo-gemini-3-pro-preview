@@ -2,19 +2,18 @@ import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser, clearMockAuthUser } from "@/test/mocks";
 
-// Note: @/lib/auth is already mocked in src/test/setup.tsx which uses getMockAuthUser.
-// Re-mocking here caused conflicts in CI where the module might be re-evaluated
-// with a stale closure. We rely on the global setup mock which correctly
-// delegates to the shared mock state.
+// Note: @/lib/auth is already mocked in src/test/setup.tsx.
+// We use relative imports here to attempt to bypass any potential `mock.module` leakage
+// on the "@/" alias from other tests running in the same context.
 
-let getViewSettings: typeof import("@/lib/actions/view-settings").getViewSettings;
-let saveViewSettings: typeof import("@/lib/actions/view-settings").saveViewSettings;
-let resetViewSettings: typeof import("@/lib/actions/view-settings").resetViewSettings;
-let getTemplates: typeof import("@/lib/actions/templates").getTemplates;
-let createTemplate: typeof import("@/lib/actions/templates").createTemplate;
-let updateTemplate: typeof import("@/lib/actions/templates").updateTemplate;
-let deleteTemplate: typeof import("@/lib/actions/templates").deleteTemplate;
-let instantiateTemplate: typeof import("@/lib/actions/templates").instantiateTemplate;
+let getViewSettings: typeof import("../../lib/actions/view-settings").getViewSettings;
+let saveViewSettings: typeof import("../../lib/actions/view-settings").saveViewSettings;
+let resetViewSettings: typeof import("../../lib/actions/view-settings").resetViewSettings;
+let getTemplates: typeof import("../../lib/actions/templates").getTemplates;
+let createTemplate: typeof import("../../lib/actions/templates").createTemplate;
+let updateTemplate: typeof import("../../lib/actions/templates").updateTemplate;
+let deleteTemplate: typeof import("../../lib/actions/templates").deleteTemplate;
+let instantiateTemplate: typeof import("../../lib/actions/templates").instantiateTemplate;
 import { isFailure } from "@/lib/action-result";
 import { db, templates } from "@/db";
 
@@ -24,12 +23,13 @@ describe("Integration: Security Missing Auth", () => {
 
     beforeAll(async () => {
         await setupTestDb();
-        const viewSettingsActions = await import("@/lib/actions/view-settings");
+        // Dynamic import with relative path to avoid mocked modules
+        const viewSettingsActions = await import("../../lib/actions/view-settings");
         getViewSettings = viewSettingsActions.getViewSettings;
         saveViewSettings = viewSettingsActions.saveViewSettings;
         resetViewSettings = viewSettingsActions.resetViewSettings;
 
-        const templateActions = await import("@/lib/actions/templates");
+        const templateActions = await import("../../lib/actions/templates");
         getTemplates = templateActions.getTemplates;
         createTemplate = templateActions.createTemplate;
         updateTemplate = templateActions.updateTemplate;
