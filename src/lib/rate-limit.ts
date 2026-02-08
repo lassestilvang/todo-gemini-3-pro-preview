@@ -1,5 +1,5 @@
 import { db, rateLimits } from "@/db";
-import { eq } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 
 /**
  * Simple database-backed rate limiter.
@@ -15,61 +15,64 @@ export async function rateLimit(
 ): Promise<{ success: boolean; remaining: number; reset: Date }> {
     const now = new Date();
     const windowMs = windowSeconds * 1000;
+    const cutoff = new Date(now.getTime() - windowMs);
 
-    // Get current record
-    const [record] = await db.select().from(rateLimits).where(eq(rateLimits.key, key));
+    // In tests (SQLite), the schema uses mode: "timestamp" which stores SECONDS.
+    // So we must pass seconds to raw SQL.
+    // In production (PostgreSQL), we use Date objects for timestamp columns.
+    const isTest = process.env.NODE_ENV === 'test';
 
-    if (!record) {
-        // First request
-        await db.insert(rateLimits).values({
+    // For SQLite: Convert ms to seconds.
+    // For Postgres: Use Date object.
+    const nowValue = isTest ? Math.floor(now.getTime() / 1000) : now;
+    const cutoffValue = isTest ? Math.floor(cutoff.getTime() / 1000) : cutoff;
+
+    // Atomic upsert:
+    // 1. Try to insert a new record with count 1 and current time.
+    // 2. If conflict (key exists), update the existing record based on window expiration.
+    const [record] = await db.insert(rateLimits)
+        .values({
             key,
             count: 1,
-            lastRequest: now,
-        });
-        return {
-            success: true,
-            remaining: limit - 1,
-            reset: new Date(now.getTime() + windowMs),
-        };
-    }
-
-    const timePassed = now.getTime() - record.lastRequest.getTime();
-
-    if (timePassed > windowMs) {
-        // Window expired, reset
-        await db.update(rateLimits)
-            .set({
-                count: 1,
-                lastRequest: now,
-            })
-            .where(eq(rateLimits.key, key));
-
-        return {
-            success: true,
-            remaining: limit - 1,
-            reset: new Date(now.getTime() + windowMs),
-        };
-    }
-
-    if (record.count >= limit) {
-        // Limit reached
-        return {
-            success: false,
-            remaining: 0,
-            reset: new Date(record.lastRequest.getTime() + windowMs),
-        };
-    }
-
-    // Increment count
-    await db.update(rateLimits)
-        .set({
-            count: record.count + 1,
+            lastRequest: now, // Drizzle handles conversion based on schema (Date -> Seconds for SQLite)
         })
-        .where(eq(rateLimits.key, key));
+        .onConflictDoUpdate({
+            target: rateLimits.key,
+            set: {
+                // If window expired (lastRequest <= cutoff), reset count to 1.
+                // Else if count < limit, increment count.
+                // Else (blocked), set to limit + 1 (clamped to avoid overflow).
+                count: sql<number>`
+                    CASE
+                        WHEN ${rateLimits.lastRequest} <= ${cutoffValue} THEN 1
+                        WHEN ${rateLimits.count} < ${limit} THEN ${rateLimits.count} + 1
+                        ELSE ${limit} + 1
+                    END
+                `,
+                // If window expired, reset lastRequest to now.
+                // Else keep existing lastRequest.
+                lastRequest: sql<Date>`
+                    CASE
+                        WHEN ${rateLimits.lastRequest} <= ${cutoffValue} THEN ${nowValue}
+                        ELSE ${rateLimits.lastRequest}
+                    END
+                `
+            }
+        })
+        .returning();
+
+    // Determine success based on the returned record state.
+    const isSuccess = record.count <= limit;
+
+    // Remaining requests: limit - current count.
+    const remaining = Math.max(0, limit - record.count);
+
+    // Reset time is always lastRequest + windowMs.
+    const reset = new Date(record.lastRequest.getTime() + windowMs);
 
     return {
-        success: true,
-        remaining: limit - (record.count + 1),
-        reset: new Date(record.lastRequest.getTime() + windowMs),
+        success: isSuccess,
+        remaining,
+        reset,
     };
 }
