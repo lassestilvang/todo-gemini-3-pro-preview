@@ -1,12 +1,14 @@
 # Project Improvements & TODOs
 
+## 💡 Ideas
+
+- Snooze? Eller er det bare "This week"? 
+
 ## 🚨 High Priority (Bugs & Core Issues)
-
-
 
 ## 🚀 Features & Enhancements
 
-- [ ] **[Feature] Weekly/Monthly/Yearly Tasks**: Figure out a way to let the user schedule tasks for a specific week/month/year.
+- [ ] **[Feature] Weekly/Monthly/Yearly Tasks**: Figure out a way to let the user schedule tasks for a specific week/month/year. https://www.hey.com/calendar/
 - [ ] **[Feature] Calendar Version 4**: New page: /calendar4 and add it to the sidebar. Use "Full Calendar v7". It should support drag and drop of tasks to reschedule them. It should support resizing to change the duration of a task. It should also support multiple lists/calendars. It should be possible to create a new task by clicking on a date in the calendar. It should support multiple views (month, week, day). The installation guide is here: https://raw.githubusercontent.com/fullcalendar/fullcalendar-docs/refs/heads/v7/INSTALL-GUIDE.md
 - [ ] **[Feature] AI-Powered Task Suggestions**: Leverage Gemini to suggest next tasks based on user habits and patterns.
 - [ ] **[Feature] Internationalization (i18n)**: Add language files, locale-switcher, and Next.js i18n routing.
