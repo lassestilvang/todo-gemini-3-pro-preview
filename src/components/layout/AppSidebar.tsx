@@ -5,6 +5,7 @@ import { XPBar } from "@/components/gamification/XPBar";
 import { Separator } from "@/components/ui/separator";
 
 import { SearchDialog } from "@/components/tasks/SearchDialog";
+import { SidebarSearchInput } from "./sidebar/SidebarSearchInput";
 import { TemplateManager } from "@/components/tasks/TemplateManager";
 
 import { UserProfile } from "./UserProfile";
@@ -65,6 +66,9 @@ export function AppSidebar({ className, lists, labels, user, id }: AppSidebarPro
                         Planner
                     </h2>
                     <div className="mb-4">
+                        <SidebarSearchInput />
+                    </div>
+                    <div className="hidden">
                         <SearchDialog userId={user?.id} />
                     </div>
                     <SidebarNavigation />

@@ -11,7 +11,6 @@
 
 ## 🚀 Features & Enhancements
 
-- [ ] **[Feature] Search Results Page**: New page: /search and "Search tasks..." in the sidebar should actually be an input field that opens the search page. It should support searching for everything:tasks, lists, labels, descriptions, etc. It should support pagination and infinite scrolling. It should support sorting and filtering. It should support faceted search. The existing Cmd+K functionality should not be changed and this should be displayed as a shortcut hint in the sidebar.
 - [ ] **[Feature] Weekly/Monthly/Yearly Tasks**: Figure out a way to let the user schedule tasks for a specific week/month/year - not a specific date.
 - [ ] **[Feature] Calendar Version 4**: New page: /calendar4 and add it to the sidebar. Use "Full Calendar v7". It should support drag and drop of tasks to reschedule them. It should support resizing to change the duration of a task. It should also support multiple lists/calendars. It should be possible to create a new task by clicking on a date in the calendar. It should support multiple views (month, week, day). The installation guide is here: https://raw.githubusercontent.com/fullcalendar/fullcalendar-docs/refs/heads/v7/INSTALL-GUIDE.md
 - [ ] **[Feature] AI-Powered Task Suggestions**: Leverage Gemini to suggest next tasks based on user habits and patterns.
@@ -55,6 +54,7 @@
 
 ## ✅ Completed
 
+- [x] **[Feature] Search Results Page**: New page: /search and "Search tasks..." in the sidebar should actually be an input field that triggers the search page. Cmd+F to focus the input field. It should support searching for everything: tasks, lists, labels, descriptions, etc. It should support pagination and infinite scrolling. It should support sorting and filtering. It should support faceted search. The existing Cmd+K functionality should not be changed and this should be displayed as a shortcut hint in the sidebar.
 - [x] **[Feature] Slim Sidebar**: Add a slim version of the sidebar that only shows the icons.
 - [x] **[Feature] Sidebar Toggle**: Add a toggle to the sidebar to toggle between slim, normal and hidden sidebar. When hidden we should have a small icon in the top left corner to toggle it back.
 - [x] **[UX] Sidebar Resize**: Make the sidebar resizable.

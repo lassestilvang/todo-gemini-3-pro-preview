@@ -14,6 +14,7 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { FloatingSearchInput } from "./FloatingSearchInput";
 
 interface SidebarWrapperProps {
     children: React.ReactNode;
@@ -193,6 +194,8 @@ export function SidebarWrapper({ children, className, lists, labels }: SidebarWr
                     </TooltipContent>
                 </Tooltip>
             </div>
+
+            <FloatingSearchInput sidebarMode={mode} />
         </>
     );
 }
