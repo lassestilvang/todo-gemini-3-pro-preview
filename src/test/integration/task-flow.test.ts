@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
-import { setupTestDb, createTestUser } from "@/test/setup";
+import { setupTestDb, createTestUser, resetTestDb } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
 import { createList, deleteList } from "@/lib/actions/lists";
 import { createTask, toggleTaskCompletion, getTasks, deleteTask } from "@/lib/actions/tasks";
@@ -10,7 +10,7 @@ describe("Integration: Task Flow", () => {
 
     beforeAll(async () => {
         await setupTestDb();
-        // await resetTestDb();
+        await resetTestDb();
     });
 
     // Ensure database is set up and clean before each test
