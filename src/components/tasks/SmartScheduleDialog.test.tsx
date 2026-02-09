@@ -1,5 +1,6 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
-import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
+import { render, screen, cleanup, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { SmartScheduleDialog } from "./SmartScheduleDialog";
 import * as smartScheduler from "@/lib/smart-scheduler";
 import { toast } from "sonner";
@@ -51,10 +52,11 @@ describe("SmartScheduleDialog", () => {
     });
 
     it("should handle generation loading state", async () => {
+        const user = userEvent.setup();
         mockGenerateSmartSchedule.mockReturnValue(new Promise(() => { })); // Never resolves
         render(<SmartScheduleDialog open={true} onOpenChange={mockOnOpenChange} />);
 
-        fireEvent.click(screen.getByText("Generate Schedule"));
+        await user.click(screen.getByText("Generate Schedule"));
 
         expect(screen.getByText("Analyzing tasks...")).toBeDefined();
         const button = screen.getByRole("button", { name: /Analyzing tasks/i });
@@ -62,6 +64,7 @@ describe("SmartScheduleDialog", () => {
     });
 
     it("should display suggestions after generation", async () => {
+        const user = userEvent.setup();
         const suggestions = [
             {
                 taskId: 1,
@@ -75,7 +78,7 @@ describe("SmartScheduleDialog", () => {
 
         render(<SmartScheduleDialog open={true} onOpenChange={mockOnOpenChange} />);
 
-        fireEvent.click(screen.getByText("Generate Schedule"));
+        await user.click(screen.getByText("Generate Schedule"));
 
         await waitFor(() => {
             expect(screen.getByText("Task 1")).toBeDefined();
@@ -85,11 +88,12 @@ describe("SmartScheduleDialog", () => {
     });
 
     it("should handle empty suggestions", async () => {
+        const user = userEvent.setup();
         mockGenerateSmartSchedule.mockResolvedValue([]);
 
         render(<SmartScheduleDialog open={true} onOpenChange={mockOnOpenChange} />);
 
-        fireEvent.click(screen.getByText("Generate Schedule"));
+        await user.click(screen.getByText("Generate Schedule"));
 
         // Wait for async action to complete
         await waitFor(() => {
@@ -99,11 +103,12 @@ describe("SmartScheduleDialog", () => {
     });
 
     it("should handle generation error", async () => {
+        const user = userEvent.setup();
         mockGenerateSmartSchedule.mockRejectedValue(new Error("API Error"));
 
         render(<SmartScheduleDialog open={true} onOpenChange={mockOnOpenChange} />);
 
-        fireEvent.click(screen.getByText("Generate Schedule"));
+        await user.click(screen.getByText("Generate Schedule"));
 
         await waitFor(() => {
             expect(toast.error).toHaveBeenCalledWith("Failed to generate schedule. Please check your API key.");
@@ -111,6 +116,7 @@ describe("SmartScheduleDialog", () => {
     });
 
     it("should apply suggestion", async () => {
+        const user = userEvent.setup();
         const suggestions = [
             {
                 taskId: 1,
@@ -126,7 +132,7 @@ describe("SmartScheduleDialog", () => {
         render(<SmartScheduleDialog open={true} onOpenChange={mockOnOpenChange} />);
 
         // Generate first
-        fireEvent.click(screen.getByText("Generate Schedule"));
+        await user.click(screen.getByText("Generate Schedule"));
 
         // Wait for Accept button to appear
         await waitFor(() => {
@@ -134,7 +140,7 @@ describe("SmartScheduleDialog", () => {
         });
 
         // Apply
-        fireEvent.click(screen.getByText("Accept"));
+        await user.click(screen.getByText("Accept"));
 
         // Wait for the apply action to complete
         await waitFor(() => {
@@ -146,6 +152,7 @@ describe("SmartScheduleDialog", () => {
     });
 
     it("should reject suggestion", async () => {
+        const user = userEvent.setup();
         const suggestions = [
             {
                 taskId: 1,
@@ -160,21 +167,25 @@ describe("SmartScheduleDialog", () => {
         render(<SmartScheduleDialog open={true} onOpenChange={mockOnOpenChange} />);
 
         // Generate first
-        fireEvent.click(screen.getByText("Generate Schedule"));
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await user.click(screen.getByText("Generate Schedule"));
+
+        await waitFor(() => {
+            expect(screen.getByText("Task 1")).toBeDefined();
+        });
 
         // Reject - find button with red text
         const buttons = screen.getAllByRole("button");
         const rejectBtn = buttons.find(b => b.className.includes("text-red-500"));
 
         if (rejectBtn) {
-            fireEvent.click(rejectBtn);
+            await user.click(rejectBtn);
         } else {
             throw new Error("Reject button not found");
         }
 
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        expect(mockApplyScheduleSuggestion).not.toHaveBeenCalled();
+        await waitFor(() => {
+            expect(mockApplyScheduleSuggestion).not.toHaveBeenCalled();
+            expect(mockOnOpenChange).toHaveBeenCalledWith(false);
+        });
     });
 });

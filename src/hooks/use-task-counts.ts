@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useTaskStore } from "@/lib/store/task-store";
 import { addDays, startOfDay } from "date-fns";
+import type { Task } from "@/lib/types";
 
 export interface TaskCounts {
     total: number;
@@ -11,10 +12,24 @@ export interface TaskCounts {
     labelCounts: Record<number, number>;
 }
 
-export function useTaskCounts(): TaskCounts {
-    const tasks = useTaskStore(state => state.tasks);
+const EMPTY_TASKS: Record<number, Task> = Object.freeze({});
+const EMPTY_COUNTS: TaskCounts = Object.freeze({
+    total: 0,
+    inbox: 0,
+    today: 0,
+    upcoming: 0,
+    listCounts: {},
+    labelCounts: {},
+});
+
+export function useTaskCounts(enabled: boolean = true): TaskCounts {
+    const tasks = useTaskStore(state => (enabled ? state.tasks : EMPTY_TASKS));
 
     return useMemo(() => {
+        if (!enabled) {
+            return EMPTY_COUNTS;
+        }
+
         const counts: TaskCounts = {
             total: 0,
             inbox: 0,
@@ -75,5 +90,5 @@ export function useTaskCounts(): TaskCounts {
         });
 
         return counts;
-    }, [tasks]);
+    }, [tasks, enabled]);
 }

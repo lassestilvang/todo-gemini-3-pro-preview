@@ -54,7 +54,7 @@ export function AppSidebar({ className, lists, labels, user, id }: AppSidebarPro
         <aside
             id={id}
             className={cn(
-                "flex flex-col h-full overflow-hidden border-r bg-card/50 backdrop-blur-xl w-64 shrink-0 transition-all duration-300",
+                "flex flex-col h-full overflow-hidden border-r bg-card/50 backdrop-blur-xl shrink-0 transition-all duration-300 w-full",
                 className
             )}
             data-testid="app-sidebar"
