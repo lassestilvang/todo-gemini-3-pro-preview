@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
-import { setupTestDb, createTestUser } from "@/test/setup";
+import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
 import { createList, deleteList } from "@/lib/actions/lists";
 import { createTask, toggleTaskCompletion, getTasks, deleteTask } from "@/lib/actions/tasks";
@@ -15,6 +15,7 @@ describe("Integration: Task Flow", () => {
 
     // Ensure database is set up and clean before each test
     beforeEach(async () => {
+        await resetTestDb();
         // Use unique ID per test for isolation
         const randomId = Math.random().toString(36).substring(7);
         testUserId = `user_${randomId}`;
