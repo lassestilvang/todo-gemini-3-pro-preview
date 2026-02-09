@@ -13,19 +13,9 @@ const renderWithTabs = (ui: React.ReactNode) => {
     );
 };
 
-// We mock IconPicker because it might have complex dependencies or side effects.
-// We use mock.module but we should be careful.
-// If IconPicker is used elsewhere, this mock persists.
-// To avoid this, we can try to *not* mock it if possible, or accept the risk if IconPicker is purely presentational here.
-// Actually, let's try WITHOUT mocking first. If it fails, we'll see.
-// But wait, the previous `TaskDialog.test.tsx` used `mock.module` for many things.
-// If I use `mock.module` for `IconPicker` here, I should make sure it matches what others expect or is harmless.
-// IconPicker: ({ value, onChange, trigger }) => <div>{trigger}</div> seems safe enough.
-
-mock.module("@/components/ui/icon-picker", () => ({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    IconPicker: ({ trigger }: any) => <div data-testid="icon-picker">{trigger}</div>,
-}));
+// We rely on the real UI components.
+// IconPicker and other components are used directly to avoid mock leakage and ensure integration works.
+// setup.tsx handles global environment mocks (PointerEvent, etc.).
 
 describe("TaskDetailsTab Accessibility", () => {
     const mockProps = {
