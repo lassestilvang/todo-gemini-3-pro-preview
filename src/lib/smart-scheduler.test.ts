@@ -3,6 +3,7 @@ import { setupTestDb, createTestUser } from "../test/setup";
 import { db, tasks } from "@/db";
 import { eq } from "drizzle-orm";
 import { generateSubtasks, extractDeadline, generateSmartSchedule, analyzePriorities, applyScheduleSuggestion } from "./smart-scheduler";
+import { setMockAuthUser } from "@/test/mocks";
 
 // Mock the Gemini client
 const mockGenerateContent = mock(() => Promise.resolve({
@@ -38,6 +39,14 @@ describe("smart-scheduler", () => {
         testUserId = `user_${randomId}`;
 
         await createTestUser(testUserId, `${testUserId}@scheduler.com`);
+        setMockAuthUser({
+            id: testUserId,
+            email: `${testUserId}@scheduler.com`,
+            firstName: "Test",
+            lastName: "User",
+            profilePictureUrl: null
+        });
+
         mockGenerateContent.mockClear();
         mockGetGeminiClient.mockClear();
     });
