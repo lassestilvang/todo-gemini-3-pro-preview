@@ -92,15 +92,15 @@ export function useTaskData({ taskId, isEdit, userId }: UseTaskDataProps) {
     }, [taskId, userId]);
 
     const fetchRemindersAndLogs = useCallback(async () => {
-        if (taskId) {
+        if (taskId && userId) {
             const [fetchedReminders, fetchedLogs] = await Promise.all([
-                getReminders(taskId),
+                getReminders(taskId, userId),
                 getTaskLogs(taskId)
             ]);
             setReminders(fetchedReminders);
             setLogs(fetchedLogs);
         }
-    }, [taskId]);
+    }, [taskId, userId]);
 
     const fetchBlockers = useCallback(async () => {
         if (taskId && userId) {
