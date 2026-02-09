@@ -1,19 +1,20 @@
-import { describe, it, expect, beforeEach } from "bun:test";
-import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
+import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
+import { setupTestDb, createTestUser } from "@/test/setup";
 import { getReminders, createReminder } from "@/lib/actions/reminders";
 import { createTask } from "@/lib/actions/tasks";
 import { setMockAuthUser } from "@/test/mocks";
 
 describe("Security: IDOR in Reminders", () => {
-    beforeEach(async () => {
+    beforeAll(async () => {
         await setupTestDb();
-        await resetTestDb();
+        // Do NOT call resetTestDb() here or in beforeEach to avoid interfering with parallel tests
     });
 
     it("should NOT allow User B to access User A's reminders", async () => {
-        // 1. Create User A and User B
-        const userA = await createTestUser("user-a", "user.a@example.com");
-        const userB = await createTestUser("user-b", "user.b@example.com");
+        // Use unique IDs to ensure isolation
+        const idSuffix = Math.random().toString(36).substring(7);
+        const userA = await createTestUser(`user-a-${idSuffix}`, `user.a.${idSuffix}@example.com`);
+        const userB = await createTestUser(`user-b-${idSuffix}`, `user.b.${idSuffix}@example.com`);
 
         // 2. User A creates a task and a reminder
         setMockAuthUser(userA);
