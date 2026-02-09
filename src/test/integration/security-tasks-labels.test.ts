@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
-import { setupTestDb, createTestUser } from "@/test/setup";
+import { setupTestDb, createTestUser, resetTestDb } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
 import { createTask, getTasks } from "@/lib/actions/tasks";
 import { createLabel } from "@/lib/actions/labels";
@@ -14,6 +14,7 @@ describe("Integration: Security Task Labels IDOR", () => {
     });
 
     beforeEach(async () => {
+        await resetTestDb();
         // Create users
         const victim = await createTestUser("victim", "victim@target.com");
         const attacker = await createTestUser("attacker", "attacker@evil.com");
