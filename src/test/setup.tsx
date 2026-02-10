@@ -323,8 +323,11 @@ mock.module("@/lib/auth", () => ({
     }),
     requireUser: mock(async (userId: string) => {
         const user = getMockAuthUser();
+        // Add logging for debugging CI failures
+        // console.log(`[requireUser Mock] userId=${userId}, current mock user=${user?.id}`);
         if (!user) throw new UnauthorizedError();
         if (user.id !== userId) {
+            // console.log(`[requireUser Mock] Forbidden: user.id=${user.id} !== userId=${userId}`);
             const err = new ForbiddenError("Forbidden");
             Object.defineProperty(err, 'name', { value: 'ForbiddenError', enumerable: true });
             throw err;

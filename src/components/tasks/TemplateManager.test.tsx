@@ -5,21 +5,8 @@ import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
 import { eq } from "drizzle-orm";
 
-// Mock sonner toast - removed local mock to use global from setup.tsx
-
-// Mocks should be targeted and not leak to other tests
-
-
-
-
-
-// Use real actions (which use in-memory SQLite) to avoid mock leakage issues
-// The test DB is set up in beforeEach
-
 // Mock window.confirm
 const originalConfirm = globalThis.confirm;
-
-// PointerEvent mocks are provided globally in setup.tsx
 
 describe("TemplateManager", () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -28,9 +15,11 @@ describe("TemplateManager", () => {
   const testUserId = "test_user_123";
 
   beforeEach(async () => {
+    // Reset DB for each test to ensure clean state
+    await setupTestDb();
+    await resetTestDb();
 
-    // PointerEvent mocks are provided globally in setup.tsx (upstream change),
-    // but adding them here defensively to ensure tests pass in all environments
+    // Ensure element pointer methods are mocked (defensive programming for CI)
     if (!Element.prototype.setPointerCapture) {
       Element.prototype.setPointerCapture = () => { };
     }
@@ -41,14 +30,8 @@ describe("TemplateManager", () => {
       Element.prototype.hasPointerCapture = () => false;
     }
 
-    // Restore DB seeding as a fallback in case mocks fail (belt and suspenders)
-    // This ensures that even if the real getTemplates is called, it returns data.
-    await setupTestDb();
-    await resetTestDb();
     await createTestUser(testUserId, `${testUserId}@example.com`);
 
-    // Set mock user to match the one expected by tests
-    // Using global state to ensure it persists across async operations
     setMockAuthUser({
       id: testUserId,
       email: `${testUserId}@example.com`,
@@ -57,9 +40,10 @@ describe("TemplateManager", () => {
       profilePictureUrl: null
     });
 
-    // Seed templates into DB
     const { templates } = await import("@/db/schema-sqlite");
     const { db } = await import("@/db");
+
+    // Insert test data
     await db.insert(templates).values([
       {
         id: 1,
@@ -79,7 +63,6 @@ describe("TemplateManager", () => {
 
     templateIds = [1, 2];
 
-    // Dynamic import to ensure fresh module state
     const importedModule = await import("./TemplateManager");
     TemplateManager = importedModule.TemplateManager;
 
@@ -101,9 +84,12 @@ describe("TemplateManager", () => {
       setMockAuthUser({ id: testUserId, email: "test@example.com", firstName: "Test", lastName: "User", profilePictureUrl: null });
       render(<TemplateManager userId="test_user_123" />);
 
-      fireEvent.click(screen.getByText("Templates"));
+      // Ensure button is present and click it
+      const button = screen.getByText("Templates");
+      expect(button).toBeInTheDocument();
+      fireEvent.click(button);
 
-      // Explicitly wait for dialog with increased timeout for CI
+      // Wait for dialog content with extremely generous timeout for CI
       await waitFor(() => {
         expect(screen.getByRole("dialog")).toBeInTheDocument();
       }, { timeout: 30000 });
@@ -127,8 +113,6 @@ describe("TemplateManager", () => {
     }, 40000);
 
     it("should show empty state when no templates exist", async () => {
-
-      // Delete templates for this specific test
       const { templates } = await import("@/db/schema-sqlite");
       const { db } = await import("@/db");
       await db.delete(templates).where(eq(templates.userId, testUserId));
@@ -160,14 +144,12 @@ describe("TemplateManager", () => {
     it("should show empty form fields in create mode", async () => {
       render(<TemplateManager userId="test_user_123" />);
 
-      // Open template list dialog
       fireEvent.click(screen.getByText("Templates"));
 
       await waitFor(() => {
         expect(screen.getByTestId("new-template-button")).toBeInTheDocument();
       }, { timeout: 30000 });
 
-      // Click New Template button
       fireEvent.click(screen.getByTestId("new-template-button"));
 
       await waitFor(() => {
@@ -214,14 +196,12 @@ describe("TemplateManager", () => {
     it("should pre-populate task title from template content", async () => {
       render(<TemplateManager userId="test_user_123" />);
 
-      // Open template list dialog
       fireEvent.click(screen.getByText("Templates"));
 
       await waitFor(() => {
         expect(screen.getByTestId(`edit-template-${templateIds[0]}`)).toBeInTheDocument();
       }, { timeout: 30000 });
 
-      // Click edit button for first template
       fireEvent.click(screen.getByTestId(`edit-template-${templateIds[0]}`));
 
       await waitFor(() => {
@@ -268,10 +248,9 @@ describe("TemplateManager", () => {
 
   describe("without userId", () => {
     it("should not load templates when userId is not provided", async () => {
-      // Re-render without userId
       render(<TemplateManager />);
 
-      // If no userId, it should show empty state or handle gracefully
+      // If no userId, it should not load
       await waitFor(() => {
         expect(screen.queryByText("Weekly Report")).not.toBeInTheDocument();
       }, { timeout: 5000 });

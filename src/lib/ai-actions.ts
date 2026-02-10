@@ -93,6 +93,7 @@ export async function rescheduleOverdueTasks(): Promise<RescheduleSuggestion[]> 
         // Fetch overdue tasks
         const overdueTasks = await db.select().from(tasks).where(
             and(
+                eq(tasks.userId, user.id),
                 lt(tasks.dueDate, today),
                 eq(tasks.isCompleted, false)
             )

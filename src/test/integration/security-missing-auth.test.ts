@@ -1,21 +1,18 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, createTestUser } from "@/test/setup";
-import { setMockAuthUser, clearMockAuthUser } from "@/test/mocks";
-
-// Note: @/lib/auth is already mocked in src/test/setup.tsx.
-// We use relative imports here to attempt to bypass any potential `mock.module` leakage
-// on the "@/" alias from other tests running in the same context.
-
-let getViewSettings: typeof import("../../lib/actions/view-settings").getViewSettings;
-let saveViewSettings: typeof import("../../lib/actions/view-settings").saveViewSettings;
-let resetViewSettings: typeof import("../../lib/actions/view-settings").resetViewSettings;
-let getTemplates: typeof import("../../lib/actions/templates").getTemplates;
-let createTemplate: typeof import("../../lib/actions/templates").createTemplate;
-let updateTemplate: typeof import("../../lib/actions/templates").updateTemplate;
-let deleteTemplate: typeof import("../../lib/actions/templates").deleteTemplate;
-let instantiateTemplate: typeof import("../../lib/actions/templates").instantiateTemplate;
+import { setMockAuthUser, clearMockAuthUser, getMockAuthUser } from "@/test/mocks";
 import { isFailure } from "@/lib/action-result";
 import { db, templates } from "@/db";
+
+// Declare variables for dynamic imports
+let getViewSettings: typeof import("@/lib/actions/view-settings").getViewSettings;
+let saveViewSettings: typeof import("@/lib/actions/view-settings").saveViewSettings;
+let resetViewSettings: typeof import("@/lib/actions/view-settings").resetViewSettings;
+let getTemplates: typeof import("@/lib/actions/templates").getTemplates;
+let createTemplate: typeof import("@/lib/actions/templates").createTemplate;
+let updateTemplate: typeof import("@/lib/actions/templates").updateTemplate;
+let deleteTemplate: typeof import("@/lib/actions/templates").deleteTemplate;
+let instantiateTemplate: typeof import("@/lib/actions/templates").instantiateTemplate;
 
 describe("Integration: Security Missing Auth", () => {
     let attackerId: string;
@@ -39,34 +36,52 @@ describe("Integration: Security Missing Auth", () => {
 
     beforeEach(async () => {
         clearMockAuthUser();
-        // Create attacker and victim
-        const attacker = await createTestUser("attacker", "attacker@evil.com");
-        const victim = await createTestUser("victim", "victim@target.com");
+        // Create attacker and victim with predictable IDs
+        attackerId = "attacker_user_id";
+        victimId = "victim_user_id";
 
-        attackerId = attacker.id;
-        victimId = victim.id;
+        await createTestUser(attackerId, "attacker@evil.com");
+        await createTestUser(victimId, "victim@target.com");
 
         // Set auth context to attacker globally for this test
         setMockAuthUser({
-            id: attacker.id,
-            email: attacker.email,
-            firstName: attacker.firstName,
-            lastName: attacker.lastName,
+            id: attackerId,
+            email: "attacker@evil.com",
+            firstName: "Attacker",
+            lastName: "User",
             profilePictureUrl: null
         });
     });
 
     // View Settings Tests
     it("should fail when reading another user's view settings", async () => {
-        // Explicitly set attacker as current user to ensure test isolation in CI
-        setMockAuthUser({
-            id: attackerId,
-            email: "attacker@evil.com",
-            firstName: "Test",
-            lastName: "User",
-            profilePictureUrl: null
-        });
+        // Double check mock user
+        const currentUser = getMockAuthUser();
+        if (currentUser?.id === victimId) {
+            throw new Error("Test setup error: Mock user matches victim ID");
+        }
 
+        try {
+            const result = await getViewSettings(victimId, "inbox");
+
+            // If it returns a result object (withErrorHandling)
+            if (result && typeof result === 'object' && 'success' in result) {
+                // @ts-expect-error - checking structure
+                if (isFailure(result)) {
+                    // @ts-expect-error - checking structure
+                    expect(result.error.code).toBe("FORBIDDEN");
+                } else {
+                     throw new Error("Returned success result instead of Forbidden failure");
+                }
+            } else {
+                // If it returns raw data (array or null) and didn't throw
+                // This is a failure unless implementation logic changed to allow null (which it shouldn't for security)
+                throw new Error(`Security failure: getViewSettings returned ${JSON.stringify(result)} instead of throwing/failing`);
+            }
+        } catch (e: unknown) {
+            // If it throws, verify it's a Forbidden/Unauthorized error
+            expect((e as Error).message).toMatch(/Forbidden|authorized|Authentication|Security failure/i);
+        }
         // getViewSettings unwrapped action should throw ForbiddenError when accessing another user's data
         await expect(getViewSettings(victimId, "inbox")).rejects.toThrow(/Forbidden|authorized/i);
     });
@@ -92,6 +107,23 @@ describe("Integration: Security Missing Auth", () => {
 
     // Template Tests
     it("should fail when getting another user's templates", async () => {
+        try {
+            const result = await getTemplates(victimId);
+             // @ts-expect-error - checking structure
+            if (result && typeof result === 'object' && 'success' in result) {
+                 // @ts-expect-error - checking structure
+                expect(isFailure(result)).toBe(true);
+                 // @ts-expect-error - checking structure
+                if (isFailure(result)) {
+                     // @ts-expect-error - checking structure
+                    expect(result.error.code).toBe("FORBIDDEN");
+                }
+            } else {
+                throw new Error("Security failure: getTemplates returned success instead of throwing");
+            }
+        } catch (e: unknown) {
+            expect((e as Error).message).toMatch(/Forbidden|authorized|Authentication|Security failure/i);
+        }
         // Ensure mock user is attacker
         setMockAuthUser({ id: attackerId, email: "attacker@evil.com", firstName: "A", lastName: "T", profilePictureUrl: null });
 
@@ -100,9 +132,6 @@ describe("Integration: Security Missing Auth", () => {
     });
 
     it("should fail when creating a template for another user", async () => {
-        // Ensure mock user is attacker
-        setMockAuthUser({ id: attackerId, email: "attacker@evil.com", firstName: "A", lastName: "T", profilePictureUrl: null });
-
         const result = await createTemplate(victimId, "Evil Template", "{}");
 
         expect(isFailure(result)).toBe(true);
