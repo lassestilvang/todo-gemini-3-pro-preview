@@ -45,7 +45,7 @@ describe("smart-scheduler", () => {
         await createTestUser(currentTestUserId, `${currentTestUserId}@scheduler.com`);
         mockGenerateContent.mockClear();
         mockGetGeminiClient.mockClear();
-        mockRequireUser.mockClear();
+        mockRequireAuth.mockClear();
     });
 
     describe("generateSubtasks", () => {
