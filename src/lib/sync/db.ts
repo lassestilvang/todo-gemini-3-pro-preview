@@ -3,7 +3,7 @@ import { openDB, DBSchema, IDBPDatabase } from 'idb';
 import { PendingAction } from './types';
 
 const DB_NAME = 'todo-gemini-sync';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 interface MetaValue {
     key: string;
@@ -39,7 +39,7 @@ let dbPromise: Promise<IDBPDatabase<SyncDB>> | null = null;
 export function getDB() {
     if (!dbPromise) {
         dbPromise = openDB<SyncDB>(DB_NAME, DB_VERSION, {
-            upgrade(db, oldVersion) {
+            async upgrade(db, oldVersion, _newVersion, transaction) {
                 if (oldVersion < 1) {
                     const store = db.createObjectStore('queue', { keyPath: 'id' });
                     store.createIndex('by-timestamp', 'timestamp');
@@ -53,6 +53,17 @@ export function getDB() {
                 }
                 if (oldVersion < 4) {
                     db.createObjectStore('meta', { keyPath: 'key' });
+                }
+                if (oldVersion < 5 && db.objectStoreNames.contains('tasks')) {
+                    const store = transaction.objectStore('tasks');
+                    let cursor = await store.openCursor();
+                    while (cursor) {
+                        const value = cursor.value as Record<string, unknown>;
+                        if (value && !("dueDatePrecision" in value)) {
+                            cursor.update({ ...value, dueDatePrecision: null });
+                        }
+                        cursor = await cursor.continue();
+                    }
                 }
             },
         });

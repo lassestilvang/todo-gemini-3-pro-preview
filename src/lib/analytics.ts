@@ -17,6 +17,7 @@ export async function getAnalytics(userId: string) {
             },
             tasksOverTime: [],
             priorityDist: { high: 0, medium: 0, low: 0, none: 0 },
+            duePrecisionDist: { day: 0, week: 0, month: 0, year: 0, none: 0 },
             energyStats: { high: 0, medium: 0, low: 0 },
             energyCompleted: { high: 0, medium: 0, low: 0 },
             productivityByDay: [0, 0, 0, 0, 0, 0, 0],
@@ -39,6 +40,8 @@ export async function getAnalytics(userId: string) {
         .select({
             isCompleted: tasks.isCompleted,
             priority: tasks.priority,
+            dueDatePrecision: tasks.dueDatePrecision,
+            dueDate: tasks.dueDate,
             energyLevel: tasks.energyLevel,
             estimateMinutes: tasks.estimateMinutes,
             actualMinutes: tasks.actualMinutes,
@@ -60,6 +63,7 @@ export async function getAnalytics(userId: string) {
     // Initialize aggregation structures
     let completedTasks = 0;
     const priorityDist = { high: 0, medium: 0, low: 0, none: 0 };
+    const duePrecisionDist = { day: 0, week: 0, month: 0, year: 0, none: 0 };
     const energyStats = { high: 0, medium: 0, low: 0 };
     const energyCompleted = { high: 0, medium: 0, low: 0 };
     const productivityByDay = [0, 0, 0, 0, 0, 0, 0];
@@ -90,6 +94,15 @@ export async function getAnalytics(userId: string) {
         else if (priority === "medium") priorityDist.medium++;
         else if (priority === "low") priorityDist.low++;
         else priorityDist.none++;
+
+        // Due date precision distribution
+        if (!t.dueDate) {
+            duePrecisionDist.none++;
+        } else if (t.dueDatePrecision && t.dueDatePrecision !== "day") {
+            duePrecisionDist[t.dueDatePrecision] += 1;
+        } else {
+            duePrecisionDist.day++;
+        }
 
         // Energy level stats
         if (t.energyLevel === "high") {
@@ -255,6 +268,7 @@ export async function getAnalytics(userId: string) {
         },
         tasksOverTime,
         priorityDist,
+        duePrecisionDist,
         energyStats,
         energyCompleted,
         productivityByDay,

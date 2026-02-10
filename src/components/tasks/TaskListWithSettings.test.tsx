@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach, mock } from "bun:test";
+import { describe, it, expect, beforeAll, beforeEach, afterAll, afterEach, mock } from "bun:test";
 import { render, screen, cleanup } from "@testing-library/react";
-import { TaskListWithSettings } from "./TaskListWithSettings";
 import { setMockAuthUser, DEFAULT_MOCK_USER } from "@/test/mocks";
 import React from "react";
+
+let TaskListWithSettings: typeof import("./TaskListWithSettings").TaskListWithSettings;
 
 // Mock store
 const mockUseTaskStore = mock(() => ({
@@ -14,6 +15,16 @@ const mockUseTaskStore = mock(() => ({
 
 mock.module("@/lib/store/task-store", () => ({
     useTaskStore: mockUseTaskStore
+}));
+
+// Mock next/dynamic to avoid async loadable updates during tests.
+mock.module("next/dynamic", () => ({
+    __esModule: true,
+    default: () => {
+        const DynamicComponent = () => null;
+        DynamicComponent.displayName = "DynamicComponentMock";
+        return DynamicComponent;
+    },
 }));
 
 // Mock sync
@@ -32,12 +43,19 @@ mock.module("@/lib/actions/view-settings", () => ({
 }));
 
 describe("TaskListWithSettings", () => {
+    beforeAll(async () => {
+        ({ TaskListWithSettings } = await import("./TaskListWithSettings"));
+    });
+
     beforeEach(() => {
         setMockAuthUser(DEFAULT_MOCK_USER);
     });
 
     afterEach(() => {
         cleanup();
+    });
+
+    afterAll(() => {
         mock.restore();
     });
 

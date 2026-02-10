@@ -55,6 +55,7 @@ describe("smart-scheduler", () => {
         // Use unique ID per test for isolation
         const randomId = Math.random().toString(36).substring(7);
         currentTestUserId = `user_${randomId}`;
+        testUserId = currentTestUserId;
 
         await createTestUser(currentTestUserId, `${currentTestUserId}@scheduler.com`);
         setMockAuthUser({

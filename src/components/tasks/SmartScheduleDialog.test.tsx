@@ -1,8 +1,9 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
-import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
+import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import { SmartScheduleDialog } from "./SmartScheduleDialog";
 import * as smartScheduler from "@/lib/smart-scheduler";
 import { toast } from "sonner";
+import userEvent from "@testing-library/user-event";
 
 // Mock dependencies
 mock.module("@/lib/smart-scheduler", () => ({
@@ -53,8 +54,9 @@ describe("SmartScheduleDialog", () => {
     it("should handle generation loading state", async () => {
         mockGenerateSmartSchedule.mockReturnValue(new Promise(() => { })); // Never resolves
         render(<SmartScheduleDialog open={true} onOpenChange={mockOnOpenChange} />);
+        const user = userEvent.setup();
 
-        fireEvent.click(screen.getByText("Generate Schedule"));
+        await user.click(screen.getByText("Generate Schedule"));
 
         expect(screen.getByText("Analyzing tasks...")).toBeDefined();
         const button = screen.getByRole("button", { name: /Analyzing tasks/i });
@@ -74,8 +76,9 @@ describe("SmartScheduleDialog", () => {
         mockGenerateSmartSchedule.mockResolvedValue(suggestions);
 
         render(<SmartScheduleDialog open={true} onOpenChange={mockOnOpenChange} />);
+        const user = userEvent.setup();
 
-        fireEvent.click(screen.getByText("Generate Schedule"));
+        await user.click(screen.getByText("Generate Schedule"));
 
         await waitFor(() => {
             expect(screen.getByText("Task 1")).toBeDefined();
@@ -88,8 +91,9 @@ describe("SmartScheduleDialog", () => {
         mockGenerateSmartSchedule.mockResolvedValue([]);
 
         render(<SmartScheduleDialog open={true} onOpenChange={mockOnOpenChange} />);
+        const user = userEvent.setup();
 
-        fireEvent.click(screen.getByText("Generate Schedule"));
+        await user.click(screen.getByText("Generate Schedule"));
 
         // Wait for async action to complete
         await waitFor(() => {
@@ -102,8 +106,9 @@ describe("SmartScheduleDialog", () => {
         mockGenerateSmartSchedule.mockRejectedValue(new Error("API Error"));
 
         render(<SmartScheduleDialog open={true} onOpenChange={mockOnOpenChange} />);
+        const user = userEvent.setup();
 
-        fireEvent.click(screen.getByText("Generate Schedule"));
+        await user.click(screen.getByText("Generate Schedule"));
 
         await waitFor(() => {
             expect(toast.error).toHaveBeenCalledWith("Failed to generate schedule. Please check your API key.");
@@ -124,9 +129,10 @@ describe("SmartScheduleDialog", () => {
         mockApplyScheduleSuggestion.mockResolvedValue(undefined);
 
         render(<SmartScheduleDialog open={true} onOpenChange={mockOnOpenChange} />);
+        const user = userEvent.setup();
 
         // Generate first
-        fireEvent.click(screen.getByText("Generate Schedule"));
+        await user.click(screen.getByText("Generate Schedule"));
 
         // Wait for Accept button to appear
         await waitFor(() => {
@@ -134,7 +140,7 @@ describe("SmartScheduleDialog", () => {
         });
 
         // Apply
-        fireEvent.click(screen.getByText("Accept"));
+        await user.click(screen.getByText("Accept"));
 
         // Wait for the apply action to complete
         await waitFor(() => {
@@ -158,22 +164,18 @@ describe("SmartScheduleDialog", () => {
         mockGenerateSmartSchedule.mockResolvedValue(suggestions);
 
         render(<SmartScheduleDialog open={true} onOpenChange={mockOnOpenChange} />);
+        const user = userEvent.setup();
 
         // Generate first
-        fireEvent.click(screen.getByText("Generate Schedule"));
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await user.click(screen.getByText("Generate Schedule"));
 
-        // Reject - find button with red text
-        const buttons = screen.getAllByRole("button");
-        const rejectBtn = buttons.find(b => b.className.includes("text-red-500"));
+        const rejectBtn = await screen.findByRole("button", { name: "Reject suggestion" });
 
-        if (rejectBtn) {
-            fireEvent.click(rejectBtn);
-        } else {
-            throw new Error("Reject button not found");
-        }
+        await user.click(rejectBtn);
 
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await waitFor(() => {
+            expect(mockOnOpenChange).toHaveBeenCalledWith(false);
+        });
 
         expect(mockApplyScheduleSuggestion).not.toHaveBeenCalled();
     });
