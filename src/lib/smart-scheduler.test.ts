@@ -21,7 +21,7 @@ const mockGetGeminiClient = mock(() => ({
 
 // Mock Auth
 let currentTestUserId = "default-test-user";
-const mockRequireUser = mock(() => Promise.resolve({ id: currentTestUserId }));
+const mockRequireAuth = mock(() => Promise.resolve({ id: currentTestUserId }));
 
 mock.module("@/lib/gemini", () => ({
     getGeminiClient: mockGetGeminiClient,
@@ -29,7 +29,7 @@ mock.module("@/lib/gemini", () => ({
 }));
 
 mock.module("@/lib/auth", () => ({
-    requireUser: mockRequireUser
+    requireAuth: mockRequireAuth
 }));
 
 describe("smart-scheduler", () => {
