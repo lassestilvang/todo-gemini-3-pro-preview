@@ -5,7 +5,6 @@ import {
   getDevBypassUserConfig,
   getProdBypassUserConfig,
   isDevBypassEnabled,
-  normalizeIp,
   signAuthBypassPayload,
   verifyAuthBypassSignature,
   constantTimeEqual,
@@ -224,44 +223,3 @@ describe("getDevBypassUserConfig", () => {
   });
 });
 
-describe("normalizeIp", () => {
-  it("returns null for null", () => {
-    expect(normalizeIp(null)).toBeNull();
-  });
-
-  it("returns null for undefined", () => {
-    expect(normalizeIp(undefined)).toBeNull();
-  });
-
-  it("returns null for empty string", () => {
-    expect(normalizeIp("")).toBeNull();
-  });
-
-  it("returns null for whitespace-only string", () => {
-    expect(normalizeIp("   ")).toBeNull();
-  });
-
-  it("trims whitespace", () => {
-    expect(normalizeIp("  128.76.228.251  ")).toBe("128.76.228.251");
-  });
-
-  it("takes the first IP from comma-separated list", () => {
-    expect(normalizeIp("10.0.0.1, 192.168.1.1")).toBe("10.0.0.1");
-  });
-
-  it("strips ::ffff: prefix (IPv4-mapped IPv6)", () => {
-    expect(normalizeIp("::ffff:128.76.228.251")).toBe("128.76.228.251");
-  });
-
-  it("strips port from IPv4:port format", () => {
-    expect(normalizeIp("128.76.228.251:8080")).toBe("128.76.228.251");
-  });
-
-  it("passes through a plain IPv4 address", () => {
-    expect(normalizeIp("192.168.0.1")).toBe("192.168.0.1");
-  });
-
-  it("passes through a plain IPv6 address", () => {
-    expect(normalizeIp("2001:db8::1")).toBe("2001:db8::1");
-  });
-});

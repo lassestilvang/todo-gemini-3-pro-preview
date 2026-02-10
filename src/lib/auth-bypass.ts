@@ -84,35 +84,6 @@ export async function signAuthBypassPayload(
   return toHex(signature);
 }
 
-export function normalizeIp(value: string | null | undefined): string | null {
-  if (!value) {
-    return null;
-  }
-
-  let ip = value.trim();
-  if (!ip) {
-    return null;
-  }
-
-  if (ip.includes(",")) {
-    ip = ip.split(",")[0]?.trim() ?? "";
-  }
-
-  if (ip.startsWith("::ffff:")) {
-    ip = ip.slice(7);
-  }
-
-  if (ip.includes(".") && ip.includes(":")) {
-    const lastColon = ip.lastIndexOf(":");
-    const port = ip.slice(lastColon + 1);
-    if (/^\d+$/.test(port)) {
-      ip = ip.slice(0, lastColon);
-    }
-  }
-
-  return ip || null;
-}
-
 export function constantTimeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   let result = 0;
