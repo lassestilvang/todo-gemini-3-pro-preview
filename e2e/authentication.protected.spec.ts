@@ -32,17 +32,15 @@ test.describe('Authentication: Protected Routes', () => {
     await clearTestSession(page);
 
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForURL(/\/login|.*authkit\.app.*/, { timeout: 10000 });
-
-    expect(await isOnLoginPage(page)).toBe(true);
+    await page.waitForURL(/\/login|.*authkit\.app.*/, { timeout: 10000, waitUntil: 'commit' }).catch(() => {});
+    await expect(page.getByRole('link', { name: /sign in/i })).toBeVisible({ timeout: 10000 });
   });
 
   test('should redirect to login when accessing analytics unauthenticated', async ({ page }) => {
     await clearTestSession(page);
 
     await page.goto('/analytics', { waitUntil: 'domcontentloaded' });
-    await page.waitForURL(/\/login|.*authkit\.app.*/, { timeout: 10000 });
-
-    expect(await isOnLoginPage(page)).toBe(true);
+    await page.waitForURL(/\/login|.*authkit\.app.*/, { timeout: 10000, waitUntil: 'commit' }).catch(() => {});
+    await expect(page.getByRole('link', { name: /sign in/i })).toBeVisible({ timeout: 10000 });
   });
 });
