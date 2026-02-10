@@ -61,21 +61,22 @@ export async function exportUserData() {
     if (taskIds.length > 0) {
         // Fetch task-related data
         // Note: Drizzle optimized query for "inArray"
-        userTaskLabels = await db
-            .select({
-                taskId: taskLabels.taskId,
-                labelId: taskLabels.labelId
-            })
-            .from(taskLabels)
-            .innerJoin(tasks, eq(taskLabels.taskId, tasks.id))
-            .where(eq(tasks.userId, userId))
+        const [labelsResult, remindersResult] = await Promise.all([
+            db
+                .select({
+                    taskId: taskLabels.taskId,
+                    labelId: taskLabels.labelId
+                })
+                .from(taskLabels)
+                .where(inArray(taskLabels.taskId, taskIds)),
+            db
+                .select()
+                .from(reminders)
+                .where(inArray(reminders.taskId, taskIds))
+        ])
 
-        userReminders = await db
-            .select()
-            .from(reminders)
-            .innerJoin(tasks, eq(reminders.taskId, tasks.id))
-            .where(eq(tasks.userId, userId))
-            .then(rows => rows.map(r => r.reminders))
+        userTaskLabels = labelsResult
+        userReminders = remindersResult
     }
 
     const backup: UserBackupData = {
