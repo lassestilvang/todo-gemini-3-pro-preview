@@ -4,7 +4,7 @@
 
 - Snooze? Eller er det bare "This week"?
 - Som Hey/Timestripe?
-- Timeline view?
+- Timeline view? Har full calendar det?
 - blacksmith/depot?
 
 ## 🚨 High Priority (Bugs & Core Issues)
@@ -12,6 +12,7 @@
 ## 🚀 Features & Enhancements
 
 - [ ] **[Feature] Todoist Sync**: Add support for syncing tasks with Todoist. https://developer.todoist.com/api/v1/
+- [ ] **[Feature] Google Tasks Sync**: Add support for syncing tasks with Google Tasks. https://developers.google.com/workspace/tasks/reference/rest
 - [ ] **[Feature] Calendar Version 4**: New page: /calendar4 and add it to the sidebar. Use "Full Calendar v7". It should support drag and drop of tasks to reschedule them. It should support resizing to change the duration of a task. It should also support multiple lists/calendars. It should be possible to create a new task by clicking on a date in the calendar. It should support multiple views (month, week, day). The installation guide is here: https://raw.githubusercontent.com/fullcalendar/fullcalendar-docs/refs/heads/v7/INSTALL-GUIDE.md
   - **Support for weekly/monthly/yearly tasks**: Display like HEY.com
 - [ ] **[Feature] AI-Powered Task Suggestions**: Leverage Gemini to suggest next tasks based on user habits and patterns.
