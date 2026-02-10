@@ -2,7 +2,7 @@
 
 ## 💡 Ideas
 
-- Snooze? Eller er det bare "This week"? 
+- Snooze? Eller er det bare "This week"?
 - Som Hey/Timestripe?
 - Timeline view?
 - blacksmith/depot?
