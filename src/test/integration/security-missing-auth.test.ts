@@ -56,8 +56,6 @@ describe("Integration: Security Missing Auth", () => {
     it("should fail when reading another user's view settings", async () => {
         // Double check mock user
         const currentUser = getMockAuthUser();
-        // console.log(`[Test] Current User ID: ${currentUser?.id}, Target User ID: ${victimId}`);
-
         if (currentUser?.id === victimId) {
             throw new Error("Test setup error: Mock user matches victim ID");
         }
