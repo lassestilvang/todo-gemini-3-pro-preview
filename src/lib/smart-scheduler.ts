@@ -69,7 +69,7 @@ export async function generateSmartSchedule(): Promise<ScheduleSuggestion[]> {
     if (!client) return [];
 
     try {
-        const user = await requireUser();
+        const user = await requireAuth();
 
         // 1. Fetch unscheduled tasks (no due date, not completed)
         const unscheduledTasks = await db.select().from(tasks).where(
