@@ -525,7 +525,7 @@ export function TaskDetailsTab({
                             <div className="flex-1">
                                 <DatePicker date={newReminderDate} setDate={setNewReminderDate} />
                             </div>
-                            <Button type="button" onClick={handleAddReminder} size="sm" disabled={!newReminderDate} aria-label="Add reminder">Add</Button>
+                            <Button type="button" onClick={handleAddReminder} size="sm" disabled={!newReminderDate}>Add reminder</Button>
                         </div>
                         <div className="space-y-2">
                             {reminders.map(reminder => (
