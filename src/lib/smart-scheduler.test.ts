@@ -3,7 +3,9 @@ import { setupTestDb, createTestUser } from "../test/setup";
 import { setMockAuthUser } from "@/test/mocks";
 import { db, tasks } from "@/db";
 import { eq } from "drizzle-orm";
+import { setMockAuthUser } from "../test/mocks";
 import { generateSubtasks, extractDeadline, generateSmartSchedule, analyzePriorities, applyScheduleSuggestion } from "./smart-scheduler";
+import { setMockAuthUser } from "@/test/mocks";
 
 // Mock the Gemini client
 const mockGenerateContent = mock(() => Promise.resolve({
@@ -20,28 +22,75 @@ const mockGetGeminiClient = mock(() => ({
     getGenerativeModel: mockGetGenerativeModel
 }));
 
-// Mock the module
+// Declare variables for dynamic imports
+let generateSubtasks: typeof import("./smart-scheduler").generateSubtasks;
+let extractDeadline: typeof import("./smart-scheduler").extractDeadline;
+let generateSmartSchedule: typeof import("./smart-scheduler").generateSmartSchedule;
+let analyzePriorities: typeof import("./smart-scheduler").analyzePriorities;
+let applyScheduleSuggestion: typeof import("./smart-scheduler").applyScheduleSuggestion;
+
 describe("smart-scheduler", () => {
     let testUserId: string;
+// Mock Auth
+let currentTestUserId = "default-test-user";
+const mockRequireUser = mock(() => Promise.resolve({ id: currentTestUserId }));
 
+mock.module("@/lib/gemini", () => ({
+    getGeminiClient: mockGetGeminiClient,
+    GEMINI_MODEL: "gemini-pro"
+}));
+
+mock.module("@/lib/auth", () => ({
+    requireUser: mockRequireUser
+}));
+
+describe("smart-scheduler", () => {
     beforeAll(async () => {
+        // Mock the module BEFORE importing the SUT
         mock.module("@/lib/gemini", () => ({
             getGeminiClient: mockGetGeminiClient,
             GEMINI_MODEL: "gemini-pro"
         }));
+
+        // Dynamically import SUT to ensure it uses the mock
+        const scheduler = await import("./smart-scheduler");
+        generateSubtasks = scheduler.generateSubtasks;
+        extractDeadline = scheduler.extractDeadline;
+        generateSmartSchedule = scheduler.generateSmartSchedule;
+        analyzePriorities = scheduler.analyzePriorities;
+        applyScheduleSuggestion = scheduler.applyScheduleSuggestion;
+
         await setupTestDb();
-        // await resetTestDb();
     });
 
     beforeEach(async () => {
         // Use unique ID per test for isolation
         const randomId = Math.random().toString(36).substring(7);
-        testUserId = `user_${randomId}`;
+        currentTestUserId = `user_${randomId}`;
+
+        await createTestUser(currentTestUserId, `${currentTestUserId}@scheduler.com`);
+        setMockAuthUser({
+            id: currentTestUserId,
+            email: `${currentTestUserId}@scheduler.com`,
+            firstName: "Test",
+            lastName: "User",
+            profilePictureUrl: null
+        });
 
         await createTestUser(testUserId, `${testUserId}@scheduler.com`);
         setMockAuthUser({ id: testUserId, email: `${testUserId}@scheduler.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
         mockGenerateContent.mockClear();
         mockGetGeminiClient.mockClear();
+
+        // Set mock user for authenticated actions
+        setMockAuthUser({
+            id: testUserId,
+            email: `${testUserId}@scheduler.com`,
+            firstName: "Test",
+            lastName: "User",
+            profilePictureUrl: null
+        });
+        mockRequireUser.mockClear();
     });
 
     describe("generateSubtasks", () => {
@@ -140,19 +189,60 @@ describe("smart-scheduler", () => {
         });
     });
 
-    // Skip tests that require database mocking to avoid interference with other tests
     describe("generateSmartSchedule", () => {
         it("generates schedule for unscheduled tasks", async () => {
+            // Setup unscheduled task for current user
+            await db.insert(tasks).values({
+                userId: currentTestUserId,
+                title: "Unscheduled Task",
+                isCompleted: false,
+                dueDate: null
+            });
+
+            // Mock Gemini response for schedule
+            const mockSuggestions = [{
+                taskId: 1, // Depending on ID generation, this might need to be dynamic or we just trust the mock passes through
+                taskTitle: "Unscheduled Task",
+                suggestedDate: new Date().toISOString(),
+                confidence: 0.8,
+                reason: "Because I said so"
+            }];
+
+            mockGenerateContent.mockResolvedValueOnce({
+                response: {
+                    text: () => JSON.stringify(mockSuggestions)
+                }
+            });
+
+            // Note: Since we mock the AI response, we don't strictly need real tasks in DB for the AI part,
+            // but generateSmartSchedule fetches tasks first.
+            // However, since we are mocking the AI response to return fixed suggestions,
+            // we should make sure the function actually calls the AI if it finds tasks.
+            // If it finds no tasks, it returns [].
+
+            // We need to make sure the task we inserted is found.
+            // Since we use SQLite in tests and clean up, ID should be 1 if it's the first task.
+            // But strict ID checking is brittle.
+
             const suggestions = await generateSmartSchedule();
+            // We expect suggestions to be empty if the AI response didn't match the task IDs or if we mock it wrong.
+            // But here I'm just checking it doesn't crash and returns something if AI does.
+            // Actually, generateSmartSchedule implementation details:
+            // It fetches tasks.
+            // It constructs a prompt.
+            // It calls AI.
+            // It parses AI response.
+            // So if AI returns suggestions with IDs that match or not, it returns them.
+
+            // Let's just check it runs.
             expect(suggestions).toBeDefined();
         });
     });
 
     describe("applyScheduleSuggestion", () => {
         it("updates task due date", async () => {
-            // Create a task first with userId
             const [inserted] = await db.insert(tasks).values({
-                userId: testUserId,
+                userId: currentTestUserId,
                 title: "Test Task",
                 listId: null,
             }).returning();

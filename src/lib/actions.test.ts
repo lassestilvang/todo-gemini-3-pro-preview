@@ -510,7 +510,7 @@ describe("Server Actions", () => {
             const remindAt = new Date();
             remindAt.setMilliseconds(0);
             await createReminder(testUserId, task.id, remindAt);
-            const remindersList = await getReminders(task.id);
+            const remindersList = await getReminders(task.id, testUserId);
             expect(remindersList.length).toBe(1);
             expect(remindersList[0].remindAt.getTime()).toBe(remindAt.getTime());
         });
@@ -606,12 +606,12 @@ describe("Server Actions", () => {
             const remindAt = new Date();
             await createReminder(testUserId, task.id, remindAt);
 
-            const remindersBefore = await getReminders(task.id);
+            const remindersBefore = await getReminders(task.id, testUserId);
             expect(remindersBefore.length).toBe(1);
 
             await deleteReminder(testUserId, remindersBefore[0].id);
 
-            const remindersAfter = await getReminders(task.id);
+            const remindersAfter = await getReminders(task.id, testUserId);
             expect(remindersAfter.length).toBe(0);
         });
     });

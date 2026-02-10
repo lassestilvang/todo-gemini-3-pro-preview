@@ -17,15 +17,17 @@ interface CompletionHeatmapProps {
 // ⚡ Bolt Opt: Memoize heatmap to prevent re-renders when parent analytics page updates unrelated state.
 // Since heatmap data only changes when task completion history changes, this avoids expensive
 // date calculations and DOM updates when other analytics sections (charts, stats) re-render.
+const DAYS_TO_SHOW = 140; // ~20 weeks
+
 export const CompletionHeatmap = React.memo(function CompletionHeatmap({ data }: CompletionHeatmapProps) {
     const today = startOfDay(new Date());
-    const daysToShow = 140; // ~20 weeks
-    const startDate = subDays(today, daysToShow);
+    const todayTime = today.getTime();
+    const startDate = React.useMemo(() => subDays(todayTime, DAYS_TO_SHOW), [todayTime]);
 
-    const heatmapDays = eachDayOfInterval({
+    const heatmapDays = React.useMemo(() => eachDayOfInterval({
         start: startDate,
-        end: today,
-    });
+        end: todayTime,
+    }), [startDate, todayTime]);
 
     // PERF: Build a Map for O(1) lookups instead of O(n) Array.find() per day.
     // For 140 days with 100 data points, this reduces lookups from O(14,000) to O(140).
@@ -57,13 +59,13 @@ export const CompletionHeatmap = React.memo(function CompletionHeatmap({ data }:
         let currentWeek: Date[] = [];
         for (const day of heatmapDays) {
             currentWeek.push(day);
-            if (day.getDay() === 6 || isSameDay(day, today)) {
+            if (day.getDay() === 6 || isSameDay(day, todayTime)) {
                 result.push(currentWeek);
                 currentWeek = [];
             }
         }
         return result;
-    }, [heatmapDays, today]);
+    }, [heatmapDays, todayTime]);
 
     return (
         <div className="flex flex-col gap-2 p-4 bg-card border rounded-xl shadow-sm overflow-x-auto">
