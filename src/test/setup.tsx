@@ -2,7 +2,7 @@ import { expect, afterEach, mock, beforeEach } from "bun:test";
 // GlobalRegistrator is now loaded via register-dom.ts in bunfig.toml
 import * as matchers from "@testing-library/jest-dom/matchers";
 import { db, sqliteConnection } from "@/db";
-import { labels, lists, tasks, timeEntries, templates, userStats, achievements, userAchievements, viewSettings, savedViews, rateLimits, taskDependencies, taskLabels, reminders, habitCompletions, taskLogs } from "@/db";
+import { labels, lists, tasks, timeEntries, templates, userStats, achievements, userAchievements, viewSettings, savedViews, rateLimits, taskDependencies, taskLabels, reminders, habitCompletions, taskLogs, customIcons } from "@/db";
 import { getMockAuthUser, resetMockAuthUser } from "./mocks";
 import React from "react";
 import { cleanup } from "@testing-library/react";
@@ -417,6 +417,7 @@ export async function setupTestDb() {
     sqliteConnection.run("CREATE TABLE IF NOT EXISTS saved_views(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, name TEXT NOT NULL, icon TEXT, settings TEXT NOT NULL, created_at INTEGER DEFAULT(strftime('%s', 'now')));");
     sqliteConnection.run("CREATE TABLE IF NOT EXISTS rate_limits(key TEXT PRIMARY KEY, count INTEGER NOT NULL DEFAULT 0, last_request INTEGER NOT NULL DEFAULT(strftime('%s', 'now')));");
     sqliteConnection.run("CREATE TABLE IF NOT EXISTS time_entries(id INTEGER PRIMARY KEY AUTOINCREMENT, task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, started_at INTEGER NOT NULL, ended_at INTEGER, duration_minutes INTEGER, notes TEXT, is_manual INTEGER DEFAULT 0, created_at INTEGER DEFAULT(strftime('%s', 'now')), updated_at INTEGER DEFAULT(strftime('%s', 'now')));");
+    sqliteConnection.run("CREATE TABLE IF NOT EXISTS custom_icons(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, name TEXT NOT NULL, url TEXT NOT NULL, created_at INTEGER DEFAULT(strftime('%s', 'now')));");
 }
 
 /**
@@ -435,6 +436,9 @@ let resetQueue = Promise.resolve();
 export async function resetTestDb() {
     resetQueue = resetQueue.then(async () => {
         try {
+            // Turn off FKs to speed up and simplify deletion
+            sqliteConnection.run("PRAGMA foreign_keys = OFF;");
+
             await db.delete(timeEntries);
             await db.delete(savedViews);
             await db.delete(userAchievements);
@@ -451,9 +455,15 @@ export async function resetTestDb() {
             await db.delete(lists);
             await db.delete(templates);
             await db.delete(rateLimits);
-            await sqliteConnection.run("DELETE FROM users");
-        } catch {
-            // Ignore errors if tables don't exist yet
+            await db.delete(customIcons);
+
+            // Delete users last using direct SQL for performance
+            sqliteConnection.run("DELETE FROM users");
+
+            // Re-enable FKs
+            sqliteConnection.run("PRAGMA foreign_keys = ON;");
+        } catch (e) {
+            console.error("Failed to reset test DB:", e);
         }
     });
     await resetQueue;

@@ -20,12 +20,13 @@ describe("Integration: Security Missing Auth", () => {
 
     beforeAll(async () => {
         await setupTestDb();
-        const viewSettingsActions = await import("@/lib/actions/view-settings");
+        // Dynamic import with relative path to avoid mocked modules
+        const viewSettingsActions = await import("../../lib/actions/view-settings");
         getViewSettings = viewSettingsActions.getViewSettings;
         saveViewSettings = viewSettingsActions.saveViewSettings;
         resetViewSettings = viewSettingsActions.resetViewSettings;
 
-        const templateActions = await import("@/lib/actions/templates");
+        const templateActions = await import("../../lib/actions/templates");
         getTemplates = templateActions.getTemplates;
         createTemplate = templateActions.createTemplate;
         updateTemplate = templateActions.updateTemplate;
@@ -81,6 +82,8 @@ describe("Integration: Security Missing Auth", () => {
             // If it throws, verify it's a Forbidden/Unauthorized error
             expect((e as Error).message).toMatch(/Forbidden|authorized|Authentication|Security failure/i);
         }
+        // getViewSettings unwrapped action should throw ForbiddenError when accessing another user's data
+        await expect(getViewSettings(victimId, "inbox")).rejects.toThrow(/Forbidden|authorized/i);
     });
 
     it("should fail when saving another user's view settings", async () => {
@@ -121,6 +124,11 @@ describe("Integration: Security Missing Auth", () => {
         } catch (e: unknown) {
             expect((e as Error).message).toMatch(/Forbidden|authorized|Authentication|Security failure/i);
         }
+        // Ensure mock user is attacker
+        setMockAuthUser({ id: attackerId, email: "attacker@evil.com", firstName: "A", lastName: "T", profilePictureUrl: null });
+
+        // getTemplates is unwrapped, so it throws directly
+        await expect(getTemplates(victimId)).rejects.toThrow(/Forbidden|authorized/i);
     });
 
     it("should fail when creating a template for another user", async () => {

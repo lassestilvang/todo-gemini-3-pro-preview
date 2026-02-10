@@ -24,10 +24,25 @@ import { createReminderSchema } from "@/lib/validation/reminders";
  * Retrieves all reminders for a specific task.
  *
  * @param taskId - The ID of the task whose reminders to retrieve
- * @returns Array of reminders for the task
+ * @param userId - The ID of the user requesting the reminders
+ * @returns Array of reminders for the task, or empty if access denied
  */
-export async function getReminders(taskId: number) {
-  return await db.select().from(reminders).where(eq(reminders.taskId, taskId));
+export async function getReminders(taskId: number, userId: string) {
+  await requireUser(userId);
+
+  // By joining with the tasks table, we can verify ownership and fetch
+  // reminders in a single database query.
+  return await db
+    .select({
+      id: reminders.id,
+      taskId: reminders.taskId,
+      remindAt: reminders.remindAt,
+      isSent: reminders.isSent,
+      createdAt: reminders.createdAt,
+    })
+    .from(reminders)
+    .innerJoin(tasks, eq(reminders.taskId, tasks.id))
+    .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)));
 }
 
 /**
