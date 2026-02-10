@@ -57,6 +57,15 @@ describe("smart-scheduler", () => {
         setMockAuthUser({ id: testUserId, email: `${testUserId}@scheduler.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
         mockGenerateContent.mockClear();
         mockGetGeminiClient.mockClear();
+
+        // Set mock user for authenticated actions
+        setMockAuthUser({
+            id: testUserId,
+            email: `${testUserId}@scheduler.com`,
+            firstName: "Test",
+            lastName: "User",
+            profilePictureUrl: null
+        });
         mockRequireUser.mockClear();
     });
 
