@@ -106,6 +106,7 @@ export function SmartScheduleDialog({ open, onOpenChange }: SmartScheduleDialogP
                                             variant="outline"
                                             onClick={() => handleReject(suggestion.taskId)}
                                             className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                                            aria-label="Reject suggestion"
                                         >
                                             <X className="h-4 w-4" />
                                         </Button>

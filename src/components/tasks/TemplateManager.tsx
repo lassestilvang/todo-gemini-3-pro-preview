@@ -6,6 +6,7 @@ import {
     Dialog,
     DialogContent,
     DialogHeader,
+    DialogDescription,
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
@@ -101,10 +102,12 @@ export function TemplateManager({ userId }: TemplateManagerProps) {
                 <DialogContent className="sm:max-w-[600px]">
                     <DialogHeader>
                         <DialogTitle>Task Templates</DialogTitle>
+                        <DialogDescription>
+                            Manage and use your task templates.
+                        </DialogDescription>
                     </DialogHeader>
 
                     <div className="flex justify-between items-center mb-4">
-                        <p className="text-sm text-muted-foreground">Manage and use your task templates.</p>
                         <Button onClick={handleOpenCreateDialog} size="sm" data-testid="new-template-button">
                             <Plus className="h-4 w-4 mr-2" />
                             New Template

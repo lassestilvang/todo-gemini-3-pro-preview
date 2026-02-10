@@ -26,6 +26,7 @@ export interface TemplateFormData {
   priority: "none" | "low" | "medium" | "high";
   dueDateType: "none" | "today" | "tomorrow" | "next_week" | "custom";
   dueDateDays?: number; // For custom relative days
+  dueDatePrecision?: "day" | "week" | "month" | "year";
   energyLevel: "none" | "low" | "medium" | "high";
   context: "none" | "computer" | "phone" | "errands" | "meeting" | "home" | "anywhere";
   estimateMinutes?: number;
@@ -49,6 +50,7 @@ export interface TemplateContent {
   description?: string;
   priority?: "low" | "medium" | "high";
   dueDate?: string; // Variable like "{date}" or "{tomorrow}" or "+Nd"
+  dueDatePrecision?: "day" | "week" | "month" | "year";
   energyLevel?: "low" | "medium" | "high";
   context?: "computer" | "phone" | "errands" | "meeting" | "home" | "anywhere";
   estimateMinutes?: number;
@@ -111,6 +113,10 @@ export function serializeFormToJson(data: TemplateFormData): string {
       break;
   }
 
+  if (data.dueDateType !== "none" && data.dueDatePrecision && data.dueDatePrecision !== "day") {
+    content.dueDatePrecision = data.dueDatePrecision;
+  }
+
   // Include subtasks with non-empty titles
   if (data.subtasks.length > 0) {
     const validSubtasks = data.subtasks
@@ -168,6 +174,7 @@ export function deserializeJsonToForm(json: string): Omit<TemplateFormData, "nam
       priority: content.priority || "none",
       dueDateType,
       dueDateDays,
+      dueDatePrecision: content.dueDatePrecision || "day",
       energyLevel: content.energyLevel || "none",
       context: content.context || "none",
       estimateMinutes: content.estimateMinutes,
@@ -223,6 +230,7 @@ export function createEmptyFormData(): TemplateFormData {
     priority: "none",
     dueDateType: "none",
     dueDateDays: undefined,
+    dueDatePrecision: "day",
     energyLevel: "none",
     context: "none",
     estimateMinutes: undefined,

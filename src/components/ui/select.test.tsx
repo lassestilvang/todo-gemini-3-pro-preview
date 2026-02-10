@@ -1,7 +1,8 @@
 import { describe, it, expect, afterEach, beforeAll } from "bun:test";
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { render, screen, cleanup } from "@testing-library/react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./select";
 import React from "react";
+import userEvent from "@testing-library/user-event";
 
 describe("Select", () => {
     beforeAll(() => {
@@ -36,20 +37,8 @@ describe("Select", () => {
         expect(screen.getByText("Select option")).toBeInTheDocument();
     });
 
-    // Note: Select interaction testing can be tricky with pointer events mock requirements.
-    // We'll stick to basic rendering and trigger interaction.
-    it.skip("should open content when trigger is clicked", async () => {
-        // Mock pointer capture methods which are required for Radix UI Select
-        if (!Element.prototype.setPointerCapture) {
-            Element.prototype.setPointerCapture = () => {};
-        }
-        if (!Element.prototype.releasePointerCapture) {
-            Element.prototype.releasePointerCapture = () => {};
-        }
-        if (!Element.prototype.hasPointerCapture) {
-            Element.prototype.hasPointerCapture = () => false;
-        }
-
+    it("should open content when trigger is clicked", async () => {
+        const user = userEvent.setup();
         render(
             <Select>
                 <SelectTrigger>
@@ -64,11 +53,7 @@ describe("Select", () => {
         // Robustly find trigger: try role first (standard), fallback to text (resilient to HappyDOM quirks where role might be missing)
         const trigger = screen.queryByRole("combobox") || screen.getByText("Select option");
 
-        await React.act(async () => {
-            // Radix Select uses pointerdown/pointerup, so plain click might not be enough in some environments
-            fireEvent.pointerDown(trigger, { button: 0 });
-            fireEvent.click(trigger);
-        });
+        await user.click(trigger);
 
         // Radix Select content is rendered in a portal
         // Use findByRole which handles waiting automatically.

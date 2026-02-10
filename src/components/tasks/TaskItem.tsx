@@ -15,6 +15,7 @@ import { Target } from "lucide-react";
 import { playSuccessSound } from "@/lib/audio";
 import { useUser } from "@/components/providers/UserProvider";
 import { formatTimePreference, formatFriendlyDate } from "@/lib/time-utils";
+import { formatDuePeriod, isDueOverdue, type DuePrecision } from "@/lib/due-utils";
 import { usePerformanceMode } from "@/components/providers/PerformanceContext";
 import { getLabelStyle } from "@/lib/style-utils";
 import type { DraggableSyntheticListeners, DraggableAttributes } from "@dnd-kit/core";
@@ -155,6 +156,7 @@ function arePropsEqual(prev: TaskItemProps, next: TaskItemProps) {
     const pDue = p.dueDate instanceof Date ? p.dueDate.getTime() : (p.dueDate ? new Date(p.dueDate).getTime() : null);
     const nDue = n.dueDate instanceof Date ? n.dueDate.getTime() : (n.dueDate ? new Date(n.dueDate).getTime() : null);
     if (pDue !== nDue) return false;
+    if ((p.dueDatePrecision ?? "day") !== (n.dueDatePrecision ?? "day")) return false;
 
     // Labels
     const pLabels = p.labels || [];
@@ -272,13 +274,28 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
 
     // PERF: Pre-compute timestamps once instead of creating Date objects in each comparison.
     // For 100 tasks, this eliminates 200+ Date object allocations per render.
+    const { use24HourClock, weekStartsOnMonday } = useUser();
     const now = mounted ? new Date() : new Date(0); // Use a stable "now" for server/hydration
     const nowTime = now.getTime();
-    const isOverdue = task.dueDate && task.dueDate.getTime() < nowTime && !isCompleted;
+    const isOverdue = task.dueDate
+        ? isDueOverdue(
+            { dueDate: task.dueDate, dueDatePrecision: task.dueDatePrecision ?? null },
+            now,
+            weekStartsOnMonday ?? false
+        ) && !isCompleted
+        : false;
+    const periodPrecision =
+        task.dueDatePrecision && task.dueDatePrecision !== "day"
+            ? task.dueDatePrecision
+            : null;
+    const periodLabel = task.dueDate && periodPrecision
+        ? formatDuePeriod({ dueDate: task.dueDate, dueDatePrecision: periodPrecision as DuePrecision })
+        : null;
+    const periodBadge = periodPrecision ? periodPrecision[0] : null;
+    const dueAriaLabel = periodLabel ? `Due ${periodLabel}` : undefined;
     const isDeadlineExceeded = task.deadline && task.deadline.getTime() < nowTime && !isCompleted;
     const isBlocked = (task.blockedByCount || 0) > 0;
     const [showFocusMode, setShowFocusMode] = useState(false);
-    const { use24HourClock } = useUser();
 
     // Force animations disabled if performance mode is on
     const effectiveDisableAnimations = disableAnimations || resolvedPerformanceMode;
@@ -409,13 +426,31 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                             </div>
                         )}
                         {task.dueDate && (
-                            <div className={cn("flex items-center gap-1", isOverdue ? "text-red-500 font-medium" : "")}>
+                            <div
+                                className={cn("flex items-center gap-1", isOverdue ? "text-red-500 font-medium" : "")}
+                                title={dueAriaLabel}
+                                aria-label={dueAriaLabel}
+                            >
                                 <Calendar className="h-3 w-3" />
-                                {mounted ? formatFriendlyDate(task.dueDate, "MMM d") : format(task.dueDate, "MMM d")}
-                                {(task.dueDate.getHours() !== 0 || task.dueDate.getMinutes() !== 0) && (
-                                    <span className="text-muted-foreground">
-                                        {formatTimePreference(task.dueDate, use24HourClock)}
-                                    </span>
+                                {periodLabel ? (
+                                    <>
+                                        <span>{periodLabel}</span>
+                                        <Badge
+                                            variant="secondary"
+                                            className="text-[10px] px-1 py-0 h-4 uppercase tracking-wide"
+                                        >
+                                            {periodBadge}
+                                        </Badge>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span>{mounted ? formatFriendlyDate(task.dueDate, "MMM d") : format(task.dueDate, "MMM d")}</span>
+                                        {(task.dueDate.getHours() !== 0 || task.dueDate.getMinutes() !== 0) && (
+                                            <span className="text-muted-foreground">
+                                                {formatTimePreference(task.dueDate, use24HourClock)}
+                                            </span>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         )}

@@ -33,6 +33,7 @@ interface AnalyticsData {
     };
     tasksOverTime: Array<{ date: string; created: number; completed: number }>;
     priorityDist: { high: number; medium: number; low: number; none: number };
+    duePrecisionDist: { day: number; week: number; month: number; year: number; none: number };
     energyStats: { high: number; medium: number; low: number };
     energyCompleted: { high: number; medium: number; low: number };
     productivityByDay: number[];
@@ -86,10 +87,18 @@ export const AnalyticsCharts = React.memo(function AnalyticsCharts({ data }: { d
         };
     }, [data.priorityDist, data.productivityByDay]);
 
+    const periodTasks = data.duePrecisionDist.week
+        + data.duePrecisionDist.month
+        + data.duePrecisionDist.year;
+    const scheduledTasks = data.summary.totalTasks - data.duePrecisionDist.none;
+    const periodPercent = scheduledTasks > 0
+        ? Math.round((periodTasks / scheduledTasks) * 100)
+        : 0;
+
     return (
         <div className="space-y-8">
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div className="border rounded-lg p-4 bg-card shadow-sm transition-all hover:shadow-md">
                     <p className="text-sm text-muted-foreground">Total Tasks</p>
                     <p className="text-3xl font-bold">{data.summary.totalTasks}</p>
@@ -101,6 +110,15 @@ export const AnalyticsCharts = React.memo(function AnalyticsCharts({ data }: { d
                 <div className="border rounded-lg p-4 bg-card shadow-sm transition-all hover:shadow-md">
                     <p className="text-sm text-muted-foreground">Completion Rate</p>
                     <p className="text-3xl font-bold text-blue-600">{data.summary.completionRate}%</p>
+                </div>
+                <div className="border rounded-lg p-4 bg-card shadow-sm transition-all hover:shadow-md">
+                    <p className="text-sm text-muted-foreground">Period Tasks</p>
+                    <p className="text-3xl font-bold">{periodTasks}</p>
+                    {scheduledTasks > 0 && (
+                        <p className="text-xs text-muted-foreground">
+                            {periodPercent}% of scheduled tasks
+                        </p>
+                    )}
                 </div>
                 <div className="border rounded-lg p-4 bg-card shadow-sm transition-all hover:shadow-md">
                     <p className="text-sm text-muted-foreground">Avg Time</p>

@@ -824,3 +824,17 @@ html.synthwave textarea:focus {
   opacity: 0.7;
   z-index: 9999;
 }
+/* Sidebar mode switching — driven by blocking script setting data-sidebar-mode on <html> */
+/* Default: normal visible, slim/hidden hidden */
+@media (min-width: 768px) {
+  [data-sidebar-mode="slim"] .sidebar-normal,
+  [data-sidebar-mode="hidden"] .sidebar-normal {
+    display: none !important;
+  }
+  [data-sidebar-mode="slim"] .sidebar-slim {
+    display: flex !important;
+  }
+  [data-sidebar-mode="hidden"] .sidebar-hidden {
+    display: block !important;
+  }
+}

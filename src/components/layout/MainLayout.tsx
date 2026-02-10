@@ -10,7 +10,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { SyncStatus } from "@/components/sync/SyncStatus";
 
 const SidebarFallback = () => (
-    <div className="hidden md:flex flex-col w-64 h-full border-r bg-card/50 backdrop-blur-xl shrink-0">
+    <div className="hidden md:flex flex-col h-full border-r bg-card/50 backdrop-blur-xl shrink-0" style={{ width: 256 }}>
         <div className="h-full w-full animate-pulse bg-muted/10" />
     </div>
 );
@@ -56,7 +56,7 @@ export async function MainLayout({ children }: { children: React.ReactNode }) {
                     <header className="md:hidden px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] border-b flex items-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10 shrink-0">
                         <MobileNav>
                             <Suspense fallback={<div className="w-full h-full bg-sidebar animate-pulse" />}>
-                                <SidebarDataLoader user={user} className="w-full h-full border-none shadow-none" />
+                                <SidebarDataLoader user={user} className="w-full h-full border-none shadow-none" mobile />
                             </Suspense>
                         </MobileNav>
                         <div className="ml-4 font-semibold text-lg flex-1">Todo Gemini</div>

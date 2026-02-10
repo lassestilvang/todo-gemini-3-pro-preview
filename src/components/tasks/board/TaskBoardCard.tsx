@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Task } from "@/lib/types";
 import { Calendar, Flag, Clock, CheckCircle2, Circle } from "lucide-react";
 import { formatFriendlyDate } from "@/lib/time-utils";
+import { formatDuePeriod, type DuePrecision } from "@/lib/due-utils";
 
 interface TaskBoardCardProps {
   task: Task;
@@ -24,6 +25,17 @@ export function TaskBoardCard({ task, onEdit }: TaskBoardCardProps) {
       id: task.id,
       data: { task },
     });
+
+  const dueDateValue = task.dueDate
+    ? (task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate))
+    : null;
+  const periodLabel = dueDateValue && task.dueDatePrecision && task.dueDatePrecision !== "day"
+    ? formatDuePeriod({
+      dueDate: dueDateValue,
+      dueDatePrecision: task.dueDatePrecision as DuePrecision,
+    })
+    : null;
+  const dueAriaLabel = periodLabel ? `Due ${periodLabel}` : undefined;
 
   const style = transform
     ? {
@@ -63,13 +75,15 @@ export function TaskBoardCard({ task, onEdit }: TaskBoardCardProps) {
 
       <div className="flex items-center gap-2 mt-2 flex-wrap">
         {task.dueDate && (
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+          <span
+            className="flex items-center gap-1 text-xs text-muted-foreground"
+            title={dueAriaLabel}
+            aria-label={dueAriaLabel}
+          >
             <Calendar className="h-3 w-3" />
-            {formatFriendlyDate(
-              task.dueDate instanceof Date
-                ? task.dueDate
-                : new Date(task.dueDate)
-            )}
+            {periodLabel
+              ? periodLabel
+              : formatFriendlyDate(dueDateValue!)}
           </span>
         )}
         {task.priority && task.priority !== "none" && (

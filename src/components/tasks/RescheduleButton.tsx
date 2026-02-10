@@ -6,6 +6,7 @@ import { Loader2, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
 import { rescheduleOverdueTasks, RescheduleSuggestion } from "@/lib/ai-actions";
 import { applyScheduleSuggestion } from "@/lib/smart-scheduler";
+import { formatDuePeriod, type DuePrecision } from "@/lib/due-utils";
 import {
     Dialog,
     DialogContent,
@@ -49,7 +50,7 @@ export function RescheduleButton() {
         setIsLoading(true);
         try {
             for (const s of suggestions) {
-                await applyScheduleSuggestion(s.taskId, new Date(s.suggestedDate));
+                await applyScheduleSuggestion(s.taskId, new Date(s.suggestedDate), s.dueDatePrecision ?? null);
             }
             toast.success(`Rescheduled ${suggestions.length} tasks!`);
             setIsOpen(false);
@@ -104,7 +105,12 @@ export function RescheduleButton() {
                                     <div className="text-xs text-muted-foreground">{s.reason}</div>
                                 </div>
                                 <div className="text-sm font-bold text-primary">
-                                    {format(new Date(s.suggestedDate), "MMM d")}
+                                    {s.dueDatePrecision && s.dueDatePrecision !== "day"
+                                        ? formatDuePeriod({
+                                            dueDate: new Date(s.suggestedDate),
+                                            dueDatePrecision: s.dueDatePrecision as DuePrecision,
+                                        })
+                                        : format(new Date(s.suggestedDate), "MMM d")}
                                 </div>
                             </div>
                         ))}

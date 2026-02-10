@@ -14,6 +14,7 @@ import {
     getViewSettings, saveViewSettings, resetViewSettings
 } from "./actions";
 import { isSuccess } from "./action-result";
+import { normalizeDueAnchor } from "./due-utils";
 
 mock.module("next/cache", () => ({
     revalidatePath: () => { },
@@ -110,6 +111,19 @@ describe("Server Actions", () => {
             expect(task.deadline?.getTime()).toBe(deadline.getTime());
         });
 
+        it("should create a task with week precision", async () => {
+            const rawDue = new Date("2025-04-09T12:00:00Z");
+            const task = await createTask({
+                userId: testUserId,
+                title: "Week Task",
+                dueDate: rawDue,
+                dueDatePrecision: "week",
+            });
+            const expected = normalizeDueAnchor(rawDue, "week", false);
+            expect(task.dueDatePrecision).toBe("week");
+            expect(task.dueDate?.toISOString()).toBe(expected.toISOString());
+        });
+
         it("should toggle task completion", async () => {
             const task = await createTask({ userId: testUserId, title: "Task to Complete" });
             await toggleTaskCompletion(task.id, testUserId, true);
@@ -164,6 +178,19 @@ describe("Server Actions", () => {
             const tasks = await getTasks(testUserId, undefined, "today");
             expect(tasks).toHaveLength(1);
             expect(tasks[0].id).toBe(task.id);
+        });
+
+        it("should include week precision tasks in today filter", async () => {
+            const today = new Date();
+            const task = await createTask({
+                userId: testUserId,
+                title: "Weekly Task",
+                dueDate: today,
+                dueDatePrecision: "week",
+            });
+            const tasks = await getTasks(testUserId, undefined, "today");
+            const found = tasks.find((t) => t.id === task.id);
+            expect(found).toBeDefined();
         });
     });
 

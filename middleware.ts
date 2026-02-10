@@ -49,8 +49,12 @@ const workosMiddleware = authkitMiddleware({
   },
 });
 
+const isE2ETestMode =
+  process.env.E2E_TEST_MODE === "true" ||
+  process.env.NEXT_PUBLIC_E2E_TEST_MODE === "true";
+
 async function maybeBypassAuth(request: NextRequest): Promise<NextResponse | null> {
-  if (process.env.E2E_TEST_MODE === 'true') {
+  if (isE2ETestMode) {
     return null;
   }
 
@@ -92,7 +96,7 @@ export default async function middleware(request: NextRequest, event: NextFetchE
     return bypassResponse;
   }
 
-  if (process.env.E2E_TEST_MODE === 'true') {
+  if (isE2ETestMode) {
     return testModeMiddleware(request);
   }
 

@@ -81,6 +81,7 @@ export default defineConfig({
     timeout: 120 * 1000,
     env: {
       E2E_TEST_MODE: 'true',
+      NEXT_PUBLIC_E2E_TEST_MODE: 'true',
     },
   },
 });

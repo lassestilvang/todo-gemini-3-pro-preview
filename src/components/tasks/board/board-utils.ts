@@ -4,11 +4,11 @@ import {
   addDays,
   endOfWeek,
   addWeeks,
-  isBefore,
   isToday as isTodayFn,
   isTomorrow as isTomorrowFn,
   isThisWeek,
 } from "date-fns";
+import { isDueOverdue } from "@/lib/due-utils";
 
 export type BoardGroupMode = "priority" | "dueDate" | "status";
 
@@ -53,7 +53,7 @@ export function getTaskColumnId(task: Task, mode: BoardGroupMode): string {
       const date =
         task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate);
       const now = new Date();
-      if (isBefore(startOfDay(date), startOfDay(now))) return "overdue";
+      if (isDueOverdue({ dueDate: date, dueDatePrecision: task.dueDatePrecision ?? null }, now, false)) return "overdue";
       if (isTodayFn(date)) return "today";
       if (isTomorrowFn(date)) return "tomorrow";
       if (isThisWeek(date, { weekStartsOn: 1 })) return "this_week";
@@ -70,6 +70,7 @@ export function getPatchForDrop(
 ): Partial<{
   priority: "none" | "low" | "medium" | "high";
   dueDate: Date | null;
+  dueDatePrecision: "day" | "week" | "month" | "year" | null;
   isCompleted: boolean;
 }> {
   switch (mode) {
@@ -80,15 +81,15 @@ export function getPatchForDrop(
       switch (toColumnId) {
         case "overdue":
         case "today":
-          return { dueDate: startOfDay(now) };
+          return { dueDate: startOfDay(now), dueDatePrecision: null };
         case "tomorrow":
-          return { dueDate: startOfDay(addDays(now, 1)) };
+          return { dueDate: startOfDay(addDays(now, 1)), dueDatePrecision: null };
         case "this_week":
-          return { dueDate: endOfWeek(now, { weekStartsOn: 1 }) };
+          return { dueDate: endOfWeek(now, { weekStartsOn: 1 }), dueDatePrecision: "week" };
         case "later":
-          return { dueDate: startOfDay(addWeeks(now, 1)) };
+          return { dueDate: startOfDay(addWeeks(now, 1)), dueDatePrecision: null };
         case "no_date":
-          return { dueDate: null };
+          return { dueDate: null, dueDatePrecision: null };
         default:
           return {};
       }
