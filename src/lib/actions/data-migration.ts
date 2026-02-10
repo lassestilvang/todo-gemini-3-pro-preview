@@ -68,14 +68,11 @@ export async function exportUserData() {
                     labelId: taskLabels.labelId
                 })
                 .from(taskLabels)
-                .innerJoin(tasks, eq(taskLabels.taskId, tasks.id))
-                .where(eq(tasks.userId, userId)),
+                .where(inArray(taskLabels.taskId, taskIds)),
             db
                 .select()
                 .from(reminders)
-                .innerJoin(tasks, eq(reminders.taskId, tasks.id))
-                .where(eq(tasks.userId, userId))
-                .then(rows => rows.map(r => r.reminders))
+                .where(inArray(reminders.taskId, taskIds))
         ])
 
         userTaskLabels = labelsResult
