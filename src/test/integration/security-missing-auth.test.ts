@@ -2,19 +2,18 @@ import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser, clearMockAuthUser } from "@/test/mocks";
 
-// Note: @/lib/auth is already mocked in src/test/setup.tsx which uses getMockAuthUser.
-// Re-mocking here caused conflicts in CI where the module might be re-evaluated
-// with a stale closure. We rely on the global setup mock which correctly
-// delegates to the shared mock state.
+// Note: @/lib/auth is already mocked in src/test/setup.tsx.
+// We use relative imports here to attempt to bypass any potential `mock.module` leakage
+// on the "@/" alias from other tests running in the same context.
 
-let getViewSettings: typeof import("@/lib/actions/view-settings").getViewSettings;
-let saveViewSettings: typeof import("@/lib/actions/view-settings").saveViewSettings;
-let resetViewSettings: typeof import("@/lib/actions/view-settings").resetViewSettings;
-let getTemplates: typeof import("@/lib/actions/templates").getTemplates;
-let createTemplate: typeof import("@/lib/actions/templates").createTemplate;
-let updateTemplate: typeof import("@/lib/actions/templates").updateTemplate;
-let deleteTemplate: typeof import("@/lib/actions/templates").deleteTemplate;
-let instantiateTemplate: typeof import("@/lib/actions/templates").instantiateTemplate;
+let getViewSettings: typeof import("../../lib/actions/view-settings").getViewSettings;
+let saveViewSettings: typeof import("../../lib/actions/view-settings").saveViewSettings;
+let resetViewSettings: typeof import("../../lib/actions/view-settings").resetViewSettings;
+let getTemplates: typeof import("../../lib/actions/templates").getTemplates;
+let createTemplate: typeof import("../../lib/actions/templates").createTemplate;
+let updateTemplate: typeof import("../../lib/actions/templates").updateTemplate;
+let deleteTemplate: typeof import("../../lib/actions/templates").deleteTemplate;
+let instantiateTemplate: typeof import("../../lib/actions/templates").instantiateTemplate;
 import { isFailure } from "@/lib/action-result";
 import { db, templates } from "@/db";
 
@@ -24,12 +23,13 @@ describe("Integration: Security Missing Auth", () => {
 
     beforeAll(async () => {
         await setupTestDb();
-        const viewSettingsActions = await import("@/lib/actions/view-settings");
+        // Dynamic import with relative path to avoid mocked modules
+        const viewSettingsActions = await import("../../lib/actions/view-settings");
         getViewSettings = viewSettingsActions.getViewSettings;
         saveViewSettings = viewSettingsActions.saveViewSettings;
         resetViewSettings = viewSettingsActions.resetViewSettings;
 
-        const templateActions = await import("@/lib/actions/templates");
+        const templateActions = await import("../../lib/actions/templates");
         getTemplates = templateActions.getTemplates;
         createTemplate = templateActions.createTemplate;
         updateTemplate = templateActions.updateTemplate;
@@ -67,39 +67,7 @@ describe("Integration: Security Missing Auth", () => {
             profilePictureUrl: null
         });
 
-        // getViewSettings might have been refactored to use withErrorHandling or not.
-        // We verify that it either throws (Forbidden) or returns failure (Forbidden).
-        // If it returns success (data or null), that's a security leak.
-
-        try {
-            const result = await getViewSettings(victimId, "inbox");
-
-            // If it returns a result object (withErrorHandling)
-            if (result && typeof result === 'object' && 'success' in result) {
-                // @ts-expect-error - checking structure
-                expect(isFailure(result)).toBe(true);
-                // @ts-expect-error - checking structure
-                if (isFailure(result)) {
-                    // @ts-expect-error - checking structure
-                    expect(result.error.code).toBe("FORBIDDEN");
-                }
-            } else {
-                // If it returns raw data (array or null), it should have thrown.
-                // If result is null, it means it queried DB and found nothing (but it shouldn't have queried!)
-                // However, getViewSettings implementation returns `result[0] || null`.
-                // So if it returns null, it passed auth check.
-
-                // We strictly expect it to throw if it's not wrapped.
-                // If it didn't throw, we fail the test.
-                console.error("Security failure: getViewSettings returned success/null instead of throwing/failing");
-                expect(true).toBe(false);
-            }
-        } catch (e: unknown) {
-            // If it throws, verify it's a Forbidden/Unauthorized error
-            expect((e as Error).message).toMatch(/Forbidden|authorized|Authentication/i);
-        }
-
-        // Verify strictly that it throws if attempting again
+        // getViewSettings unwrapped action should throw ForbiddenError when accessing another user's data
         await expect(getViewSettings(victimId, "inbox")).rejects.toThrow(/Forbidden|authorized/i);
     });
 
@@ -127,27 +95,7 @@ describe("Integration: Security Missing Auth", () => {
         // Ensure mock user is attacker
         setMockAuthUser({ id: attackerId, email: "attacker@evil.com", firstName: "A", lastName: "T", profilePictureUrl: null });
 
-        try {
-            const result = await getTemplates(victimId);
-            // Check if wrapped
-            // @ts-expect-error - checking structure
-            if (result && typeof result === 'object' && 'success' in result) {
-                // @ts-expect-error - checking structure
-                expect(isFailure(result)).toBe(true);
-                // @ts-expect-error - checking structure
-                if (isFailure(result)) {
-                    // @ts-expect-error - checking structure
-                    expect(result.error.code).toBe("FORBIDDEN");
-                }
-            } else {
-                // Not wrapped, should have thrown
-                console.error("Security failure: getTemplates returned success instead of throwing");
-                expect(true).toBe(false);
-            }
-        } catch (e: unknown) {
-            expect((e as Error).message).toMatch(/Forbidden|authorized|Authentication/i);
-        }
-        // getTemplates is NOT wrapped, so it throws directly
+        // getTemplates is unwrapped, so it throws directly
         await expect(getTemplates(victimId)).rejects.toThrow(/Forbidden|authorized/i);
     });
 

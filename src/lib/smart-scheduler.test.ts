@@ -3,6 +3,7 @@ import { setupTestDb, createTestUser } from "../test/setup";
 import { setMockAuthUser } from "@/test/mocks";
 import { db, tasks } from "@/db";
 import { eq } from "drizzle-orm";
+import { setMockAuthUser } from "../test/mocks";
 import { generateSubtasks, extractDeadline, generateSmartSchedule, analyzePriorities, applyScheduleSuggestion } from "./smart-scheduler";
 import { setMockAuthUser } from "@/test/mocks";
 
