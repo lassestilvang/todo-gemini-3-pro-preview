@@ -1,5 +1,6 @@
 import { describe, it, expect, mock, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, createTestUser } from "../test/setup";
+import { setMockAuthUser } from "@/test/mocks";
 import { db, tasks } from "@/db";
 import { eq } from "drizzle-orm";
 import { generateSubtasks, extractDeadline, generateSmartSchedule, analyzePriorities, applyScheduleSuggestion } from "./smart-scheduler";
@@ -43,6 +44,7 @@ describe("smart-scheduler", () => {
         currentTestUserId = `user_${randomId}`;
 
         await createTestUser(currentTestUserId, `${currentTestUserId}@scheduler.com`);
+        setMockAuthUser({ id: currentTestUserId, email: `${currentTestUserId}@scheduler.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
         mockGenerateContent.mockClear();
         mockGetGeminiClient.mockClear();
         mockRequireAuth.mockClear();

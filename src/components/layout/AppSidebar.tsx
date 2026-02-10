@@ -5,6 +5,7 @@ import { XPBar } from "@/components/gamification/XPBar";
 import { Separator } from "@/components/ui/separator";
 
 import { SearchDialog } from "@/components/tasks/SearchDialog";
+import { SidebarSearchInput } from "./sidebar/SidebarSearchInput";
 import { TemplateManager } from "@/components/tasks/TemplateManager";
 
 import { UserProfile } from "./UserProfile";
@@ -54,7 +55,7 @@ export function AppSidebar({ className, lists, labels, user, id }: AppSidebarPro
         <aside
             id={id}
             className={cn(
-                "flex flex-col h-full overflow-hidden border-r bg-card/50 backdrop-blur-xl w-64 shrink-0 transition-all duration-300",
+                "flex flex-col h-full overflow-hidden border-r bg-card/50 backdrop-blur-xl shrink-0 transition-all duration-300 w-full",
                 className
             )}
             data-testid="app-sidebar"
@@ -65,6 +66,9 @@ export function AppSidebar({ className, lists, labels, user, id }: AppSidebarPro
                         Planner
                     </h2>
                     <div className="mb-4">
+                        <SidebarSearchInput />
+                    </div>
+                    <div className="hidden">
                         <SearchDialog userId={user?.id} />
                     </div>
                     <SidebarNavigation />
