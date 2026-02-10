@@ -35,6 +35,11 @@ export function normalizeIp(value: string | null | undefined): string | null {
  * to prevent IP spoofing attacks where the client appends a fake IP.
  */
 export function getClientIp(headers: Headers): string | null {
+  // Defensive check for mock objects or invalid headers
+  if (!headers || typeof headers.get !== 'function') {
+    return null;
+  }
+
   // Vercel / Edge platform headers - reliable and set by the edge
   const vercelIp = headers.get("x-vercel-ip");
   if (vercelIp) return normalizeIp(vercelIp);
