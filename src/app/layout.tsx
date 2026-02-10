@@ -74,11 +74,15 @@ export default function RootLayout({
       className={`${inter.variable} ${quicksand.variable} ${spaceGrotesk.variable} ${orbitron.variable} ${sora.variable}`}
     >
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var d=document.documentElement;var m=localStorage.getItem('sidebar-mode');if(m==='slim'||m==='hidden'||m==='normal')d.dataset.sidebarMode=m;var w=localStorage.getItem('sidebar-width');if(w){var n=parseInt(w,10);if(n>=200&&n<=480)d.style.setProperty('--sidebar-width',n+'px')};}catch(e){}})();`,
-          }}
-        />
+        {/*process.env.NODE_ENV === "development" && (
+          <>
+            <Script
+              src="https://unpkg.com/react-grab/dist/index.global.js"
+              crossOrigin="anonymous"
+              strategy="beforeInteractive"
+            />
+          </>
+        )*/}
       </head>
       <body className="font-sans antialiased" suppressHydrationWarning>
         <QueryProvider>

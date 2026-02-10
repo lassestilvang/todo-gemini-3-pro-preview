@@ -406,6 +406,7 @@ export function TaskDetailsTab({
                                     <Checkbox
                                         checked={sub.isCompleted || false}
                                         onCheckedChange={(c) => handleToggleSubtask(sub.id, !!c)}
+                                        aria-label={`Mark subtask ${sub.title} as ${sub.isCompleted ? "incomplete" : "complete"}`}
                                     />
                                     <span className={cn("flex-1 text-sm", sub.isCompleted && "line-through text-muted-foreground")}>
                                         {sub.title}
@@ -416,6 +417,7 @@ export function TaskDetailsTab({
                                         size="icon"
                                         className="h-6 w-6 opacity-0 group-hover:opacity-100"
                                         onClick={() => handleDeleteSubtask(sub.id)}
+                                        aria-label={`Delete subtask ${sub.title}`}
                                     >
                                         <Trash2 className="h-3 w-3 text-destructive" />
                                     </Button>
@@ -427,6 +429,7 @@ export function TaskDetailsTab({
                                     onChange={(e) => setNewSubtask(e.target.value)}
                                     placeholder="Add a subtask..."
                                     className="h-8 text-sm"
+                                    aria-label="New subtask title"
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
                                             e.preventDefault();
@@ -440,6 +443,7 @@ export function TaskDetailsTab({
                                     variant="ghost"
                                     className="h-8 w-8"
                                     onClick={handleAddSubtask}
+                                    aria-label="Add subtask"
                                 >
                                     <Plus className="h-4 w-4" />
                                 </Button>
@@ -521,13 +525,20 @@ export function TaskDetailsTab({
                             <div className="flex-1">
                                 <DatePicker date={newReminderDate} setDate={setNewReminderDate} />
                             </div>
-                            <Button type="button" onClick={handleAddReminder} size="sm" disabled={!newReminderDate}>Add</Button>
+                            <Button type="button" onClick={handleAddReminder} size="sm" disabled={!newReminderDate}>Add reminder</Button>
                         </div>
                         <div className="space-y-2">
                             {reminders.map(reminder => (
                                 <div key={reminder.id} className="flex items-center justify-between bg-muted/50 p-2 rounded-md text-sm">
                                     <span>{format(reminder.remindAt, "PPP p")}</span>
-                                    <Button type="button" variant="ghost" size="icon" onClick={() => handleDeleteReminder(reminder.id)} className="h-6 w-6">
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleDeleteReminder(reminder.id)}
+                                        className="h-6 w-6"
+                                        aria-label={`Delete reminder for ${format(reminder.remindAt, "PPP p")}`}
+                                    >
                                         <Trash2 className="h-3 w-3 text-destructive" />
                                     </Button>
                                 </div>

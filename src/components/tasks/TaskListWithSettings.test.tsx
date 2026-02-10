@@ -1,19 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, mock } from "bun:test";
 import { render, screen, cleanup } from "@testing-library/react";
+import { TaskListWithSettings } from "./TaskListWithSettings";
 import { setMockAuthUser, DEFAULT_MOCK_USER } from "@/test/mocks";
 import React from "react";
-
-let TaskListWithSettings: typeof import("./TaskListWithSettings").TaskListWithSettings;
-
-mock.module("next/dynamic", () => ({
-    __esModule: true,
-    default: (_loader: unknown, options?: { loading?: React.ComponentType }) => {
-        const Loading = options?.loading;
-        const Component = () => (Loading ? <Loading /> : null);
-        Component.displayName = "DynamicComponent";
-        return Component;
-    }
-}));
 
 // Mock store
 const mockUseTaskStore = mock(() => ({
@@ -43,9 +32,8 @@ mock.module("@/lib/actions/view-settings", () => ({
 }));
 
 describe("TaskListWithSettings", () => {
-    beforeEach(async () => {
+    beforeEach(() => {
         setMockAuthUser(DEFAULT_MOCK_USER);
-        ({ TaskListWithSettings } = await import("./TaskListWithSettings"));
     });
 
     afterEach(() => {
