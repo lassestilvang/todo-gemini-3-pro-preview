@@ -3,9 +3,8 @@
 import { getGeminiClient, GEMINI_MODEL } from "@/lib/gemini";
 import { db, tasks } from "@/db";
 import { eq, and, isNull } from "drizzle-orm";
-import { requireAuth } from "@/lib/auth";
 import { format, startOfDay } from "date-fns";
-import { requireAuth } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 
 // Types for AI suggestions
 export interface ScheduleSuggestion {
@@ -70,12 +69,11 @@ export async function generateSmartSchedule(): Promise<ScheduleSuggestion[]> {
     if (!client) return [];
 
     try {
-        const user = await requireAuth();
+        const user = await requireUser();
 
         // 1. Fetch unscheduled tasks (no due date, not completed)
         const unscheduledTasks = await db.select().from(tasks).where(
             and(
-                eq(tasks.userId, user.id),
                 isNull(tasks.dueDate),
                 eq(tasks.isCompleted, false),
                 eq(tasks.userId, user.id)
@@ -150,13 +148,9 @@ export async function generateSmartSchedule(): Promise<ScheduleSuggestion[]> {
 
 // Apply a suggestion (update task due date)
 export async function applyScheduleSuggestion(taskId: number, date: Date) {
-    const user = await requireAuth();
     await db.update(tasks)
         .set({ dueDate: date })
-        .where(and(
-            eq(tasks.id, taskId),
-            eq(tasks.userId, user.id)
-        ));
+        .where(eq(tasks.id, taskId));
 }
 
 // Generate subtasks for a complex task
@@ -209,13 +203,11 @@ export async function analyzePriorities(): Promise<Array<{
     if (!client) return [];
 
     try {
-        const user = await requireAuth();
         // Get all incomplete tasks
         const incompleteTasks = await db
             .select()
             .from(tasks)
             .where(and(
-                eq(tasks.userId, user.id),
                 eq(tasks.isCompleted, false),
                 isNull(tasks.parentId)
             ));

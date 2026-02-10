@@ -1,6 +1,5 @@
 import { describe, it, expect, mock, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, createTestUser } from "../test/setup";
-import { setMockAuthUser } from "@/test/mocks";
 import { db, tasks } from "@/db";
 import { eq } from "drizzle-orm";
 import { generateSubtasks, extractDeadline, generateSmartSchedule, analyzePriorities, applyScheduleSuggestion } from "./smart-scheduler";
@@ -22,7 +21,7 @@ const mockGetGeminiClient = mock(() => ({
 
 // Mock Auth
 let currentTestUserId = "default-test-user";
-const mockRequireAuth = mock(() => Promise.resolve({ id: currentTestUserId }));
+const mockRequireUser = mock(() => Promise.resolve({ id: currentTestUserId }));
 
 mock.module("@/lib/gemini", () => ({
     getGeminiClient: mockGetGeminiClient,
@@ -30,7 +29,7 @@ mock.module("@/lib/gemini", () => ({
 }));
 
 mock.module("@/lib/auth", () => ({
-    requireAuth: mockRequireAuth
+    requireUser: mockRequireUser
 }));
 
 describe("smart-scheduler", () => {
@@ -44,10 +43,9 @@ describe("smart-scheduler", () => {
         currentTestUserId = `user_${randomId}`;
 
         await createTestUser(currentTestUserId, `${currentTestUserId}@scheduler.com`);
-        setMockAuthUser({ id: currentTestUserId, email: `${currentTestUserId}@scheduler.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
         mockGenerateContent.mockClear();
         mockGetGeminiClient.mockClear();
-        mockRequireAuth.mockClear();
+        mockRequireUser.mockClear();
     });
 
     describe("generateSubtasks", () => {

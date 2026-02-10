@@ -9,7 +9,7 @@ describe("Smart Scheduler Performance Benchmark", () => {
 
     beforeAll(async () => {
         // Ensure index exists for fair comparison (mimic production)
-        sqliteConnection.run("CREATE INDEX IF NOT EXISTS tasks_user_id_idx ON tasks(user_id)");
+        sqliteConnection.run("CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id)");
 
         // Clear existing data to ensure clean benchmark
         await db.delete(tasks);

@@ -3,7 +3,7 @@
 ## 💡 Ideas
 
 - Snooze? Eller er det bare "This week"?
-- Som Hey/Timestripe? - https://www.hey.com/calendar/
+- Som Hey/Timestripe?
 - Timeline view?
 - blacksmith/depot?
 
@@ -11,10 +11,15 @@
 
 ## 🚀 Features & Enhancements
 
-- [ ] **[Feature] Weekly/Monthly/Yearly Tasks**: Figure out a way to let the user schedule tasks for a specific week/month/year - not a specific date.
+- [ ] **[Feature] Weekly/Monthly/Yearly Tasks**: Figure out a way to let the user schedule tasks for a specific week/month/year. https://www.hey.com/calendar/
 - [ ] **[Feature] Calendar Version 4**: New page: /calendar4 and add it to the sidebar. Use "Full Calendar v7". It should support drag and drop of tasks to reschedule them. It should support resizing to change the duration of a task. It should also support multiple lists/calendars. It should be possible to create a new task by clicking on a date in the calendar. It should support multiple views (month, week, day). The installation guide is here: https://raw.githubusercontent.com/fullcalendar/fullcalendar-docs/refs/heads/v7/INSTALL-GUIDE.md
 - [ ] **[Feature] AI-Powered Task Suggestions**: Leverage Gemini to suggest next tasks based on user habits and patterns.
 - [ ] **[Feature] Internationalization (i18n)**: Add language files, locale-switcher, and Next.js i18n routing.
+- [ ] **[UX] Task List Density Options**: Introduce selectable density views for task lists to improve visibility and focus.
+  - **Compact**: Minimal padding and margin, optimized for power users with many tasks.
+  - **Standard**: The current default layout and spacing.
+  - **Spacious**: Increased padding and vertical rhythm for better readability and focus.
+  - **Settings**: Integrate density selection into the `ViewOptionsPopover` and persist it per view using the `ViewSettings` system.
 - [ ] **[Feature] Starred tasks**: Allow users to mark tasks as starred.
 - [ ] **[Feature] Sidebar Favorites**: Allow users to favorite lists and labels for quick access.
   - **Logic**: Add a `isFavorite` or `favorite` field to the `lists` and `labels` tables.
@@ -22,17 +27,15 @@
   - **Combined View**: Display all favorited items in a new "Favorites" section at the top of the sidebar.
   - **Reordering**: Allow manual reordering within the Favorites section.
   - **UX**: This is especially helpful for users with many lists and labels, providing a way to pin the most important ones.
+- [ ] **[Feature] Slim Sidebar**: Add a slim version of the sidebar that only shows the icons.
+- [ ] **[Feature] Sidebar Toggle**: Add a toggle to the sidebar to toggle between slim, normal and hidden sidebar. When hidden we should have a small icon in the top left corner to toggle it back.
 - [ ] **[Infra] Privacy-Friendly Analytics**: Connect WebVitals/page-events to a provider (Plausible/PostHog) with opt-out.
 - [ ] **[Infra] Real-User Monitoring (RUM) Dashboard**: Dashboard for Web Vitals metrics.
 - [ ] **[Infra] Feature-Flag System**: Simple flag mechanism to toggle experimental features.
 
 ## 🎨 UI/UX Polish
 
-- [ ] **[UX] Task List Density Options**: Introduce selectable density views for task lists to improve visibility and focus.
-  - **Compact**: Minimal padding and margin, optimized for power users with many tasks.
-  - **Standard**: The current default layout and spacing.
-  - **Spacious**: Increased padding and vertical rhythm for better readability and focus.
-  - **Settings**: Integrate density selection into the `ViewOptionsPopover` and persist it per view using the `ViewSettings` system.
+- [ ] **[UX] Sidebar Resize**: Make the sidebar resizable.
 - [ ] **[UX] Keyboard Shortcuts**: Add keyboard shortcuts for common actions.
 - [ ] **[UX] WorkOS User Profile Link**: Add a link to the WorkOS user profile in the settings page. It should open the user profile in a new tab - or even better, open the WorkOS user profile in a modal dialog if possible. Investigate their documentation to see if this is possible.
 
@@ -54,10 +57,6 @@
 
 ## ✅ Completed
 
-- [x] **[Feature] Search Results Page**: New page: /search and "Search tasks..." in the sidebar should actually be an input field that triggers the search page. Cmd+F to focus the input field. It should support searching for everything: tasks, lists, labels, descriptions, etc. It should support pagination and infinite scrolling. It should support sorting and filtering. It should support faceted search. The existing Cmd+K functionality should not be changed and this should be displayed as a shortcut hint in the sidebar.
-- [x] **[Feature] Slim Sidebar**: Add a slim version of the sidebar that only shows the icons.
-- [x] **[Feature] Sidebar Toggle**: Add a toggle to the sidebar to toggle between slim, normal and hidden sidebar. When hidden we should have a small icon in the top left corner to toggle it back.
-- [x] **[UX] Sidebar Resize**: Make the sidebar resizable.
 - [x] **[Feature] Sync Status**: When the Sync Error/Pending icon is shown, it should be possible to click on it to see the sync issues / what is pending sync.
 - [x] **[Feature] Board/Calendar View on Lists**: Enable different layouts for task lists, selectable via the "View" settings modal (there are placeholder buttons for it).
   - **Board View**: A Trello-style Kanban board grouping tasks by status (To Do, In Progress, Done) or priority or dates.
