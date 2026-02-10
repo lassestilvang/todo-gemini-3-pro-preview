@@ -30,18 +30,19 @@ import { createReminderSchema } from "@/lib/validation/reminders";
 export async function getReminders(taskId: number, userId: string) {
   await requireUser(userId);
 
-  // Check if user owns the task
-  const [task] = await db
-    .select({ id: tasks.id })
-    .from(tasks)
-    .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)))
-    .limit(1);
-
-  if (!task) {
-    return [];
-  }
-
-  return await db.select().from(reminders).where(eq(reminders.taskId, taskId));
+  // By joining with the tasks table, we can verify ownership and fetch
+  // reminders in a single database query.
+  return await db
+    .select({
+      id: reminders.id,
+      taskId: reminders.taskId,
+      remindAt: reminders.remindAt,
+      isSent: reminders.isSent,
+      createdAt: reminders.createdAt,
+    })
+    .from(reminders)
+    .innerJoin(tasks, eq(reminders.taskId, tasks.id))
+    .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)));
 }
 
 /**
