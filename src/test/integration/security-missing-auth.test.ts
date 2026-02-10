@@ -4,15 +4,9 @@ import { setMockAuthUser, clearMockAuthUser, getMockAuthUser } from "@/test/mock
 import { isFailure } from "@/lib/action-result";
 import { db, templates } from "@/db";
 
-// Declare variables for dynamic imports
-let getViewSettings: typeof import("@/lib/actions/view-settings").getViewSettings;
-let saveViewSettings: typeof import("@/lib/actions/view-settings").saveViewSettings;
-let resetViewSettings: typeof import("@/lib/actions/view-settings").resetViewSettings;
-let getTemplates: typeof import("@/lib/actions/templates").getTemplates;
-let createTemplate: typeof import("@/lib/actions/templates").createTemplate;
-let updateTemplate: typeof import("@/lib/actions/templates").updateTemplate;
-let deleteTemplate: typeof import("@/lib/actions/templates").deleteTemplate;
-let instantiateTemplate: typeof import("@/lib/actions/templates").instantiateTemplate;
+// Static imports to ensure consistent module resolution and mocking behavior
+import { getViewSettings, saveViewSettings, resetViewSettings } from "@/lib/actions/view-settings";
+import { getTemplates, createTemplate, updateTemplate, deleteTemplate, instantiateTemplate } from "@/lib/actions/templates";
 
 describe("Integration: Security Missing Auth", () => {
     let attackerId: string;
@@ -20,18 +14,6 @@ describe("Integration: Security Missing Auth", () => {
 
     beforeAll(async () => {
         await setupTestDb();
-        // Dynamic import with relative path to avoid mocked modules
-        const viewSettingsActions = await import("../../lib/actions/view-settings");
-        getViewSettings = viewSettingsActions.getViewSettings;
-        saveViewSettings = viewSettingsActions.saveViewSettings;
-        resetViewSettings = viewSettingsActions.resetViewSettings;
-
-        const templateActions = await import("../../lib/actions/templates");
-        getTemplates = templateActions.getTemplates;
-        createTemplate = templateActions.createTemplate;
-        updateTemplate = templateActions.updateTemplate;
-        deleteTemplate = templateActions.deleteTemplate;
-        instantiateTemplate = templateActions.instantiateTemplate;
     });
 
     beforeEach(async () => {
