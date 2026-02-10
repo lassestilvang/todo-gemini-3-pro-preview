@@ -86,12 +86,6 @@ export function KeyboardShortcuts() {
                             ⌘ Z
                         </kbd>
                     </div>
-                    <div className="grid grid-cols-2 items-center gap-4">
-                        <span className="text-sm font-medium">Cycle Sidebar</span>
-                        <kbd className="justify-self-end pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-                            {"⌘\\"}
-                        </kbd>
-                    </div>
                 </div>
             </DialogContent>
         </Dialog>
