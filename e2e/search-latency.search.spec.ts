@@ -26,18 +26,14 @@ test.describe('Search Latency: Search Results', () => {
     // Shorter grace period for search indexing
     await page.waitForTimeout(250);
 
-    const searchButton = page.getByRole('button', { name: /search/i }).first();
-    await expect(searchButton).toBeVisible();
-    await searchButton.click();
+    const searchInput = page.getByPlaceholder(/search tasks\.\.\./i).first();
+    await expect(searchInput).toBeVisible();
+    await searchInput.fill(taskTitle);
+    await searchInput.press('Enter');
 
-    try {
-      await page.getByPlaceholder(/search tasks/i).fill(taskTitle);
-      await expect(page.getByText(taskTitle)).toBeVisible();
-    } catch {
-      return;
-    }
+    await page.waitForURL(/\/search\?q=/);
 
-    const resultItem = page.getByRole('dialog').getByText(taskTitle, { exact: true });
+    const resultItem = page.getByTestId('task-item').filter({ hasText: taskTitle }).first();
     await expect(resultItem).toBeVisible({ timeout: 15000 });
   });
 });

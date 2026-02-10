@@ -1,6 +1,6 @@
 import { describe, it, expect } from "bun:test";
 import { parseNaturalLanguage } from "./nlp-parser";
-import { startOfToday, startOfTomorrow, addDays, addWeeks, addMonths, nextMonday, nextFriday } from "date-fns";
+import { startOfToday, startOfTomorrow, addDays, addWeeks, addMonths, addYears, nextMonday, nextFriday, startOfWeek, startOfMonth, startOfYear } from "date-fns";
 
 describe("nlp-parser", () => {
     describe("parseNaturalLanguage", () => {
@@ -84,6 +84,27 @@ describe("nlp-parser", () => {
                 const result = parseNaturalLanguage("Submit next friday");
                 expect(result.title).toBe("Submit");
                 expect(result.dueDate?.toDateString()).toBe(nextFriday(startOfToday()).toDateString());
+            });
+
+            it("should parse 'this week' with precision", () => {
+                const result = parseNaturalLanguage("Plan this week", { weekStartsOnMonday: true });
+                expect(result.title).toBe("Plan");
+                expect(result.dueDatePrecision).toBe("week");
+                expect(result.dueDate?.toDateString()).toBe(startOfWeek(startOfToday(), { weekStartsOn: 1 }).toDateString());
+            });
+
+            it("should parse 'next month' with precision", () => {
+                const result = parseNaturalLanguage("Tax prep next month");
+                expect(result.title).toBe("Tax prep");
+                expect(result.dueDatePrecision).toBe("month");
+                expect(result.dueDate?.toDateString()).toBe(startOfMonth(addMonths(startOfToday(), 1)).toDateString());
+            });
+
+            it("should parse 'next year' with precision", () => {
+                const result = parseNaturalLanguage("Learn piano next year");
+                expect(result.title).toBe("Learn piano");
+                expect(result.dueDatePrecision).toBe("year");
+                expect(result.dueDate?.toDateString()).toBe(startOfYear(addYears(startOfToday(), 1)).toDateString());
             });
         });
 

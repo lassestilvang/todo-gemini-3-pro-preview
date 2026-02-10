@@ -49,6 +49,10 @@ const workosMiddleware = authkitMiddleware({
   },
 });
 
+const isE2ETestMode =
+  process.env.E2E_TEST_MODE === "true" ||
+  process.env.NEXT_PUBLIC_E2E_TEST_MODE === "true";
+
 function getRequestIp(request: NextRequest): string | null {
   const xff = request.headers.get('x-forwarded-for');
   const first = xff?.split(',')[0]?.trim();
@@ -57,7 +61,7 @@ function getRequestIp(request: NextRequest): string | null {
 }
 
 async function maybeBypassAuth(request: NextRequest): Promise<NextResponse | null> {
-  if (process.env.E2E_TEST_MODE === 'true') {
+  if (isE2ETestMode) {
     return null;
   }
 
@@ -99,7 +103,7 @@ export default async function middleware(request: NextRequest, event: NextFetchE
     return bypassResponse;
   }
 
-  if (process.env.E2E_TEST_MODE === 'true') {
+  if (isE2ETestMode) {
     return testModeMiddleware(request);
   }
 

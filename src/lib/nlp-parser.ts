@@ -1,9 +1,24 @@
-import { addDays, addWeeks, addMonths, startOfTomorrow, startOfToday, nextMonday, nextFriday, nextSaturday, nextSunday } from "date-fns";
+import {
+    addDays,
+    addWeeks,
+    addMonths,
+    addYears,
+    startOfTomorrow,
+    startOfToday,
+    startOfWeek,
+    startOfMonth,
+    startOfYear,
+    nextMonday,
+    nextFriday,
+    nextSaturday,
+    nextSunday,
+} from "date-fns";
 
 export interface ParsedTask {
     title: string;
     priority?: "none" | "low" | "medium" | "high";
     dueDate?: Date;
+    dueDatePrecision?: "day" | "week" | "month" | "year";
     energyLevel?: "high" | "medium" | "low";
     context?: "computer" | "phone" | "errands" | "meeting" | "home" | "anywhere";
 }
@@ -20,6 +35,16 @@ const PATTERNS = {
     inDays: /\bin\s+(\d+)\s+days?\b/i,
     inWeeks: /\bin\s+(\d+)\s+weeks?\b/i,
     inMonths: /\bin\s+(\d+)\s+months?\b/i,
+    thisWeek: /\bthis\s+week\b/i,
+    nextWeek: /\bnext\s+week\b/i,
+    thisMonth: /\bthis\s+month\b/i,
+    nextMonth: /\bnext\s+month\b/i,
+    thisYear: /\bthis\s+year\b/i,
+    nextYear: /\bnext\s+year\b/i,
+    nextWk: /\bnext\s+wk\b/i,
+    nextMo: /\bnext\s+mo\b/i,
+    nextYr: /\bnext\s+yr\b/i,
+    thisYr: /\bthis\s+yr\b/i,
     nextMonday: /\bnext\s+monday\b/i,
     nextFriday: /\bnext\s+friday\b/i,
     nextSaturday: /\bnext\s+saturday\b/i,
@@ -27,10 +52,14 @@ const PATTERNS = {
     multiSpace: /\s+/g,
 } as const;
 
-export function parseNaturalLanguage(input: string): ParsedTask {
+export function parseNaturalLanguage(
+    input: string,
+    options: { weekStartsOnMonday?: boolean } = {}
+): ParsedTask {
     let cleanTitle = input;
     let priority: "none" | "low" | "medium" | "high" = "none";
     let dueDate: Date | undefined;
+    let dueDatePrecision: "day" | "week" | "month" | "year" | undefined;
     let energyLevel: "high" | "medium" | "low" | undefined;
     let context: "computer" | "phone" | "errands" | "meeting" | "home" | "anywhere" | undefined;
 
@@ -74,6 +103,7 @@ export function parseNaturalLanguage(input: string): ParsedTask {
     }
 
     const today = startOfToday();
+    const weekStartsOn = options.weekStartsOnMonday ? 1 : 0;
 
     if (PATTERNS.today.test(input)) {
         dueDate = today;
@@ -81,6 +111,42 @@ export function parseNaturalLanguage(input: string): ParsedTask {
     } else if (PATTERNS.tomorrow.test(input)) {
         dueDate = startOfTomorrow();
         cleanTitle = cleanTitle.replace(PATTERNS.tomorrow, "").trim();
+    } else if (PATTERNS.thisWeek.test(input)) {
+        dueDatePrecision = "week";
+        dueDate = startOfWeek(today, { weekStartsOn });
+        cleanTitle = cleanTitle.replace(PATTERNS.thisWeek, "").trim();
+    } else if (PATTERNS.nextWeek.test(input) || PATTERNS.nextWk.test(input)) {
+        dueDatePrecision = "week";
+        const match = input.match(PATTERNS.nextWeek) || input.match(PATTERNS.nextWk);
+        dueDate = startOfWeek(addWeeks(today, 1), { weekStartsOn });
+        if (match) {
+            cleanTitle = cleanTitle.replace(match[0], "").trim();
+        }
+    } else if (PATTERNS.thisMonth.test(input)) {
+        dueDatePrecision = "month";
+        dueDate = startOfMonth(today);
+        cleanTitle = cleanTitle.replace(PATTERNS.thisMonth, "").trim();
+    } else if (PATTERNS.nextMonth.test(input) || PATTERNS.nextMo.test(input)) {
+        dueDatePrecision = "month";
+        const match = input.match(PATTERNS.nextMonth) || input.match(PATTERNS.nextMo);
+        dueDate = startOfMonth(addMonths(today, 1));
+        if (match) {
+            cleanTitle = cleanTitle.replace(match[0], "").trim();
+        }
+    } else if (PATTERNS.thisYear.test(input) || PATTERNS.thisYr.test(input)) {
+        dueDatePrecision = "year";
+        const match = input.match(PATTERNS.thisYear) || input.match(PATTERNS.thisYr);
+        dueDate = startOfYear(today);
+        if (match) {
+            cleanTitle = cleanTitle.replace(match[0], "").trim();
+        }
+    } else if (PATTERNS.nextYear.test(input) || PATTERNS.nextYr.test(input)) {
+        dueDatePrecision = "year";
+        const match = input.match(PATTERNS.nextYear) || input.match(PATTERNS.nextYr);
+        dueDate = startOfYear(addYears(today, 1));
+        if (match) {
+            cleanTitle = cleanTitle.replace(match[0], "").trim();
+        }
     } else if (PATTERNS.inDays.test(input)) {
         const match = input.match(PATTERNS.inDays);
         if (match) {
@@ -119,6 +185,7 @@ export function parseNaturalLanguage(input: string): ParsedTask {
         title: cleanTitle,
         priority: priority !== "none" ? priority : undefined,
         dueDate,
+        dueDatePrecision,
         energyLevel,
         context,
     };

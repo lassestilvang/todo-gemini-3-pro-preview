@@ -8,7 +8,8 @@ test.describe('Data Persistence: Export', () => {
         const listName = `Export List ${uniqueId}`;
         const taskName = `Export Task ${uniqueId}`;
 
-        await page.goto('/');
+        await page.goto('/inbox', { waitUntil: 'domcontentloaded' });
+        await expect(page.getByTestId('add-list-button')).toBeVisible();
 
         await page.getByTestId('add-list-button').click();
         await expect(page.getByRole('dialog')).toBeVisible();
@@ -25,7 +26,8 @@ test.describe('Data Persistence: Export', () => {
 
         await expect(page.getByTestId('task-input')).toHaveValue('');
         await expect(page.getByText(taskName)).toBeVisible();
-        await page.goto('/settings');
+        await page.goto('/settings', { waitUntil: 'domcontentloaded' });
+        await expect(page.getByRole('button', { name: 'Export Backup' })).toBeVisible();
 
         await page.getByRole('button', { name: 'Export Backup' }).click();
         const download = await page.waitForEvent('download');

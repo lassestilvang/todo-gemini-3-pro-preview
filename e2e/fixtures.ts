@@ -52,7 +52,6 @@ export async function authenticateTestUser(page: Page): Promise<boolean> {
       return false;
     }
 
-    // Explicitly set the session cookie in the browser context to avoid racey cookie propagation.
     const sessionValue = JSON.stringify({
       user,
       accessToken: 'test-access-token',
@@ -60,22 +59,33 @@ export async function authenticateTestUser(page: Page): Promise<boolean> {
       expiresAt: Date.now() + 24 * 60 * 60 * 1000,
     });
 
+    const cookieUrl = new URL(page.url());
+    const setCookieHeader = response.headers()['set-cookie'];
+    const headerValueMatch = setCookieHeader?.match(/wos-session-test=([^;]+)/);
+    const cookieValue = headerValueMatch?.[1] ?? sessionValue;
+
+    const origins = new Set<string>([cookieUrl.origin]);
+    const port = cookieUrl.port ? `:${cookieUrl.port}` : "";
+    if (cookieUrl.hostname === "localhost") {
+      origins.add(`http://127.0.0.1${port}`);
+    }
+    if (cookieUrl.hostname === "127.0.0.1") {
+      origins.add(`http://localhost${port}`);
+    }
+
     // Explicitly set the session cookie in the browser context to avoid racey cookie propagation.
-    // We omit the domain to let Playwright/Browser handle localhost/127.0.0.1 correctly.
-    // Omit domain to allow cookie to apply to the current context url (localhost/127.0.0.1) automatically
-    console.log('[E2E] Setting cookie for URL:', page.url());
-    await page.context().addCookies([
-      {
+    // Set for both localhost and 127.0.0.1 to cover internal fetches.
+    await page.context().addCookies(
+      Array.from(origins).map((origin) => ({
         name: 'wos-session-test',
-        value: sessionValue,
-        domain: "localhost",
-        path: "/",
+        value: cookieValue,
+        url: origin,
         httpOnly: true,
         secure: false,
         sameSite: 'Lax',
         expires: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
-      },
-    ]);
+      }))
+    );
 
     return true;
   } catch (error) {
@@ -156,7 +166,16 @@ export async function waitForAppReady(page: Page) {
  */
 export async function isOnLoginPage(page: Page): Promise<boolean> {
   const url = page.url();
-  return url.includes('/login') || url.includes('authkit.app');
+  if (url.includes('/login') || url.includes('authkit.app')) {
+    return true;
+  }
+
+  const signIn = page.getByTestId('sign-in-button');
+  if ((await signIn.count()) > 0) {
+    return signIn.first().isVisible().catch(() => false);
+  }
+
+  return false;
 }
 
 /**

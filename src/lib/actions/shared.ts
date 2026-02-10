@@ -47,6 +47,8 @@ export {
   startOfDay,
   endOfDay,
   addDays,
+  addWeeks,
+  startOfWeek,
 } from "date-fns";
 
 // Action result types and helpers

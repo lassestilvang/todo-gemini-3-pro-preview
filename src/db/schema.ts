@@ -57,6 +57,7 @@ export const tasks = pgTable("tasks", {
     icon: text("icon"),
     priority: text("priority", { enum: ["none", "low", "medium", "high"] }).default("none"),
     dueDate: timestamp("due_date"),
+    dueDatePrecision: text("due_date_precision", { enum: ["day", "week", "month", "year"] }),
     isCompleted: boolean("is_completed").default(false),
     completedAt: timestamp("completed_at"),
     isRecurring: boolean("is_recurring").default(false),

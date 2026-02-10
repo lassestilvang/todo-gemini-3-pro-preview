@@ -24,9 +24,12 @@ import {
   inArray,
   sql,
   isNull,
+  or,
   startOfDay,
   endOfDay,
   addDays,
+  addWeeks,
+  startOfWeek,
   revalidatePath,
   calculateStreakUpdate,
   suggestMetadata,
@@ -42,6 +45,7 @@ import { getLists, getList } from "./lists";
 import { getLabels } from "./labels";
 import { getUserStats, updateUserProgress } from "./gamification";
 import { createTaskSchema, updateTaskSchema } from "@/lib/validation/tasks";
+import { coerceDuePrecision, normalizeDueAnchor } from "@/lib/due-utils";
 
 /**
  * Retrieves tasks for a user with optional filtering.
@@ -60,7 +64,7 @@ export async function getTasks(
   showCompleted: boolean = true
 ) {
 
-  await requireUser(userId);
+  const user = await requireUser(userId);
 
 
   const conditions = [];
@@ -96,11 +100,52 @@ export async function getTasks(
   const now = new Date();
   const todayStart = startOfDay(now);
   const todayEnd = endOfDay(now);
+  const weekStartsOnMonday = user.weekStartsOnMonday ?? false;
+  const weekStartsOn = weekStartsOnMonday ? 1 : 0;
+  const weekStart = startOfWeek(todayStart, { weekStartsOn });
+  const monthStart = startOfDay(new Date(todayStart.getFullYear(), todayStart.getMonth(), 1));
+  const yearStart = startOfDay(new Date(todayStart.getFullYear(), 0, 1));
 
   if (filter === "today") {
-    conditions.push(lte(tasks.dueDate, todayEnd));
+    const todayWindow = and(
+      or(isNull(tasks.dueDatePrecision), eq(tasks.dueDatePrecision, "day")),
+      gte(tasks.dueDate, todayStart),
+      lte(tasks.dueDate, todayEnd)
+    );
+    const weekWindow = and(
+      eq(tasks.dueDatePrecision, "week"),
+      gte(tasks.dueDate, weekStart),
+      lte(tasks.dueDate, todayStart)
+    );
+    const monthWindow = and(
+      eq(tasks.dueDatePrecision, "month"),
+      gte(tasks.dueDate, monthStart),
+      lte(tasks.dueDate, todayStart)
+    );
+    const yearWindow = and(
+      eq(tasks.dueDatePrecision, "year"),
+      gte(tasks.dueDate, yearStart),
+      lte(tasks.dueDate, todayStart)
+    );
+    conditions.push(or(todayWindow, weekWindow, monthWindow, yearWindow));
   } else if (filter === "upcoming") {
-    conditions.push(gte(tasks.dueDate, todayStart));
+    const upcomingDay = and(
+      or(isNull(tasks.dueDatePrecision), eq(tasks.dueDatePrecision, "day")),
+      gte(tasks.dueDate, todayStart)
+    );
+    const upcomingWeek = and(
+      eq(tasks.dueDatePrecision, "week"),
+      gte(tasks.dueDate, startOfDay(addWeeks(weekStart, 1)))
+    );
+    const upcomingMonth = and(
+      eq(tasks.dueDatePrecision, "month"),
+      gte(tasks.dueDate, startOfDay(new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1)))
+    );
+    const upcomingYear = and(
+      eq(tasks.dueDatePrecision, "year"),
+      gte(tasks.dueDate, startOfDay(new Date(yearStart.getFullYear() + 1, 0, 1)))
+    );
+    conditions.push(or(upcomingDay, upcomingWeek, upcomingMonth, upcomingYear));
   } else if (filter === "next-7-days") {
     const nextWeek = addDays(now, 7);
     conditions.push(and(gte(tasks.dueDate, todayStart), lte(tasks.dueDate, nextWeek)));
@@ -115,6 +160,7 @@ export async function getTasks(
       icon: tasks.icon,
       priority: tasks.priority,
       dueDate: tasks.dueDate,
+      dueDatePrecision: tasks.dueDatePrecision,
       deadline: tasks.deadline,
       isCompleted: tasks.isCompleted,
       completedAt: tasks.completedAt,
@@ -249,6 +295,7 @@ export async function getTask(id: number, userId: string) {
       icon: tasks.icon,
       priority: tasks.priority,
       dueDate: tasks.dueDate,
+      dueDatePrecision: tasks.dueDatePrecision,
       deadline: tasks.deadline,
       isCompleted: tasks.isCompleted,
       completedAt: tasks.completedAt,
@@ -302,7 +349,7 @@ export async function getTask(id: number, userId: string) {
  * @returns The created task
  */
 export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: number[] }) {
-  await requireUser(data.userId);
+  const user = await requireUser(data.userId);
 
   try {
     // Rate limit: 100 tasks per hour
@@ -313,7 +360,7 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
 
     // Validate and parse input data
     const parsedData = createTaskSchema.parse(data);
-    const { labelIds, ...taskData } = parsedData;
+    const { labelIds, dueDatePrecision: rawPrecision, ...taskData } = parsedData;
     let finalLabelIds = labelIds || [];
 
     // Validate parent task ownership if parentId is provided to prevent IDOR
@@ -365,8 +412,17 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
 
     // Subtract 1024 to leave space and ensure it's at the top
     const currentMin = minPosResult?.min ?? 0;
+    const precision = coerceDuePrecision(taskData.dueDate, rawPrecision);
+    const normalizedDueDate = taskData.dueDate
+      ? (precision
+        ? normalizeDueAnchor(taskData.dueDate, precision, user.weekStartsOnMonday ?? false)
+        : taskData.dueDate)
+      : null;
+
     const finalTaskData = {
       ...taskData,
+      dueDate: normalizedDueDate,
+      dueDatePrecision: precision,
       position: currentMin - 1024
     };
 
@@ -427,11 +483,11 @@ export async function updateTask(
   },
   existingTask?: Awaited<ReturnType<typeof getTask>> | null
 ) {
-  await requireUser(userId);
+  const user = await requireUser(userId);
 
   // Validate and parse input data
   const parsedData = updateTaskSchema.parse(data);
-  const { labelIds, expectedUpdatedAt, ...taskData } = parsedData;
+  const { labelIds, expectedUpdatedAt, dueDatePrecision: rawPrecision, ...taskData } = parsedData;
 
   const currentTask = existingTask ?? await getTask(id, userId);
   if (!currentTask) return;
@@ -447,9 +503,28 @@ export async function updateTask(
     }
   }
 
+  const shouldClearDue = taskData.dueDate === null;
+  const precision = shouldClearDue
+    ? null
+    : coerceDuePrecision(taskData.dueDate ?? currentTask.dueDate, rawPrecision ?? currentTask.dueDatePrecision ?? null);
+  const normalizedDueDate = taskData.dueDate
+    ? (precision
+      ? normalizeDueAnchor(taskData.dueDate, precision, user.weekStartsOnMonday ?? false)
+      : taskData.dueDate)
+    : taskData.dueDate === null
+      ? null
+      : undefined;
+
+  const updatePayload = {
+    ...taskData,
+    dueDate: normalizedDueDate === undefined ? taskData.dueDate : normalizedDueDate,
+    dueDatePrecision: shouldClearDue ? null : precision ?? undefined,
+    updatedAt: new Date(),
+  } as Partial<typeof tasks.$inferInsert>;
+
   await db
     .update(tasks)
-    .set({ ...taskData, updatedAt: new Date() } as Partial<typeof tasks.$inferInsert>)
+    .set(updatePayload)
     .where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
 
   if (labelIds !== undefined) {
@@ -493,13 +568,21 @@ export async function updateTask(
     changes.push(`Priority changed from ${currentTask.priority} to ${taskData.priority}`);
   }
 
-  if (taskData.dueDate !== undefined) {
+  if (taskData.dueDate !== undefined || rawPrecision !== undefined) {
     const currentDueDate = currentTask.dueDate ? currentTask.dueDate.getTime() : null;
-    const newDueDate = taskData.dueDate ? taskData.dueDate.getTime() : null;
-    if (currentDueDate !== newDueDate) {
+    const newDueDate = normalizedDueDate === undefined
+      ? taskData.dueDate
+      : normalizedDueDate;
+    const newDueTime = newDueDate ? newDueDate.getTime() : null;
+    const currentPrecision = currentTask.dueDatePrecision ?? "day";
+    const nextPrecision = shouldClearDue
+      ? "day"
+      : (precision ?? currentPrecision);
+    if (currentDueDate !== newDueTime || currentPrecision !== nextPrecision) {
       const fromDate = currentTask.dueDate ? currentTask.dueDate.toLocaleDateString() : "(none)";
-      const toDate = taskData.dueDate ? taskData.dueDate.toLocaleDateString() : "(none)";
-      changes.push(`Due date changed from ${fromDate} to ${toDate}`);
+      const toDate = newDueDate ? newDueDate.toLocaleDateString() : "(none)";
+      const fromLabel = currentPrecision === "day" ? "date" : currentPrecision;
+      changes.push(`Due ${fromLabel} changed from ${fromDate} to ${toDate}`);
     }
   }
 
@@ -625,6 +708,7 @@ export async function toggleTaskCompletion(id: number, userId: string, isComplet
         estimateMinutes: task.estimateMinutes,
         actualMinutes: task.actualMinutes,
         dueDate: nextDate,
+        dueDatePrecision: task.dueDatePrecision ?? null,
         isCompleted: false,
         completedAt: null,
         labelIds: labels.map((l) => l.id).filter((id): id is number => id !== null),
@@ -893,6 +977,8 @@ export async function searchTasks(userId: string, query: string) {
       description: tasks.description,
       listId: tasks.listId,
       isCompleted: tasks.isCompleted,
+      dueDate: tasks.dueDate,
+      dueDatePrecision: tasks.dueDatePrecision,
     })
     .from(tasks)
     .where(

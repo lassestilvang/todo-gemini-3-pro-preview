@@ -37,6 +37,8 @@ describe("TaskDetailsTab Accessibility", () => {
         setContext: mock(),
         dueDate: undefined,
         setDueDate: mock(),
+        dueDatePrecision: "day" as const,
+        setDueDatePrecision: mock(),
         deadline: undefined,
         setDeadline: mock(),
         isRecurring: false,

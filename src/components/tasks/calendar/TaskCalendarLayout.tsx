@@ -32,6 +32,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { type Task } from "@/lib/types";
+import { formatDuePeriod, type DuePrecision } from "@/lib/due-utils";
 
 interface TaskCalendarLayoutProps {
   tasks: Task[];
@@ -84,6 +85,7 @@ export function TaskCalendarLayout({
     >();
     for (const task of tasks) {
       if (!task.dueDate) continue;
+      if (task.dueDatePrecision && task.dueDatePrecision !== "day") continue;
       const dateKey = startOfDay(
         task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate),
       ).getTime();
@@ -101,6 +103,10 @@ export function TaskCalendarLayout({
       }
     }
     return map;
+  }, [tasks]);
+
+  const periodTasks = useMemo(() => {
+    return tasks.filter((task) => task.dueDate && task.dueDatePrecision && task.dueDatePrecision !== "day");
   }, [tasks]);
 
   const daysWithMeta = useMemo(() => {
@@ -313,6 +319,51 @@ export function TaskCalendarLayout({
             )}
           </div>
         </TooltipProvider>
+        {periodTasks.length > 0 && (
+          <div className="mt-6 rounded-lg border bg-muted/20 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h4 className="text-sm font-semibold">Sometime This Period</h4>
+                <p className="text-xs text-muted-foreground">
+                  Tasks scheduled for a week, month, or year
+                </p>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {periodTasks.length} total
+              </span>
+            </div>
+            <div className="space-y-2">
+              {periodTasks.map((task) => (
+                <button
+                  key={task.id}
+                  type="button"
+                  onClick={() => onEdit(task)}
+                  className={cn(
+                    "w-full flex items-center justify-between rounded-md border bg-background px-3 py-2 text-left text-sm transition hover:border-primary/40 hover:shadow-sm",
+                    task.isCompleted && "opacity-60"
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    {task.isCompleted ? (
+                      <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Circle className="h-4 w-4 text-muted-foreground" />
+                    )}
+                    <span className="truncate">{task.title}</span>
+                  </div>
+                  {task.dueDate && (
+                    <span className="text-xs text-muted-foreground">
+                      {formatDuePeriod({
+                        dueDate: task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate),
+                        dueDatePrecision: task.dueDatePrecision as DuePrecision,
+                      })}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
