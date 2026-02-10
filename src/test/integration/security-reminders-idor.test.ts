@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
+import { describe, it, expect, beforeAll } from "bun:test";
 import { setupTestDb, createTestUser } from "@/test/setup";
 import { getReminders, createReminder } from "@/lib/actions/reminders";
 import { createTask } from "@/lib/actions/tasks";

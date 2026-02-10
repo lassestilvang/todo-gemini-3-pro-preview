@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, beforeAll } from "bun:test";
-import { setupTestDb, resetTestDb } from "@/test/setup";
+import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser, clearMockAuthUser } from "@/test/mocks";
 import { createList, getLists, reorderLists } from "./lists";
 
@@ -19,6 +19,7 @@ describe("Lists Reorder", () => {
       lastName: "Tester",
       profilePictureUrl: null,
     });
+    await createTestUser(USER_ID, "reorder@example.com");
   });
 
   afterEach(() => {

@@ -31,20 +31,8 @@ let applyScheduleSuggestion: typeof import("./smart-scheduler").applyScheduleSug
 
 describe("smart-scheduler", () => {
     let testUserId: string;
-// Mock Auth
-let currentTestUserId = "default-test-user";
-const mockRequireUser = mock(() => Promise.resolve({ id: currentTestUserId }));
+    let currentTestUserId = "default-test-user";
 
-mock.module("@/lib/gemini", () => ({
-    getGeminiClient: mockGetGeminiClient,
-    GEMINI_MODEL: "gemini-pro"
-}));
-
-mock.module("@/lib/auth", () => ({
-    requireUser: mockRequireUser
-}));
-
-describe("smart-scheduler", () => {
     beforeAll(async () => {
         // Mock the module BEFORE importing the SUT
         mock.module("@/lib/gemini", () => ({
@@ -90,7 +78,7 @@ describe("smart-scheduler", () => {
             lastName: "User",
             profilePictureUrl: null
         });
-        mockRequireUser.mockClear();
+        mockGetGeminiClient.mockClear();
     });
 
     describe("generateSubtasks", () => {

@@ -63,10 +63,12 @@ export async function authenticateTestUser(page: Page): Promise<boolean> {
     // Explicitly set the session cookie in the browser context to avoid racey cookie propagation.
     // We omit the domain to let Playwright/Browser handle localhost/127.0.0.1 correctly.
     // Omit domain to allow cookie to apply to the current context url (localhost/127.0.0.1) automatically
+    console.log('[E2E] Setting cookie for URL:', page.url());
     await page.context().addCookies([
       {
         name: 'wos-session-test',
         value: sessionValue,
+        domain: "localhost",
         path: "/",
         httpOnly: true,
         secure: false,

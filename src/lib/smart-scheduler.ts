@@ -4,7 +4,7 @@ import { getGeminiClient, GEMINI_MODEL } from "@/lib/gemini";
 import { db, tasks } from "@/db";
 import { eq, and, isNull } from "drizzle-orm";
 import { format, startOfDay } from "date-fns";
-import { requireUser } from "@/lib/auth";
+import { requireAuth } from "@/lib/auth";
 
 // Types for AI suggestions
 export interface ScheduleSuggestion {
@@ -69,7 +69,7 @@ export async function generateSmartSchedule(): Promise<ScheduleSuggestion[]> {
     if (!client) return [];
 
     try {
-        const user = await requireUser();
+        const user = await requireAuth();
 
         // 1. Fetch unscheduled tasks (no due date, not completed)
         const unscheduledTasks = await db.select().from(tasks).where(

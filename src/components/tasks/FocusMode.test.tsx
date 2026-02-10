@@ -2,7 +2,8 @@ import { describe, it, expect, mock, beforeEach, afterEach, beforeAll } from "bu
 import { render, screen, fireEvent, cleanup, act } from "@testing-library/react";
 import { FocusMode } from "./FocusMode";
 import { db, tasks } from "@/db";
-import { setupTestDb, resetTestDb } from "@/test/setup";
+import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
+import { cleanup } from "@testing-library/react";
 import { setMockAuthUser } from "@/test/mocks";
 import { eq } from "drizzle-orm";
 
@@ -31,6 +32,7 @@ describe("FocusMode", () => {
         // await resetTestDb();
         TEST_USER_ID = `user_${Math.random().toString(36).substring(7)}`;
         setMockAuthUser({ id: TEST_USER_ID, email: `${TEST_USER_ID}@example.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
+        await createTestUser(TEST_USER_ID, `${TEST_USER_ID}@example.com`);
     });
 
     afterEach(() => {
@@ -79,7 +81,7 @@ describe("FocusMode", () => {
 
     it("should complete task", async () => {
         await db.insert(tasks).values({
-            id: 2, title: "Task To Complete", isCompleted: false, listId: 1, userId: TEST_USER_ID, position: 0
+            id: 2, title: "Task To Complete", isCompleted: false, listId: null, userId: TEST_USER_ID, position: 0
         });
 
         const onClose = mock();
