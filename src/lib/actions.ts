@@ -92,6 +92,9 @@ export { deleteLabel as deleteLabelSafe } from "./actions/labels";
 export * from "./actions/views";
 export * from "./action-result";
 
+// Search
+export { searchAll, type SearchAllResponse } from "./actions/search";
+
 // Task Safe functions with custom validation (re-exported from task-safe module)
 export {
   createTaskSafe,

@@ -5,6 +5,7 @@ import { db, tasks } from "@/db";
 import { eq, and, isNull } from "drizzle-orm";
 import { format, startOfDay } from "date-fns";
 import { requireAuth } from "@/lib/auth";
+import { coerceDuePrecision, normalizeDueAnchor, type DuePrecision } from "@/lib/due-utils";
 
 // Types for AI suggestions
 export interface ScheduleSuggestion {
@@ -147,10 +148,29 @@ export async function generateSmartSchedule(): Promise<ScheduleSuggestion[]> {
 }
 
 // Apply a suggestion (update task due date)
-export async function applyScheduleSuggestion(taskId: number, date: Date) {
+export async function applyScheduleSuggestion(
+    taskId: number,
+    date: Date,
+    precision?: DuePrecision | null
+) {
+    const user = await requireAuth();
+    const [task] = await db
+        .select({ dueDatePrecision: tasks.dueDatePrecision })
+        .from(tasks)
+        .where(and(eq(tasks.id, taskId), eq(tasks.userId, user.id)))
+        .limit(1);
+
+    if (!task) return;
+
+    const effectivePrecision = precision ?? task.dueDatePrecision ?? null;
+    const coercedPrecision = coerceDuePrecision(date, effectivePrecision);
+    const normalizedDate = coercedPrecision
+        ? normalizeDueAnchor(date, coercedPrecision, user.weekStartsOnMonday ?? false)
+        : date;
+
     await db.update(tasks)
-        .set({ dueDate: date })
-        .where(eq(tasks.id, taskId));
+        .set({ dueDate: normalizedDate, dueDatePrecision: coercedPrecision })
+        .where(and(eq(tasks.id, taskId), eq(tasks.userId, user.id)));
 }
 
 // Generate subtasks for a complex task

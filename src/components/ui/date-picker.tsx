@@ -17,9 +17,12 @@ import {
 interface DatePickerProps {
     date?: Date;
     setDate: (date?: Date) => void;
+    disabled?: React.ComponentProps<typeof Calendar>["disabled"];
+    fromDate?: Date;
+    toDate?: Date;
 }
 
-export function DatePicker({ date, setDate }: DatePickerProps) {
+export function DatePicker({ date, setDate, disabled, fromDate, toDate }: DatePickerProps) {
     const [open, setOpen] = React.useState(false)
     const [mounted, setMounted] = React.useState(false)
 
@@ -49,6 +52,9 @@ export function DatePicker({ date, setDate }: DatePickerProps) {
                         setDate(d)
                         setOpen(false)
                     }}
+                    disabled={disabled}
+                    fromDate={fromDate}
+                    toDate={toDate}
                     initialFocus
                 />
             </PopoverContent>

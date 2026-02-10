@@ -12,6 +12,7 @@ export type TaskType = {
     priority: "none" | "low" | "medium" | "high" | null;
     listId: number | null;
     dueDate: Date | null;
+    dueDatePrecision?: "day" | "week" | "month" | "year" | null;
     deadline: Date | null;
     isRecurring: boolean | null;
     recurringRule: string | null;
@@ -35,6 +36,7 @@ interface UseTaskFormProps {
     initialPriority?: "none" | "low" | "medium" | "high";
     initialEnergyLevel?: "high" | "medium" | "low";
     initialContext?: "computer" | "phone" | "errands" | "meeting" | "home" | "anywhere";
+    initialDueDatePrecision?: "day" | "week" | "month" | "year";
 }
 
 
@@ -48,7 +50,7 @@ interface UseTaskFormProps {
  * @param defaultDueDate - Default due date to select if creating a new task
  * @param onClose - Callback to close the dialog after successful submission
  */
-export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId, onClose, initialTitle, initialIcon, initialPriority, initialEnergyLevel, initialContext }: UseTaskFormProps) {
+export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId, onClose, initialTitle, initialIcon, initialPriority, initialEnergyLevel, initialContext, initialDueDatePrecision }: UseTaskFormProps) {
     const router = useRouter();
 
     const [title, setTitle] = useState(task?.title || initialTitle || "");
@@ -60,6 +62,9 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
         task
             ? (task.dueDate ? new Date(task.dueDate) : undefined)
             : (defaultDueDate ? new Date(defaultDueDate) : undefined)
+    );
+    const [dueDatePrecision, setDueDatePrecision] = useState<"day" | "week" | "month" | "year">(
+        task?.dueDatePrecision || initialDueDatePrecision || "day"
     );
     const [deadline, setDeadline] = useState<Date | undefined>(task?.deadline ? new Date(task.deadline) : undefined);
     const [selectedLabelIds, setSelectedLabelIds] = useState<number[]>(task?.labels?.map((l) => l.id) || defaultLabelIds || []);
@@ -125,6 +130,7 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
                 priority,
                 listId: listId === "inbox" ? null : parseInt(listId),
                 dueDate,
+                dueDatePrecision: dueDate ? dueDatePrecision : null,
                 deadline,
                 labelIds: selectedLabelIds,
                 isRecurring,
@@ -196,6 +202,7 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
         priority, setPriority,
         listId, setListId,
         dueDate, setDueDate,
+        dueDatePrecision, setDueDatePrecision,
         deadline, setDeadline,
         selectedLabelIds, setSelectedLabelIds,
         energyLevel, setEnergyLevel,

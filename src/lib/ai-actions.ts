@@ -2,16 +2,18 @@
 
 import { getGeminiClient, GEMINI_MODEL } from "@/lib/gemini";
 import { db, tasks } from "@/db";
-import { and, eq, lt } from "drizzle-orm";
+import { and, eq, lte } from "drizzle-orm";
 import { startOfDay, format } from "date-fns";
 import { requireAuth } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
+import { formatDuePeriod, isDueOverdue, normalizeDueAnchor, type DuePrecision } from "@/lib/due-utils";
 
 export interface RescheduleSuggestion {
     taskId: number;
     taskTitle: string;
     suggestedDate: string; // ISO date
     reason: string;
+    dueDatePrecision?: DuePrecision | null;
 }
 
 export interface ParsedVoiceCommand {
@@ -90,12 +92,30 @@ export async function rescheduleOverdueTasks(): Promise<RescheduleSuggestion[]> 
     try {
         const today = startOfDay(new Date());
 
-        // Fetch overdue tasks
-        const overdueTasks = await db.select().from(tasks).where(
-            and(
-                eq(tasks.userId, user.id),
-                lt(tasks.dueDate, today),
-                eq(tasks.isCompleted, false)
+        // Fetch overdue task candidates (period tasks are filtered in-memory)
+        const overdueCandidates = await db
+            .select({
+                id: tasks.id,
+                title: tasks.title,
+                priority: tasks.priority,
+                dueDate: tasks.dueDate,
+                dueDatePrecision: tasks.dueDatePrecision,
+            })
+            .from(tasks)
+            .where(
+                and(
+                    eq(tasks.userId, user.id),
+                    lte(tasks.dueDate, today),
+                    eq(tasks.isCompleted, false)
+                )
+            );
+
+        const overdueTasks = overdueCandidates.filter((task) =>
+            task.dueDate
+            && isDueOverdue(
+                { dueDate: task.dueDate, dueDatePrecision: task.dueDatePrecision ?? null },
+                today,
+                user.weekStartsOnMonday ?? false
             )
         );
 
@@ -105,7 +125,11 @@ export async function rescheduleOverdueTasks(): Promise<RescheduleSuggestion[]> 
             id: t.id,
             title: t.title,
             priority: t.priority,
-            originalDueDate: t.dueDate ? format(t.dueDate, "yyyy-MM-dd") : "unknown"
+            originalDueDate: t.dueDate ? format(t.dueDate, "yyyy-MM-dd") : "unknown",
+            dueDatePrecision: t.dueDatePrecision ?? "day",
+            duePeriodLabel: t.dueDate && t.dueDatePrecision && t.dueDatePrecision !== "day"
+                ? formatDuePeriod({ dueDate: t.dueDate, dueDatePrecision: t.dueDatePrecision as DuePrecision })
+                : undefined,
         }));
 
         const model = client.getGenerativeModel({
@@ -134,7 +158,22 @@ export async function rescheduleOverdueTasks(): Promise<RescheduleSuggestion[]> 
         const response = result.response;
         const textResponse = response.text();
 
-        return JSON.parse(textResponse);
+        const suggestions = JSON.parse(textResponse);
+
+        return suggestions.map((s: RescheduleSuggestion) => {
+            const task = overdueTasks.find(t => t.id === s.taskId);
+            const precision = task?.dueDatePrecision ?? null;
+            const suggested = new Date(s.suggestedDate);
+            const normalizedDate = precision && precision !== "day"
+                ? normalizeDueAnchor(suggested, precision as DuePrecision, user.weekStartsOnMonday ?? false)
+                : suggested;
+
+            return {
+                ...s,
+                suggestedDate: normalizedDate.toISOString(),
+                dueDatePrecision: precision,
+            };
+        });
 
     } catch (error) {
         console.error("Error rescheduling tasks:", error);

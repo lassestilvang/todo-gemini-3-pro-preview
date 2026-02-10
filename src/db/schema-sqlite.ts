@@ -68,6 +68,7 @@ export const tasks = sqliteTable("tasks", {
     icon: text("icon"),
     priority: text("priority", { enum: ["none", "low", "medium", "high"] }).default("none"),
     dueDate: integer("due_date", { mode: "timestamp" }),
+    dueDatePrecision: text("due_date_precision", { enum: ["day", "week", "month", "year"] }),
     isCompleted: integer("is_completed", { mode: "boolean" }).default(false),
     completedAt: integer("completed_at", { mode: "timestamp" }),
     isRecurring: integer("is_recurring", { mode: "boolean" }).default(false),

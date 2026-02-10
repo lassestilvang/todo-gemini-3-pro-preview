@@ -34,13 +34,14 @@ interface TaskDialogProps {
     initialPriority?: "none" | "low" | "medium" | "high";
     initialEnergyLevel?: "high" | "medium" | "low";
     initialContext?: "computer" | "phone" | "errands" | "meeting" | "home" | "anywhere";
+    initialDueDatePrecision?: "day" | "week" | "month" | "year";
 }
 
 /**
  * Dialog for creating or editing a task.
  * Refactored to use custom hooks for state and data management.
  */
-export function TaskDialog({ task, open, onOpenChange, trigger, defaultListId, defaultLabelIds, defaultDueDate, userId, initialTitle, initialPriority, initialEnergyLevel, initialContext }: TaskDialogProps) {
+export function TaskDialog({ task, open, onOpenChange, trigger, defaultListId, defaultLabelIds, defaultDueDate, userId, initialTitle, initialPriority, initialEnergyLevel, initialContext, initialDueDatePrecision }: TaskDialogProps) {
     const [internalOpen, setInternalOpen] = useState(false);
     const effectiveOpen = open !== undefined ? open : internalOpen;
     const setEffectiveOpen = onOpenChange || setInternalOpen;
@@ -62,6 +63,7 @@ export function TaskDialog({ task, open, onOpenChange, trigger, defaultListId, d
                         initialPriority={initialPriority}
                         initialEnergyLevel={initialEnergyLevel}
                         initialContext={initialContext}
+                        initialDueDatePrecision={initialDueDatePrecision}
                         userId={userId}
                         onClose={() => setEffectiveOpen(false)}
                     />
@@ -71,7 +73,7 @@ export function TaskDialog({ task, open, onOpenChange, trigger, defaultListId, d
     );
 }
 
-function TaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId, onClose, initialTitle, initialPriority, initialEnergyLevel, initialContext }: {
+function TaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId, onClose, initialTitle, initialPriority, initialEnergyLevel, initialContext, initialDueDatePrecision }: {
     task?: TaskType,
     defaultListId?: number,
     defaultLabelIds?: number[],
@@ -82,6 +84,7 @@ function TaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId
     initialPriority?: "none" | "low" | "medium" | "high";
     initialEnergyLevel?: "high" | "medium" | "low";
     initialContext?: "computer" | "phone" | "errands" | "meeting" | "home" | "anywhere";
+    initialDueDatePrecision?: "day" | "week" | "month" | "year";
 }) {
     // Form State
     const {
@@ -91,6 +94,7 @@ function TaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId
         priority, setPriority,
         listId, setListId,
         dueDate, setDueDate,
+        dueDatePrecision, setDueDatePrecision,
         deadline, setDeadline,
         selectedLabelIds,
         energyLevel, setEnergyLevel,
@@ -103,7 +107,7 @@ function TaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId
         handleDelete,
         toggleLabel,
         isEdit
-    } = useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId, onClose, initialTitle, initialPriority, initialEnergyLevel, initialContext });
+    } = useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId, onClose, initialTitle, initialPriority, initialEnergyLevel, initialContext, initialDueDatePrecision });
 
     // Data State (Subtasks, Reminders, Logs, etc.)
     const {
@@ -145,6 +149,7 @@ function TaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId
                         energyLevel={energyLevel} setEnergyLevel={setEnergyLevel}
                         context={context} setContext={setContext}
                         dueDate={dueDate} setDueDate={setDueDate}
+                        dueDatePrecision={dueDatePrecision} setDueDatePrecision={setDueDatePrecision}
                         deadline={deadline} setDeadline={setDeadline}
                         isRecurring={isRecurring} setIsRecurring={setIsRecurring}
                         recurringRule={recurringRule} setRecurringRule={setRecurringRule}

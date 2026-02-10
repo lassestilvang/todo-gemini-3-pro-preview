@@ -20,13 +20,17 @@ import { TaskDialog } from "./TaskDialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatFriendlyDate } from "@/lib/time-utils";
 import { useSync } from "@/components/providers/sync-provider";
+import { useUser } from "@/components/providers/UserProvider";
+import { formatDuePeriod } from "@/lib/due-utils";
 
 export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelIds }: { listId?: number, defaultDueDate?: Date | string, userId: string, defaultLabelIds?: number[] }) {
     const { dispatch } = useSync();
+    const { weekStartsOnMonday } = useUser();
     const [title, setTitle] = useState("");
     const [dueDate, setDueDate] = useState<Date | undefined>(
         defaultDueDate ? new Date(defaultDueDate) : undefined
     );
+    const [dueDatePrecision, setDueDatePrecision] = useState<"day" | "week" | "month" | "year">("day");
     const [dueDateSource, setDueDateSource] = useState<"default" | "nlp" | "manual" | "none">(
         defaultDueDate ? "default" : "none"
     );
@@ -49,17 +53,17 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
     // Parse natural language input - intentionally only depends on title
     useEffect(() => {
         if (title.trim()) {
-            const parsed = parseNaturalLanguage(title);
+            const parsed = parseNaturalLanguage(title, { weekStartsOnMonday: weekStartsOnMonday ?? false });
             if (parsed.priority && priority === "none") setPriority(parsed.priority);
             if (parsed.dueDate && dueDateSource !== "manual") {
                 setDueDate(parsed.dueDate);
+                setDueDatePrecision(parsed.dueDatePrecision ?? "day");
                 setDueDateSource("nlp");
             }
             if (parsed.energyLevel && !energyLevel) setEnergyLevel(parsed.energyLevel);
             if (parsed.context && !context) setContext(parsed.context);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [title, dueDateSource]);
+    }, [title, dueDateSource, priority, energyLevel, context, weekStartsOnMonday]);
 
     const handleAiEnhance = async () => {
         if (!title.trim()) return;
@@ -84,7 +88,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
         if (!title.trim()) return;
 
         // Parse again for final submission to get clean title
-        const parsed = parseNaturalLanguage(title);
+        const parsed = parseNaturalLanguage(title, { weekStartsOnMonday: weekStartsOnMonday ?? false });
 
         if (!userId) {
             toast.error("Unable to create task: missing user ID");
@@ -101,6 +105,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                 energyLevel: energyLevel || parsed.energyLevel || null,
                 context: context || parsed.context || null,
                 dueDate: dueDate || parsed.dueDate || null,
+                dueDatePrecision: dueDate ? dueDatePrecision : (parsed.dueDatePrecision ?? null),
                 labelIds: defaultLabelIds,
                 icon: icon || null,
             });
@@ -108,6 +113,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
             setTitle("");
             setDueDate(defaultDueDate ? new Date(defaultDueDate) : undefined);
             setDueDateSource(defaultDueDate ? "default" : "none");
+            setDueDatePrecision("day");
             setPriority("none");
             setEnergyLevel(undefined);
             setContext(undefined);
@@ -187,7 +193,9 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                             {dueDate && (
                                 <Badge variant="outline" className="text-xs gap-1">
                                     <Calendar className="h-3 w-3" />
-                                    {format(dueDate, "MMM d")}
+                                    {dueDatePrecision === "day"
+                                        ? format(dueDate, "MMM d")
+                                        : formatDuePeriod({ dueDate, dueDatePrecision })}
                                 </Badge>
                             )}
                             {energyLevel && (

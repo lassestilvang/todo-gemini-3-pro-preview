@@ -12,6 +12,7 @@ export interface Task {
     description: string | null;
     icon?: string | null;
     priority: "none" | "low" | "medium" | "high" | null;
+    dueDatePrecision?: "day" | "week" | "month" | "year" | null;
     dueDate: Date | null;
     deadline: Date | null;
     isCompleted: boolean | null;

@@ -8,6 +8,7 @@ import {
     DialogContent,
     DialogFooter,
     DialogHeader,
+    DialogDescription,
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
@@ -110,6 +111,9 @@ export function ManageListDialog({ list, open, onOpenChange, trigger, userId }: 
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                     <DialogTitle>{list ? "Edit List" : "New List"}</DialogTitle>
+                    <DialogDescription>
+                        {list ? "Update list details and organization settings." : "Create a new list to organize your tasks."}
+                    </DialogDescription>
                 </DialogHeader>
                 <ListForm
                     key={formKey}

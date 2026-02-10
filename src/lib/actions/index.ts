@@ -19,6 +19,7 @@ export * from "./view-settings";
 export * from "./templates";
 export * from "./gamification";
 export * from "./tasks";
+export * from "./search";
 
 // Re-export Safe versions for backward compatibility
 // These are aliases to the domain module functions which already use withErrorHandling

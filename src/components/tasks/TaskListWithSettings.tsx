@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { ActionType, actionRegistry } from "@/lib/sync/registry";
 import { Inbox, Calendar, CheckCircle, Layers, ClipboardList, ChevronDown, CalendarClock } from "lucide-react";
+import { getDueRange, isDueOverdue, isInCurrentPeriod, type DuePrecision } from "@/lib/due-utils";
+import { useUser } from "@/components/providers/UserProvider";
 
 const TaskDialog = dynamic(() => import("./TaskDialog").then(mod => mod.TaskDialog), {
     ssr: false,
@@ -26,6 +28,15 @@ const TaskCalendarLayout = dynamic(() => import("./calendar/TaskCalendarLayout")
     ssr: false,
     loading: () => <TaskListSkeleton variant="calendar" compact />,
 });
+
+type PeriodPrecision = Exclude<DuePrecision, "day">;
+
+const PERIOD_SECTION_ORDER: PeriodPrecision[] = ["week", "month", "year"];
+const PERIOD_SECTION_LABELS: Record<PeriodPrecision, string> = {
+    week: "This Week",
+    month: "This Month",
+    year: "This Year",
+};
 
 interface TaskListWithSettingsProps {
     tasks?: Task[]; // Make optional as we might not fetch it
@@ -168,13 +179,18 @@ function groupTasks(tasks: Task[], groupBy: ViewSettings["groupBy"]): Map<string
         switch (groupBy) {
             case "dueDate":
                 if (task.dueDate) {
-                    // Perf: avoid date-fns format per task; build ISO date key directly.
-                    // Also reuse Date instances when already hydrated to skip extra allocations.
-                    const date = task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate);
-                    const year = date.getFullYear();
-                    const month = String(date.getMonth() + 1).padStart(2, "0");
-                    const day = String(date.getDate()).padStart(2, "0");
-                    key = `${year}-${month}-${day}`;
+                    if (task.dueDatePrecision && task.dueDatePrecision !== "day") {
+                        const precision = task.dueDatePrecision as DuePrecision;
+                        key = `${precision}:${task.dueDate.toISOString()}`;
+                    } else {
+                        // Perf: avoid date-fns format per task; build ISO date key directly.
+                        // Also reuse Date instances when already hydrated to skip extra allocations.
+                        const date = task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate);
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, "0");
+                        const day = String(date.getDate()).padStart(2, "0");
+                        key = `${year}-${month}-${day}`;
+                    }
                 } else {
                     key = "No Date";
                 }
@@ -366,6 +382,15 @@ export function TaskListWithSettings({
     const [mounted, setMounted] = useState(true);
     const [activeId, setActiveId] = useState<number | null>(null);
     const [overdueCollapsed, setOverdueCollapsed] = useState(false);
+    const [periodCollapsed, setPeriodCollapsed] = useState<Record<PeriodPrecision, boolean>>({
+        week: false,
+        month: false,
+        year: false,
+    });
+
+    const togglePeriodSection = useCallback((precision: PeriodPrecision) => {
+        setPeriodCollapsed(prev => ({ ...prev, [precision]: !prev[precision] }));
+    }, []);
 
     const { dispatch } = useSync();
     useEffect(() => {
@@ -392,6 +417,7 @@ export function TaskListWithSettings({
     const allStoreTasks = useMemo(() => Object.values(storeTasksFn), [storeTasksFn]);
 
     // Derive display tasks using Client-Side Logic
+    const { weekStartsOnMonday } = useUser();
     const derivedTasks = useMemo(() => {
         // Perf: single-pass filter avoids multiple O(n) passes and repeated Date parsing.
         // For 1k tasks, this cuts 3-4 full-array scans and reduces Date allocations per render.
@@ -402,6 +428,9 @@ export function TaskListWithSettings({
         const todayEnd = endOfDay(now);
         const todayStartTime = todayStart.getTime();
         const todayEndTime = todayEnd.getTime();
+        const weekAnchor = startOfDay(new Date(todayStart.getFullYear(), todayStart.getMonth(), todayStart.getDate() - (weekStartsOnMonday ? 1 : 0)));
+        const monthAnchor = startOfDay(new Date(todayStart.getFullYear(), todayStart.getMonth(), 1));
+        const yearAnchor = startOfDay(new Date(todayStart.getFullYear(), 0, 1));
 
         // 0. Initial Server Filter Override (if tasks prop exists and we didn't specify filterType)
         // If we still use server-side fetching for some routes, we might rely on prop IDs.
@@ -437,19 +466,36 @@ export function TaskListWithSettings({
                 if (task.listId !== null) continue;
             } else if (filterType === "today") {
                 if (!task.dueDate) continue;
-                const dueTime = task.dueDate.getTime();
-                if (dueTime > todayEndTime) continue;
-                if (dueTime < todayStartTime && task.isCompleted) continue;
+                const precision = task.dueDatePrecision ?? "day";
+                if (precision === "day") {
+                    const dueTime = task.dueDate.getTime();
+                    if (dueTime > todayEndTime) continue;
+                    if (dueTime < todayStartTime && task.isCompleted) continue;
+                } else {
+                    const inPeriod = getDueRange(task.dueDate, precision as DuePrecision, weekStartsOnMonday ?? false);
+                    const inRange = todayStart.getTime() >= inPeriod.start.getTime()
+                        && todayStart.getTime() < inPeriod.endExclusive.getTime();
+                    if (!inRange) continue;
+                }
             } else if (filterType === "upcoming") {
                 if (!task.dueDate) continue;
-                if (task.dueDate.getTime() <= nowTime) continue;
+                const precision = task.dueDatePrecision ?? "day";
+                if (precision === "day") {
+                    if (task.dueDate.getTime() <= nowTime) continue;
+                } else if (precision === "week") {
+                    if (task.dueDate.getTime() <= weekAnchor.getTime()) continue;
+                } else if (precision === "month") {
+                    if (task.dueDate.getTime() <= monthAnchor.getTime()) continue;
+                } else if (precision === "year") {
+                    if (task.dueDate.getTime() <= yearAnchor.getTime()) continue;
+                }
             }
 
             filtered.push(task);
         }
 
         return filtered;
-    }, [allStoreTasks, listId, labelId, filterType, tasks]);
+    }, [allStoreTasks, listId, labelId, filterType, tasks, weekStartsOnMonday]);
 
     // Zustand store already has optimistic updates applied via SyncProvider.dispatch()
     // No need for a separate optimistic layer
@@ -496,30 +542,79 @@ export function TaskListWithSettings({
         return applyViewSettings(displayTasks, settings);
     }, [displayTasks, settings]);
 
+    const { listTasks, periodSections } = useMemo(() => {
+        if (filterType !== "today" || settings.layout !== "list") {
+            return { listTasks: processedTasks, periodSections: [] as Array<{ precision: PeriodPrecision; label: string; tasks: Task[] }> };
+        }
+
+        const sections = new Map<PeriodPrecision, Task[]>();
+        const listTasks: Task[] = [];
+        const today = new Date();
+
+        for (const task of processedTasks) {
+            const precision = (task.dueDatePrecision ?? "day") as DuePrecision;
+            if (precision === "day" || !task.dueDate) {
+                listTasks.push(task);
+                continue;
+            }
+
+            const inPeriod = isInCurrentPeriod(
+                { dueDate: task.dueDate, dueDatePrecision: precision },
+                today,
+                weekStartsOnMonday ?? false
+            );
+
+            if (!inPeriod) {
+                listTasks.push(task);
+                continue;
+            }
+
+            const key = precision as PeriodPrecision;
+            const existing = sections.get(key) ?? [];
+            existing.push(task);
+            sections.set(key, existing);
+        }
+
+        const periodSections = PERIOD_SECTION_ORDER
+            .map((precision) => {
+                const tasks = sections.get(precision);
+                if (!tasks || tasks.length === 0) return null;
+                return { precision, label: PERIOD_SECTION_LABELS[precision], tasks };
+            })
+            .filter(Boolean) as Array<{ precision: PeriodPrecision; label: string; tasks: Task[] }>;
+
+        return { listTasks, periodSections };
+    }, [processedTasks, filterType, settings.layout, weekStartsOnMonday]);
+
 
     const { overdueTasks, activeTasks, completedTasks } = useMemo(() => {
         const todayStart = startOfDay(new Date());
-        const todayStartTime = todayStart.getTime();
 
         const overdue: Task[] = [];
         const active: Task[] = [];
         const completed: Task[] = [];
 
-        for (const task of processedTasks) {
+        for (const task of listTasks) {
             if (task.isCompleted) {
                 if (settings.showCompleted) completed.push(task);
-            } else if (
-                task.dueDate &&
-                (task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate)).getTime() < todayStartTime
-            ) {
-                overdue.push(task);
+            } else if (task.dueDate) {
+                const isOverdue = isDueOverdue(
+                    { dueDate: task.dueDate, dueDatePrecision: task.dueDatePrecision ?? null },
+                    todayStart,
+                    weekStartsOnMonday ?? false
+                );
+                if (isOverdue) {
+                    overdue.push(task);
+                } else {
+                    active.push(task);
+                }
             } else {
                 active.push(task);
             }
         }
 
         return { overdueTasks: overdue, activeTasks: active, completedTasks: completed };
-    }, [processedTasks, settings.showCompleted]);
+    }, [listTasks, settings.showCompleted, weekStartsOnMonday]);
 
     const nonOverdueTasks = useMemo(() => {
         return [...activeTasks, ...(settings.showCompleted ? completedTasks : [])];
@@ -580,16 +675,22 @@ export function TaskListWithSettings({
                 formatted.set(groupName, groupName);
                 continue;
             }
-            const date = new Date(groupName);
-            if (isToday(date)) {
-                formatted.set(groupName, "Today");
-            } else if (isTomorrow(date)) {
-                formatted.set(groupName, "Tomorrow");
+            if (groupName.includes(":")) {
+                const [precision, iso] = groupName.split(":");
+                const date = new Date(iso);
+                formatted.set(groupName, format(date, precision === "month" ? "LLLL yyyy" : precision === "year" ? "yyyy" : "'Week of' MMM d"));
             } else {
-                formatted.set(
-                    groupName,
-                    format(date, isThisYear(date) ? "EEEE, MMM do" : "EEEE, MMM do, yyyy")
-                );
+                const date = new Date(groupName);
+                if (isToday(date)) {
+                    formatted.set(groupName, "Today");
+                } else if (isTomorrow(date)) {
+                    formatted.set(groupName, "Tomorrow");
+                } else {
+                    formatted.set(
+                        groupName,
+                        format(date, isThisYear(date) ? "EEEE, MMM do" : "EEEE, MMM do, yyyy")
+                    );
+                }
             }
         }
 
@@ -725,6 +826,10 @@ export function TaskListWithSettings({
         return null;
     }, [settings]);
 
+    const showEmptyState = settings.layout === "list"
+        ? listTasks.length === 0 && periodSections.length === 0
+        : processedTasks.length === 0;
+
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -746,7 +851,7 @@ export function TaskListWithSettings({
 
             {(!mounted || !isInitialized) ? (
                 <TaskListSkeleton variant={settings.layout} compact />
-            ) : processedTasks.length === 0 ? (
+            ) : showEmptyState ? (
                 <div
                     className="flex flex-col items-center justify-center h-[300px] text-foreground border rounded-lg border-dashed bg-muted/5"
                     role="status"
@@ -835,7 +940,7 @@ export function TaskListWithSettings({
                                         e.stopPropagation();
                                         const today = new Date();
                                         for (const task of overdueTasks) {
-                                            dispatch("updateTask", task.id, userId || "", { dueDate: today });
+                                            dispatch("updateTask", task.id, userId || "", { dueDate: today, dueDatePrecision: null });
                                         }
                                     }}
                                 >
@@ -1038,6 +1143,59 @@ export function TaskListWithSettings({
                                 })
                             )}
                         </>
+                    )}
+
+                    {periodSections.length > 0 && (
+                        <div className="space-y-3 pt-2">
+                            {listTasks.length === 0 && (
+                                <div className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">
+                                    No tasks with a specific date today. Period tasks are below.
+                                </div>
+                            )}
+                            {periodSections.map((section) => {
+                                const collapsed = periodCollapsed[section.precision];
+                                const sectionId = `period-${section.precision}-tasks`;
+                                return (
+                                    <div key={section.precision} className="rounded-lg border bg-muted/5">
+                                        <button
+                                            type="button"
+                                            className="flex w-full items-center justify-between px-4 py-3"
+                                            aria-expanded={!collapsed}
+                                            aria-controls={sectionId}
+                                            onClick={() => togglePeriodSection(section.precision)}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <ChevronDown
+                                                    className={cn(
+                                                        "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                                                        collapsed && "-rotate-90"
+                                                    )}
+                                                />
+                                                <span className="text-sm font-semibold">{section.label}</span>
+                                                <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full font-medium">
+                                                    {section.tasks.length}
+                                                </span>
+                                            </div>
+                                        </button>
+                                        {!collapsed && (
+                                            <div id={sectionId} className="px-4 pb-3 space-y-2">
+                                                {section.tasks.map((task) => (
+                                                    <TaskItem
+                                                        key={task.id}
+                                                        task={task}
+                                                        showListInfo={!listId}
+                                                        userId={userId}
+                                                        disableAnimations={true}
+                                                        dispatch={dispatch}
+                                                        onEdit={handleEdit}
+                                                    />
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
                     )}
                 </div>
             )}

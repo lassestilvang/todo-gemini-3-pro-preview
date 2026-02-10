@@ -15,6 +15,7 @@ type TaskType = {
     priority: "none" | "low" | "medium" | "high" | null;
     listId: number | null;
     dueDate: Date | null;
+    dueDatePrecision?: "day" | "week" | "month" | "year" | null;
     deadline: Date | null;
     isRecurring: boolean | null;
     recurringRule: string | null;
