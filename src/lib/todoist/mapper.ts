@@ -47,9 +47,20 @@ export function mapTodoistTaskToLocal(
 
 export function mapLocalTaskToTodoist(
     task: LocalTaskWithLabels,
-    mappings: TodoistMappingState
+    mappings: TodoistMappingState,
+    options?: {
+        labelIds?: number[];
+        labelIdToExternal?: Map<number, string>;
+    }
 ): TodoistCreateTaskPayload {
     const mapping = applyListLabelMapping(task.listId ?? null, mappings);
+    const labelIds = options?.labelIds ?? [];
+    const labelMap = options?.labelIdToExternal;
+    const mappedLabels = labelMap
+        ? labelIds
+              .map((labelId) => labelMap.get(labelId) ?? null)
+              .filter((labelId): labelId is string => Boolean(labelId))
+        : undefined;
     const iso = task.dueDate ? task.dueDate.toISOString() : null;
     const hasTime = iso ? !iso.endsWith("T00:00:00.000Z") : false;
     const dueDate = task.dueDate ? task.dueDate.toISOString().split("T")[0] : undefined;
@@ -58,7 +69,7 @@ export function mapLocalTaskToTodoist(
         content: task.title,
         description: task.description ?? undefined,
         project_id: mapping.projectId,
-        labels: mapping.labelIds,
+        labels: mappedLabels ?? mapping.labelIds,
         priority: toTodoistPriority(task.priority ?? "none"),
         due_date: hasTime ? undefined : dueDate,
         due_datetime: hasTime ? iso ?? undefined : undefined,

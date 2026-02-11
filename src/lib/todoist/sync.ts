@@ -163,6 +163,29 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
             mappingState,
             taskMappings: existingTaskMap,
             conflictKeys,
+            localTaskLabelMap,
+            localLabelToExternal,
+        });
+
+        await updateMappedTasks({
+            userId,
+            client,
+            taskMappings,
+            localTaskMap,
+            mappingState,
+            conflictKeys,
+            localTaskLabelMap,
+            localLabelToExternal,
+        });
+
+        await updateRemoteTasks({
+            userId,
+            client,
+            taskMappings,
+            localTaskMap,
+            mappingState,
+            conflictKeys,
+            localLabelToExternal,
         });
 
         await db
@@ -301,6 +324,118 @@ async function createTodoistTasks(params: {
             await db.insert(taskLabels).values(
                 labelIds.map((labelId) => ({
                     taskId: createdTask.id,
+                    labelId,
+                }))
+            );
+        }
+    }
+}
+
+async function updateMappedTasks(params: {
+    userId: string;
+    client: ReturnType<typeof createTodoistClient>;
+    taskMappings: typeof externalEntityMap.$inferSelect[];
+    localTaskMap: Map<number, typeof tasks.$inferSelect>;
+    mappingState: { projects: { projectId: string; listId: number | null }[]; labels: { labelId: string; listId: number | null }[] };
+    conflictKeys: Set<string>;
+    localTaskLabelMap: Map<number, number[]>;
+    localLabelToExternal: Map<number | null, string>;
+}) {
+    const {
+        userId,
+        client,
+        taskMappings,
+        localTaskMap,
+        mappingState,
+        conflictKeys,
+        localTaskLabelMap,
+        localLabelToExternal,
+    } = params;
+    const mappedTasks = taskMappings.filter((mapping) => mapping.localId && mapping.externalId);
+
+    for (const mapping of mappedTasks) {
+        const localTask = localTaskMap.get(mapping.localId as number);
+        if (!localTask) {
+            continue;
+        }
+
+        const conflictKey = buildConflictKey("task", localTask.id, mapping.externalId);
+        if (conflictKeys.has(conflictKey)) {
+            continue;
+        }
+
+        const labelIds = localTaskLabelMap.get(localTask.id) ?? [];
+        const payload = mapLocalTaskToTodoist(localTask, mappingState, {
+            labelIds,
+            labelIdToExternal: localLabelToExternal,
+        });
+        await client.updateTask(mapping.externalId, payload);
+        if (localTask.isCompleted) {
+            await client.closeTask(mapping.externalId);
+        } else {
+            await client.reopenTask(mapping.externalId);
+        }
+    }
+}
+
+async function updateRemoteTasks(params: {
+    userId: string;
+    client: ReturnType<typeof createTodoistClient>;
+    taskMappings: typeof externalEntityMap.$inferSelect[];
+    localTaskMap: Map<number, typeof tasks.$inferSelect>;
+    mappingState: { projects: { projectId: string; listId: number | null }[]; labels: { labelId: string; listId: number | null }[] };
+    conflictKeys: Set<string>;
+    localLabelToExternal: Map<number | null, string>;
+}) {
+    const { userId, client, taskMappings, localTaskMap, mappingState, conflictKeys, localLabelToExternal } = params;
+    const remoteTasks = (await client.getTasks()) as TodoistTask[];
+    const taskMap = new Map(remoteTasks.map((task) => [task.id, task]));
+
+    for (const mapping of taskMappings) {
+        if (!mapping.localId) {
+            continue;
+        }
+
+        const localTask = localTaskMap.get(mapping.localId);
+        const remoteTask = taskMap.get(mapping.externalId);
+        if (!localTask || !remoteTask) {
+            continue;
+        }
+
+        const conflictKey = buildConflictKey("task", localTask.id, mapping.externalId);
+        if (conflictKeys.has(conflictKey)) {
+            continue;
+        }
+
+        const localPayload = mapTodoistTaskToLocal(remoteTask, mappingState);
+        const resolvedListId = localPayload.listId ?? localTask.listId ?? null;
+        const externalToLocalLabel = new Map<string, number>();
+        for (const [localId, externalId] of localLabelToExternal.entries()) {
+            if (localId) {
+                externalToLocalLabel.set(externalId, localId);
+            }
+        }
+        const labelIds = (remoteTask.labels ?? [])
+            .map((labelId) => externalToLocalLabel.get(labelId) ?? null)
+            .filter((id): id is number => Boolean(id));
+        await db
+            .update(tasks)
+            .set({
+                title: localPayload.title ?? localTask.title,
+                description: localPayload.description ?? localTask.description,
+                dueDate: localPayload.dueDate ?? localTask.dueDate,
+                dueDatePrecision: localPayload.dueDatePrecision ?? localTask.dueDatePrecision,
+                isCompleted: localPayload.isCompleted ?? localTask.isCompleted,
+                completedAt: localPayload.isCompleted ? new Date() : null,
+                listId: resolvedListId,
+            })
+            .where(and(eq(tasks.id, localTask.id), eq(tasks.userId, userId)));
+
+        if (labelIds.length > 0) {
+            await db.delete(taskLabels).where(eq(taskLabels.taskId, localTask.id));
+            await db.insert(taskLabels).values(
+                labelIds.map((labelId) => ({
+                    taskId: localTask.id,
                     labelId,
                 }))
             );
@@ -472,8 +607,10 @@ async function pushLocalTasks(params: {
     mappingState: { projects: { projectId: string; listId: number | null }[]; labels: { labelId: string; listId: number | null }[] };
     taskMappings: Map<string, number | null>;
     conflictKeys: Set<string>;
+    localTaskLabelMap: Map<number, number[]>;
+    localLabelToExternal: Map<number | null, string>;
 }) {
-    const { userId, client, mappingState, taskMappings, conflictKeys } = params;
+    const { userId, client, mappingState, taskMappings, conflictKeys, localTaskLabelMap, localLabelToExternal } = params;
     const localTasks = await db.select().from(tasks).where(eq(tasks.userId, userId));
     const localMapping = new Map<number, string>();
 
@@ -493,6 +630,8 @@ async function pushLocalTasks(params: {
         client,
         userId,
         conflictKeys,
+        localTaskLabelMap,
+        localLabelToExternal,
     });
 
     await createLocalTasksInTodoist({
@@ -502,6 +641,8 @@ async function pushLocalTasks(params: {
         client,
         userId,
         conflictKeys,
+        localTaskLabelMap,
+        localLabelToExternal,
     });
 }
 
@@ -527,8 +668,19 @@ async function createLocalTasksInTodoist(params: {
     client: ReturnType<typeof createTodoistClient>;
     userId: string;
     conflictKeys: Set<string>;
+    localTaskLabelMap: Map<number, number[]>;
+    localLabelToExternal: Map<number | null, string>;
 }) {
-    const { tasks: localTasks, mappingState, localMapping, client, userId, conflictKeys } = params;
+    const {
+        tasks: localTasks,
+        mappingState,
+        localMapping,
+        client,
+        userId,
+        conflictKeys,
+        localTaskLabelMap,
+        localLabelToExternal,
+    } = params;
 
     for (const task of localTasks) {
         if (localMapping.has(task.id)) {
@@ -540,7 +692,11 @@ async function createLocalTasksInTodoist(params: {
             continue;
         }
 
-        const payload = mapLocalTaskToTodoist(task, mappingState);
+        const labelIds = localTaskLabelMap.get(task.id) ?? [];
+        const payload = mapLocalTaskToTodoist(task, mappingState, {
+            labelIds,
+            labelIdToExternal: localLabelToExternal,
+        });
         if (task.parentId) {
             const parentExternalId = localMapping.get(task.parentId);
             if (parentExternalId) {
