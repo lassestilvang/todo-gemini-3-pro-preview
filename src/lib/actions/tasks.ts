@@ -188,8 +188,10 @@ export async function getTasks(
   const taskIds = tasksResult.map((t) => t.id);
   if (taskIds.length === 0) return [];
 
-  const [allLabels, taskLabelsResult, subtasksResult, blockedCountsResult] = await Promise.all([
-    getLabels(userId),
+  // Fetch labels separately to avoid potential SQLite concurrency issues in tests
+  const allLabels = await getLabels(userId);
+
+  const [taskLabelsResult, subtasksResult, blockedCountsResult] = await Promise.all([
     db
       .select({
         taskId: taskLabels.taskId,
