@@ -7,9 +7,9 @@ import {
   getAuthBypassSecret,
   getProdBypassUserConfig,
   isDevBypassEnabled,
-  normalizeIp,
   signAuthBypassPayload,
 } from '@/lib/auth-bypass';
+import { getClientIp } from '@/lib/ip-utils';
 
 function testModeMiddleware(request: NextRequest) {
   const testSession = request.cookies.get('wos-session-test');
@@ -53,13 +53,6 @@ const isE2ETestMode =
   process.env.E2E_TEST_MODE === "true" ||
   process.env.NEXT_PUBLIC_E2E_TEST_MODE === "true";
 
-function getRequestIp(request: NextRequest): string | null {
-  const xff = request.headers.get('x-forwarded-for');
-  const first = xff?.split(',')[0]?.trim();
-  const realIp = request.headers.get('x-real-ip');
-  return normalizeIp(first ?? realIp ?? null);
-}
-
 async function maybeBypassAuth(request: NextRequest): Promise<NextResponse | null> {
   if (isE2ETestMode) {
     return null;
@@ -76,7 +69,7 @@ async function maybeBypassAuth(request: NextRequest): Promise<NextResponse | nul
     return null;
   }
 
-  const clientIp = getRequestIp(request);
+  const clientIp = getClientIp(request.headers);
   if (!clientIp || !allowlist.includes(clientIp)) {
     return null;
   }
