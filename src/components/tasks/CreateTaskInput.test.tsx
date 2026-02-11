@@ -138,4 +138,27 @@ describe("CreateTaskInput", () => {
             expect(screen.getByText("!high")).toBeDefined();
         });
     });
+
+    it("should append syntax when badge is clicked", async () => {
+        const user = userEvent.setup();
+        render(<CreateTaskInput userId="test_user_123" />);
+        const input = screen.getByPlaceholderText(/Add a task/i);
+
+        // Type something
+        await user.click(input);
+        await user.type(input, "Buy milk");
+        expect((input as HTMLInputElement).value).toBe("Buy milk");
+
+        // Open syntax guide
+        const guideButton = await screen.findByLabelText("Smart syntax guide");
+        await user.click(guideButton);
+
+        // Find !high badge and click it
+        // We use findByText because the popover might animate or need a tick
+        const highBadge = await screen.findByText("!high");
+        await user.click(highBadge);
+
+        // Expect input to have appended text with a trailing space
+        expect((input as HTMLInputElement).value).toBe("Buy milk !high ");
+    });
 });
