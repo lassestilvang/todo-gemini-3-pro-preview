@@ -4,14 +4,16 @@
 
 - Snooze? Eller er det bare "This week"?
 - Som Hey/Timestripe?
-- Timeline view?
+- Timeline view? Har full calendar det?
 - blacksmith/depot?
 
 ## 🚨 High Priority (Bugs & Core Issues)
 
 ## 🚀 Features & Enhancements
 
-- [ ] **[Feature] Todoist Sync**: Add support for syncing tasks with Todoist. https://developer.todoist.com/api/v1/
+- [-] **[Feature] Todoist Sync**: Add support for syncing tasks with Todoist. It should be 2-way sync, with the limitation of a maximum of 5 Todoist Projects (Lists). So for additional lists in this app, they should be synced to labels in Todoist. https://developer.todoist.com/api/v1/
+- [ ] **[Feature] Google Tasks Sync**: Add support for syncing tasks with Google Tasks. https://developers.google.com/workspace/tasks/reference/rest
+- [ ] **[Feature] Google Calendar Sync**: Sync events from Google Calendar to the calendar view - not as tasks but as events. https://developers.google.com/workspace/calendar/api/guides/overview
 - [ ] **[Feature] Calendar Version 4**: New page: /calendar4 and add it to the sidebar. Use "Full Calendar v7". It should support drag and drop of tasks to reschedule them. It should support resizing to change the duration of a task. It should also support multiple lists/calendars. It should be possible to create a new task by clicking on a date in the calendar. It should support multiple views (month, week, day). The installation guide is here: https://raw.githubusercontent.com/fullcalendar/fullcalendar-docs/refs/heads/v7/INSTALL-GUIDE.md
   - **Support for weekly/monthly/yearly tasks**: Display like HEY.com
 - [ ] **[Feature] AI-Powered Task Suggestions**: Leverage Gemini to suggest next tasks based on user habits and patterns.
@@ -28,15 +30,12 @@
   - **Combined View**: Display all favorited items in a new "Favorites" section at the top of the sidebar.
   - **Reordering**: Allow manual reordering within the Favorites section.
   - **UX**: This is especially helpful for users with many lists and labels, providing a way to pin the most important ones.
-- [ ] **[Feature] Slim Sidebar**: Add a slim version of the sidebar that only shows the icons.
-- [ ] **[Feature] Sidebar Toggle**: Add a toggle to the sidebar to toggle between slim, normal and hidden sidebar. When hidden we should have a small icon in the top left corner to toggle it back.
 - [ ] **[Infra] Privacy-Friendly Analytics**: Connect WebVitals/page-events to a provider (Plausible/PostHog) with opt-out.
 - [ ] **[Infra] Real-User Monitoring (RUM) Dashboard**: Dashboard for Web Vitals metrics.
 - [ ] **[Infra] Feature-Flag System**: Simple flag mechanism to toggle experimental features.
 
 ## 🎨 UI/UX Polish
 
-- [ ] **[UX] Sidebar Resize**: Make the sidebar resizable.
 - [ ] **[UX] Keyboard Shortcuts**: Add keyboard shortcuts for common actions.
 - [ ] **[UX] WorkOS User Profile Link**: Add a link to the WorkOS user profile in the settings page. It should open the user profile in a new tab - or even better, open the WorkOS user profile in a modal dialog if possible. Investigate their documentation to see if this is possible.
 
@@ -58,6 +57,9 @@
 
 ## ✅ Completed
 
+- [x] **[Feature] Slim Sidebar**: Add a slim version of the sidebar that only shows the icons.
+- [x] **[Feature] Sidebar Toggle**: Add a toggle to the sidebar to toggle between slim, normal and hidden sidebar. When hidden we should have a small icon in the top left corner to toggle it back.
+- [x] **[UX] Sidebar Resize**: Make the sidebar resizable.
 - [x] **[Feature] Weekly/Monthly/Yearly Tasks**: Figure out a way to let the user schedule tasks for a specific week/month/year - not a specific date.
 - [x] **[Feature] Sync Status**: When the Sync Error/Pending icon is shown, it should be possible to click on it to see the sync issues / what is pending sync.
 - [x] **[Feature] Board/Calendar View on Lists**: Enable different layouts for task lists, selectable via the "View" settings modal (there are placeholder buttons for it).

@@ -44,49 +44,58 @@ describe("normalizeIp", () => {
 });
 
 describe("getClientIp", () => {
-  it("prioritizes x-vercel-ip over x-real-ip and x-forwarded-for", () => {
+  it("prioritizes x-vercel-ip over other headers", () => {
     const headers = new Headers();
-    headers.set("x-vercel-ip", "10.0.0.1");
-    headers.set("x-real-ip", "10.0.0.2");
-    headers.set("x-forwarded-for", "10.0.0.3");
+    headers.set("x-vercel-ip", "1.1.1.1");
+    headers.set("x-vercel-forwarded-for", "2.2.2.2");
+    headers.set("x-real-ip", "3.3.3.3");
+    headers.set("x-forwarded-for", "4.4.4.4");
+    expect(getClientIp(headers)).toBe("1.1.1.1");
+  });
 
-    expect(getClientIp(headers)).toBe("10.0.0.1");
+  it("falls back to x-vercel-forwarded-for when x-vercel-ip is missing", () => {
+    const headers = new Headers();
+    headers.set("x-vercel-forwarded-for", "2.2.2.2");
+    headers.set("x-real-ip", "3.3.3.3");
+    headers.set("x-forwarded-for", "4.4.4.4");
+    expect(getClientIp(headers)).toBe("2.2.2.2");
   });
 
   it("prioritizes x-real-ip over x-forwarded-for", () => {
     const headers = new Headers();
-    headers.set("x-real-ip", "10.0.0.2");
-    headers.set("x-forwarded-for", "10.0.0.3");
-
-    expect(getClientIp(headers)).toBe("10.0.0.2");
+    headers.set("x-real-ip", "3.3.3.3");
+    headers.set("x-forwarded-for", "4.4.4.4");
+    expect(getClientIp(headers)).toBe("3.3.3.3");
   });
 
-  it("falls back to x-forwarded-for", () => {
+  it("falls back to x-client-ip before x-forwarded-for", () => {
     const headers = new Headers();
-    headers.set("x-forwarded-for", "10.0.0.3");
-
-    expect(getClientIp(headers)).toBe("10.0.0.3");
+    headers.set("x-client-ip", "3.3.3.3");
+    headers.set("x-forwarded-for", "4.4.4.4");
+    expect(getClientIp(headers)).toBe("3.3.3.3");
   });
 
-  it("handles comma-separated x-forwarded-for (standard behavior)", () => {
+  it("falls back to x-forwarded-for last", () => {
     const headers = new Headers();
-    headers.set("x-forwarded-for", "10.0.0.3, 10.0.0.4");
-
-    // Note: getClientIp uses normalizeIp which takes the first IP.
-    // This confirms the fallback behavior is consistent with normalizeIp.
-    expect(getClientIp(headers)).toBe("10.0.0.3");
+    headers.set("x-forwarded-for", "4.4.4.4");
+    expect(getClientIp(headers)).toBe("4.4.4.4");
   });
 
-  it("handles spoofing attempt where attacker sends x-forwarded-for and platform sets x-real-ip", () => {
+  it("handles x-forwarded-for with multiple IPs (takes first)", () => {
     const headers = new Headers();
-    // Attacker sends: X-Forwarded-For: spoofed
-    // Platform appends: X-Forwarded-For: spoofed, real
-    // Platform sets: X-Real-IP: real
+    headers.set("x-forwarded-for", "4.4.4.4, 5.5.5.5");
+    expect(getClientIp(headers)).toBe("4.4.4.4");
+  });
 
-    headers.set("x-forwarded-for", "spoofed-ip, real-ip");
-    headers.set("x-real-ip", "real-ip");
+  it("handles spoofing attempt where x-real-ip is present", () => {
+    const headers = new Headers();
+    headers.set("x-forwarded-for", "spoofed, 5.5.5.5");
+    headers.set("x-real-ip", "6.6.6.6");
+    expect(getClientIp(headers)).toBe("6.6.6.6");
+  });
 
-    // Should return real-ip, ignoring the spoofed one in XFF
-    expect(getClientIp(headers)).toBe("real-ip");
+  it("returns null if no headers present", () => {
+    const headers = new Headers();
+    expect(getClientIp(headers)).toBeNull();
   });
 });

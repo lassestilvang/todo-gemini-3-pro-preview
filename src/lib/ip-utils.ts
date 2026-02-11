@@ -1,3 +1,6 @@
+/**
+ * Normalizes an IP address by removing IPv6 mapping prefix and handling ports.
+ */
 export function normalizeIp(value: string | null | undefined): string | null {
   if (!value) {
     return null;
@@ -8,8 +11,6 @@ export function normalizeIp(value: string | null | undefined): string | null {
     return null;
   }
 
-  // Handle comma-separated lists (e.g. from X-Forwarded-For)
-  // We take the first IP, but getClientIp ensures we prefer specific headers first.
   if (ip.includes(",")) {
     ip = ip.split(",")[0]?.trim() ?? "";
   }
@@ -29,28 +30,49 @@ export function normalizeIp(value: string | null | undefined): string | null {
   return ip || null;
 }
 
+interface HeaderStore {
+  get(name: string): string | null;
+}
+
 /**
- * robustly determines the client IP address from request headers.
- * Prioritizes platform-specific headers (Vercel, etc.) over X-Forwarded-For
- * to prevent IP spoofing attacks where the client appends a fake IP.
+ * Extracts the client IP address from request headers, prioritizing secure headers.
+ *
+ * Priority:
+ * 1. x-vercel-ip (Vercel/Edge specific, set by platform)
+ * 2. x-vercel-forwarded-for (Vercel specific, trusted)
+ * 3. x-real-ip (Nginx/load balancers, usually trusted)
+ * 4. x-client-ip (Standard)
+ * 5. x-forwarded-for (Standard but spoofable if not careful)
  */
-export function getClientIp(headers: Headers): string | null {
-  // Defensive check for mock objects or invalid headers
-  if (!headers || typeof headers.get !== 'function') {
+export function getClientIp(headers: HeaderStore | null | undefined): string | null {
+  if (!headers || typeof headers.get !== "function") {
     return null;
   }
 
-  // Vercel / Edge platform headers - reliable and set by the edge
   const vercelIp = headers.get("x-vercel-ip");
-  if (vercelIp) return normalizeIp(vercelIp);
+  if (vercelIp) {
+    return normalizeIp(vercelIp);
+  }
 
-  // Standard real IP header (often set by Nginx/proxies)
+  const vercelForwardedFor = headers.get("x-vercel-forwarded-for");
+  if (vercelForwardedFor) {
+    return normalizeIp(vercelForwardedFor);
+  }
+
   const realIp = headers.get("x-real-ip");
-  if (realIp) return normalizeIp(realIp);
+  if (realIp) {
+    return normalizeIp(realIp);
+  }
 
-  // Fallback to X-Forwarded-For
-  // Note: This is vulnerable to spoofing if the edge doesn't overwrite/append correctly,
-  // but it's the standard fallback.
-  const xff = headers.get("x-forwarded-for");
-  return normalizeIp(xff);
+  const clientIp = headers.get("x-client-ip");
+  if (clientIp) {
+    return normalizeIp(clientIp);
+  }
+
+  const forwardedFor = headers.get("x-forwarded-for");
+  if (forwardedFor) {
+    return normalizeIp(forwardedFor);
+  }
+
+  return null;
 }
