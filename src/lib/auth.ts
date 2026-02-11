@@ -15,10 +15,10 @@ import {
   getDevBypassUserConfig,
   getProdBypassUserConfig,
   isDevBypassEnabled,
-  normalizeIp,
   verifyAuthBypassSignature,
   type BypassUserConfig,
 } from "./auth-bypass";
+import { getClientIp } from "@/lib/ip-utils";
 
 export interface AuthUser {
   id: string;
@@ -117,13 +117,6 @@ async function getOrCreateBypassUser(
   };
 }
 
-function getServerRequestIp(headerStore: Headers): string | null {
-  const xff = headerStore.get("x-forwarded-for");
-  const first = xff?.split(",")[0]?.trim();
-  const real = headerStore.get("x-real-ip");
-  return normalizeIp(first ?? real ?? null);
-}
-
 async function getBypassUser(): Promise<AuthUser | null> {
   if (process.env.E2E_TEST_MODE === "true") {
     return null;
@@ -145,7 +138,7 @@ async function getBypassUser(): Promise<AuthUser | null> {
 
   const headerStore = await headers();
 
-  const clientIp = getServerRequestIp(headerStore);
+  const clientIp = getClientIp(headerStore);
   const allowlist = getAuthBypassIpAllowlist();
   if (!clientIp || !allowlist.includes(clientIp)) {
     return null;
