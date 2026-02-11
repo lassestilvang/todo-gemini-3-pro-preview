@@ -37,11 +37,6 @@ mock.module("./ViewOptionsPopover", () => ({
     ViewOptionsPopover: () => <div>View Options</div>
 }));
 
-// Mock actions
-mock.module("@/lib/actions/view-settings", () => ({
-    getViewSettings: mock(() => Promise.resolve(null))
-}));
-
 describe("TaskListWithSettings", () => {
     beforeAll(async () => {
         ({ TaskListWithSettings } = await import("./TaskListWithSettings"));
