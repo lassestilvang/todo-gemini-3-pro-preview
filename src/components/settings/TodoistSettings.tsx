@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { TodoistMappingForm } from "@/components/settings/TodoistMappingForm";
+import { TodoistConflicts } from "@/components/settings/TodoistConflicts";
 
 export function TodoistSettings() {
     const [token, setToken] = useState("");
@@ -75,6 +76,7 @@ export function TodoistSettings() {
                     </div>
                 </div>
                 <TodoistMappingForm />
+                <TodoistConflicts />
                 {status ? <p className="text-sm text-muted-foreground">{status}</p> : null}
             </div>
         </Card>

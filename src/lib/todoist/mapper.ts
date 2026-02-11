@@ -29,13 +29,14 @@ export function mapTodoistTaskToLocal(
     mappings: TodoistMappingState
 ): Partial<LocalTask> {
     const { dueDate, dueDatePrecision } = parseTodoistDueDate(task);
+    const listId = resolveTodoistTaskListId(task, mappings);
 
     return {
         title: task.content,
         description: task.description ?? null,
         isCompleted: task.is_completed ?? false,
         completedAt: task.is_completed ? new Date() : null,
-        listId: resolveTodoistTaskListId(task, mappings),
+        listId,
         dueDate,
         dueDatePrecision,
         isRecurring: task.due?.is_recurring ?? false,

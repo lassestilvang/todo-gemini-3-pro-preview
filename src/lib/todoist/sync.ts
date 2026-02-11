@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import {
     db,
     externalEntityMap,
@@ -87,6 +87,13 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
             })),
         };
 
+        const localTasks = await db.select().from(tasks).where(eq(tasks.userId, userId));
+        const localTaskMap = new Map(localTasks.map((task) => [task.id, task]));
+        const localTaskIds = localTasks.map((task) => task.id);
+        const localTaskLabelMap = await fetchTaskLabels(localTaskIds);
+        const localLabelToExternal = new Map(labelMappings.map((mapping) => [mapping.localId, mapping.externalId]));
+        const conflictKeys = await getExistingConflictKeys(userId);
+
         const labelIdMap = new Map<string, number>();
         for (const mapping of labelMappings) {
             if (mapping.localId) {
@@ -124,6 +131,16 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
         const pendingTasks = snapshot.tasks.filter((task) => !existingTaskMap.has(task.id));
         const [rootTasks, childTasks] = splitTasksByParent(pendingTasks);
 
+        await detectTaskConflicts({
+            userId,
+            todoistTasks: snapshot.tasks,
+            taskMappings,
+            localTaskMap,
+            localTaskLabelMap,
+            localLabelToExternal,
+            conflictKeys,
+        });
+
         await createTodoistTasks({
             userId,
             tasks: rootTasks,
@@ -145,6 +162,7 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
             client,
             mappingState,
             taskMappings: existingTaskMap,
+            conflictKeys,
         });
 
         await db
@@ -290,13 +308,172 @@ async function createTodoistTasks(params: {
     }
 }
 
+async function fetchTaskLabels(taskIds: number[]) {
+    if (taskIds.length === 0) {
+        return new Map<number, number[]>();
+    }
+
+    const rows = await db
+        .select({ taskId: taskLabels.taskId, labelId: taskLabels.labelId })
+        .from(taskLabels)
+        .where(inArray(taskLabels.taskId, taskIds));
+
+    const map = new Map<number, number[]>();
+    for (const row of rows) {
+        const current = map.get(row.taskId) ?? [];
+        current.push(row.labelId);
+        map.set(row.taskId, current);
+    }
+
+    return map;
+}
+
+async function getExistingConflictKeys(userId: string) {
+    const conflicts = await db
+        .select({
+            id: externalSyncConflicts.id,
+            localId: externalSyncConflicts.localId,
+            externalId: externalSyncConflicts.externalId,
+            entityType: externalSyncConflicts.entityType,
+        })
+        .from(externalSyncConflicts)
+        .where(and(eq(externalSyncConflicts.userId, userId), eq(externalSyncConflicts.status, "pending")));
+
+    const keys = new Set<string>();
+    for (const conflict of conflicts) {
+        keys.add(buildConflictKey(conflict.entityType, conflict.localId, conflict.externalId));
+    }
+
+    return keys;
+}
+
+function buildConflictKey(entityType: string, localId: number | null, externalId: string | null) {
+    return `${entityType}:${localId ?? "none"}:${externalId ?? "none"}`;
+}
+
+async function detectTaskConflicts(params: {
+    userId: string;
+    todoistTasks: TodoistTask[];
+    taskMappings: typeof externalEntityMap.$inferSelect[];
+    localTaskMap: Map<number, typeof tasks.$inferSelect>;
+    localTaskLabelMap: Map<number, number[]>;
+    localLabelToExternal: Map<number | null, string>;
+    conflictKeys: Set<string>;
+}) {
+    const {
+        userId,
+        todoistTasks,
+        taskMappings,
+        localTaskMap,
+        localTaskLabelMap,
+        localLabelToExternal,
+        conflictKeys,
+    } = params;
+
+    const todoistTaskMap = new Map(todoistTasks.map((task) => [task.id, task]));
+
+    for (const mapping of taskMappings) {
+        const localTaskId = mapping.localId;
+        if (!localTaskId) {
+            continue;
+        }
+
+        const todoistTask = todoistTaskMap.get(mapping.externalId);
+        const localTask = localTaskMap.get(localTaskId);
+        if (!todoistTask || !localTask) {
+            continue;
+        }
+
+        const conflictKey = buildConflictKey("task", localTaskId, todoistTask.id);
+        if (conflictKeys.has(conflictKey)) {
+            continue;
+        }
+
+        const localPayload = buildLocalTaskPayload(localTask, localTaskLabelMap, localLabelToExternal);
+        const remotePayload = buildRemoteTaskPayload(todoistTask);
+
+        if (!tasksMatch(localPayload, remotePayload)) {
+            await db.insert(externalSyncConflicts).values({
+                userId,
+                provider: "todoist",
+                entityType: "task",
+                localId: localTaskId,
+                externalId: todoistTask.id,
+                conflictType: "task_mismatch",
+                localPayload: JSON.stringify(localPayload),
+                externalPayload: JSON.stringify(remotePayload),
+            });
+            conflictKeys.add(conflictKey);
+        }
+    }
+}
+
+function buildLocalTaskPayload(
+    task: typeof tasks.$inferSelect,
+    localTaskLabelMap: Map<number, number[]>,
+    localLabelToExternal: Map<number | null, string>
+) {
+    const labelIds = localTaskLabelMap.get(task.id) ?? [];
+    const externalLabels = labelIds
+        .map((labelId) => localLabelToExternal.get(labelId) ?? null)
+        .filter((labelId): labelId is string => Boolean(labelId));
+
+    return {
+        title: task.title,
+        description: task.description ?? "",
+        isCompleted: task.isCompleted ?? false,
+        dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+        listId: task.listId ?? null,
+        parentId: task.parentId ?? null,
+        labels: externalLabels.sort(),
+    };
+}
+
+function buildRemoteTaskPayload(task: TodoistTask) {
+    return {
+        title: task.content,
+        description: task.description ?? "",
+        isCompleted: task.is_completed ?? false,
+        dueDate: task.due?.date ?? null,
+        projectId: task.project_id ?? null,
+        parentId: task.parent_id ?? null,
+        labels: (task.labels ?? []).slice().sort(),
+    };
+}
+
+function tasksMatch(
+    localPayload: ReturnType<typeof buildLocalTaskPayload>,
+    remotePayload: ReturnType<typeof buildRemoteTaskPayload>
+) {
+    if (localPayload.title !== remotePayload.title) return false;
+    if (localPayload.description !== remotePayload.description) return false;
+    if (localPayload.isCompleted !== remotePayload.isCompleted) return false;
+
+    const localDue = localPayload.dueDate ? localPayload.dueDate.split("T")[0] : null;
+    const remoteDue = remotePayload.dueDate ? remotePayload.dueDate.split("T")[0] : null;
+    if (localDue !== remoteDue) return false;
+
+    if (localPayload.parentId && !remotePayload.parentId) return false;
+    if (!localPayload.parentId && remotePayload.parentId) return false;
+
+    if (localPayload.labels.length !== remotePayload.labels.length) return false;
+    for (let index = 0; index < localPayload.labels.length; index += 1) {
+        if (localPayload.labels[index] !== remotePayload.labels[index]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 async function pushLocalTasks(params: {
     userId: string;
     client: ReturnType<typeof createTodoistClient>;
     mappingState: { projects: { projectId: string; listId: number | null }[]; labels: { labelId: string; listId: number | null }[] };
     taskMappings: Map<string, number | null>;
+    conflictKeys: Set<string>;
 }) {
-    const { userId, client, mappingState, taskMappings } = params;
+    const { userId, client, mappingState, taskMappings, conflictKeys } = params;
     const localTasks = await db.select().from(tasks).where(eq(tasks.userId, userId));
     const localMapping = new Map<number, string>();
 
@@ -315,6 +492,7 @@ async function pushLocalTasks(params: {
         localMapping,
         client,
         userId,
+        conflictKeys,
     });
 
     await createLocalTasksInTodoist({
@@ -323,6 +501,7 @@ async function pushLocalTasks(params: {
         localMapping,
         client,
         userId,
+        conflictKeys,
     });
 }
 
@@ -347,11 +526,17 @@ async function createLocalTasksInTodoist(params: {
     localMapping: Map<number, string>;
     client: ReturnType<typeof createTodoistClient>;
     userId: string;
+    conflictKeys: Set<string>;
 }) {
-    const { tasks: localTasks, mappingState, localMapping, client, userId } = params;
+    const { tasks: localTasks, mappingState, localMapping, client, userId, conflictKeys } = params;
 
     for (const task of localTasks) {
         if (localMapping.has(task.id)) {
+            continue;
+        }
+
+        const conflictKey = buildConflictKey("task", task.id, null);
+        if (conflictKeys.has(conflictKey)) {
             continue;
         }
 
