@@ -132,6 +132,9 @@ async function createLabelImpl(data: typeof labels.$inferInsert) {
     details: `Created label: ${result[0].name}`,
   });
 
+  const { syncTodoistNow } = await import("@/lib/actions/todoist");
+  await syncTodoistNow();
+
   revalidateTag(`labels-${data.userId}`, 'max');
   revalidatePath("/", "layout");
   return result[0];
@@ -183,6 +186,9 @@ async function updateLabelImpl(
     });
   }
 
+  const { syncTodoistNow } = await import("@/lib/actions/todoist");
+  await syncTodoistNow();
+
   revalidateTag(`labels-${userId}`, 'max');
   revalidatePath("/", "layout");
 }
@@ -223,6 +229,9 @@ async function deleteLabelImpl(id: number, userId: string) {
       details: `Deleted label: ${currentLabel.name}`,
     });
   }
+
+  const { syncTodoistNow } = await import("@/lib/actions/todoist");
+  await syncTodoistNow();
 
   revalidateTag(`labels-${userId}`, 'max');
   revalidatePath("/", "layout");

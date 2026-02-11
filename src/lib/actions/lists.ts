@@ -148,6 +148,9 @@ async function createListImpl(data: typeof lists.$inferInsert) {
     details: `Created list: ${result[0].name}`,
   });
 
+  const { syncTodoistNow } = await import("@/lib/actions/todoist");
+  await syncTodoistNow();
+
   revalidateTag(`lists-${effectiveUserId}`, 'max');
   revalidatePath("/", "layout");
   return result[0];
@@ -200,6 +203,9 @@ async function updateListImpl(
     });
   }
 
+  const { syncTodoistNow } = await import("@/lib/actions/todoist");
+  await syncTodoistNow();
+
   revalidateTag(`lists-${userId}`, 'max');
   revalidatePath("/", "layout");
 }
@@ -240,6 +246,9 @@ async function deleteListImpl(id: number, userId: string) {
       details: `Deleted list: ${currentList.name}`,
     });
   }
+
+  const { syncTodoistNow } = await import("@/lib/actions/todoist");
+  await syncTodoistNow();
 
   revalidateTag(`lists-${userId}`, 'max');
   revalidatePath("/", "layout");

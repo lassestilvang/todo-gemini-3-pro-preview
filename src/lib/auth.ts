@@ -18,7 +18,7 @@ import {
   verifyAuthBypassSignature,
   type BypassUserConfig,
 } from "./auth-bypass";
-import { getClientIp } from "./ip-utils";
+import { getClientIp } from "@/lib/ip-utils";
 
 export interface AuthUser {
   id: string;
