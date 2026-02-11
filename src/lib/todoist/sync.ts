@@ -167,6 +167,13 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
             localLabelToExternal,
         });
 
+        await removeDeletedTasks({
+            userId,
+            client,
+            taskMappings,
+            localTaskMap,
+        });
+
         await updateMappedTasks({
             userId,
             client,
@@ -256,6 +263,31 @@ async function ensureProjectAssignments(params: {
     }
 
     return hydratedAssignments;
+}
+
+async function removeDeletedTasks(params: {
+    userId: string;
+    client: ReturnType<typeof createTodoistClient>;
+    taskMappings: typeof externalEntityMap.$inferSelect[];
+    localTaskMap: Map<number, typeof tasks.$inferSelect>;
+}) {
+    const { userId, client, taskMappings, localTaskMap } = params;
+    const remoteTasks = (await client.getTasks()) as TodoistTask[];
+    const remoteTaskIds = new Set(remoteTasks.map((task) => task.id));
+
+    for (const mapping of taskMappings) {
+        if (mapping.localId && !localTaskMap.has(mapping.localId)) {
+            if (mapping.externalId) {
+                await client.deleteTask(mapping.externalId);
+            }
+            await db.delete(externalEntityMap).where(eq(externalEntityMap.id, mapping.id));
+            continue;
+        }
+
+        if (!mapping.localId && mapping.externalId && !remoteTaskIds.has(mapping.externalId)) {
+            await db.delete(externalEntityMap).where(eq(externalEntityMap.id, mapping.id));
+        }
+    }
 }
 
 function splitTasksByParent(tasks: TodoistTask[]) {

@@ -186,3 +186,4 @@ Also add SQLite schema updates in `src/db/schema-sqlite.ts` to keep tests passin
 - 2026-02-11: Added Todoist mapping server actions and settings UI for project/label mapping.
 - 2026-02-11: Added conflict detection, conflict resolution actions, and UI.
 - 2026-02-11: Added update propagation both directions for mapped tasks (skips conflicts).
+- 2026-02-11: Added delete propagation and hooked list/label/task mutations to sync.
