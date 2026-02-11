@@ -175,7 +175,7 @@ Also add SQLite schema updates in `src/db/schema-sqlite.ts` to keep tests passin
 3. Basic 1-way sync (local → Todoist) (in progress)
 4. 2-way sync with conflict resolution (in progress)
 5. UI settings and project/label mapping (in progress)
-6. Tests + monitoring
+6. Tests + monitoring (in progress)
 
 ## Progress Log
 
@@ -190,3 +190,5 @@ Also add SQLite schema updates in `src/db/schema-sqlite.ts` to keep tests passin
 - 2026-02-11: Added delete propagation and hooked list/label/task mutations to sync.
 - 2026-02-11: Added Todoist mapping/mapper tests and expanded test DB setup for sync tables.
 - 2026-02-11: Trigger sync after mapping updates.
+- 2026-02-11: Added TODOIST_ENCRYPTION_KEY to .env example.
+- 2026-02-11: Added cron sync endpoint, conflict UI improvements, and documented scheduling.
