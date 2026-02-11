@@ -396,15 +396,11 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         // Check if this is a creation action that needs a temp ID
         let tempId: number | undefined;
         if (type === 'createTask' || type === 'createList' || type === 'createLabel') {
-            // Assuming the first arg is the data object
-            // We assign a negative ID to the payloads that need it so the UI can use it
-            // But usually the component creates the object with temp ID *before* calling dispatch?
-            // Actually, the `args` here are what the server expects (without ID usually).
-
-            // Wait, for `createTask`, the server action takes `data`.
-            // We usually want to return the optimistic result immediately.
-            // So we should generate a temp ID here and attach it to the action record.
-            tempId = -Date.now();
+            // Use a random signed 32-bit integer for temp ID (negative) to avoid overflow
+            // Range: -1 to -2,147,483,647. Safe range is roughly 2 billion.
+            // Using a max of 2,000,000,000 just to be safe and clean.
+            tempId = -Math.floor(Math.random() * 2000000000) - 1;
+            // console.log(`[SyncProvider] Generated tempId: ${tempId} for ${type}`);
         }
 
         const action: PendingAction = {
