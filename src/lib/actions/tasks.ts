@@ -457,6 +457,9 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
       details: "Task created",
     });
 
+    const { syncTodoistNow } = await import("@/lib/actions/todoist");
+    await syncTodoistNow();
+
     revalidatePath("/", "layout");
     return task;
   } catch (error) {
@@ -656,6 +659,9 @@ export async function updateTask(
     });
   }
 
+  const { syncTodoistNow } = await import("@/lib/actions/todoist");
+  await syncTodoistNow();
+
   revalidatePath("/", "layout");
 }
 
@@ -668,6 +674,8 @@ export async function updateTask(
 export async function deleteTask(id: number, userId: string) {
   await requireUser(userId);
   await db.delete(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
+  const { syncTodoistNow } = await import("@/lib/actions/todoist");
+  await syncTodoistNow();
   revalidatePath("/", "layout");
 }
 

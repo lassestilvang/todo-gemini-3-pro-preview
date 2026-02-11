@@ -5,6 +5,17 @@ const mockCreateTask = mock(() => Promise.resolve({ success: true, data: { id: 1
 
 // Mocks should be targeted and not leak to other tests
 
+// Local UI Mocks
+mock.module("@/components/ui/dialog", () => ({
+    Dialog: ({ children, open }: { children: React.ReactNode; open?: boolean }) => <div data-testid="dialog-root" data-open={open}>{children}</div>,
+    DialogContent: ({ children }: { children: React.ReactNode }) => <div data-testid="dialog-content">{children}</div>,
+    DialogHeader: ({ children }: { children: React.ReactNode }) => <div data-testid="dialog-header">{children}</div>,
+    DialogFooter: ({ children }: { children: React.ReactNode }) => <div data-testid="dialog-footer">{children}</div>,
+    DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
+    DialogDescription: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
+    DialogTrigger: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => asChild ? children : <button>{children}</button>,
+}));
+
 mock.module("@/components/providers/sync-provider", () => ({
     SyncProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
     useSync: () => ({

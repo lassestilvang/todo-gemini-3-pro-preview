@@ -12,6 +12,7 @@ import { redirect } from "next/navigation"
 import { TimeSettings } from "@/components/settings/TimeSettings"
 import { WeekStartSettings } from "@/components/settings/WeekStartSettings"
 import { CalendarTooltipSettings } from "@/components/settings/CalendarTooltipSettings"
+import { TodoistSettings } from "@/components/settings/TodoistSettings"
 
 export default async function SettingsPage() {
     const user = await getCurrentUser();
@@ -53,6 +54,13 @@ export default async function SettingsPage() {
                             initialDenseTooltipThreshold={user.calendarDenseTooltipThreshold ?? null}
                         />
                     </div>
+                </section>
+                <section>
+                    <h2 className="mb-4 text-2xl font-bold tracking-tight">Integrations</h2>
+                    <p className="mb-6 text-muted-foreground">
+                        Connect third-party services to keep your tasks in sync.
+                    </p>
+                    <TodoistSettings />
                 </section>
                 <section>
                     <DataExportImport />

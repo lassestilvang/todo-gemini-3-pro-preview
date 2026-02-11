@@ -1,7 +1,7 @@
 # Feature Plan: Period-Based Task Scheduling (Week/Month/Year)
 
-**Status:** In Progress
-**Created:** 2026-02-10
+**Status:** In Progress  
+**Created:** 2026-02-10  
 **Complexity:** Large (1–2 days)
 
 ## Overview
@@ -53,19 +53,19 @@ Rather than adding a separate `duePeriod` string column (e.g., `"2025-W15"`), we
 - [x] **1.6** Create `src/lib/due-utils.ts` with core helpers:
   ```ts
   type DuePrecision = "day" | "week" | "month" | "year";
-
+  
   // Normalize a date to the start of its period
   normalizeDueAnchor(d: Date, precision: DuePrecision, weekStartsOnMonday: boolean): Date
-
+  
   // Get the [start, endExclusive) range for a period
   getDueRange(anchor: Date, precision: DuePrecision, weekStartsOnMonday: boolean): { start: Date; endExclusive: Date }
-
+  
   // Human-readable label: "Week of Apr 7", "March 2025", "2025"
   formatDuePeriod(task: { dueDate: Date; dueDatePrecision?: DuePrecision | null }): string
-
+  
   // Is the task overdue? (period tasks: overdue only after period ends)
   isDueOverdue(task, now: Date): boolean
-
+  
   // Does the task's period contain today?
   isInCurrentPeriod(task, now: Date, weekStartsOnMonday: boolean): boolean
   ```

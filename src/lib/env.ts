@@ -25,5 +25,12 @@ export function validateEnv() {
         console.warn("⚠️ DATABASE_URL does not start with postgresql:// or postgres://");
     }
 
+    if (process.env.TODOIST_ENCRYPTION_KEY) {
+        const keyLength = Buffer.from(process.env.TODOIST_ENCRYPTION_KEY, "hex").length;
+        if (keyLength !== 32) {
+            console.warn("⚠️ TODOIST_ENCRYPTION_KEY should be a 64-character hex string.");
+        }
+    }
+
     //console.log("✅ Environment variables validated.");
 }
