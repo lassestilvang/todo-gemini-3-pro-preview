@@ -1,7 +1,20 @@
 import { and, eq } from "drizzle-orm";
-import { db, externalIntegrations, externalSyncConflicts, externalSyncState } from "@/db";
+import {
+    db,
+    externalEntityMap,
+    externalIntegrations,
+    externalSyncConflicts,
+    externalSyncState,
+    labels,
+    lists,
+    taskLabels,
+    tasks,
+} from "@/db";
 import { decryptToken } from "./crypto";
 import { createTodoistClient, fetchTodoistSnapshot } from "./service";
+import { mapTodoistTaskToLocal } from "./mapper";
+import type { TodoistTask } from "./types";
+import { buildDefaultProjectAssignments } from "./mapping";
 
 type SyncResult = {
     status: "ok" | "error";
@@ -42,9 +55,90 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
     try {
         const snapshot = await fetchTodoistSnapshot(client);
 
-        // TODO: map projects/labels/tasks to local entities and detect changes.
-        // TODO: write conflicts to externalSyncConflicts and pause entities accordingly.
-        void snapshot;
+        const [existingLists, entityMappings] = await Promise.all([
+            db.select().from(lists).where(eq(lists.userId, userId)),
+            db
+                .select()
+                .from(externalEntityMap)
+                .where(and(eq(externalEntityMap.userId, userId), eq(externalEntityMap.provider, "todoist"))),
+        ]);
+
+        const projectMappings = entityMappings.filter((mapping) => mapping.entityType === "list");
+        const listLabelMappings = entityMappings.filter((mapping) => mapping.entityType === "list_label");
+        const labelMappings = entityMappings.filter((mapping) => mapping.entityType === "label");
+        const taskMappings = entityMappings.filter((mapping) => mapping.entityType === "task");
+
+        const projectAssignments = projectMappings.length
+            ? projectMappings.map((mapping) => ({
+                  projectId: mapping.externalId,
+                  listId: mapping.localId,
+              }))
+            : await ensureProjectAssignments({
+                  userId,
+                  projects: snapshot.projects,
+                  existingLists,
+              });
+
+        const mappingState = {
+            projects: projectAssignments,
+            labels: listLabelMappings.map((mapping) => ({
+                labelId: mapping.externalId,
+                listId: mapping.localId,
+            })),
+        };
+
+        const labelIdMap = new Map<string, number>();
+        for (const mapping of labelMappings) {
+            if (mapping.localId) {
+                labelIdMap.set(mapping.externalId, mapping.localId);
+            }
+        }
+
+        for (const label of snapshot.labels) {
+            if (labelIdMap.has(label.id)) {
+                continue;
+            }
+
+            const created = await db.insert(labels).values({
+                userId,
+                name: label.name,
+                position: label.order ?? 0,
+            }).returning();
+
+            const localLabel = created[0];
+            if (!localLabel) {
+                continue;
+            }
+
+            await db.insert(externalEntityMap).values({
+                userId,
+                provider: "todoist",
+                entityType: "label",
+                localId: localLabel.id,
+                externalId: label.id,
+            });
+            labelIdMap.set(label.id, localLabel.id);
+        }
+
+        const existingTaskMap = new Map(taskMappings.map((mapping) => [mapping.externalId, mapping.localId]));
+        const pendingTasks = snapshot.tasks.filter((task) => !existingTaskMap.has(task.id));
+        const [rootTasks, childTasks] = splitTasksByParent(pendingTasks);
+
+        await createTodoistTasks({
+            userId,
+            tasks: rootTasks,
+            mappingState,
+            labelIdMap,
+            taskMappings: existingTaskMap,
+        });
+
+        await createTodoistTasks({
+            userId,
+            tasks: childTasks,
+            mappingState,
+            labelIdMap,
+            taskMappings: existingTaskMap,
+        });
 
         await db
             .update(externalSyncState)
@@ -66,4 +160,134 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
 
         return { status: "error", error: message };
     }
+}
+
+async function ensureProjectAssignments(params: {
+    userId: string;
+    projects: { id: string; name: string }[];
+    existingLists: { id: number; name: string; position: number }[];
+}) {
+    const { userId, projects, existingLists } = params;
+    const assignments = buildDefaultProjectAssignments(projects, existingLists);
+    const lowerCaseListMap = new Map(existingLists.map((list) => [list.name.toLowerCase(), list]));
+    let maxPosition = Math.max(0, ...existingLists.map((list) => list.position ?? 0));
+
+    const hydratedAssignments = [] as { projectId: string; listId: number | null }[];
+
+    for (const project of projects.slice(0, 5)) {
+        const existingMatch = lowerCaseListMap.get(project.name.toLowerCase());
+        const listId = existingMatch?.id ?? null;
+
+        if (listId) {
+            hydratedAssignments.push({ projectId: project.id, listId });
+            continue;
+        }
+
+        const slug = slugify(project.name);
+        const created = await db.insert(lists).values({
+            userId,
+            name: project.name,
+            slug,
+            position: maxPosition + 1,
+        }).returning();
+        maxPosition += 1;
+
+        hydratedAssignments.push({ projectId: project.id, listId: created[0]?.id ?? null });
+    }
+
+    if (hydratedAssignments.length > 0) {
+        await db.insert(externalEntityMap).values(
+            hydratedAssignments.map((assignment) => ({
+                userId,
+                provider: "todoist",
+                entityType: "list",
+                localId: assignment.listId,
+                externalId: assignment.projectId,
+            }))
+        );
+    }
+
+    return hydratedAssignments;
+}
+
+function splitTasksByParent(tasks: TodoistTask[]) {
+    const rootTasks: TodoistTask[] = [];
+    const childTasks: TodoistTask[] = [];
+
+    for (const task of tasks) {
+        if (task.parent_id) {
+            childTasks.push(task);
+        } else {
+            rootTasks.push(task);
+        }
+    }
+
+    return [rootTasks, childTasks] as const;
+}
+
+async function createTodoistTasks(params: {
+    userId: string;
+    tasks: TodoistTask[];
+    mappingState: { projects: { projectId: string; listId: number | null }[]; labels: { labelId: string; listId: number | null }[] };
+    labelIdMap: Map<string, number>;
+    taskMappings: Map<string, number | null>;
+}) {
+    const { userId, tasks: incomingTasks, mappingState, labelIdMap, taskMappings } = params;
+
+    for (const task of incomingTasks) {
+        if (taskMappings.has(task.id)) {
+            continue;
+        }
+
+        const payload = mapTodoistTaskToLocal(task, mappingState);
+        const labelIds = (task.labels ?? []).map((labelId) => labelIdMap.get(labelId)).filter((id): id is number => Boolean(id));
+        const parentMapping = task.parent_id ? taskMappings.get(task.parent_id) : null;
+
+        const [createdTask] = await db.insert(tasks).values({
+            userId,
+            listId: payload.listId ?? null,
+            title: payload.title ?? task.content,
+            description: payload.description ?? null,
+            isCompleted: payload.isCompleted ?? false,
+            completedAt: payload.completedAt ?? null,
+            dueDate: payload.dueDate ?? null,
+            dueDatePrecision: payload.dueDatePrecision ?? null,
+            isRecurring: payload.isRecurring ?? false,
+            recurringRule: payload.recurringRule ?? null,
+            parentId: parentMapping ?? null,
+            position: 0,
+        }).returning();
+
+        if (!createdTask) {
+            continue;
+        }
+
+        taskMappings.set(task.id, createdTask.id);
+        await db.insert(externalEntityMap).values({
+            userId,
+            provider: "todoist",
+            entityType: "task",
+            localId: createdTask.id,
+            externalId: task.id,
+            externalParentId: task.parent_id ?? null,
+        });
+
+        if (labelIds.length > 0) {
+            await db.insert(taskLabels).values(
+                labelIds.map((labelId) => ({
+                    taskId: createdTask.id,
+                    labelId,
+                }))
+            );
+        }
+    }
+}
+
+function slugify(value: string) {
+    return value
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, "")
+        .replace(/[\s_-]+/g, "-")
+        .replace(/^-+|-+$/g, "");
 }

@@ -181,3 +181,4 @@ Also add SQLite schema updates in `src/db/schema-sqlite.ts` to keep tests passin
 - 2026-02-11: Added external integration/sync schema tables (Postgres + SQLite) for Todoist token storage, sync state, entity mapping, and conflict tracking.
 - 2026-02-11: Added initial Todoist REST client and service helpers (types, snapshot fetch, priority mapping).
 - 2026-02-11: Added token encryption helper, sync stub, server actions, and settings UI entry point.
+- 2026-02-11: Added mapping helpers and initial Todoist -> local import (projects, labels, tasks, subtasks).

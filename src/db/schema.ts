@@ -178,7 +178,7 @@ export const externalEntityMap = pgTable("external_entity_map", {
         .notNull()
         .references(() => users.id, { onDelete: "cascade" }),
     provider: text("provider", { enum: ["todoist"] }).notNull(),
-    entityType: text("entity_type", { enum: ["task", "list", "label"] }).notNull(),
+    entityType: text("entity_type", { enum: ["task", "list", "label", "list_label"] }).notNull(),
     localId: integer("local_id"),
     externalId: text("external_id").notNull(),
     externalParentId: text("external_parent_id"),
