@@ -12,7 +12,7 @@ import {
 } from "@/db";
 import { decryptToken } from "./crypto";
 import { createTodoistClient, fetchTodoistSnapshot } from "./service";
-import { mapTodoistTaskToLocal } from "./mapper";
+import { mapLocalTaskToTodoist, mapTodoistTaskToLocal } from "./mapper";
 import type { TodoistTask } from "./types";
 import { buildDefaultProjectAssignments } from "./mapping";
 
@@ -137,6 +137,13 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
             tasks: childTasks,
             mappingState,
             labelIdMap,
+            taskMappings: existingTaskMap,
+        });
+
+        await pushLocalTasks({
+            userId,
+            client,
+            mappingState,
             taskMappings: existingTaskMap,
         });
 
@@ -280,6 +287,96 @@ async function createTodoistTasks(params: {
                 }))
             );
         }
+    }
+}
+
+async function pushLocalTasks(params: {
+    userId: string;
+    client: ReturnType<typeof createTodoistClient>;
+    mappingState: { projects: { projectId: string; listId: number | null }[]; labels: { labelId: string; listId: number | null }[] };
+    taskMappings: Map<string, number | null>;
+}) {
+    const { userId, client, mappingState, taskMappings } = params;
+    const localTasks = await db.select().from(tasks).where(eq(tasks.userId, userId));
+    const localMapping = new Map<number, string>();
+
+    for (const [externalId, localId] of taskMappings) {
+        if (localId) {
+            localMapping.set(localId, externalId);
+        }
+    }
+
+    const pendingTasks = localTasks.filter((task) => !localMapping.has(task.id));
+    const [rootTasks, childTasks] = splitLocalTasksByParent(pendingTasks);
+
+    await createLocalTasksInTodoist({
+        tasks: rootTasks,
+        mappingState,
+        localMapping,
+        client,
+        userId,
+    });
+
+    await createLocalTasksInTodoist({
+        tasks: childTasks,
+        mappingState,
+        localMapping,
+        client,
+        userId,
+    });
+}
+
+function splitLocalTasksByParent(localTasks: typeof tasks.$inferSelect[]) {
+    const rootTasks: typeof tasks.$inferSelect[] = [];
+    const childTasks: typeof tasks.$inferSelect[] = [];
+
+    for (const task of localTasks) {
+        if (task.parentId) {
+            childTasks.push(task);
+        } else {
+            rootTasks.push(task);
+        }
+    }
+
+    return [rootTasks, childTasks] as const;
+}
+
+async function createLocalTasksInTodoist(params: {
+    tasks: typeof tasks.$inferSelect[];
+    mappingState: { projects: { projectId: string; listId: number | null }[]; labels: { labelId: string; listId: number | null }[] };
+    localMapping: Map<number, string>;
+    client: ReturnType<typeof createTodoistClient>;
+    userId: string;
+}) {
+    const { tasks: localTasks, mappingState, localMapping, client, userId } = params;
+
+    for (const task of localTasks) {
+        if (localMapping.has(task.id)) {
+            continue;
+        }
+
+        const payload = mapLocalTaskToTodoist(task, mappingState);
+        if (task.parentId) {
+            const parentExternalId = localMapping.get(task.parentId);
+            if (parentExternalId) {
+                payload.parent_id = parentExternalId;
+            }
+        }
+
+        const created = (await client.createTask(payload)) as TodoistTask;
+        if (!created?.id) {
+            continue;
+        }
+
+        localMapping.set(task.id, created.id);
+        await db.insert(externalEntityMap).values({
+            userId,
+            provider: "todoist",
+            entityType: "task",
+            localId: task.id,
+            externalId: created.id,
+            externalParentId: created.parent_id ?? null,
+        });
     }
 }
 

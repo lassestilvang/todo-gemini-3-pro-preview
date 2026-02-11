@@ -171,7 +171,7 @@ Also add SQLite schema updates in `src/db/schema-sqlite.ts` to keep tests passin
 
 1. Schema + mapping tables (in progress)
 2. Todoist client and service layer (in progress)
-3. Basic 1-way sync (local → Todoist)
+3. Basic 1-way sync (local → Todoist) (in progress)
 4. 2-way sync with conflict resolution
 5. UI settings and project/label mapping
 6. Tests + monitoring
@@ -182,3 +182,4 @@ Also add SQLite schema updates in `src/db/schema-sqlite.ts` to keep tests passin
 - 2026-02-11: Added initial Todoist REST client and service helpers (types, snapshot fetch, priority mapping).
 - 2026-02-11: Added token encryption helper, sync stub, server actions, and settings UI entry point.
 - 2026-02-11: Added mapping helpers and initial Todoist -> local import (projects, labels, tasks, subtasks).
+- 2026-02-11: Added local -> Todoist create pipeline for new tasks and subtasks.
