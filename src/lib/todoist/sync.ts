@@ -223,7 +223,7 @@ async function ensureProjectAssignments(params: {
     existingLists: { id: number; name: string; position: number }[];
 }) {
     const { userId, projects, existingLists } = params;
-    const assignments = buildDefaultProjectAssignments(projects, existingLists);
+    void buildDefaultProjectAssignments(projects, existingLists);
     const lowerCaseListMap = new Map(existingLists.map((list) => [list.name.toLowerCase(), list]));
     let maxPosition = Math.max(0, ...existingLists.map((list) => list.position ?? 0));
 
@@ -271,7 +271,7 @@ async function removeDeletedTasks(params: {
     taskMappings: typeof externalEntityMap.$inferSelect[];
     localTaskMap: Map<number, typeof tasks.$inferSelect>;
 }) {
-    const { userId, client, taskMappings, localTaskMap } = params;
+    const { client, taskMappings, localTaskMap } = params;
     const remoteTasks = (await client.getTasks()) as TodoistTask[];
     const remoteTaskIds = new Set(remoteTasks.map((task) => task.id));
 
@@ -374,7 +374,6 @@ async function updateMappedTasks(params: {
     localLabelToExternal: Map<number | null, string>;
 }) {
     const {
-        userId,
         client,
         taskMappings,
         localTaskMap,

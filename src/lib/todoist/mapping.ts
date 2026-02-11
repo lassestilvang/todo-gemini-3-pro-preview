@@ -1,4 +1,4 @@
-import type { TodoistLabel, TodoistProject, TodoistTask } from "./types";
+import type { TodoistProject, TodoistTask } from "./types";
 
 export type TodoistProjectAssignment = {
     projectId: string;
