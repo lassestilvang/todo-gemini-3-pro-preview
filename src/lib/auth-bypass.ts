@@ -1,10 +1,5 @@
-import { normalizeIp } from "./ip-utils";
-
 export const AUTH_BYPASS_HEADER = "x-auth-bypass";
 export const AUTH_BYPASS_SIGNATURE_HEADER = "x-auth-bypass-signature";
-
-// Re-export normalizeIp for backward compatibility or existing imports
-export { normalizeIp };
 
 export type BypassUserConfig = {
   userId: string;
@@ -87,6 +82,35 @@ export async function signAuthBypassPayload(
   );
 
   return toHex(signature);
+}
+
+export function normalizeIp(value: string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+
+  let ip = value.trim();
+  if (!ip) {
+    return null;
+  }
+
+  if (ip.includes(",")) {
+    ip = ip.split(",")[0]?.trim() ?? "";
+  }
+
+  if (ip.startsWith("::ffff:")) {
+    ip = ip.slice(7);
+  }
+
+  if (ip.includes(".") && ip.includes(":")) {
+    const lastColon = ip.lastIndexOf(":");
+    const port = ip.slice(lastColon + 1);
+    if (/^\d+$/.test(port)) {
+      ip = ip.slice(0, lastColon);
+    }
+  }
+
+  return ip || null;
 }
 
 export function constantTimeEqual(a: string, b: string): boolean {

@@ -82,8 +82,7 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
     const [estimateMinutes, setEstimateMinutes] = useState<number | null>(task?.estimateMinutes || null);
 
     // Error handling state
-    const [isSaving, setIsSaving] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
     const { dispatch } = useSync();
@@ -121,7 +120,7 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
             return;
         }
 
-        setIsSaving(true);
+        setIsSubmitting(true);
 
         try {
             const data = {
@@ -155,7 +154,7 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
             console.error("Failed to save task:", error);
             toast.error("Failed to save task. Please try again.");
         } finally {
-            setIsSaving(false);
+            setIsSubmitting(false);
         }
     };
 
@@ -175,7 +174,7 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
             return;
         }
         if (confirm("Are you sure you want to delete this task?")) {
-            setIsDeleting(true);
+            setIsSubmitting(true);
             try {
                 dispatch("deleteTask", task.id, userId);
 
@@ -185,7 +184,7 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
                 console.error("Failed to delete task:", error);
                 toast.error("Failed to delete task. Please try again.");
             } finally {
-                setIsDeleting(false);
+                setIsSubmitting(false);
             }
         }
     };
@@ -217,8 +216,7 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
         toggleLabel,
         isEdit,
         // Error handling state
-        isSaving,
-        isDeleting,
+        isSubmitting,
         fieldErrors,
         clearFieldError,
     };

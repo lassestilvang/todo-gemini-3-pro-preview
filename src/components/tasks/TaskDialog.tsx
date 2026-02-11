@@ -11,7 +11,7 @@ import {
     DialogDescription,
     DialogTrigger,
 } from "@/components/ui/dialog";
-import { Focus, Loader2 } from "lucide-react";
+import { Focus } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FocusMode } from "./FocusMode";
 import { TaskDetailsTab } from "./task-dialog/TaskDetailsTab";
@@ -106,9 +106,7 @@ function TaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId
         handleSubmit,
         handleDelete,
         toggleLabel,
-        isEdit,
-        isSaving,
-        isDeleting
+        isEdit
     } = useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId, onClose, initialTitle, initialPriority, initialEnergyLevel, initialContext, initialDueDatePrecision });
 
     // Data State (Subtasks, Reminders, Logs, etc.)
@@ -185,24 +183,20 @@ function TaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId
             <DialogFooter className="px-6 py-4 border-t bg-muted/50 flex justify-between sm:justify-between">
                 {isEdit ? (
                     <div className="flex gap-2">
-                        <Button type="button" variant="outline" onClick={() => setFocusModeOpen(true)} className="gap-2" disabled={isSaving || isDeleting}>
+                        <Button type="button" variant="outline" onClick={() => setFocusModeOpen(true)} className="gap-2">
                             <Focus className="h-4 w-4" />
                             Focus
                         </Button>
-                        <Button type="button" variant="destructive" onClick={handleDelete} disabled={isSaving || isDeleting}>
-                            {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        <Button type="button" variant="destructive" onClick={handleDelete}>
                             Delete
                         </Button>
                     </div>
                 ) : <div></div>}
                 <div className="flex gap-2">
-                    <Button type="button" variant="outline" onClick={onClose} disabled={isSaving || isDeleting}>
+                    <Button type="button" variant="outline" onClick={onClose}>
                         Cancel
                     </Button>
-                    <Button type="submit" onClick={handleSubmit} disabled={isSaving || isDeleting}>
-                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Save
-                    </Button>
+                    <Button type="submit" onClick={handleSubmit}>Save</Button>
                 </div>
             </DialogFooter>
 
