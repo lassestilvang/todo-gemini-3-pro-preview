@@ -129,6 +129,108 @@ export const labels = sqliteTable("labels", {
     userIdIdx: index("labels_user_id_idx").on(table.userId),
 }));
 
+export const externalIntegrations = sqliteTable("external_integrations", {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    provider: text("provider", { enum: ["todoist"] }).notNull(),
+    accessTokenEncrypted: text("access_token_encrypted").notNull(),
+    accessTokenIv: text("access_token_iv").notNull(),
+    accessTokenTag: text("access_token_tag").notNull(),
+    refreshTokenEncrypted: text("refresh_token_encrypted"),
+    refreshTokenIv: text("refresh_token_iv"),
+    refreshTokenTag: text("refresh_token_tag"),
+    scopes: text("scopes"),
+    expiresAt: integer("expires_at", { mode: "timestamp" }),
+    metadata: text("metadata"),
+    createdAt: integer("created_at", { mode: "timestamp" })
+        .notNull()
+        .default(sql`(strftime('%s', 'now'))`),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+        .notNull()
+        .default(sql`(strftime('%s', 'now'))`),
+}, (table) => ({
+    userIdIdx: index("external_integrations_user_id_idx").on(table.userId),
+    providerUserUnique: uniqueIndex("external_integrations_provider_user_unique").on(table.userId, table.provider),
+}));
+
+export const externalSyncState = sqliteTable("external_sync_state", {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    provider: text("provider", { enum: ["todoist"] }).notNull(),
+    syncToken: text("sync_token"),
+    lastSyncedAt: integer("last_synced_at", { mode: "timestamp" }),
+    status: text("status", { enum: ["idle", "syncing", "error"] }).notNull().default("idle"),
+    error: text("error"),
+    createdAt: integer("created_at", { mode: "timestamp" })
+        .notNull()
+        .default(sql`(strftime('%s', 'now'))`),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+        .notNull()
+        .default(sql`(strftime('%s', 'now'))`),
+}, (table) => ({
+    userIdIdx: index("external_sync_state_user_id_idx").on(table.userId),
+    providerUserUnique: uniqueIndex("external_sync_state_provider_user_unique").on(table.userId, table.provider),
+}));
+
+export const externalEntityMap = sqliteTable("external_entity_map", {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    provider: text("provider", { enum: ["todoist"] }).notNull(),
+    entityType: text("entity_type", { enum: ["task", "list", "label", "list_label"] }).notNull(),
+    localId: integer("local_id"),
+    externalId: text("external_id").notNull(),
+    externalParentId: text("external_parent_id"),
+    deletedAt: integer("deleted_at", { mode: "timestamp" }),
+    createdAt: integer("created_at", { mode: "timestamp" })
+        .notNull()
+        .default(sql`(strftime('%s', 'now'))`),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+        .notNull()
+        .default(sql`(strftime('%s', 'now'))`),
+}, (table) => ({
+    userIdIdx: index("external_entity_map_user_id_idx").on(table.userId),
+    externalIdIdx: index("external_entity_map_external_id_idx").on(table.externalId),
+    localIdIdx: index("external_entity_map_local_id_idx").on(table.localId),
+    providerEntityUnique: uniqueIndex("external_entity_map_provider_entity_unique").on(
+        table.userId,
+        table.provider,
+        table.entityType,
+        table.externalId
+    ),
+}));
+
+export const externalSyncConflicts = sqliteTable("external_sync_conflicts", {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    provider: text("provider", { enum: ["todoist"] }).notNull(),
+    entityType: text("entity_type", { enum: ["task", "list", "label"] }).notNull(),
+    localId: integer("local_id"),
+    externalId: text("external_id"),
+    conflictType: text("conflict_type").notNull(),
+    localPayload: text("local_payload"),
+    externalPayload: text("external_payload"),
+    status: text("status", { enum: ["pending", "resolved"] }).notNull().default("pending"),
+    resolution: text("resolution"),
+    createdAt: integer("created_at", { mode: "timestamp" })
+        .notNull()
+        .default(sql`(strftime('%s', 'now'))`),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+        .notNull()
+        .default(sql`(strftime('%s', 'now'))`),
+    resolvedAt: integer("resolved_at", { mode: "timestamp" }),
+}, (table) => ({
+    userIdIdx: index("external_sync_conflicts_user_id_idx").on(table.userId),
+    statusIdx: index("external_sync_conflicts_status_idx").on(table.status),
+}));
+
 export const taskLabels = sqliteTable("task_labels", {
     taskId: integer("task_id")
         .notNull()
