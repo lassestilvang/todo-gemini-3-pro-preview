@@ -397,8 +397,10 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         let tempId: number | undefined;
         if (type === 'createTask' || type === 'createList' || type === 'createLabel') {
             // Use a random signed 32-bit integer for temp ID (negative) to avoid overflow
-            // Range: -1 to -2,147,483,647
-            tempId = -Math.floor(Math.random() * 2147483647) - 1;
+            // Range: -1 to -2,147,483,647. Safe range is roughly 2 billion.
+            // Using a max of 2,000,000,000 just to be safe and clean.
+            tempId = -Math.floor(Math.random() * 2000000000) - 1;
+            // console.log(`[SyncProvider] Generated tempId: ${tempId} for ${type}`);
         }
 
         const action: PendingAction = {
