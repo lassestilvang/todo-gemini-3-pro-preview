@@ -38,12 +38,22 @@ interface HeaderStore {
  * Extracts the client IP address from request headers, prioritizing secure headers.
  *
  * Priority:
- * 1. x-vercel-forwarded-for (Vercel specific, trusted)
- * 2. x-real-ip (Nginx/load balancers, usually trusted)
- * 3. x-client-ip (Standard)
- * 4. x-forwarded-for (Standard but spoofable if not careful)
+ * 1. x-vercel-ip (Vercel/Edge specific, set by platform)
+ * 2. x-vercel-forwarded-for (Vercel specific, trusted)
+ * 3. x-real-ip (Nginx/load balancers, usually trusted)
+ * 4. x-client-ip (Standard)
+ * 5. x-forwarded-for (Standard but spoofable if not careful)
  */
-export function getClientIp(headers: HeaderStore): string | null {
+export function getClientIp(headers: HeaderStore | null | undefined): string | null {
+  if (!headers || typeof headers.get !== "function") {
+    return null;
+  }
+
+  const vercelIp = headers.get("x-vercel-ip");
+  if (vercelIp) {
+    return normalizeIp(vercelIp);
+  }
+
   const vercelForwardedFor = headers.get("x-vercel-forwarded-for");
   if (vercelForwardedFor) {
     return normalizeIp(vercelForwardedFor);
