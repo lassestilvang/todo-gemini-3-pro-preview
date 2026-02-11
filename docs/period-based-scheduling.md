@@ -52,7 +52,7 @@ Rather than adding a separate `duePeriod` string column (e.g., `"2025-W15"`), we
   - Add `dueDatePrecision: z.enum(["day", "week", "month", "year"]).optional().nullable()`
 - [x] **1.6** Create `src/lib/due-utils.ts` with core helpers:
   ```ts
-type DuePrecision = "day" | "week" | "month" | "year";
+  type DuePrecision = "day" | "week" | "month" | "year";
   
   // Normalize a date to the start of its period
   normalizeDueAnchor(d: Date, precision: DuePrecision, weekStartsOnMonday: boolean): Date
