@@ -188,17 +188,14 @@ export async function getTasks(
   const taskIds = tasksResult.map((t) => t.id);
   if (taskIds.length === 0) return [];
 
-  const [labelsResult, subtasksResult, blockedCountsResult] = await Promise.all([
+  const [allLabels, taskLabelsResult, subtasksResult, blockedCountsResult] = await Promise.all([
+    getLabels(userId),
     db
       .select({
         taskId: taskLabels.taskId,
         labelId: taskLabels.labelId,
-        name: labels.name,
-        color: labels.color,
-        icon: labels.icon,
       })
       .from(taskLabels)
-      .leftJoin(labels, eq(taskLabels.labelId, labels.id))
       .where(inArray(taskLabels.taskId, taskIds)),
 
     db
@@ -227,18 +224,23 @@ export async function getTasks(
     blockedCountsResult.map((r) => [r.taskId, Number(r.count)])
   );
 
+  const labelsMap = new Map(allLabels.map((l) => [l.id, l]));
+
   // Perf: pre-group labels and subtasks by taskId once to avoid O(N×M) filters.
   // For 500 tasks with 3 labels each, this drops ~1,500 filter passes down to 1.
   const labelsByTaskId = new Map<number, { id: number; name: string; color: string; icon: string | null }[]>();
-  for (const label of labelsResult) {
-    const list = labelsByTaskId.get(label.taskId) ?? [];
-    list.push({
-      id: label.labelId,
-      name: label.name || "", // Handle null name from left join
-      color: label.color || "#000000", // Handle null color
-      icon: label.icon,
-    });
-    labelsByTaskId.set(label.taskId, list);
+  for (const labelLink of taskLabelsResult) {
+    const label = labelsMap.get(labelLink.labelId);
+    if (label) {
+      const list = labelsByTaskId.get(labelLink.taskId) ?? [];
+      list.push({
+        id: label.id,
+        name: label.name,
+        color: label.color || "#000000",
+        icon: label.icon,
+      });
+      labelsByTaskId.set(labelLink.taskId, list);
+    }
   }
 
   const subtasksByParentId = new Map<number, typeof subtasksResult>();
