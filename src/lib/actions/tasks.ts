@@ -253,7 +253,7 @@ export async function getTasks(
       list.push({
         id: label.id,
         name: label.name,
-        color: label.color ?? "#000000",
+        color: label.color || "#000000",
         icon: label.icon,
       });
       labelsByTaskId.set(labelLink.taskId, list);
