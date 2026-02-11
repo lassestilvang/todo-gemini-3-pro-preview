@@ -14,6 +14,7 @@
 - We will use Todoist “Tasks” API endpoints plus “Projects” and “Labels.”
 - We will use Todoist IDs as external IDs and keep an internal mapping table for every synced entity.
 - Todoist API tokens are stored encrypted at rest.
+- TODOIST_ENCRYPTION_KEY is configured in runtime environments.
 
 ## Phased Implementation Plan
 
@@ -188,3 +189,4 @@ Also add SQLite schema updates in `src/db/schema-sqlite.ts` to keep tests passin
 - 2026-02-11: Added update propagation both directions for mapped tasks (skips conflicts).
 - 2026-02-11: Added delete propagation and hooked list/label/task mutations to sync.
 - 2026-02-11: Added Todoist mapping/mapper tests and expanded test DB setup for sync tables.
+- 2026-02-11: Trigger sync after mapping updates.

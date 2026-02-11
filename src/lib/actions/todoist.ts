@@ -158,6 +158,8 @@ export async function setTodoistProjectMappings(mappings: { projectId: string; l
         );
     }
 
+    await syncTodoistNow();
+
     return { success: true };
 }
 
@@ -187,6 +189,8 @@ export async function setTodoistLabelMappings(mappings: { labelId: string; listI
             }))
         );
     }
+
+    await syncTodoistNow();
 
     return { success: true };
 }
