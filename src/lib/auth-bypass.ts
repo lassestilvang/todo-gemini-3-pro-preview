@@ -1,5 +1,10 @@
+import { normalizeIp } from "./ip-utils";
+
 export const AUTH_BYPASS_HEADER = "x-auth-bypass";
 export const AUTH_BYPASS_SIGNATURE_HEADER = "x-auth-bypass-signature";
+
+// Re-export normalizeIp for backward compatibility or existing imports
+export { normalizeIp };
 
 export type BypassUserConfig = {
   userId: string;
