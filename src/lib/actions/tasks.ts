@@ -40,6 +40,14 @@ import {
 import { rateLimit } from "@/lib/rate-limit";
 import { requireUser } from "@/lib/auth";
 
+/**
+ * Validates that an ID is a safe 32-bit integer for Postgres.
+ * Returns true if valid, false if out of range or invalid.
+ */
+function isValidId(id: number): boolean {
+  return Number.isInteger(id) && id >= -2147483648 && id <= 2147483647;
+}
+
 // Import from other domain modules
 import { getLists, getList } from "./lists";
 import { getLabels } from "./labels";
@@ -289,6 +297,8 @@ export async function getTasks(
 export async function getTask(id: number, userId: string) {
   await requireUser(userId);
 
+  if (!isValidId(id)) return null;
+
   const result = await db
     .select({
       id: tasks.id,
@@ -492,6 +502,8 @@ export async function updateTask(
 ) {
   const user = await requireUser(userId);
 
+  if (!isValidId(id)) return;
+
   // Validate and parse input data
   const parsedData = updateTaskSchema.parse(data);
   const { labelIds, expectedUpdatedAt, dueDatePrecision: rawPrecision, ...taskData } = parsedData;
@@ -677,6 +689,9 @@ export async function updateTask(
  */
 export async function deleteTask(id: number, userId: string) {
   await requireUser(userId);
+
+  if (!isValidId(id)) return;
+
   await db.delete(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   await syncTodoistNow();
@@ -693,6 +708,10 @@ export async function deleteTask(id: number, userId: string) {
  */
 export async function toggleTaskCompletion(id: number, userId: string, isCompleted: boolean) {
   await requireUser(userId);
+
+  if (!isValidId(id)) {
+    throw new NotFoundError("Task not found or access denied");
+  }
 
   const task = await getTask(id, userId);
   if (!task) {
@@ -940,6 +959,8 @@ export async function createSubtask(
 export async function updateSubtask(id: number, userId: string, isCompleted: boolean) {
   await requireUser(userId);
 
+  if (!isValidId(id)) return;
+
   await db
     .update(tasks)
     .set({
@@ -958,6 +979,9 @@ export async function updateSubtask(id: number, userId: string, isCompleted: boo
  */
 export async function deleteSubtask(id: number, userId: string) {
   await requireUser(userId);
+
+  if (!isValidId(id)) return;
+
   await db.delete(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
   revalidatePath("/", "layout");
 }
