@@ -20,7 +20,7 @@ function parseTodoistDueDate(task: TodoistTask) {
 
     return {
         dueDate,
-        dueDatePrecision: hasTimeComponent ? null : "day",
+        dueDatePrecision: (hasTimeComponent ? null : "day") as LocalTask["dueDatePrecision"],
     };
 }
 
@@ -58,8 +58,8 @@ export function mapLocalTaskToTodoist(
     const labelMap = options?.labelIdToExternal;
     const mappedLabels = labelMap
         ? labelIds
-              .map((labelId) => labelMap.get(labelId) ?? null)
-              .filter((labelId): labelId is string => Boolean(labelId))
+            .map((labelId) => labelMap.get(labelId) ?? null)
+            .filter((labelId): labelId is string => Boolean(labelId))
         : undefined;
     const iso = task.dueDate ? task.dueDate.toISOString() : null;
     const hasTime = iso ? !iso.endsWith("T00:00:00.000Z") : false;
@@ -74,6 +74,6 @@ export function mapLocalTaskToTodoist(
         due_date: hasTime ? undefined : dueDate,
         due_datetime: hasTime ? iso ?? undefined : undefined,
         due_string: task.isRecurring && task.recurringRule ? task.recurringRule : undefined,
-        parent_id: task.parentId ?? undefined,
+        parent_id: undefined,
     };
 }

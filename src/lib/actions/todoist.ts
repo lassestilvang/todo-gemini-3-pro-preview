@@ -150,8 +150,8 @@ export async function setTodoistProjectMappings(mappings: { projectId: string; l
         await db.insert(externalEntityMap).values(
             mappings.map((mapping) => ({
                 userId: user.id,
-                provider: "todoist",
-                entityType: "list",
+                provider: "todoist" as const,
+                entityType: "list" as const,
                 localId: mapping.listId,
                 externalId: mapping.projectId,
             }))
@@ -182,8 +182,8 @@ export async function setTodoistLabelMappings(mappings: { labelId: string; listI
         await db.insert(externalEntityMap).values(
             filtered.map((mapping) => ({
                 userId: user.id,
-                provider: "todoist",
-                entityType: "list_label",
+                provider: "todoist" as const,
+                entityType: "list_label" as const,
                 localId: mapping.listId,
                 externalId: mapping.labelId,
             }))
