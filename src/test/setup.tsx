@@ -2,7 +2,7 @@ import { expect, afterEach, mock, beforeEach } from "bun:test";
 // GlobalRegistrator is now loaded via register-dom.ts in bunfig.toml
 import * as matchers from "@testing-library/jest-dom/matchers";
 import { db, sqliteConnection } from "@/db";
-import { labels, lists, tasks, timeEntries, templates, userStats, achievements, userAchievements, viewSettings, savedViews, rateLimits, taskDependencies, taskLabels, reminders, habitCompletions, taskLogs, customIcons } from "@/db";
+import { labels, lists, tasks, timeEntries, templates, userStats, achievements, userAchievements, viewSettings, savedViews, rateLimits, taskDependencies, taskLabels, reminders, habitCompletions, taskLogs, customIcons, externalIntegrations, externalSyncState, externalEntityMap, externalSyncConflicts } from "@/db";
 import { getMockAuthUser, resetMockAuthUser } from "./mocks";
 import React from "react";
 import { cleanup } from "@testing-library/react";
@@ -418,6 +418,10 @@ export async function setupTestDb() {
     sqliteConnection.run("CREATE TABLE IF NOT EXISTS rate_limits(key TEXT PRIMARY KEY, count INTEGER NOT NULL DEFAULT 0, last_request INTEGER NOT NULL DEFAULT(strftime('%s', 'now')));");
     sqliteConnection.run("CREATE TABLE IF NOT EXISTS time_entries(id INTEGER PRIMARY KEY AUTOINCREMENT, task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, started_at INTEGER NOT NULL, ended_at INTEGER, duration_minutes INTEGER, notes TEXT, is_manual INTEGER DEFAULT 0, created_at INTEGER DEFAULT(strftime('%s', 'now')), updated_at INTEGER DEFAULT(strftime('%s', 'now')));");
     sqliteConnection.run("CREATE TABLE IF NOT EXISTS custom_icons(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, name TEXT NOT NULL, url TEXT NOT NULL, created_at INTEGER DEFAULT(strftime('%s', 'now')));");
+    sqliteConnection.run("CREATE TABLE IF NOT EXISTS external_integrations(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, provider TEXT NOT NULL, access_token_encrypted TEXT NOT NULL, access_token_iv TEXT NOT NULL, access_token_tag TEXT NOT NULL, refresh_token_encrypted TEXT, refresh_token_iv TEXT, refresh_token_tag TEXT, scopes TEXT, expires_at INTEGER, metadata TEXT, created_at INTEGER DEFAULT(strftime('%s', 'now')), updated_at INTEGER DEFAULT(strftime('%s', 'now')));");
+    sqliteConnection.run("CREATE TABLE IF NOT EXISTS external_sync_state(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, provider TEXT NOT NULL, sync_token TEXT, last_synced_at INTEGER, status TEXT DEFAULT 'idle' NOT NULL, error TEXT, created_at INTEGER DEFAULT(strftime('%s', 'now')), updated_at INTEGER DEFAULT(strftime('%s', 'now')));");
+    sqliteConnection.run("CREATE TABLE IF NOT EXISTS external_entity_map(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, provider TEXT NOT NULL, entity_type TEXT NOT NULL, local_id INTEGER, external_id TEXT NOT NULL, external_parent_id TEXT, deleted_at INTEGER, created_at INTEGER DEFAULT(strftime('%s', 'now')), updated_at INTEGER DEFAULT(strftime('%s', 'now')));");
+    sqliteConnection.run("CREATE TABLE IF NOT EXISTS external_sync_conflicts(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, provider TEXT NOT NULL, entity_type TEXT NOT NULL, local_id INTEGER, external_id TEXT, conflict_type TEXT NOT NULL, local_payload TEXT, external_payload TEXT, status TEXT DEFAULT 'pending' NOT NULL, resolution TEXT, created_at INTEGER DEFAULT(strftime('%s', 'now')), updated_at INTEGER DEFAULT(strftime('%s', 'now')), resolved_at INTEGER);");
 }
 
 /**
@@ -456,6 +460,10 @@ export async function resetTestDb() {
             await db.delete(templates);
             await db.delete(rateLimits);
             await db.delete(customIcons);
+            await db.delete(externalSyncConflicts);
+            await db.delete(externalEntityMap);
+            await db.delete(externalSyncState);
+            await db.delete(externalIntegrations);
 
             // Delete users last using direct SQL for performance
             sqliteConnection.run("DELETE FROM users");

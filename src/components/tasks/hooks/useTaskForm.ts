@@ -82,7 +82,8 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
     const [estimateMinutes, setEstimateMinutes] = useState<number | null>(task?.estimateMinutes || null);
 
     // Error handling state
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
     const { dispatch } = useSync();
@@ -120,7 +121,7 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
             return;
         }
 
-        setIsSubmitting(true);
+        setIsSaving(true);
 
         try {
             const data = {
@@ -154,16 +155,20 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
             console.error("Failed to save task:", error);
             toast.error("Failed to save task. Please try again.");
         } finally {
-            setIsSubmitting(false);
+            setIsSaving(false);
         }
     };
 
     const toggleLabel = useCallback((labelId: number) => {
-        setSelectedLabelIds(prev =>
-            prev.includes(labelId)
-                ? prev.filter(id => id !== labelId)
-                : [...prev, labelId]
-        );
+        setSelectedLabelIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(labelId)) {
+                next.delete(labelId);
+            } else {
+                next.add(labelId);
+            }
+            return Array.from(next);
+        });
     }, []);
 
     const handleDelete = async () => {
@@ -174,7 +179,7 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
             return;
         }
         if (confirm("Are you sure you want to delete this task?")) {
-            setIsSubmitting(true);
+            setIsDeleting(true);
             try {
                 dispatch("deleteTask", task.id, userId);
 
@@ -184,7 +189,7 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
                 console.error("Failed to delete task:", error);
                 toast.error("Failed to delete task. Please try again.");
             } finally {
-                setIsSubmitting(false);
+                setIsDeleting(false);
             }
         }
     };
@@ -216,7 +221,8 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
         toggleLabel,
         isEdit,
         // Error handling state
-        isSubmitting,
+        isSaving,
+        isDeleting,
         fieldErrors,
         clearFieldError,
     };
