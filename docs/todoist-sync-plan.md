@@ -192,3 +192,4 @@ Also add SQLite schema updates in `src/db/schema-sqlite.ts` to keep tests passin
 - 2026-02-11: Trigger sync after mapping updates.
 - 2026-02-11: Added TODOIST_ENCRYPTION_KEY to .env example.
 - 2026-02-11: Added cron sync endpoint, conflict UI improvements, and documented scheduling.
+- 2026-02-11: Generated Drizzle migration for Todoist sync tables.

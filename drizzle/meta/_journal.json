@@ -113,6 +113,13 @@
       "when": 1770740268641,
       "tag": "0015_cynical_the_fury",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1770827500972,
+      "tag": "0016_lonely_garia",
+      "breakpoints": true
     }
   ]
 }
