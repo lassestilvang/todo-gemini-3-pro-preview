@@ -4,7 +4,7 @@
   "crons": [
     {
       "path": "/api/todoist-sync",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }
