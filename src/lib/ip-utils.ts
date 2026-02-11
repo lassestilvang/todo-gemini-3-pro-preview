@@ -30,6 +30,10 @@ export function normalizeIp(value: string | null | undefined): string | null {
   return ip || null;
 }
 
+interface HeaderStore {
+  get(name: string): string | null;
+}
+
 /**
  * Extracts the client IP address from request headers, prioritizing secure headers.
  *
@@ -39,7 +43,7 @@ export function normalizeIp(value: string | null | undefined): string | null {
  * 3. x-client-ip (Standard)
  * 4. x-forwarded-for (Standard but spoofable if not careful)
  */
-export function getClientIp(headers: Headers): string | null {
+export function getClientIp(headers: HeaderStore): string | null {
   const vercelForwardedFor = headers.get("x-vercel-forwarded-for");
   if (vercelForwardedFor) {
     return normalizeIp(vercelForwardedFor);
