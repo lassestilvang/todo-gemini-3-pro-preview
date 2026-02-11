@@ -158,13 +158,17 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
         }
     };
 
-    const toggleLabel = (labelId: number) => {
-        setSelectedLabelIds(prev =>
-            prev.includes(labelId)
-                ? prev.filter(id => id !== labelId)
-                : [...prev, labelId]
-        );
-    };
+    const toggleLabel = useCallback((labelId: number) => {
+        setSelectedLabelIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(labelId)) {
+                next.delete(labelId);
+            } else {
+                next.add(labelId);
+            }
+            return Array.from(next);
+        });
+    }, []);
 
     const handleDelete = async () => {
         if (!isEdit || !task) return;
