@@ -74,6 +74,13 @@ export async function getTasks(
 
   const user = await requireUser(userId);
 
+  // Validate inputs to prevent integer overflow errors
+  if (listId !== undefined && listId !== null && !isValidId(listId)) {
+    return [];
+  }
+  if (labelId !== undefined && !isValidId(labelId)) {
+    return [];
+  }
 
   const conditions = [];
 
@@ -379,6 +386,10 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
 
     // Validate parent task ownership if parentId is provided to prevent IDOR
     if (taskData.parentId) {
+      if (!isValidId(taskData.parentId)) {
+        throw new Error("Invalid parent ID");
+      }
+
       const parentTask = await db
         .select({ id: tasks.id })
         .from(tasks)
@@ -388,6 +399,10 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
       if (parentTask.length === 0) {
         throw new NotFoundError("Parent task not found or access denied");
       }
+    }
+
+    if (taskData.listId && !isValidId(taskData.listId)) {
+      throw new Error("Invalid list ID");
     }
 
     // Smart Tagging: If no list or labels provided, try to guess them
