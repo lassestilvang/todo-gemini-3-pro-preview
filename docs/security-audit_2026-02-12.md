@@ -305,11 +305,10 @@ export async function GET() {
 - Resolved (2026-02-12)
 
 **Changes Applied**
-- Added btree indexes for `tasks.title` and `tasks.description` to speed LIKE queries.
+- Added pg_trgm extension with GIN trigram indexes on lower(title/description) to speed LIKE queries.
 
 **Implementation**
-- [schema.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/db/schema.ts#L60-L115)
-- [schema-sqlite.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/db/schema-sqlite.ts#L55-L110)
+- [0018_task_search_trigram.sql](file:///Users/lasse/Sites/todo-gemini-3-pro/drizzle/0018_task_search_trigram.sql#L1-L3)
 
 ## Architecture Review
 
