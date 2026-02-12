@@ -60,8 +60,15 @@ async function createTaskImpl(data: typeof tasks.$inferInsert & { labelIds?: num
       }
     }
 
-    if (taskData.listId && !isValidId(taskData.listId)) {
-      throw new Error("Invalid list ID");
+    if (taskData.listId) {
+      if (!isValidId(taskData.listId)) {
+        throw new Error("Invalid list ID");
+      }
+
+      const list = await getList(taskData.listId, taskData.userId);
+      if (!list) {
+        throw new NotFoundError("List not found or access denied");
+      }
     }
 
     if (!taskData.listId && finalLabelIds.length === 0 && taskData.title && taskData.userId) {
@@ -221,6 +228,20 @@ async function updateTaskImpl(
     dueDatePrecision: shouldClearDue ? null : precision ?? undefined,
     updatedAt: new Date(),
   } as Partial<typeof tasks.$inferInsert>;
+
+  // Validate list ownership before updating
+  if (taskData.listId !== undefined && taskData.listId !== currentTask.listId) {
+    if (taskData.listId !== null && !isValidId(taskData.listId)) {
+      throw new Error("Invalid list ID");
+    }
+
+    if (taskData.listId) {
+       const toList = await getList(taskData.listId, userId);
+       if (!toList) {
+          throw new NotFoundError("List not found or access denied");
+       }
+    }
+  }
 
   await db
     .update(tasks)
