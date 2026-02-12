@@ -120,6 +120,13 @@
       "when": 1770836762730,
       "tag": "0016_confused_winter_soldier",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1770890470736,
+      "tag": "0017_brief_solo",
+      "breakpoints": true
     }
   ]
 }

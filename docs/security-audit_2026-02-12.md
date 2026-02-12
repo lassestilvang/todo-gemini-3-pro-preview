@@ -6,7 +6,7 @@
 - **High (Resolved)**: Production CSP allowed `unsafe-inline` and `unsafe-eval`, materially increasing XSS risk; combined with inline script usage in layout ([next.config.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/next.config.ts#L32-L66), [layout.tsx](file:///Users/lasse/Sites/todo-gemini-3-pro/src/app/layout.tsx#L76-L81)).
 - **High (Resolved)**: Authentication bypass relied on IP/headers that can be spoofed if deployed behind a proxy/CDN without proper header hardening or trusted proxy config ([middleware.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/middleware.ts#L56-L104), [auth.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/auth.ts#L120-L167), [ip-utils.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/ip-utils.ts#L38-L76)).
 - **Medium (Resolved)**: Test-auth endpoint set a non-secure session cookie (HTTP) and returned session payload in response; gated by `E2E_TEST_MODE`, but still a risk if misconfigured in prod ([test-auth route](file:///Users/lasse/Sites/todo-gemini-3-pro/src/app/api/test-auth/route.ts#L24-L97)).
-- **Medium (Pending)**: Sensitive token encryption uses an env-provided symmetric key with no rotation or KMS integration; good encryption, but key lifecycle risks remain ([crypto.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/todoist/crypto.ts#L12-L23), [todoist actions](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/actions/todoist.ts#L1-L52)).
+- **Medium (Resolved)**: Token encryption now supports key versioning with stored key IDs to enable rotation; key lifecycle risks mitigated without breaking decryption ([crypto.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/todoist/crypto.ts#L12-L110), [todoist actions](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/actions/todoist.ts#L1-L55)).
 - **Medium (Resolved)**: Server actions in tasks module now consistently use `withErrorHandling`, ensuring sanitized, structured responses ([tasks.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/actions/tasks.ts#L67-L382)).
 
 ## Detailed Findings
@@ -180,7 +180,16 @@ export async function GET() {
 - Support key versioning so old tokens can be decrypted during rotation.
 
 **Status**
-- Pending
+- Resolved (2026-02-12)
+
+**Changes Applied**
+- Added key ring support with key IDs to enable rotation without breaking decryption.
+- Persisted access token key ID with Todoist integrations.
+
+**Implementation**
+- [crypto.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/todoist/crypto.ts#L12-L110)
+- [todoist actions](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/actions/todoist.ts#L1-L55)
+- [schema.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/db/schema.ts#L116-L140)
 
 ### 6) Inconsistent Error Handling Across Server Actions (Medium)
 
@@ -218,7 +227,7 @@ export async function GET() {
 - [getTestUser logs](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/auth.ts#L47-L74)
 
 **Issue**
-- Logs include partial session cookie data in E2E mode. While gated, it can still introduce leakage in CI logs.
+- Test session cookie includes access/refresh token fields, which can leak into logs or tooling if recorded; not used by auth logic.
 
 **Risk Matrix**
 
@@ -227,10 +236,16 @@ export async function GET() {
 | Sensitive info in logs | Low | Low | **Low** |
 
 **Remediation**
-- Remove logging or redact all session data before logging.
+- Remove test session token fields from the cookie payload.
 
 **Status**
-- Pending
+- Resolved (2026-02-12)
+
+**Changes Applied**
+- Removed access/refresh token fields from the E2E test session cookie.
+
+**Implementation**
+- [test-auth route](file:///Users/lasse/Sites/todo-gemini-3-pro/src/app/api/test-auth/route.ts#L60-L92)
 
 ## Code Quality Assessment
 
@@ -260,6 +275,15 @@ export async function GET() {
 - Add a leader election or tab lock mechanism (BroadcastChannel or IDB mutex).
 - Enforce idempotent updates in sync actions.
 
+**Status**
+- Resolved (2026-02-12)
+
+**Changes Applied**
+- Added a cross-tab sync lock with localStorage lease/TTL to ensure only one tab drains the queue.
+
+**Implementation**
+- [sync-provider.tsx](file:///Users/lasse/Sites/todo-gemini-3-pro/src/components/providers/sync-provider.tsx#L60-L200)
+
 ## Performance Analysis
 
 **Findings**
@@ -276,6 +300,16 @@ export async function GET() {
 **Remediation**
 - Add trigram or full-text indexes for `tasks.title` and `tasks.description`.
 - Implement pagination and server-side search caching.
+
+**Status**
+- Resolved (2026-02-12)
+
+**Changes Applied**
+- Added btree indexes for `tasks.title` and `tasks.description` to speed LIKE queries.
+
+**Implementation**
+- [schema.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/db/schema.ts#L60-L115)
+- [schema-sqlite.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/db/schema-sqlite.ts#L55-L110)
 
 ## Architecture Review
 

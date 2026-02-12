@@ -31,6 +31,7 @@ export async function connectTodoist(token: string) {
             accessTokenEncrypted: encrypted.ciphertext,
             accessTokenIv: encrypted.iv,
             accessTokenTag: encrypted.tag,
+            accessTokenKeyId: encrypted.keyId,
         })
         .onConflictDoUpdate({
             target: [externalIntegrations.userId, externalIntegrations.provider],
@@ -38,6 +39,7 @@ export async function connectTodoist(token: string) {
                 accessTokenEncrypted: encrypted.ciphertext,
                 accessTokenIv: encrypted.iv,
                 accessTokenTag: encrypted.tag,
+                accessTokenKeyId: encrypted.keyId,
                 updatedAt: new Date(),
             },
         });
@@ -99,6 +101,7 @@ export async function getTodoistMappingData() {
         ciphertext: integration.accessTokenEncrypted,
         iv: integration.accessTokenIv,
         tag: integration.accessTokenTag,
+        keyId: integration.accessTokenKeyId,
     });
 
     const client = createTodoistClient(accessToken);
@@ -249,6 +252,7 @@ export async function resolveTodoistConflict(conflictId: number, resolution: "lo
         ciphertext: integration.accessTokenEncrypted,
         iv: integration.accessTokenIv,
         tag: integration.accessTokenTag,
+        keyId: integration.accessTokenKeyId,
     });
 
     const client = createTodoistClient(accessToken);

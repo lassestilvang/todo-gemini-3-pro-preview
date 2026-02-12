@@ -71,8 +71,6 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
     cookieStore.set('wos-session-test', JSON.stringify({
       user: userToSync,
-      accessToken: 'test-access-token',
-      refreshToken: 'test-refresh-token',
       expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
     }), {
       httpOnly: true,

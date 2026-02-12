@@ -63,6 +63,41 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     const pendingQueueRef = useRef<PendingAction[]>([]);
     const flushTimerRef = useRef<any>(null);
     const flushIdleRef = useRef<any>(null);
+    const tabIdRef = useRef(uuidv4());
+    const lockIntervalRef = useRef<number | null>(null);
+    const SYNC_LOCK_KEY = "todo-gemini-sync-lock";
+    const SYNC_LOCK_TTL_MS = 10000;
+
+    const readSyncLock = useCallback((): { owner: string; expiresAt: number } | null => {
+        try {
+            const raw = localStorage.getItem(SYNC_LOCK_KEY);
+            if (!raw) return null;
+            const parsed = JSON.parse(raw) as { owner?: string; expiresAt?: number } | null;
+            if (!parsed || !parsed.owner || typeof parsed.expiresAt !== "number") return null;
+            return { owner: parsed.owner, expiresAt: parsed.expiresAt };
+        } catch {
+            return null;
+        }
+    }, []);
+
+    const writeSyncLock = useCallback((owner: string, expiresAt: number) => {
+        try {
+            localStorage.setItem(SYNC_LOCK_KEY, JSON.stringify({ owner, expiresAt }));
+        } catch {
+            return;
+        }
+    }, []);
+
+    const ensureSyncLock = useCallback(() => {
+        const now = Date.now();
+        const current = readSyncLock();
+        const owner = tabIdRef.current;
+        if (!current || current.expiresAt < now || current.owner === owner) {
+            writeSyncLock(owner, now + SYNC_LOCK_TTL_MS);
+            return true;
+        }
+        return current.owner === owner;
+    }, [readSyncLock, writeSyncLock, SYNC_LOCK_TTL_MS]);
 
     const fixupQueueIds = useCallback(async (oldId: number, newId: number) => {
         const dbCurrent = await getDB();
@@ -83,6 +118,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
     const processQueue = useCallback(async () => {
         if (processingRef.current || !navigator.onLine) return;
+        if (!ensureSyncLock()) return;
 
         processingRef.current = true;
 
@@ -255,13 +291,16 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             processingRef.current = false;
             setStatus('online');
         }
-    }, [fixupQueueIds, queryClient]);
+    }, [ensureSyncLock, fixupQueueIds, queryClient]);
 
     // Initial load
     useEffect(() => {
         const handlePageExit = () => {
-            // Perf: flush queued actions before the page is hidden/unloaded.
             void flushActionsRef.current?.();
+            const current = readSyncLock();
+            if (current?.owner === tabIdRef.current) {
+                localStorage.removeItem(SYNC_LOCK_KEY);
+            }
         };
         window.addEventListener('pagehide', handlePageExit);
         window.addEventListener('beforeunload', handlePageExit);
@@ -296,7 +335,59 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
         };
-    }, [processQueue]);
+    }, [processQueue, readSyncLock]);
+
+    useEffect(() => {
+        if (!isOnline) {
+            if (lockIntervalRef.current !== null) {
+                clearInterval(lockIntervalRef.current);
+                lockIntervalRef.current = null;
+            }
+            return;
+        }
+
+        const ownerId = tabIdRef.current;
+
+        const refreshLock = () => {
+            const now = Date.now();
+            const current = readSyncLock();
+            if (!current || current.expiresAt < now || current.owner === ownerId) {
+                writeSyncLock(ownerId, now + SYNC_LOCK_TTL_MS);
+            }
+        };
+
+        refreshLock();
+
+        lockIntervalRef.current = window.setInterval(refreshLock, Math.floor(SYNC_LOCK_TTL_MS / 2));
+
+        const handleVisibility = () => {
+            if (document.visibilityState === "visible") {
+                refreshLock();
+            }
+        };
+
+        const handleStorage = (event: StorageEvent) => {
+            if (event.key === SYNC_LOCK_KEY) {
+                refreshLock();
+            }
+        };
+
+        window.addEventListener("visibilitychange", handleVisibility);
+        window.addEventListener("storage", handleStorage);
+
+        return () => {
+            if (lockIntervalRef.current !== null) {
+                clearInterval(lockIntervalRef.current);
+                lockIntervalRef.current = null;
+            }
+            window.removeEventListener("visibilitychange", handleVisibility);
+            window.removeEventListener("storage", handleStorage);
+            const current = readSyncLock();
+            if (current?.owner === ownerId) {
+                localStorage.removeItem(SYNC_LOCK_KEY);
+            }
+        };
+    }, [isOnline, readSyncLock, writeSyncLock, SYNC_LOCK_TTL_MS]);
 
     // Also try to process queue on mount if online
     useEffect(() => {

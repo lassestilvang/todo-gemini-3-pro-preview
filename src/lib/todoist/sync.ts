@@ -35,6 +35,7 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
         ciphertext: integration.accessTokenEncrypted,
         iv: integration.accessTokenIv,
         tag: integration.accessTokenTag,
+        keyId: integration.accessTokenKeyId,
     });
 
     const client = createTodoistClient(accessToken);

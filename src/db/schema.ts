@@ -107,6 +107,8 @@ export const tasks = pgTable("tasks", {
         table.isCompleted,
         table.position
     ),
+    titleIdx: index("tasks_title_idx").on(table.title),
+    descriptionIdx: index("tasks_description_idx").on(table.description),
 }));
 
 export const labels = pgTable("labels", {
@@ -132,6 +134,7 @@ export const externalIntegrations = pgTable("external_integrations", {
     accessTokenEncrypted: text("access_token_encrypted").notNull(),
     accessTokenIv: text("access_token_iv").notNull(),
     accessTokenTag: text("access_token_tag").notNull(),
+    accessTokenKeyId: text("access_token_key_id").notNull().default("default"),
     refreshTokenEncrypted: text("refresh_token_encrypted"),
     refreshTokenIv: text("refresh_token_iv"),
     refreshTokenTag: text("refresh_token_tag"),

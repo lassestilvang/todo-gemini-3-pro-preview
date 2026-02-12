@@ -32,5 +32,31 @@ export function validateEnv() {
         }
     }
 
+    if (process.env.TODOIST_ENCRYPTION_KEYS) {
+        const entries = process.env.TODOIST_ENCRYPTION_KEYS.split(",").map((entry) => entry.trim()).filter(Boolean);
+        for (const entry of entries) {
+            const [keyId, hexKey] = entry.split(":").map((part) => part.trim());
+            if (!keyId || !hexKey) {
+                console.warn("⚠️ TODOIST_ENCRYPTION_KEYS entries should be keyId:hex.");
+                continue;
+            }
+            const keyLength = Buffer.from(hexKey, "hex").length;
+            if (keyLength !== 32) {
+                console.warn("⚠️ TODOIST_ENCRYPTION_KEYS entries should be 64-character hex strings.");
+            }
+        }
+    }
+
+    if (process.env.TODOIST_ENCRYPTION_KEY_ID && process.env.TODOIST_ENCRYPTION_KEYS) {
+        const keyIds = process.env.TODOIST_ENCRYPTION_KEYS.split(",")
+            .map((entry) => entry.trim())
+            .filter(Boolean)
+            .map((entry) => entry.split(":")[0]?.trim())
+            .filter(Boolean);
+        if (!keyIds.includes(process.env.TODOIST_ENCRYPTION_KEY_ID)) {
+            console.warn("⚠️ TODOIST_ENCRYPTION_KEY_ID does not match any configured key.");
+        }
+    }
+
     //console.log("✅ Environment variables validated.");
 }
