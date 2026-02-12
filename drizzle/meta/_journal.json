@@ -134,6 +134,13 @@
       "when": 1770919468366,
       "tag": "0018_all_tasks_idx",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1770922799168,
+      "tag": "0019_add_trigram_extension",
+      "breakpoints": true
     }
   ]
 }
