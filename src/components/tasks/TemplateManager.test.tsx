@@ -14,10 +14,10 @@ mock.module("@/components/ui/dialog", () => ({
     const isControlled = open !== undefined;
     const isOpen = isControlled ? open : internalOpen;
     const handleOpenChange = (newOpen: boolean) => {
-        if (isControlled && onOpenChange) {
-            onOpenChange(newOpen);
-        }
-        setInternalOpen(newOpen);
+      if (isControlled && onOpenChange) {
+        onOpenChange(newOpen);
+      }
+      setInternalOpen(newOpen);
     };
 
     return (
@@ -31,9 +31,9 @@ mock.module("@/components/ui/dialog", () => ({
   DialogTrigger: ({ children, asChild, onClick }: { children: React.ReactNode; asChild?: boolean; onClick?: () => void }) => {
     const { setOpen } = React.useContext(DialogContext);
     return (
-      <div data-testid="dialog-trigger" onClick={(e) => {
-          if (onClick) onClick();
-          setOpen(true);
+      <div data-testid="dialog-trigger" onClick={() => {
+        if (onClick) onClick();
+        setOpen(true);
       }}>
         {asChild ? children : <button>{children}</button>}
       </div>

@@ -1,4 +1,4 @@
-import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
+import { describe, it, expect, mock, afterEach } from "bun:test";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { LabelSelector } from "./LabelSelector";
 import React from "react";
@@ -23,7 +23,7 @@ mock.module("@/components/ui/label", () => ({
 }));
 
 mock.module("@/lib/icons", () => ({
-    getLabelIcon: () => (props: any) => <svg {...props} />,
+    getLabelIcon: () => (props: React.SVGProps<SVGSVGElement>) => <svg {...props} />,
 }));
 
 describe("LabelSelector", () => {
