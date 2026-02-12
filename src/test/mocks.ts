@@ -86,6 +86,15 @@ export const DEFAULT_MOCK_USER = {
     profilePictureUrl: null,
 };
 
+// Initialize mock state
+const GLOBAL_MOCK_USER_KEY = "__mockAuthUser";
+const mockState = globalThis as unknown as Record<string, MockAuthUser | null>;
+
+// Initialize to null (unauthenticated) by default to prevent accidental access
+if (mockState[GLOBAL_MOCK_USER_KEY] === undefined) {
+    mockState[GLOBAL_MOCK_USER_KEY] = null;
+}
+
 export const mockDb: {
     select: () => { from: () => { where: () => Promise<unknown[]>; limit: () => Promise<unknown[]>; orderBy: () => Promise<unknown[]>; execute: () => Promise<unknown[]> } };
     insert: (table: unknown) => { values: (data: unknown) => { returning: () => Promise<unknown[]> } };
@@ -121,13 +130,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 const authStorage = new AsyncLocalStorage<MockAuthUser | null>();
 
 // Use globalThis to ensure the mock state is shared across module boundaries as a fallback
-const GLOBAL_MOCK_USER_KEY = "__mockAuthUser";
-const mockState = globalThis as unknown as Record<string, MockAuthUser | null>;
-
-// Initialize only if not present to preserve state across module reloads
-if (mockState[GLOBAL_MOCK_USER_KEY] === undefined) {
-    mockState[GLOBAL_MOCK_USER_KEY] = DEFAULT_MOCK_USER;
-}
+// (Defined above to ensure early initialization)
 
 /**
  * Runs a function within a specific authentication context.
