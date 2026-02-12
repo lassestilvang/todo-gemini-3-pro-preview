@@ -76,12 +76,64 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Run Tests with Coverage
-        run: bun test --coverage --max-concurrency=1
+        run: bun test --coverage --coverage-reporter=lcov --max-concurrency=1
         env:
           NODE_ENV: test
           CI: true
           # Fixed seed for property-based tests to ensure reproducibility
           FAST_CHECK_SEED: "12345"
+      
+      - name: Enforce Coverage Thresholds
+        run: |
+          bun -e '
+            import { readFileSync } from "fs";
+
+            const lcovPath = "coverage/lcov.info";
+            const content = readFileSync(lcovPath, "utf8");
+            const records = content.split("end_of_record");
+            const buckets = {
+              lib: { covered: 0, total: 0, threshold: 70 },
+              components: { covered: 0, total: 0, threshold: 60 },
+            };
+
+            for (const record of records) {
+              const sfMatch = record.match(/^SF:(.+)$/m);
+              if (!sfMatch) continue;
+              const filePath = sfMatch[1];
+              const bucketKey = filePath.includes("/src/lib/")
+                ? "lib"
+                : filePath.includes("/src/components/")
+                  ? "components"
+                  : null;
+              if (!bucketKey) continue;
+
+              const bucket = buckets[bucketKey];
+              const daLines = record.match(/^DA:\d+,\d+/gm) || [];
+              for (const line of daLines) {
+                const [, count] = line.split(":")[1].split(",");
+                bucket.total += 1;
+                if (Number(count) > 0) bucket.covered += 1;
+              }
+            }
+
+            const failures = [];
+            for (const [name, bucket] of Object.entries(buckets)) {
+              if (bucket.total === 0) continue;
+              const percent = (bucket.covered / bucket.total) * 100;
+              const rounded = Math.round(percent * 100) / 100;
+              if (rounded < bucket.threshold) {
+                failures.push(`${name} coverage ${rounded}% < ${bucket.threshold}%`);
+              } else {
+                console.log(`${name} coverage ${rounded}% >= ${bucket.threshold}%`);
+              }
+            }
+
+            if (failures.length > 0) {
+              console.error("Coverage thresholds not met:");
+              for (const failure of failures) console.error(`- ${failure}`);
+              process.exit(1);
+            }
+          '
 
   build:
     name: Build
