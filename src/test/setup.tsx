@@ -422,6 +422,9 @@ export async function setupTestDb() {
     sqliteConnection.run("CREATE TABLE IF NOT EXISTS external_sync_state(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, provider TEXT NOT NULL, sync_token TEXT, last_synced_at INTEGER, status TEXT DEFAULT 'idle' NOT NULL, error TEXT, created_at INTEGER DEFAULT(strftime('%s', 'now')), updated_at INTEGER DEFAULT(strftime('%s', 'now')));");
     sqliteConnection.run("CREATE TABLE IF NOT EXISTS external_entity_map(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, provider TEXT NOT NULL, entity_type TEXT NOT NULL, local_id INTEGER, external_id TEXT NOT NULL, external_parent_id TEXT, external_etag TEXT, external_updated_at INTEGER, deleted_at INTEGER, created_at INTEGER DEFAULT(strftime('%s', 'now')), updated_at INTEGER DEFAULT(strftime('%s', 'now')));");
     sqliteConnection.run("CREATE TABLE IF NOT EXISTS external_sync_conflicts(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, provider TEXT NOT NULL, entity_type TEXT NOT NULL, local_id INTEGER, external_id TEXT, conflict_type TEXT NOT NULL, local_payload TEXT, external_payload TEXT, status TEXT DEFAULT 'pending' NOT NULL, resolution TEXT, created_at INTEGER DEFAULT(strftime('%s', 'now')), updated_at INTEGER DEFAULT(strftime('%s', 'now')), resolved_at INTEGER);");
+    sqliteConnection.run("CREATE UNIQUE INDEX IF NOT EXISTS external_integrations_provider_user_unique ON external_integrations(user_id, provider);");
+    sqliteConnection.run("CREATE UNIQUE INDEX IF NOT EXISTS external_sync_state_provider_user_unique ON external_sync_state(user_id, provider);");
+    sqliteConnection.run("CREATE UNIQUE INDEX IF NOT EXISTS external_entity_map_provider_entity_unique ON external_entity_map(user_id, provider, entity_type, external_id);");
 }
 
 /**
