@@ -1,5 +1,5 @@
 {
-  "id": "2b257b1e-cde7-4e29-ae4c-a08f0eb94a0a",
+  "id": "39ddf4f9-a918-4396-a5d8-dae45fbe39c1",
   "prevId": "65a7c872-cc3a-4258-b416-32bb979cd806",
   "version": "7",
   "dialect": "postgresql",
@@ -340,6 +340,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "access_token_key_id": {
+          "name": "access_token_key_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'default'"
         },
         "refresh_token_encrypted": {
           "name": "refresh_token_encrypted",
@@ -1837,6 +1844,36 @@
             },
             {
               "expression": "position",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "tasks_title_idx": {
+          "name": "tasks_title_idx",
+          "columns": [
+            {
+              "expression": "title",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "tasks_description_idx": {
+          "name": "tasks_description_idx",
+          "columns": [
+            {
+              "expression": "description",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
