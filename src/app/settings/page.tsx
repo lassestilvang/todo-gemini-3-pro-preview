@@ -13,6 +13,7 @@ import { TimeSettings } from "@/components/settings/TimeSettings"
 import { WeekStartSettings } from "@/components/settings/WeekStartSettings"
 import { CalendarTooltipSettings } from "@/components/settings/CalendarTooltipSettings"
 import { TodoistSettings } from "@/components/settings/TodoistSettings"
+import { GoogleTasksSettings } from "@/components/settings/GoogleTasksSettings"
 
 export default async function SettingsPage() {
     const user = await getCurrentUser();
@@ -60,7 +61,10 @@ export default async function SettingsPage() {
                     <p className="mb-6 text-muted-foreground">
                         Connect third-party services to keep your tasks in sync.
                     </p>
-                    <TodoistSettings />
+                    <div className="space-y-6">
+                        <TodoistSettings />
+                        <GoogleTasksSettings />
+                    </div>
                 </section>
                 <section>
                     <DataExportImport />

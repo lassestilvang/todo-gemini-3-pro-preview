@@ -156,7 +156,9 @@ async function createTaskImpl(data: typeof tasks.$inferInsert & { labelIds?: num
     });
 
     const { syncTodoistNow } = await import("@/lib/actions/todoist");
+    const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
     await syncTodoistNow();
+    await syncGoogleTasksNow();
 
     revalidatePath("/", "layout");
     return normalizedTask;
@@ -352,7 +354,9 @@ async function updateTaskImpl(
   }
 
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
+  const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
   await syncTodoistNow();
+  await syncGoogleTasksNow();
 
   revalidatePath("/", "layout");
 }
@@ -381,7 +385,9 @@ async function deleteTaskImpl(id: number, userId: string) {
 
   await db.delete(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
+  const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
   await syncTodoistNow();
+  await syncGoogleTasksNow();
   revalidatePath("/", "layout");
 }
 

@@ -7,6 +7,42 @@
 - Preserve offline-first behavior and avoid breaking current local workflows.
 - Provide an opt-in setup flow with clear visibility into sync status and conflicts.
 
+## Progress Log
+
+### 2026-02-12
+
+- Completed: Phase 2 data model updates in PostgreSQL + SQLite schemas (provider enums extended, external_etag/external_updated_at added).
+- Completed: Phase 3 client + types + service modules for Google Tasks API requests and token refresh.
+- Completed: Phase 4 mapping helpers for task conversions and conflict payload formatting.
+- Completed: Phase 5 sync engine (full + incremental sync, conflict detection, list/task mapping persistence).
+- Completed: Phase 6 server actions for sync, status, disconnect, and conflict resolution.
+- Completed: Phase 7 settings UI for connect/sync/disconnect and conflict resolution.
+- Completed: Background sync API route mirroring Todoist cron flow.
+- Completed: Unit tests for Google Tasks mapping + conflict UI helpers.
+- Deviations:
+  - Stored `refreshTokenKeyId` in `external_integrations.metadata` JSON because schema lacks a dedicated refresh token key ID column.
+  - Conflict resolution for Google Tasks uses stored conflict payloads rather than re-fetching remote tasks to reduce API calls.
+- Technical Decisions:
+  - OAuth PKCE flow via `/api/google-tasks/auth/start` + `/api/google-tasks/auth/callback`, with state + verifier cookies.
+  - Use `updatedMin = lastSyncedAt` for incremental pulls; `external_updated_at` saved per mapping for conflict awareness.
+  - Labels remain local-only; list mapping is 1:1 tasklist mapping.
+- API Integration Details:
+  - OAuth endpoints: `https://accounts.google.com/o/oauth2/v2/auth`, `https://oauth2.googleapis.com/token`.
+  - Tasks API base: `https://tasks.googleapis.com/tasks/v1`.
+  - Scopes: `https://www.googleapis.com/auth/tasks`.
+  - List calls: `tasklists.list`, `tasks.list` with `showCompleted`, `showDeleted`, `showHidden`, `updatedMin`.
+- Error Handling:
+  - API failures surface through `external_sync_state.error`.
+  - OAuth errors redirect back to `/settings` with status query params.
+  - Conflict detection yields `external_sync_conflicts` rows to prevent silent overwrites.
+- Performance Optimizations:
+  - Incremental sync via `updatedMin`.
+  - Batch list/task map lookups in memory to reduce DB round-trips.
+  - Skips local-to-remote pushes when no changes since last sync.
+- Testing Procedures:
+  - Completed: `bun lint`, `bun test`, `bun --env-file=.env.local run db:push`, `bun run build`.
+  - Completed: `src/lib/google-tasks/mapper.test.ts` and `src/lib/google-tasks/conflict-ui.test.ts`.
+
 ## API Summary
 
 - Service endpoint: https://tasks.googleapis.com

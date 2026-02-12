@@ -149,7 +149,9 @@ async function createListImpl(data: typeof lists.$inferInsert) {
   });
 
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
+  const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
   await syncTodoistNow();
+  await syncGoogleTasksNow();
 
   revalidateTag(`lists-${effectiveUserId}`, 'max');
   revalidatePath("/", "layout");
@@ -204,7 +206,9 @@ async function updateListImpl(
   }
 
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
+  const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
   await syncTodoistNow();
+  await syncGoogleTasksNow();
 
   revalidateTag(`lists-${userId}`, 'max');
   revalidatePath("/", "layout");
@@ -248,7 +252,9 @@ async function deleteListImpl(id: number, userId: string) {
   }
 
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
+  const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
   await syncTodoistNow();
+  await syncGoogleTasksNow();
 
   revalidateTag(`lists-${userId}`, 'max');
   revalidatePath("/", "layout");
