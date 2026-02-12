@@ -10,18 +10,6 @@ type Snapshot = {
     tasksByList: Map<string, GoogleTask[]>;
 };
 
-const authState: {
-    user: null | {
-        id: string;
-        email: string;
-        firstName: string;
-        lastName: string;
-        profilePictureUrl: string | null;
-    };
-} = {
-    user: null,
-};
-
 const serviceState: { snapshot: Snapshot; client: Record<string, unknown> } = {
     snapshot: { tasklists: [], tasksByList: new Map() },
     client: {},
@@ -34,20 +22,6 @@ mock.module("@/lib/google-tasks/service", () => ({
         accessToken: "token",
         integration: { userId },
     }),
-}));
-
-mock.module("@/lib/auth", () => ({
-    getCurrentUser: async () => authState.user,
-    requireUser: async (userId: string) => {
-        const user = authState.user;
-        if (!user) {
-            throw new Error("Unauthorized");
-        }
-        if (user.id !== userId) {
-            throw new Error("Forbidden");
-        }
-        return user;
-    },
 }));
 
 import { syncGoogleTasksForUser } from "@/lib/google-tasks/sync";
@@ -71,13 +45,6 @@ describe("Integration: Google Tasks Sync", () => {
             lastName: user.lastName,
             profilePictureUrl: null,
         });
-        authState.user = {
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            profilePictureUrl: null,
-        };
 
         const [localList] = await db
             .insert(lists)
@@ -152,13 +119,6 @@ describe("Integration: Google Tasks Sync", () => {
             lastName: user.lastName,
             profilePictureUrl: null,
         });
-        authState.user = {
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            profilePictureUrl: null,
-        };
 
         const [localList] = await db
             .insert(lists)
@@ -241,13 +201,6 @@ describe("Integration: Google Tasks Sync", () => {
             lastName: user.lastName,
             profilePictureUrl: null,
         });
-        authState.user = {
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            profilePictureUrl: null,
-        };
 
         const [localList] = await db
             .insert(lists)
@@ -351,13 +304,6 @@ describe("Integration: Google Tasks Sync", () => {
             lastName: user.lastName,
             profilePictureUrl: null,
         });
-        authState.user = {
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            profilePictureUrl: null,
-        };
 
         const [localList] = await db
             .insert(lists)
@@ -462,13 +408,6 @@ describe("Integration: Google Tasks Sync", () => {
             lastName: user.lastName,
             profilePictureUrl: null,
         });
-        authState.user = {
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            profilePictureUrl: null,
-        };
 
         const [mappedList] = await db
             .insert(lists)
