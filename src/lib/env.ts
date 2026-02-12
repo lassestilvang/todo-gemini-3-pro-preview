@@ -75,6 +75,10 @@ export function validateEnv() {
         }
     }
 
+    if (process.env.TODOIST_ENCRYPTION_KEY_ENCRYPTED || process.env.TODOIST_ENCRYPTION_KEYS_ENCRYPTED) {
+        console.info("🔐 Todoist encryption keys configured via KMS.");
+    }
+
     if (process.env.TODOIST_ENCRYPTION_KEY_ID && process.env.TODOIST_ENCRYPTION_KEYS) {
         const keyIds = process.env.TODOIST_ENCRYPTION_KEYS.split(",")
             .map((entry) => entry.trim())
