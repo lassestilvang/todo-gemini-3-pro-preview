@@ -329,7 +329,7 @@ export async function GET() {
 
 **Gaps**
 - Property-based tests are included in CI; monitor runtime and flakiness.
-- Missing explicit coverage reports; no automated coverage enforcement in CI.
+- Coverage enforcement is now automated in CI and available locally.
 
 ## Recommended Remediation Timeline
 
@@ -337,8 +337,8 @@ export async function GET() {
 |---|---|---|
 | **Immediate (0–2 weeks)** | Completed: secure `/api/todoist-sync`; harden CSP; restrict auth bypass; guard test-auth | 2026-02-12 |
 | **Short-term (2–4 weeks)** | Completed: standardize error handling; add trusted proxy enforcement; reduce logging of sensitive data | 2026-02-12 |
-| **Mid-term (1–2 months)** | Completed: add search indexing; add cross-tab sync lock; refactor SyncProvider. Remaining: refactor tasks.ts | Next sprint |
-| **Long-term (2–4 months)** | Remaining: integrate KMS for token encryption; implement full coverage enforcement | 1–2 quarters |
+| **Mid-term (1–2 months)** | Completed: add search indexing; add cross-tab sync lock; refactor SyncProvider; refactor tasks.ts | 2026-02-12 |
+| **Long-term (2–4 months)** | Completed: integrate KMS for token encryption; implement full coverage enforcement | 2026-02-12 |
 
 ## Best Practice Recommendations (Ongoing)
 
@@ -359,6 +359,9 @@ export async function GET() {
 | Add search indexes | DBA/Backend | Completed (2026-02-12) |
 | Add cross-tab sync lock | Frontend Engineer | Completed (2026-02-12) |
 | Re-enable CI property tests | QA/Infra | Completed (2026-02-12) |
+| Refactor tasks.ts | Backend Engineer | Completed (2026-02-12) |
+| Integrate KMS for token encryption | Backend Engineer | Completed (2026-02-12) |
+| Implement coverage enforcement | QA/Infra | Completed (2026-02-12) |
 
 ## Validation
 
