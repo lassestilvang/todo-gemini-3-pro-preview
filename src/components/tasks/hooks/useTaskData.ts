@@ -200,9 +200,10 @@ export function useTaskData({ taskId, isEdit, userId }: UseTaskDataProps) {
         fetchSubtasks();
     };
 
-    const handleAddReminder = async () => {
-        if (!newReminderDate || !taskId || !userId) return;
-        await createReminder(userId, taskId, newReminderDate);
+    const handleAddReminder = async (date?: Date) => {
+        const reminderDate = date ?? newReminderDate;
+        if (!reminderDate || !taskId || !userId) return;
+        await createReminder(userId, taskId, reminderDate);
         setNewReminderDate(undefined);
         fetchRemindersAndLogs();
     };

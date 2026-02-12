@@ -50,20 +50,19 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
         setMounted(true);
     }, []);
 
-    // Parse natural language input - intentionally only depends on title
-    useEffect(() => {
-        if (title.trim()) {
-            const parsed = parseNaturalLanguage(title, { weekStartsOnMonday: weekStartsOnMonday ?? false });
-            if (parsed.priority && priority === "none") setPriority(parsed.priority);
-            if (parsed.dueDate && dueDateSource !== "manual") {
-                setDueDate(parsed.dueDate);
-                setDueDatePrecision(parsed.dueDatePrecision ?? "day");
-                setDueDateSource("nlp");
-            }
-            if (parsed.energyLevel && !energyLevel) setEnergyLevel(parsed.energyLevel);
-            if (parsed.context && !context) setContext(parsed.context);
+    const updateTitle = (nextTitle: string) => {
+        setTitle(nextTitle);
+        if (!nextTitle.trim()) return;
+        const parsed = parseNaturalLanguage(nextTitle, { weekStartsOnMonday: weekStartsOnMonday ?? false });
+        if (parsed.priority && priority === "none") setPriority(parsed.priority);
+        if (parsed.dueDate && dueDateSource !== "manual") {
+            setDueDate(parsed.dueDate);
+            setDueDatePrecision(parsed.dueDatePrecision ?? "day");
+            setDueDateSource("nlp");
         }
-    }, [title, dueDateSource, priority, energyLevel, context, weekStartsOnMonday]);
+        if (parsed.energyLevel && !energyLevel) setEnergyLevel(parsed.energyLevel);
+        if (parsed.context && !context) setContext(parsed.context);
+    };
 
     const handleAiEnhance = async () => {
         if (!title.trim()) return;
@@ -135,15 +134,13 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
     };
 
     const handleClear = () => {
-        setTitle("");
+        updateTitle("");
         inputRef.current?.focus();
     };
 
     const insertSyntax = (text: string) => {
-        setTitle(prev => {
-            const trimmed = prev.trimEnd();
-            return trimmed ? `${trimmed} ${text} ` : `${text} `;
-        });
+        const trimmed = title.trimEnd();
+        updateTitle(trimmed ? `${trimmed} ${text} ` : `${text} `);
         inputRef.current?.focus();
     };
 
@@ -160,7 +157,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                         <Input
                             ref={inputRef}
                             value={title}
-                            onChange={(e) => setTitle(e.target.value)}
+                            onChange={(e) => updateTitle(e.target.value)}
                             onFocus={() => setIsExpanded(true)}
                             placeholder="Add a task... (try 'Buy milk tomorrow !high @errands')"
                             className="border-0 bg-transparent shadow-none focus-visible:ring-0 text-lg py-6 pr-10"
@@ -325,7 +322,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                                     </TooltipContent>
                                 </Tooltip>
                                 <VoiceInput onTranscript={(text) => {
-                                    setTitle(prev => prev ? `${prev} ${text}` : text);
+                                    updateTitle(title ? `${title} ${text}` : text);
                                     setIsExpanded(true);
                                 }} />
                                 <Popover>
