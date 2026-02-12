@@ -49,6 +49,8 @@ export function getClientIp(headers: HeaderStore | null | undefined): string | n
     return null;
   }
 
+  const isProduction = process.env.NODE_ENV === "production";
+
   const vercelIp = headers.get("x-vercel-ip");
   if (vercelIp) {
     return normalizeIp(vercelIp);
@@ -57,6 +59,10 @@ export function getClientIp(headers: HeaderStore | null | undefined): string | n
   const vercelForwardedFor = headers.get("x-vercel-forwarded-for");
   if (vercelForwardedFor) {
     return normalizeIp(vercelForwardedFor);
+  }
+
+  if (isProduction) {
+    return null;
   }
 
   const realIp = headers.get("x-real-ip");

@@ -2,12 +2,12 @@
 
 ## Executive Summary (Prioritized by Severity)
 
-- **Critical**: Unauthenticated Todoist sync endpoint enables background sync for all users without auth checks ([route.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/app/api/todoist-sync/route.ts#L1-L20)).
-- **High**: Production CSP allows `unsafe-inline` and `unsafe-eval`, materially increasing XSS risk; combined with inline script usage in layout ([next.config.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/next.config.ts#L32-L66), [layout.tsx](file:///Users/lasse/Sites/todo-gemini-3-pro/src/app/layout.tsx#L76-L81)).
-- **High**: Authentication bypass relies on IP/headers that can be spoofed if deployed behind a proxy/CDN without proper header hardening or trusted proxy config ([middleware.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/middleware.ts#L56-L104), [auth.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/auth.ts#L120-L167), [ip-utils.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/ip-utils.ts#L38-L76)).
-- **Medium**: Test-auth endpoint sets a non-secure session cookie (HTTP) and returns session payload in response; gated by `E2E_TEST_MODE`, but still a risk if misconfigured in prod ([test-auth route](file:///Users/lasse/Sites/todo-gemini-3-pro/src/app/api/test-auth/route.ts#L24-L97)).
-- **Medium**: Sensitive token encryption uses an env-provided symmetric key with no rotation or KMS integration; good encryption, but key lifecycle risks remain ([crypto.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/todoist/crypto.ts#L12-L23), [todoist actions](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/actions/todoist.ts#L1-L52)).
-- **Medium**: Several server actions are not wrapped in the unified `withErrorHandling` path, leading to inconsistent error sanitization and response structure ([tasks.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/actions/tasks.ts#L67-L382)).
+- **Critical (Resolved)**: Unauthenticated Todoist sync endpoint enabled background sync for all users without auth checks ([route.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/app/api/todoist-sync/route.ts#L1-L20)).
+- **High (Resolved)**: Production CSP allowed `unsafe-inline` and `unsafe-eval`, materially increasing XSS risk; combined with inline script usage in layout ([next.config.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/next.config.ts#L32-L66), [layout.tsx](file:///Users/lasse/Sites/todo-gemini-3-pro/src/app/layout.tsx#L76-L81)).
+- **High (Resolved)**: Authentication bypass relied on IP/headers that can be spoofed if deployed behind a proxy/CDN without proper header hardening or trusted proxy config ([middleware.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/middleware.ts#L56-L104), [auth.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/auth.ts#L120-L167), [ip-utils.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/ip-utils.ts#L38-L76)).
+- **Medium (Resolved)**: Test-auth endpoint set a non-secure session cookie (HTTP) and returned session payload in response; gated by `E2E_TEST_MODE`, but still a risk if misconfigured in prod ([test-auth route](file:///Users/lasse/Sites/todo-gemini-3-pro/src/app/api/test-auth/route.ts#L24-L97)).
+- **Medium (Pending)**: Sensitive token encryption uses an env-provided symmetric key with no rotation or KMS integration; good encryption, but key lifecycle risks remain ([crypto.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/todoist/crypto.ts#L12-L23), [todoist actions](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/actions/todoist.ts#L1-L52)).
+- **Medium (Pending)**: Several server actions are not wrapped in the unified `withErrorHandling` path, leading to inconsistent error sanitization and response structure ([tasks.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/actions/tasks.ts#L67-L382)).
 
 ## Detailed Findings
 
@@ -49,6 +49,20 @@ export async function GET() {
 - Add rate limiting and audit logging.
 - Consider making this an internal job (server-only) rather than a public API route.
 
+**Status**
+- Resolved (2026-02-12)
+
+**Changes Applied**
+- Added an `x-cron-secret` gate for full sync runs; requires `TODOIST_SYNC_SECRET`.
+- Added authenticated fallback to allow only the current user to run a sync.
+- Return explicit 401 for unauthenticated access.
+
+**Implementation**
+- [route.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/app/api/todoist-sync/route.ts#L1-L44)
+
+**Validation**
+- See Validation section (2026-02-12).
+
 ### 2) CSP Permits Inline/Eval Scripts (High)
 
 **Location**
@@ -68,6 +82,18 @@ export async function GET() {
 **Remediation**
 - Replace inline script with a nonce-based script or move to an external static file.
 - Remove `unsafe-eval` and `unsafe-inline`, and adopt a nonce/hash CSP strategy.
+
+**Status**
+- Resolved (2026-02-12)
+
+**Changes Applied**
+- Replaced `unsafe-inline` and `unsafe-eval` with a SHA-256 script hash for the inline layout script.
+
+**Implementation**
+- [next.config.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/next.config.ts#L32-L66)
+
+**Validation**
+- See Validation section (2026-02-12).
 
 ### 3) Auth Bypass Relies on Potentially Spoofable Headers (High)
 
@@ -90,6 +116,19 @@ export async function GET() {
 - Prefer platform-provided trusted headers only (e.g., `x-vercel-ip`) and drop other headers.
 - Add explicit environment guard that disables bypass unless a “trusted proxy mode” is enabled.
 
+**Status**
+- Resolved (2026-02-12)
+
+**Changes Applied**
+- In production, only `x-vercel-ip` and `x-vercel-forwarded-for` are accepted.
+- All other headers are ignored in production to reduce spoofing risk.
+
+**Implementation**
+- [ip-utils.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/ip-utils.ts#L37-L77)
+
+**Validation**
+- See Validation section (2026-02-12).
+
 ### 4) E2E Test Auth Cookie Not Secure (Medium)
 
 **Location**
@@ -107,6 +146,19 @@ export async function GET() {
 **Remediation**
 - Require an additional shared secret for enabling test auth.
 - Enforce `NODE_ENV !== "production"` for all test auth endpoints.
+
+**Status**
+- Resolved (2026-02-12)
+
+**Changes Applied**
+- Hard block test-auth endpoints in production.
+- Removed session payload from JSON response.
+
+**Implementation**
+- [test-auth route](file:///Users/lasse/Sites/todo-gemini-3-pro/src/app/api/test-auth/route.ts#L24-L120)
+
+**Validation**
+- See Validation section (2026-02-12).
 
 ### 5) Encryption Key Lifecycle Risks (Medium)
 
@@ -127,6 +179,9 @@ export async function GET() {
 - Store encryption keys in a KMS or secret manager and implement rotation.
 - Support key versioning so old tokens can be decrypted during rotation.
 
+**Status**
+- Pending
+
 ### 6) Inconsistent Error Handling Across Server Actions (Medium)
 
 **Location**
@@ -145,6 +200,9 @@ export async function GET() {
 - Standardize all public Server Actions to use `withErrorHandling`.
 - Add validation wrappers for all input-facing actions.
 
+**Status**
+- Pending
+
 ### 7) Logging of Test Session Data (Low)
 
 **Location**
@@ -161,6 +219,9 @@ export async function GET() {
 
 **Remediation**
 - Remove logging or redact all session data before logging.
+
+**Status**
+- Pending
 
 ## Code Quality Assessment
 
@@ -256,3 +317,12 @@ export async function GET() {
 | Add search indexes | DBA/Backend | Improve scaling |
 | Add cross-tab sync lock | Frontend Engineer | Prevent race conditions |
 | Re-enable CI property tests | QA/Infra | Reduce flakiness |
+
+## Validation
+
+**2026-02-12**
+- `bun install`
+- `bun lint`
+- `bun test`
+- `bun --env-file=.env.local run db:push`
+- `bun run build`

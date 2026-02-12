@@ -22,7 +22,13 @@ const TEST_USER = {
 };
 
 export async function POST(request: NextRequest) {
-  // Only allow in E2E test mode
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json(
+      { error: 'Test auth is disabled in production' },
+      { status: 404 }
+    );
+  }
+
   if (process.env.E2E_TEST_MODE !== 'true') {
     return NextResponse.json(
       { error: 'Test auth is only available in E2E test mode' },
@@ -79,12 +85,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       user: userToSync,
-      cookie: JSON.stringify({
-        user: userToSync,
-        accessToken: 'test-access-token',
-        refreshToken: 'test-refresh-token',
-        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-      }),
       message: 'Test session created'
     });
   } catch (error) {
@@ -97,7 +97,13 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE() {
-  // Only allow in E2E test mode
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json(
+      { error: 'Test auth is disabled in production' },
+      { status: 404 }
+    );
+  }
+
   if (process.env.E2E_TEST_MODE !== 'true') {
     return NextResponse.json(
       { error: 'Test auth is only available in E2E test mode' },
