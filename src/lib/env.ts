@@ -47,6 +47,34 @@ export function validateEnv() {
         }
     }
 
+    if (process.env.TODOIST_ENCRYPTION_KEY_ENCRYPTED || process.env.TODOIST_ENCRYPTION_KEYS_ENCRYPTED) {
+        const region = process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION;
+        if (!region) {
+            throw new Error("AWS_REGION is required to decrypt TODOIST_ENCRYPTION_KEY_ENCRYPTED values.");
+        }
+    }
+
+    if (process.env.TODOIST_ENCRYPTION_KEY_ENCRYPTED) {
+        const decoded = Buffer.from(process.env.TODOIST_ENCRYPTION_KEY_ENCRYPTED.trim(), "base64");
+        if (decoded.length === 0) {
+            throw new Error("TODOIST_ENCRYPTION_KEY_ENCRYPTED must be valid base64.");
+        }
+    }
+
+    if (process.env.TODOIST_ENCRYPTION_KEYS_ENCRYPTED) {
+        const entries = process.env.TODOIST_ENCRYPTION_KEYS_ENCRYPTED.split(",").map((entry) => entry.trim()).filter(Boolean);
+        for (const entry of entries) {
+            const [keyId, encryptedKey] = entry.split(":").map((part) => part.trim());
+            if (!keyId || !encryptedKey) {
+                throw new Error("TODOIST_ENCRYPTION_KEYS_ENCRYPTED entries must be keyId:base64.");
+            }
+            const decoded = Buffer.from(encryptedKey, "base64");
+            if (decoded.length === 0) {
+                throw new Error("TODOIST_ENCRYPTION_KEYS_ENCRYPTED entries must contain base64 key material.");
+            }
+        }
+    }
+
     if (process.env.TODOIST_ENCRYPTION_KEY_ID && process.env.TODOIST_ENCRYPTION_KEYS) {
         const keyIds = process.env.TODOIST_ENCRYPTION_KEYS.split(",")
             .map((entry) => entry.trim())

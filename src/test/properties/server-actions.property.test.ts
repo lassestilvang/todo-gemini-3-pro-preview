@@ -569,7 +569,7 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                 fc.asyncProperty(
                     validUserIdArb,
                     validTitleArb,
-                    fc.date(),
+                    fc.date({ noInvalidDate: true }),
                     async (userId, title, date) => {
                         setMockAuthUser({ id: userId, email: `${userId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         await createTestUser(userId, `${userId}@test.com`);
@@ -601,7 +601,7 @@ describeOrSkip("Property Tests: Server Actions Error Handling", () => {
                 fc.asyncProperty(
                     validUserIdArb,
                     validTitleArb,
-                    fc.date(),
+                    fc.date({ noInvalidDate: true }),
                     async (userId, title, date) => {
                         setMockAuthUser({ id: userId, email: `${userId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
                         await createTestUser(userId, `${userId}@test.com`);

@@ -1,5 +1,7 @@
 import { describe, expect, it, beforeAll, mock, beforeEach } from "bun:test";
+import { and, eq } from "drizzle-orm";
 import { setupTestDb, createTestUser } from "@/test/setup";
+import { db, externalIntegrations } from "@/db";
 import { setMockAuthUser } from "@/test/mocks";
 import {
     createTask, getTasks, updateTask, deleteTask, getTask, createReminder, getReminders, getTaskLogs,
@@ -14,6 +16,7 @@ import {
     getViewSettings, saveViewSettings, resetViewSettings
 } from "./actions";
 import { rotateTodoistTokens } from "./actions/todoist";
+import { encryptToken, resetTodoistKeyRingForTests } from "@/lib/todoist/crypto";
 import { isSuccess } from "./action-result";
 import { normalizeDueAnchor } from "./due-utils";
 
@@ -673,6 +676,61 @@ describe("Server Actions", () => {
         it("should allow token rotation in test mode", async () => {
             const result = await rotateTodoistTokens();
             expect(result.success).toBe(true);
+        });
+
+        it("should rotate refresh token when present", async () => {
+            const previousEnv = process.env.NODE_ENV;
+            const previousKey = process.env.TODOIST_ENCRYPTION_KEY;
+            const previousKeys = process.env.TODOIST_ENCRYPTION_KEYS;
+            const previousEncryptedKey = process.env.TODOIST_ENCRYPTION_KEY_ENCRYPTED;
+            const previousEncryptedKeys = process.env.TODOIST_ENCRYPTION_KEYS_ENCRYPTED;
+
+            process.env.NODE_ENV = "development";
+            process.env.TODOIST_ENCRYPTION_KEY = "a".repeat(64);
+            process.env.TODOIST_ENCRYPTION_KEYS = "";
+            process.env.TODOIST_ENCRYPTION_KEY_ENCRYPTED = "";
+            process.env.TODOIST_ENCRYPTION_KEYS_ENCRYPTED = "";
+            resetTodoistKeyRingForTests();
+
+            const accessPayload = await encryptToken("access-token");
+            const refreshPayload = await encryptToken("refresh-token");
+
+            await db.insert(externalIntegrations).values({
+                userId: testUserId,
+                provider: "todoist",
+                accessTokenEncrypted: accessPayload.ciphertext,
+                accessTokenIv: accessPayload.iv,
+                accessTokenTag: accessPayload.tag,
+                accessTokenKeyId: accessPayload.keyId ?? "default",
+                refreshTokenEncrypted: refreshPayload.ciphertext,
+                refreshTokenIv: refreshPayload.iv,
+                refreshTokenTag: refreshPayload.tag,
+            });
+
+            try {
+                const result = await rotateTodoistTokens();
+                expect(result.success).toBe(true);
+
+                const updated = await db.query.externalIntegrations.findFirst({
+                    where: and(
+                        eq(externalIntegrations.userId, testUserId),
+                        eq(externalIntegrations.provider, "todoist")
+                    ),
+                });
+
+                expect(updated).toBeDefined();
+                expect(updated?.accessTokenEncrypted).not.toBe(accessPayload.ciphertext);
+                expect(updated?.refreshTokenEncrypted).not.toBe(refreshPayload.ciphertext);
+                expect(updated?.refreshTokenIv).not.toBe(refreshPayload.iv);
+                expect(updated?.refreshTokenTag).not.toBe(refreshPayload.tag);
+            } finally {
+                process.env.NODE_ENV = previousEnv;
+                process.env.TODOIST_ENCRYPTION_KEY = previousKey;
+                process.env.TODOIST_ENCRYPTION_KEYS = previousKeys;
+                process.env.TODOIST_ENCRYPTION_KEY_ENCRYPTED = previousEncryptedKey;
+                process.env.TODOIST_ENCRYPTION_KEYS_ENCRYPTED = previousEncryptedKeys;
+                resetTodoistKeyRingForTests();
+            }
         });
     });
 });

@@ -108,6 +108,10 @@ async function getKeyRing() {
     return keyRingPromise;
 }
 
+export function resetTodoistKeyRingForTests() {
+    keyRingPromise = null;
+}
+
 async function getKeyForEncrypt() {
     const keyRing = await getKeyRing();
     const keyId = getActiveKeyId(keyRing);
