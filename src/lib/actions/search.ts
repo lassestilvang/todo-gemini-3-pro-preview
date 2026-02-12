@@ -2,6 +2,7 @@
 
 import {
   db,
+  sqliteConnection,
   lists,
   tasks,
   labels,
@@ -128,12 +129,18 @@ export async function searchAll(
   }
 
   const pageLimit = options?.limit ?? 20;
-  const lowerQuery = `%${query.toLowerCase()}%`;
+  const normalizedQuery = query.trim().toLowerCase();
+  const lowerQuery = `%${normalizedQuery}%`;
+  const isSqlite = !!sqliteConnection;
+  const useTrigram = !isSqlite && normalizedQuery.length >= 3;
+  const taskSearchCondition = useTrigram
+    ? sql`(lower(${tasks.title}) % ${normalizedQuery} OR lower(coalesce(${tasks.description}, '')) % ${normalizedQuery})`
+    : sql`(lower(${tasks.title}) LIKE ${lowerQuery} OR lower(${tasks.description}) LIKE ${lowerQuery})`;
 
   const taskConditions = [
     eq(tasks.userId, userId),
     isNull(tasks.parentId),
-    sql`(lower(${tasks.title}) LIKE ${lowerQuery} OR lower(${tasks.description}) LIKE ${lowerQuery})`,
+    taskSearchCondition,
   ];
 
   if (options?.listId !== undefined) {
@@ -176,7 +183,15 @@ export async function searchAll(
 
   let orderBy;
   const sortOrder = options?.sortOrder ?? "desc";
-  switch (options?.sort) {
+  const sort = options?.sort ?? "relevance";
+  switch (sort) {
+    case "relevance":
+      orderBy = useTrigram
+        ? desc(
+            sql`greatest(similarity(lower(${tasks.title}), ${normalizedQuery}), similarity(lower(coalesce(${tasks.description}, '')), ${normalizedQuery}))`
+          )
+        : desc(tasks.createdAt);
+      break;
     case "created":
       orderBy =
         sortOrder === "asc" ? asc(tasks.createdAt) : desc(tasks.createdAt);

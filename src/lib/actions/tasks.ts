@@ -15,6 +15,7 @@ import {
   reminders,
   taskDependencies,
   userStats,
+  sqliteConnection,
   eq,
   and,
   desc,
@@ -1082,7 +1083,13 @@ async function searchTasksImpl(userId: string, query: string) {
     throw new Error("Rate limit exceeded. Please try again later.");
   }
 
-  const lowerQuery = `%${query.toLowerCase()}%`;
+  const normalizedQuery = query.trim().toLowerCase();
+  const likeQuery = `%${normalizedQuery}%`;
+  const isSqlite = !!sqliteConnection;
+  const useTrigram = !isSqlite && normalizedQuery.length >= 3;
+  const searchCondition = useTrigram
+    ? sql`(lower(${tasks.title}) % ${normalizedQuery} OR lower(coalesce(${tasks.description}, '')) % ${normalizedQuery})`
+    : sql`(lower(${tasks.title}) LIKE ${likeQuery} OR lower(${tasks.description}) LIKE ${likeQuery})`;
 
   const result = await db
     .select({
@@ -1098,8 +1105,15 @@ async function searchTasksImpl(userId: string, query: string) {
     .where(
       and(
         eq(tasks.userId, userId),
-        sql`(lower(${tasks.title}) LIKE ${lowerQuery} OR lower(${tasks.description}) LIKE ${lowerQuery})`
+        searchCondition
       )
+    )
+    .orderBy(
+      useTrigram
+        ? desc(
+            sql`greatest(similarity(lower(${tasks.title}), ${normalizedQuery}), similarity(lower(coalesce(${tasks.description}, '')), ${normalizedQuery}))`
+          )
+        : desc(tasks.createdAt)
     )
     .limit(10);
 

@@ -335,10 +335,10 @@ export async function GET() {
 
 | Priority | Items | Target Timeline |
 |---|---|---|
-| **Immediate (0–2 weeks)** | Secure `/api/todoist-sync`; harden CSP; restrict auth bypass; guard test-auth | Now |
-| **Short-term (2–4 weeks)** | Standardize error handling; add trusted proxy enforcement; reduce logging of sensitive data | Next sprint |
-| **Mid-term (1–2 months)** | Add search indexing; add cross-tab sync lock; refactor large files | 1–2 sprints |
-| **Long-term (2–4 months)** | Integrate KMS for token encryption; implement full coverage enforcement | 1–2 quarters |
+| **Immediate (0–2 weeks)** | Completed: secure `/api/todoist-sync`; harden CSP; restrict auth bypass; guard test-auth | 2026-02-12 |
+| **Short-term (2–4 weeks)** | Completed: standardize error handling; add trusted proxy enforcement; reduce logging of sensitive data | 2026-02-12 |
+| **Mid-term (1–2 months)** | Completed: add search indexing; add cross-tab sync lock; refactor SyncProvider. Remaining: refactor tasks.ts | Next sprint |
+| **Long-term (2–4 months)** | Remaining: integrate KMS for token encryption; implement full coverage enforcement | 1–2 quarters |
 
 ## Best Practice Recommendations (Ongoing)
 
@@ -352,13 +352,13 @@ export async function GET() {
 
 | Task | Responsible Party | Notes |
 |---|---|---|
-| Secure `/api/todoist-sync` with auth/secret | Backend Engineer | Critical priority |
-| Replace inline CSP with nonce/hash strategy | Security/Frontend | Remove `unsafe-inline` |
-| Harden auth bypass (trusted headers only) | Platform Engineer | Reduce spoof risk |
-| Standardize `withErrorHandling` usage | Backend Engineer | Improves error consistency |
-| Add search indexes | DBA/Backend | Improve scaling |
-| Add cross-tab sync lock | Frontend Engineer | Prevent race conditions |
-| Re-enable CI property tests | QA/Infra | Reduce flakiness |
+| Secure `/api/todoist-sync` with auth/secret | Backend Engineer | Completed (2026-02-12) |
+| Replace inline CSP with nonce/hash strategy | Security/Frontend | Completed (2026-02-12) |
+| Harden auth bypass (trusted headers only) | Platform Engineer | Completed (2026-02-12) |
+| Standardize `withErrorHandling` usage | Backend Engineer | Completed (2026-02-12) |
+| Add search indexes | DBA/Backend | Completed (2026-02-12) |
+| Add cross-tab sync lock | Frontend Engineer | Completed (2026-02-12) |
+| Re-enable CI property tests | QA/Infra | Remaining |
 
 ## Validation
 

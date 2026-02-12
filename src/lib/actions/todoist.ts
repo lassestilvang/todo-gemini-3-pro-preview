@@ -64,6 +64,62 @@ export async function disconnectTodoist() {
     return { success: true };
 }
 
+export async function rotateTodoistTokens() {
+    if (process.env.NODE_ENV === "test") {
+        return { success: true };
+    }
+
+    const user = await getCurrentUser();
+    if (!user) {
+        return { success: false, error: "Not authenticated" };
+    }
+
+    const integration = await db.query.externalIntegrations.findFirst({
+        where: and(eq(externalIntegrations.userId, user.id), eq(externalIntegrations.provider, "todoist")),
+    });
+
+    if (!integration) {
+        return { success: false, error: "Todoist integration not connected." };
+    }
+
+    const { decryptToken } = await import("@/lib/todoist/crypto");
+    const accessToken = decryptToken({
+        ciphertext: integration.accessTokenEncrypted,
+        iv: integration.accessTokenIv,
+        tag: integration.accessTokenTag,
+        keyId: integration.accessTokenKeyId,
+    });
+    const encryptedAccess = encryptToken(accessToken);
+
+    const updates: Partial<typeof externalIntegrations.$inferInsert> = {
+        accessTokenEncrypted: encryptedAccess.ciphertext,
+        accessTokenIv: encryptedAccess.iv,
+        accessTokenTag: encryptedAccess.tag,
+        accessTokenKeyId: encryptedAccess.keyId,
+        updatedAt: new Date(),
+    };
+
+    if (integration.refreshTokenEncrypted && integration.refreshTokenIv && integration.refreshTokenTag) {
+        const refreshToken = decryptToken({
+            ciphertext: integration.refreshTokenEncrypted,
+            iv: integration.refreshTokenIv,
+            tag: integration.refreshTokenTag,
+            keyId: integration.accessTokenKeyId,
+        });
+        const encryptedRefresh = encryptToken(refreshToken);
+        updates.refreshTokenEncrypted = encryptedRefresh.ciphertext;
+        updates.refreshTokenIv = encryptedRefresh.iv;
+        updates.refreshTokenTag = encryptedRefresh.tag;
+    }
+
+    await db
+        .update(externalIntegrations)
+        .set(updates)
+        .where(and(eq(externalIntegrations.userId, user.id), eq(externalIntegrations.provider, "todoist")));
+
+    return { success: true, keyId: encryptedAccess.keyId };
+}
+
 export async function syncTodoistNow() {
     if (process.env.NODE_ENV === "test") {
         return { success: true };

@@ -6,6 +6,7 @@
 
 export {
   db,
+  sqliteConnection,
   lists,
   tasks,
   labels,

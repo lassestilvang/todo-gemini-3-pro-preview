@@ -49,24 +49,10 @@ function replaceIdsInPayload(payload: unknown, oldId: number, newId: number): un
     return payload;
 }
 
-export function SyncProvider({ children }: { children: React.ReactNode }) {
-    const queryClient = useQueryClient();
-    const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
-    const [status, setStatus] = useState<SyncStatus>('online');
-    const [isOnline, setIsOnline] = useState(true);
-    const [conflicts, setConflicts] = useState<ConflictInfo[]>([]);
-    const MAX_PENDING_QUEUE = 100;
-    const FLUSH_IDLE_TIMEOUT_MS = 200;
-    const processingRef = useRef(false);
-    const processQueueRef = useRef<(() => Promise<void>) | undefined>(undefined);
-    const flushActionsRef = useRef<(() => Promise<void>) | undefined>(undefined);
-    const pendingQueueRef = useRef<PendingAction[]>([]);
-    const flushTimerRef = useRef<any>(null);
-    const flushIdleRef = useRef<any>(null);
-    const tabIdRef = useRef(uuidv4());
-    const lockIntervalRef = useRef<number | null>(null);
+function useSyncLock(isOnline: boolean, tabIdRef: React.MutableRefObject<string>) {
     const SYNC_LOCK_KEY = "todo-gemini-sync-lock";
     const SYNC_LOCK_TTL_MS = 10000;
+    const lockIntervalRef = useRef<number | null>(null);
 
     const readSyncLock = useCallback((): { owner: string; expiresAt: number } | null => {
         try {
@@ -78,7 +64,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         } catch {
             return null;
         }
-    }, []);
+    }, [SYNC_LOCK_KEY]);
 
     const writeSyncLock = useCallback((owner: string, expiresAt: number) => {
         try {
@@ -86,7 +72,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         } catch {
             return;
         }
-    }, []);
+    }, [SYNC_LOCK_KEY]);
 
     const ensureSyncLock = useCallback(() => {
         const now = Date.now();
@@ -97,7 +83,255 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             return true;
         }
         return current.owner === owner;
-    }, [readSyncLock, writeSyncLock, SYNC_LOCK_TTL_MS]);
+    }, [readSyncLock, writeSyncLock, SYNC_LOCK_TTL_MS, tabIdRef]);
+
+    const releaseLock = useCallback(() => {
+        const current = readSyncLock();
+        if (current?.owner === tabIdRef.current) {
+            localStorage.removeItem(SYNC_LOCK_KEY);
+        }
+    }, [readSyncLock, tabIdRef, SYNC_LOCK_KEY]);
+
+    useEffect(() => {
+        if (!isOnline) {
+            if (lockIntervalRef.current !== null) {
+                clearInterval(lockIntervalRef.current);
+                lockIntervalRef.current = null;
+            }
+            return;
+        }
+
+        const ownerId = tabIdRef.current;
+
+        const refreshLock = () => {
+            const now = Date.now();
+            const current = readSyncLock();
+            if (!current || current.expiresAt < now || current.owner === ownerId) {
+                writeSyncLock(ownerId, now + SYNC_LOCK_TTL_MS);
+            }
+        };
+
+        refreshLock();
+
+        lockIntervalRef.current = window.setInterval(refreshLock, Math.floor(SYNC_LOCK_TTL_MS / 2));
+
+        const handleVisibility = () => {
+            if (document.visibilityState === "visible") {
+                refreshLock();
+            }
+        };
+
+        const handleStorage = (event: StorageEvent) => {
+            if (event.key === SYNC_LOCK_KEY) {
+                refreshLock();
+            }
+        };
+
+        window.addEventListener("visibilitychange", handleVisibility);
+        window.addEventListener("storage", handleStorage);
+
+        return () => {
+            if (lockIntervalRef.current !== null) {
+                clearInterval(lockIntervalRef.current);
+                lockIntervalRef.current = null;
+            }
+            window.removeEventListener("visibilitychange", handleVisibility);
+            window.removeEventListener("storage", handleStorage);
+            releaseLock();
+        };
+    }, [isOnline, readSyncLock, writeSyncLock, SYNC_LOCK_TTL_MS, releaseLock, SYNC_LOCK_KEY, tabIdRef]);
+
+    return { ensureSyncLock, readSyncLock, releaseLock };
+}
+
+function useQueueFlush(params: {
+    setPendingActions: React.Dispatch<React.SetStateAction<PendingAction[]>>;
+    flushActionsRef: React.MutableRefObject<(() => Promise<void>) | undefined>;
+    maxPendingQueue: number;
+    flushIdleTimeoutMs: number;
+}) {
+    const { setPendingActions, flushActionsRef, maxPendingQueue, flushIdleTimeoutMs } = params;
+    const pendingQueueRef = useRef<PendingAction[]>([]);
+    const flushTimerRef = useRef<any>(null);
+    const flushIdleRef = useRef<any>(null);
+
+    const flushQueuedActions = useCallback(async () => {
+        const queued = pendingQueueRef.current;
+        if (queued.length === 0) return;
+        pendingQueueRef.current = [];
+
+        if (flushTimerRef.current !== null) {
+            clearTimeout(flushTimerRef.current);
+            flushTimerRef.current = null;
+        }
+        if (flushIdleRef.current !== null && 'cancelIdleCallback' in window) {
+            (window as any).cancelIdleCallback(flushIdleRef.current);
+            flushIdleRef.current = null;
+        }
+
+        await addToQueueBatch(queued);
+        setPendingActions(prev => [...prev, ...queued]);
+    }, [setPendingActions]);
+
+    useEffect(() => {
+        flushActionsRef.current = flushQueuedActions;
+    }, [flushActionsRef, flushQueuedActions]);
+
+    const scheduleFlush = useCallback(() => {
+        if (pendingQueueRef.current.length >= maxPendingQueue) {
+            void flushQueuedActions();
+            return;
+        }
+
+        if (flushTimerRef.current !== null || flushIdleRef.current !== null) return;
+
+        if ('requestIdleCallback' in window) {
+            flushIdleRef.current = (window as any).requestIdleCallback(() => {
+                flushIdleRef.current = null;
+                void flushQueuedActions();
+            }, { timeout: flushIdleTimeoutMs });
+            return;
+        }
+
+        flushTimerRef.current = setTimeout(async () => {
+            flushTimerRef.current = null;
+            await flushQueuedActions();
+        }, 50);
+    }, [flushQueuedActions, maxPendingQueue, flushIdleTimeoutMs, pendingQueueRef]);
+
+    return { pendingQueueRef, flushQueuedActions, scheduleFlush };
+}
+
+function applyOptimisticUpdate(
+    type: ActionType,
+    args: unknown[],
+    tempId: number | undefined
+) {
+    const taskStore = useTaskStore.getState();
+    const listStore = useListStore.getState();
+    const labelStore = useLabelStore.getState();
+    const payload = args as any;
+
+    if (type === 'createTask') {
+        const data = payload[0];
+        taskStore.upsertTask({
+            id: tempId!,
+            ...data,
+            dueDate: data.dueDate ? new Date(data.dueDate) : null,
+            deadline: data.deadline ? new Date(data.deadline) : null,
+            isCompleted: false,
+            position: 0,
+            subtasks: [],
+            subtaskCount: 0,
+            completedSubtaskCount: 0,
+            labels: [],
+            priority: data.priority || "none",
+            title: data.title
+        } as any);
+        return;
+    }
+
+    if (type === 'updateTask') {
+        const [id, , data] = payload;
+        const existing = taskStore.tasks[id];
+        if (existing) {
+            taskStore.upsertTask({ ...existing, ...data });
+        }
+        return;
+    }
+
+    if (type === 'deleteTask') {
+        taskStore.deleteTask(payload[0]);
+        return;
+    }
+
+    if (type === 'toggleTaskCompletion') {
+        const [id, , isCompleted] = payload;
+        const existing = taskStore.tasks[id];
+        if (existing) {
+            taskStore.upsertTask({ ...existing, isCompleted });
+        }
+        return;
+    }
+
+    if (type === 'updateSubtask') {
+        const [id, , isCompleted] = payload;
+        taskStore.updateSubtaskCompletion(id, isCompleted);
+        return;
+    }
+
+    if (type === 'createList') {
+        const data = payload[0];
+        listStore.upsertList({
+            id: tempId!,
+            name: data.name,
+            color: data.color || null,
+            icon: data.icon || null,
+            slug: data.slug || data.name.toLowerCase().replace(/\s+/g, '-'),
+            position: data.position || 0,
+        });
+        return;
+    }
+
+    if (type === 'updateList') {
+        const [id, , data] = payload;
+        const existing = listStore.lists[id];
+        if (existing) {
+            listStore.upsertList({ ...existing, ...data });
+        }
+        return;
+    }
+
+    if (type === 'deleteList') {
+        listStore.deleteList(payload[0]);
+        return;
+    }
+
+    if (type === 'createLabel') {
+        const data = payload[0];
+        labelStore.upsertLabel({
+            id: tempId!,
+            name: data.name,
+            color: data.color || null,
+            icon: data.icon || null,
+            position: data.position || 0,
+        });
+        return;
+    }
+
+    if (type === 'updateLabel') {
+        const [id, , data] = payload;
+        const existing = labelStore.labels[id];
+        if (existing) {
+            labelStore.upsertLabel({ ...existing, ...data });
+        }
+        return;
+    }
+
+    if (type === 'deleteLabel') {
+        labelStore.deleteLabel(payload[0]);
+    }
+}
+
+export function SyncProvider({ children }: { children: React.ReactNode }) {
+    const queryClient = useQueryClient();
+    const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
+    const [status, setStatus] = useState<SyncStatus>('online');
+    const [isOnline, setIsOnline] = useState(true);
+    const [conflicts, setConflicts] = useState<ConflictInfo[]>([]);
+    const MAX_PENDING_QUEUE = 100;
+    const FLUSH_IDLE_TIMEOUT_MS = 200;
+    const processingRef = useRef(false);
+    const processQueueRef = useRef<(() => Promise<void>) | undefined>(undefined);
+    const flushActionsRef = useRef<(() => Promise<void>) | undefined>(undefined);
+    const tabIdRef = useRef(uuidv4());
+    const { ensureSyncLock, releaseLock } = useSyncLock(isOnline, tabIdRef);
+    const { pendingQueueRef, flushQueuedActions, scheduleFlush } = useQueueFlush({
+        setPendingActions,
+        flushActionsRef,
+        maxPendingQueue: MAX_PENDING_QUEUE,
+        flushIdleTimeoutMs: FLUSH_IDLE_TIMEOUT_MS,
+    });
 
     const fixupQueueIds = useCallback(async (oldId: number, newId: number) => {
         const dbCurrent = await getDB();
@@ -297,10 +531,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const handlePageExit = () => {
             void flushActionsRef.current?.();
-            const current = readSyncLock();
-            if (current?.owner === tabIdRef.current) {
-                localStorage.removeItem(SYNC_LOCK_KEY);
-            }
+            releaseLock();
         };
         window.addEventListener('pagehide', handlePageExit);
         window.addEventListener('beforeunload', handlePageExit);
@@ -335,59 +566,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
         };
-    }, [processQueue, readSyncLock]);
-
-    useEffect(() => {
-        if (!isOnline) {
-            if (lockIntervalRef.current !== null) {
-                clearInterval(lockIntervalRef.current);
-                lockIntervalRef.current = null;
-            }
-            return;
-        }
-
-        const ownerId = tabIdRef.current;
-
-        const refreshLock = () => {
-            const now = Date.now();
-            const current = readSyncLock();
-            if (!current || current.expiresAt < now || current.owner === ownerId) {
-                writeSyncLock(ownerId, now + SYNC_LOCK_TTL_MS);
-            }
-        };
-
-        refreshLock();
-
-        lockIntervalRef.current = window.setInterval(refreshLock, Math.floor(SYNC_LOCK_TTL_MS / 2));
-
-        const handleVisibility = () => {
-            if (document.visibilityState === "visible") {
-                refreshLock();
-            }
-        };
-
-        const handleStorage = (event: StorageEvent) => {
-            if (event.key === SYNC_LOCK_KEY) {
-                refreshLock();
-            }
-        };
-
-        window.addEventListener("visibilitychange", handleVisibility);
-        window.addEventListener("storage", handleStorage);
-
-        return () => {
-            if (lockIntervalRef.current !== null) {
-                clearInterval(lockIntervalRef.current);
-                lockIntervalRef.current = null;
-            }
-            window.removeEventListener("visibilitychange", handleVisibility);
-            window.removeEventListener("storage", handleStorage);
-            const current = readSyncLock();
-            if (current?.owner === ownerId) {
-                localStorage.removeItem(SYNC_LOCK_KEY);
-            }
-        };
-    }, [isOnline, readSyncLock, writeSyncLock, SYNC_LOCK_TTL_MS]);
+    }, [processQueue, releaseLock]);
 
     // Also try to process queue on mount if online
     useEffect(() => {
@@ -438,49 +617,6 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         setConflicts(prev => prev.filter(c => c.actionId !== actionId));
     }, [pendingActions, conflicts, processQueue]);
 
-    const flushQueuedActions = useCallback(async () => {
-        const queued = pendingQueueRef.current;
-        if (queued.length === 0) return;
-        pendingQueueRef.current = [];
-
-        if (flushTimerRef.current !== null) {
-            clearTimeout(flushTimerRef.current);
-            flushTimerRef.current = null;
-        }
-        if (flushIdleRef.current !== null && 'cancelIdleCallback' in window) {
-            (window as any).cancelIdleCallback(flushIdleRef.current);
-            flushIdleRef.current = null;
-        }
-
-        // Perf: batch IDB writes + state updates for rapid dispatch bursts.
-        await addToQueueBatch(queued);
-        setPendingActions(prev => [...prev, ...queued]);
-    }, []);
-
-    flushActionsRef.current = flushQueuedActions;
-
-    const scheduleFlush = useCallback(() => {
-        if (pendingQueueRef.current.length >= MAX_PENDING_QUEUE) {
-            void flushQueuedActions();
-            return;
-        }
-
-        if (flushTimerRef.current !== null || flushIdleRef.current !== null) return;
-
-        if ('requestIdleCallback' in window) {
-            flushIdleRef.current = (window as any).requestIdleCallback(() => {
-                flushIdleRef.current = null;
-                void flushQueuedActions();
-            }, { timeout: FLUSH_IDLE_TIMEOUT_MS });
-            return;
-        }
-
-        flushTimerRef.current = setTimeout(async () => {
-            flushTimerRef.current = null;
-            await flushQueuedActions();
-        }, 50);
-    }, [flushQueuedActions]);
-
     const dispatch = useCallback(async <T extends ActionType>(type: T, ...args: Parameters<typeof actionRegistry[T]>) => {
         const id = uuidv4();
 
@@ -509,87 +645,17 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         scheduleFlush();
 
         // Optimistic Update to Global Store
-        const taskStore = useTaskStore.getState();
-        const listStore = useListStore.getState();
-        const labelStore = useLabelStore.getState();
         try {
-            const a = args as any;
-            if (type === 'createTask') {
-                const data = a[0];
-                taskStore.upsertTask({
-                    id: tempId!,
-                    ...data,
-                    dueDate: data.dueDate ? new Date(data.dueDate) : null,
-                    deadline: data.deadline ? new Date(data.deadline) : null,
-                    isCompleted: false,
-                    position: 0,
-                    subtasks: [],
-                    subtaskCount: 0,
-                    completedSubtaskCount: 0,
-                    labels: [],
-                    priority: data.priority || "none",
-                    title: data.title
-                } as any);
-            } else if (type === 'updateTask') {
-                const [id, , data] = a;
-                const existing = taskStore.tasks[id];
-                if (existing) {
-                    // Add expectedUpdatedAt for conflict detection
-                    if (existing.updatedAt) {
-                        a[2] = { ...data, expectedUpdatedAt: existing.updatedAt };
-                        action.payload = a;
-                    }
-                    taskStore.upsertTask({ ...existing, ...data });
+            const payload = args as any;
+            if (type === 'updateTask') {
+                const [taskId, , data] = payload;
+                const existing = useTaskStore.getState().tasks[taskId];
+                if (existing?.updatedAt) {
+                    payload[2] = { ...data, expectedUpdatedAt: existing.updatedAt };
+                    action.payload = payload;
                 }
-            } else if (type === 'deleteTask') {
-                taskStore.deleteTask(a[0]);
-            } else if (type === 'toggleTaskCompletion') {
-                const [id, , isCompleted] = a;
-                const existing = taskStore.tasks[id];
-                if (existing) {
-                    taskStore.upsertTask({ ...existing, isCompleted });
-                }
-            } else if (type === 'updateSubtask') {
-                const [id, , isCompleted] = a;
-                // Perf: update only the targeted subtask instead of mapping the entire array.
-                // Expected impact: reduces allocations and speeds up rapid subtask toggles.
-                taskStore.updateSubtaskCompletion(id, isCompleted);
-            } else if (type === 'createList') {
-                const data = a[0];
-                listStore.upsertList({
-                    id: tempId!,
-                    name: data.name,
-                    color: data.color || null,
-                    icon: data.icon || null,
-                    slug: data.slug || data.name.toLowerCase().replace(/\s+/g, '-'),
-                    position: data.position || 0,
-                });
-            } else if (type === 'updateList') {
-                const [id, , data] = a;
-                const existing = listStore.lists[id];
-                if (existing) {
-                    listStore.upsertList({ ...existing, ...data });
-                }
-            } else if (type === 'deleteList') {
-                listStore.deleteList(a[0]);
-            } else if (type === 'createLabel') {
-                const data = a[0];
-                labelStore.upsertLabel({
-                    id: tempId!,
-                    name: data.name,
-                    color: data.color || null,
-                    icon: data.icon || null,
-                    position: data.position || 0,
-                });
-            } else if (type === 'updateLabel') {
-                const [id, , data] = a;
-                const existing = labelStore.labels[id];
-                if (existing) {
-                    labelStore.upsertLabel({ ...existing, ...data });
-                }
-            } else if (type === 'deleteLabel') {
-                labelStore.deleteLabel(a[0]);
             }
+            applyOptimisticUpdate(type, payload, tempId);
         } catch (e) { console.error("Optimistic store update failed", e); }
 
         // Attempt Sync — flush pending writes to IndexedDB first so processQueue sees them
@@ -599,7 +665,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         }
 
         return { id: tempId, ...(args[0] as any) }; // Approximate optimistic result
-    }, [processQueue, scheduleFlush, flushQueuedActions]);
+    }, [processQueue, scheduleFlush, flushQueuedActions, pendingQueueRef]);
 
     const retryAction = useCallback(async (actionId: string) => {
         await updateActionStatus(actionId, 'pending');
