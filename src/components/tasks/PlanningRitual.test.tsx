@@ -6,7 +6,7 @@ import { setMockAuthUser } from "@/test/mocks";
 import userEvent from "@testing-library/user-event";
 // Mocks should be targeted and not leak to other tests
 
-const getTasksMock = mock(() => Promise.resolve([]));
+const getTasksMock = mock(() => Promise.resolve({ success: true, data: [] }));
 mock.module("@/lib/actions", () => ({
     getTasks: getTasksMock
 }));

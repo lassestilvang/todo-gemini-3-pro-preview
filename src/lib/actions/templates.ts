@@ -265,7 +265,20 @@ async function instantiateTemplateImpl(
       insertData.deadline = new Date(insertData.deadline);
     }
 
-    const newTask = await createTask(insertData);
+    const createResult = await createTask(insertData);
+    if (!createResult.success) {
+      if (createResult.error.code === "VALIDATION_ERROR") {
+        throw new ValidationError(
+          createResult.error.message,
+          createResult.error.details ?? {}
+        );
+      }
+      if (createResult.error.code === "NOT_FOUND") {
+        throw new NotFoundError(createResult.error.message);
+      }
+      throw new Error(createResult.error.message);
+    }
+    const newTask = createResult.data;
 
     if (subtasks && Array.isArray(subtasks)) {
       // ⚡ Bolt Opt: Create sibling subtasks in parallel to reduce template instantiation latency.

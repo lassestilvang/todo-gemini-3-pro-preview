@@ -3,6 +3,7 @@ import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
 import { createTask, getTasks } from "@/lib/actions/tasks";
 import { createLabel } from "@/lib/actions/labels";
+import { isSuccess } from "@/lib/action-result";
 
 describe("Integration: Security Task Labels IDOR", () => {
     let victimId: string;
@@ -55,15 +56,19 @@ describe("Integration: Security Task Labels IDOR", () => {
 
     it("should NOT allow linking another user's label to my task", async () => {
         // Attacker tries to create a task using Victim's label ID
-        const task = await createTask({
+        const taskResult = await createTask({
             userId: attackerId,
             title: "My Evil Task",
             labelIds: [victimLabelId]
         });
+        expect(isSuccess(taskResult)).toBe(true);
+        if (!isSuccess(taskResult)) return;
 
         // Fetch tasks to see if the label was attached and leaked
-        const tasks = await getTasks(attackerId);
-        const createdTask = tasks.find(t => t.id === task.id);
+        const tasksResult = await getTasks(attackerId);
+        expect(isSuccess(tasksResult)).toBe(true);
+        if (!isSuccess(tasksResult)) return;
+        const createdTask = tasksResult.data.find(t => t.id === taskResult.data.id);
 
         expect(createdTask).toBeDefined();
 

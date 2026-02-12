@@ -10,10 +10,14 @@ export default async function Calendar3Page() {
     redirect("/login");
   }
 
-  const [tasks, lists] = await Promise.all([
+  const [tasksResult, lists] = await Promise.all([
     getTasks(user.id, undefined, "all", undefined, true),
     getLists(user.id),
   ]);
+  if (!tasksResult.success) {
+    console.error(tasksResult.error.message);
+  }
+  const tasks = tasksResult.success ? tasksResult.data : [];
 
   return (
     <div className="container mx-auto p-6 h-full flex flex-col">

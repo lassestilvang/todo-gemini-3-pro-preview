@@ -28,20 +28,19 @@ export function QuickCapture({ userId }: { userId: string }) {
         if (!title.trim() || isSubmitting) return;
 
         setIsSubmitting(true);
-        try {
-            await createTask({
-                userId,
-                title: title.trim(),
-                listId: null, // Defaults to inbox
-            });
+        const result = await createTask({
+            userId,
+            title: title.trim(),
+            listId: null, // Defaults to inbox
+        });
+        if (result.success) {
             toast.success("Task captured to Inbox");
             setTitle("");
             setIsOpen(false);
-        } catch {
-            // Silently fail if parsing failsed to capture task");
-        } finally {
-            setIsSubmitting(false);
+        } else {
+            toast.error(result.error.message);
         }
+        setIsSubmitting(false);
     };
 
     const [mounted, setMounted] = useState(false);

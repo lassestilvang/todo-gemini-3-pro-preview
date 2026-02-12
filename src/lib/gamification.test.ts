@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { calculateStreakUpdate } from "@/lib/gamification";
 import { toggleTaskCompletion, createTask, getUserStats } from "@/lib/actions";
+import { isSuccess } from "@/lib/action-result";
 import { db, userAchievements, achievements } from "@/db";
 import { setMockAuthUser } from "@/test/mocks";
 
@@ -66,10 +67,13 @@ describe("Gamification Logic", () => {
 
     it("should update streak in DB on task completion", async () => {
         // Create a task
-        const task = await createTask({ userId: testUserId, title: "Test Task" });
+        const taskResult = await createTask({ userId: testUserId, title: "Test Task" });
+        expect(isSuccess(taskResult)).toBe(true);
+        if (!isSuccess(taskResult)) return;
+        const task = taskResult.data;
 
         // Complete it
-        await toggleTaskCompletion(task.id, testUserId, true);
+        expect(isSuccess(await toggleTaskCompletion(task.id, testUserId, true))).toBe(true);
 
         // Check stats
         const stats = await getUserStats(testUserId);
@@ -78,8 +82,11 @@ describe("Gamification Logic", () => {
     });
 
     it("should unlock 'First Blood' achievement", async () => {
-        const task = await createTask({ userId: testUserId, title: "First Task" });
-        await toggleTaskCompletion(task.id, testUserId, true);
+        const taskResult = await createTask({ userId: testUserId, title: "First Task" });
+        expect(isSuccess(taskResult)).toBe(true);
+        if (!isSuccess(taskResult)) return;
+        const task = taskResult.data;
+        expect(isSuccess(await toggleTaskCompletion(task.id, testUserId, true))).toBe(true);
 
         const achievementsList = await db.select().from(userAchievements);
         expect(achievementsList.length).toBeGreaterThan(0);

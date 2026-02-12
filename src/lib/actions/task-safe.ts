@@ -8,7 +8,6 @@
 import { tasks } from "@/db";
 import {
   type ActionResult,
-  success,
   failure,
   ValidationError,
   AuthorizationError,
@@ -55,8 +54,8 @@ export async function createTaskSafe(
       throw new AuthorizationError("User ID is required to create a task");
     }
 
-    const task = await createTask(data);
-    return success(task);
+    const result = await createTask(data);
+    return result;
   } catch (error) {
     if (error instanceof ValidationError) {
       return failure({
@@ -110,8 +109,15 @@ export async function updateTaskSafe(
       throw new AuthorizationError("User ID is required");
     }
 
-    const existingTask = await getTask(id, userId);
-    if (!existingTask) {
+    const existingTaskResult = await getTask(id, userId);
+    if (!existingTaskResult.success) {
+      return failure({
+        code: existingTaskResult.error.code,
+        message: existingTaskResult.error.message,
+        details: existingTaskResult.error.details,
+      });
+    }
+    if (!existingTaskResult.data) {
       throw new NotFoundError(`Task with ID ${id} not found`);
     }
 
@@ -128,8 +134,8 @@ export async function updateTaskSafe(
       }
     }
 
-    await updateTask(id, userId, data);
-    return success(undefined);
+    const result = await updateTask(id, userId, data);
+    return result;
   } catch (error) {
     if (error instanceof ValidationError) {
       return failure({
@@ -187,13 +193,20 @@ export async function deleteTaskSafe(
       throw new AuthorizationError("User ID is required");
     }
 
-    const existingTask = await getTask(id, userId);
-    if (!existingTask) {
+    const existingTaskResult = await getTask(id, userId);
+    if (!existingTaskResult.success) {
+      return failure({
+        code: existingTaskResult.error.code,
+        message: existingTaskResult.error.message,
+        details: existingTaskResult.error.details,
+      });
+    }
+    if (!existingTaskResult.data) {
       throw new NotFoundError(`Task with ID ${id} not found`);
     }
 
-    await deleteTask(id, userId);
-    return success(undefined);
+    const result = await deleteTask(id, userId);
+    return result;
   } catch (error) {
     if (error instanceof AuthorizationError) {
       return failure({
@@ -248,13 +261,20 @@ export async function toggleTaskCompletionSafe(
       throw new AuthorizationError("User ID is required");
     }
 
-    const existingTask = await getTask(id, userId);
-    if (!existingTask) {
+    const existingTaskResult = await getTask(id, userId);
+    if (!existingTaskResult.success) {
+      return failure({
+        code: existingTaskResult.error.code,
+        message: existingTaskResult.error.message,
+        details: existingTaskResult.error.details,
+      });
+    }
+    if (!existingTaskResult.data) {
       throw new NotFoundError(`Task with ID ${id} not found`);
     }
 
     const result = await toggleTaskCompletion(id, userId, isCompleted);
-    return success(result);
+    return result;
   } catch (error) {
     if (error instanceof AuthorizationError) {
       return failure({

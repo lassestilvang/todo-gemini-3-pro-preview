@@ -3,6 +3,7 @@
 import { useSearchParams, useRouter, usePathname, useParams } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import { getTask } from "@/lib/actions";
+import { isSuccess } from "@/lib/action-result";
 import dynamic from "next/dynamic";
 const TaskDialog = dynamic(() => import("./TaskDialog").then(mod => mod.TaskDialog), { ssr: false });
 import { Suspense } from "react";
@@ -68,9 +69,9 @@ export function TaskEditModalWrapper({ userId }: TaskEditModalWrapperProps) {
         if (taskIdParam) {
             const taskId = parseInt(taskIdParam);
             if (!isNaN(taskId)) {
-                getTask(taskId, userId).then((t) => {
-                    if (t) {
-                        setTask(t as unknown as TaskType);
+                getTask(taskId, userId).then((result) => {
+                    if (isSuccess(result) && result.data) {
+                        setTask(result.data as unknown as TaskType);
                         setIsOpen(true);
                     } else {
                         handleClose();

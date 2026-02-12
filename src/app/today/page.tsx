@@ -15,10 +15,14 @@ async function TodayTaskSection({
     userId: string;
     defaultDueDate: string;
 }) {
-    const [tasks, dbSettings] = await Promise.all([
+    const [tasksResult, dbSettings] = await Promise.all([
         getTasks(userId, null, "today"),
         getViewSettings(userId, "today"),
     ]);
+    if (!tasksResult.success) {
+        console.error(tasksResult.error.message);
+    }
+    const tasks = tasksResult.success ? tasksResult.data : [];
     const initialSettings = mapDbSettingsToViewSettings(dbSettings);
 
     return (

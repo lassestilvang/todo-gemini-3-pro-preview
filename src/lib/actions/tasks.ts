@@ -33,6 +33,7 @@ import {
   revalidatePath,
   calculateStreakUpdate,
   suggestMetadata,
+  type ActionResult,
   NotFoundError,
   ConflictError,
   withErrorHandling,
@@ -64,7 +65,7 @@ import { coerceDuePrecision, normalizeDueAnchor } from "@/lib/due-utils";
  * @param labelId - Optional label ID to filter by
  * @returns Array of tasks with labels and subtasks
  */
-export async function getTasks(
+async function getTasksImpl(
   userId: string,
   listId?: number | null,
   filter?: "today" | "upcoming" | "all" | "completed" | "next-7-days",
@@ -294,6 +295,8 @@ export async function getTasks(
   return tasksWithLabelsAndSubtasks;
 }
 
+export const getTasks = withErrorHandling(getTasksImpl);
+
 /**
  * Retrieves a single task by ID with labels, reminders, and blockers.
  *
@@ -301,7 +304,7 @@ export async function getTasks(
  * @param userId - The ID of the user who owns the task
  * @returns The task with related data, or null if not found
  */
-export async function getTask(id: number, userId: string) {
+async function getTaskImpl(id: number, userId: string) {
   await requireUser(userId);
 
   if (!isValidId(id)) return null;
@@ -363,13 +366,15 @@ export async function getTask(id: number, userId: string) {
   return { ...task, labels: labelsResult, reminders: remindersResult, blockers: blockersResult };
 }
 
+export const getTask = withErrorHandling(getTaskImpl);
+
 /**
  * Creates a new task with optional labels and smart tagging.
  *
  * @param data - Task data including optional labelIds
  * @returns The created task
  */
-export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: number[] }) {
+async function createTaskImpl(data: typeof tasks.$inferInsert & { labelIds?: number[] }) {
   const user = await requireUser(data.userId);
 
   try {
@@ -498,6 +503,10 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
   }
 }
 
+export const createTask: (
+  data: typeof tasks.$inferInsert & { labelIds?: number[] }
+) => Promise<ActionResult<typeof tasks.$inferSelect>> = withErrorHandling(createTaskImpl);
+
 
 /**
  * Updates an existing task with change logging.
@@ -506,25 +515,29 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
  * @param userId - The ID of the user who owns the task
  * @param data - Partial task data to update including optional labelIds
  */
-export async function updateTask(
+async function updateTaskImpl(
   id: number,
   userId: string,
   data: Partial<Omit<typeof tasks.$inferInsert, "userId">> & {
     labelIds?: number[];
     expectedUpdatedAt?: Date | string | null;
   },
-  existingTask?: Awaited<ReturnType<typeof getTask>> | null
+  existingTask?: Awaited<ReturnType<typeof getTaskImpl>> | null
 ) {
   const user = await requireUser(userId);
 
-  if (!isValidId(id)) return;
+  if (!isValidId(id)) {
+    throw new NotFoundError("Task not found or access denied");
+  }
 
   // Validate and parse input data
   const parsedData = updateTaskSchema.parse(data);
   const { labelIds, expectedUpdatedAt, dueDatePrecision: rawPrecision, ...taskData } = parsedData;
 
-  const currentTask = existingTask ?? await getTask(id, userId);
-  if (!currentTask) return;
+  const currentTask = existingTask ?? await getTaskImpl(id, userId);
+  if (!currentTask) {
+    throw new NotFoundError("Task not found or access denied");
+  }
 
   // Check for conflicts if expectedUpdatedAt is provided
   if (expectedUpdatedAt) {
@@ -696,22 +709,44 @@ export async function updateTask(
   revalidatePath("/", "layout");
 }
 
+export const updateTask: (
+  id: number,
+  userId: string,
+  data: Partial<Omit<typeof tasks.$inferInsert, "userId">> & {
+    labelIds?: number[];
+    expectedUpdatedAt?: Date | string | null;
+  },
+  existingTask?: Awaited<ReturnType<typeof getTaskImpl>> | null
+) => Promise<ActionResult<void>> = withErrorHandling(updateTaskImpl);
+
 /**
  * Deletes a task.
  *
  * @param id - The task ID to delete
  * @param userId - The ID of the user who owns the task
  */
-export async function deleteTask(id: number, userId: string) {
+async function deleteTaskImpl(id: number, userId: string) {
   await requireUser(userId);
 
-  if (!isValidId(id)) return;
+  if (!isValidId(id)) {
+    throw new NotFoundError("Task not found or access denied");
+  }
+
+  const existingTask = await getTaskImpl(id, userId);
+  if (!existingTask) {
+    throw new NotFoundError("Task not found or access denied");
+  }
 
   await db.delete(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   await syncTodoistNow();
   revalidatePath("/", "layout");
 }
+
+export const deleteTask: (
+  id: number,
+  userId: string
+) => Promise<ActionResult<void>> = withErrorHandling(deleteTaskImpl);
 
 /**
  * Toggles task completion status with XP rewards and streak updates.
@@ -721,14 +756,14 @@ export async function deleteTask(id: number, userId: string) {
  * @param isCompleted - The new completion status
  * @returns XP result with newXP, newLevel, and leveledUp flag
  */
-export async function toggleTaskCompletion(id: number, userId: string, isCompleted: boolean) {
+async function toggleTaskCompletionImpl(id: number, userId: string, isCompleted: boolean) {
   await requireUser(userId);
 
   if (!isValidId(id)) {
     throw new NotFoundError("Task not found or access denied");
   }
 
-  const task = await getTask(id, userId);
+  const task = await getTaskImpl(id, userId);
   if (!task) {
     throw new NotFoundError("Task not found or access denied");
   }
@@ -742,7 +777,7 @@ export async function toggleTaskCompletion(id: number, userId: string, isComplet
       // Create next task - copy task data excluding system fields and relations
       const { labels } = task;
 
-      await createTask({
+      await createTaskImpl({
         userId: task.userId,
         title: task.title,
         description: task.description,
@@ -762,7 +797,7 @@ export async function toggleTaskCompletion(id: number, userId: string, isComplet
     }
   }
 
-  await updateTask(
+  await updateTaskImpl(
     id,
     userId,
     {
@@ -850,12 +885,18 @@ export async function toggleTaskCompletion(id: number, userId: string, isComplet
   };
 }
 
+export const toggleTaskCompletion: (
+  id: number,
+  userId: string,
+  isCompleted: boolean
+) => Promise<ActionResult<{ newXP: number; newLevel: number; leveledUp: boolean } | undefined>> = withErrorHandling(toggleTaskCompletionImpl);
+
 /**
  * Updates the user's streak based on activity.
  *
  * @param userId - The ID of the user
  */
-export async function updateStreak(userId: string) {
+async function updateStreakImpl(userId: string) {
   await requireUser(userId);
 
   const stats = await getUserStats(userId);
@@ -894,6 +935,8 @@ export async function updateStreak(userId: string) {
   }
 }
 
+export const updateStreak: (userId: string) => Promise<ActionResult<void>> = withErrorHandling(updateStreakImpl);
+
 /**
  * Retrieves subtasks for a parent task.
  *
@@ -901,7 +944,7 @@ export async function updateStreak(userId: string) {
  * @param userId - The ID of the user who owns the task
  * @returns Array of subtasks
  */
-export async function getSubtasks(taskId: number, userId: string) {
+async function getSubtasksImpl(taskId: number, userId: string) {
   await requireUser(userId);
 
   const result = await db
@@ -912,6 +955,8 @@ export async function getSubtasks(taskId: number, userId: string) {
   return result;
 }
 
+export const getSubtasks = withErrorHandling(getSubtasksImpl);
+
 /**
  * Creates a subtask for a parent task.
  *
@@ -921,7 +966,7 @@ export async function getSubtasks(taskId: number, userId: string) {
  * @param estimateMinutes - Optional time estimate in minutes
  * @returns The created subtask
  */
-export async function createSubtask(
+async function createSubtaskImpl(
   parentId: number,
   userId: string,
   title: string,
@@ -964,6 +1009,13 @@ export async function createSubtask(
   return subtask;
 }
 
+export const createSubtask: (
+  parentId: number,
+  userId: string,
+  title: string,
+  estimateMinutes?: number
+) => Promise<ActionResult<typeof tasks.$inferSelect>> = withErrorHandling(createSubtaskImpl);
+
 /**
  * Updates a subtask's completion status.
  *
@@ -971,7 +1023,7 @@ export async function createSubtask(
  * @param userId - The ID of the user who owns the subtask
  * @param isCompleted - The new completion status
  */
-export async function updateSubtask(id: number, userId: string, isCompleted: boolean) {
+async function updateSubtaskImpl(id: number, userId: string, isCompleted: boolean) {
   await requireUser(userId);
 
   if (!isValidId(id)) return;
@@ -986,13 +1038,19 @@ export async function updateSubtask(id: number, userId: string, isCompleted: boo
   revalidatePath("/", "layout");
 }
 
+export const updateSubtask: (
+  id: number,
+  userId: string,
+  isCompleted: boolean
+) => Promise<ActionResult<void>> = withErrorHandling(updateSubtaskImpl);
+
 /**
  * Deletes a subtask.
  *
  * @param id - The subtask ID
  * @param userId - The ID of the user who owns the subtask
  */
-export async function deleteSubtask(id: number, userId: string) {
+async function deleteSubtaskImpl(id: number, userId: string) {
   await requireUser(userId);
 
   if (!isValidId(id)) return;
@@ -1001,6 +1059,11 @@ export async function deleteSubtask(id: number, userId: string) {
   revalidatePath("/", "layout");
 }
 
+export const deleteSubtask: (
+  id: number,
+  userId: string
+) => Promise<ActionResult<void>> = withErrorHandling(deleteSubtaskImpl);
+
 /**
  * Searches tasks by title or description.
  *
@@ -1008,7 +1071,7 @@ export async function deleteSubtask(id: number, userId: string) {
  * @param query - The search query
  * @returns Array of matching tasks (limited to 10)
  */
-export async function searchTasks(userId: string, query: string) {
+async function searchTasksImpl(userId: string, query: string) {
   await requireUser(userId);
 
   if (!query || query.trim().length === 0) return [];
@@ -1043,13 +1106,15 @@ export async function searchTasks(userId: string, query: string) {
   return result;
 }
 
+export const searchTasks = withErrorHandling(searchTasksImpl);
+
 /**
  * Retrieves all tasks for client-side search indexing.
  *
  * @param userId - The ID of the user
  * @returns Array of tasks optimized for search (id, title, description, status)
  */
-export async function getTasksForSearch(userId: string) {
+async function getTasksForSearchImpl(userId: string) {
   await requireUser(userId);
 
   // Rate limit: 200 index fetches per hour
@@ -1073,6 +1138,8 @@ export async function getTasksForSearch(userId: string) {
 
   return result;
 }
+
+export const getTasksForSearch = withErrorHandling(getTasksForSearchImpl);
 
 /**
  * Internal implementation for reordering tasks.

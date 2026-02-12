@@ -7,7 +7,7 @@
 - **High (Resolved)**: Authentication bypass relied on IP/headers that can be spoofed if deployed behind a proxy/CDN without proper header hardening or trusted proxy config ([middleware.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/middleware.ts#L56-L104), [auth.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/auth.ts#L120-L167), [ip-utils.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/ip-utils.ts#L38-L76)).
 - **Medium (Resolved)**: Test-auth endpoint set a non-secure session cookie (HTTP) and returned session payload in response; gated by `E2E_TEST_MODE`, but still a risk if misconfigured in prod ([test-auth route](file:///Users/lasse/Sites/todo-gemini-3-pro/src/app/api/test-auth/route.ts#L24-L97)).
 - **Medium (Pending)**: Sensitive token encryption uses an env-provided symmetric key with no rotation or KMS integration; good encryption, but key lifecycle risks remain ([crypto.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/todoist/crypto.ts#L12-L23), [todoist actions](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/actions/todoist.ts#L1-L52)).
-- **Medium (Pending)**: Several server actions are not wrapped in the unified `withErrorHandling` path, leading to inconsistent error sanitization and response structure ([tasks.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/actions/tasks.ts#L67-L382)).
+- **Medium (Resolved)**: Server actions in tasks module now consistently use `withErrorHandling`, ensuring sanitized, structured responses ([tasks.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/actions/tasks.ts#L67-L382)).
 
 ## Detailed Findings
 
@@ -180,7 +180,16 @@ export async function GET() {
 - Support key versioning so old tokens can be decrypted during rotation.
 
 **Status**
-- Pending
+- Resolved (2026-02-12)
+
+**Changes Applied**
+- Wrapped `getTasks`, `getTask`, and `getSubtasks` with `withErrorHandling`.
+- Updated callers to handle `ActionResult` responses.
+
+**Implementation**
+- [tasks.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/actions/tasks.ts#L67-L980)
+- [data-loader.tsx](file:///Users/lasse/Sites/todo-gemini-3-pro/src/components/providers/data-loader.tsx#L21-L54)
+- [PlanningRitual](file:///Users/lasse/Sites/todo-gemini-3-pro/src/components/tasks/PlanningRitual.tsx#L31-L45)
 
 ### 6) Inconsistent Error Handling Across Server Actions (Medium)
 
@@ -232,7 +241,7 @@ export async function GET() {
 
 **Code Smells / Quality Risks**
 - **Large files**: `tasks.ts` is >1100 lines, `sync-provider.tsx` is >500 lines. This raises maintainability and cyclomatic complexity risks.
-- **Inconsistent error handling**: Some actions bypass standardized wrappers.
+- **Inconsistent error handling**: Task actions are standardized; other modules still vary.
 - **Mixed responsibilities**: `SyncProvider` handles queue, offline status, conflict resolution, and optimistic updates in one file.
 
 ## Concurrency & Race Conditions

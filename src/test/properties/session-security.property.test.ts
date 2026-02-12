@@ -254,16 +254,11 @@ describeOrSkip("Property Tests: Session Security", () => {
             // Ensure no user is authenticated (which is the default in beforeEach)
             clearMockAuthUser();
 
-            // All should throw UnauthorizedError
-            try {
-              await getTasks(fakeUserId, undefined, "all");
-              expect(true).toBe(false); // Fail if no error
-            } catch (e: unknown) {
-              const err = e as { name: string };
-              // Should be UnauthorizedError or ForbiddenError
-              // Since we are unauthenticated, it should be UnauthorizedError
-              expect(err.name).toBe("UnauthorizedError");
-            }
+            // All should return an unauthorized ActionResult
+            const tasksResult = await getTasks(fakeUserId, undefined, "all");
+            expect(tasksResult.success).toBe(false);
+            if (tasksResult.success) return;
+            expect(tasksResult.error.code).toBe("UNAUTHORIZED");
 
             // We can't check lists/labels easily because they might not be protected yet
             // assuming getLists and getLabels are NOT protected in this PR.

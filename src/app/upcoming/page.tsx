@@ -9,10 +9,14 @@ import { mapDbSettingsToViewSettings } from "@/lib/view-settings";
 import { getTasks } from "@/lib/actions/tasks";
 
 async function UpcomingTaskSection({ userId }: { userId: string }) {
-    const [tasks, dbSettings] = await Promise.all([
+    const [tasksResult, dbSettings] = await Promise.all([
         getTasks(userId, null, "upcoming"),
         getViewSettings(userId, "upcoming"),
     ]);
+    if (!tasksResult.success) {
+        console.error(tasksResult.error.message);
+    }
+    const tasks = tasksResult.success ? tasksResult.data : [];
     const initialSettings = mapDbSettingsToViewSettings(dbSettings);
 
     return (

@@ -27,10 +27,14 @@ async function LabelTaskSection({
     userId: string;
     labelId: number;
 }) {
-    const [tasks, dbSettings] = await Promise.all([
+    const [tasksResult, dbSettings] = await Promise.all([
         getTasks(userId, undefined, undefined, labelId),
         getViewSettings(userId, `label-${labelId}`),
     ]);
+    if (!tasksResult.success) {
+        console.error(tasksResult.error.message);
+    }
+    const tasks = tasksResult.success ? tasksResult.data : [];
     const initialSettings = mapDbSettingsToViewSettings(dbSettings);
 
     return (

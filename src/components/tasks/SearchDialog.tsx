@@ -69,9 +69,15 @@ export function SearchDialog({ userId }: { userId?: string }) {
                 const promise = loadSearchData();
                 if (!promise) return;
 
-                const [FuseModule, tasks] = await promise;
+                const [FuseModule, tasksResult] = await promise;
+                if (!tasksResult.success) {
+                    console.error(tasksResult.error.message);
+                    setFuse(null);
+                    searchPromiseRef.current = null;
+                    return;
+                }
                 const FuseClass = FuseModule.default;
-                const fuseInstance = new FuseClass(tasks, {
+                const fuseInstance = new FuseClass(tasksResult.data, {
                     keys: ['title', 'description'],
                     threshold: 0.4,
                     shouldSort: true,

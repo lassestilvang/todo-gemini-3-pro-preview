@@ -28,13 +28,21 @@ export function DataLoader({ userId }: { userId?: string }) {
 
         isFetchingRef.current = true;
         try {
-            const [tasks, lists, labels] = await Promise.all([
+            const [tasksResult, lists, labels] = await Promise.all([
                 getTasks(userId, undefined, 'all', undefined, true),
                 getLists(userId),
                 getLabels(userId),
             ]);
 
-            setTasks(tasks);
+            if (!tasksResult.success) {
+                console.error(tasksResult.error.message);
+                setTasks([]);
+                setLists(lists);
+                setLabels(labels);
+                return;
+            }
+
+            setTasks(tasksResult.data);
             setLists(lists);
             setLabels(labels);
             await setAllLastFetched();

@@ -86,8 +86,13 @@ export function useTaskData({ taskId, isEdit, userId }: UseTaskDataProps) {
 
     const fetchSubtasks = useCallback(async () => {
         if (taskId && userId) {
-            const subs = await getSubtasks(taskId, userId);
-            setSubtasks(subs);
+            const result = await getSubtasks(taskId, userId);
+            if (!result.success) {
+                console.error(result.error.message);
+                setSubtasks([]);
+                return;
+            }
+            setSubtasks(result.data);
         }
     }, [taskId, userId]);
 
@@ -133,8 +138,13 @@ export function useTaskData({ taskId, isEdit, userId }: UseTaskDataProps) {
     useEffect(() => {
         if (searchQuery.length > 1 && userId) {
             const delayDebounceFn = setTimeout(async () => {
-                const results = await searchTasks(userId, searchQuery);
-                const filtered = results.filter(t => t.id !== taskId); // Exclude self
+                const result = await searchTasks(userId, searchQuery);
+                if (!result.success) {
+                    console.error(result.error.message);
+                    setSearchResults([]);
+                    return;
+                }
+                const filtered = result.data.filter(t => t.id !== taskId); // Exclude self
                 setSearchResults(filtered);
             }, 300);
             return () => clearTimeout(delayDebounceFn);
@@ -145,20 +155,32 @@ export function useTaskData({ taskId, isEdit, userId }: UseTaskDataProps) {
 
     const handleAddSubtask = async () => {
         if (!newSubtask.trim() || !taskId || !userId) return;
-        await createSubtask(taskId, userId, newSubtask);
+        const result = await createSubtask(taskId, userId, newSubtask);
+        if (!result.success) {
+            console.error(result.error.message);
+            return;
+        }
         setNewSubtask("");
         fetchSubtasks();
     };
 
     const handleToggleSubtask = async (id: number, checked: boolean) => {
         if (!userId) return;
-        await updateSubtask(id, userId, checked);
+        const result = await updateSubtask(id, userId, checked);
+        if (!result.success) {
+            console.error(result.error.message);
+            return;
+        }
         fetchSubtasks();
     };
 
     const handleDeleteSubtask = async (id: number) => {
         if (!userId) return;
-        await deleteSubtask(id, userId);
+        const result = await deleteSubtask(id, userId);
+        if (!result.success) {
+            console.error(result.error.message);
+            return;
+        }
         fetchSubtasks();
     };
 
@@ -166,11 +188,15 @@ export function useTaskData({ taskId, isEdit, userId }: UseTaskDataProps) {
         if (!taskId || !userId) return;
         // Perf: create subtasks in parallel to avoid serial roundtrips per item.
         // This reduces AI-import latency from O(n) sequential awaits to ~1 RTT for n subtasks.
-        await Promise.all(
+        const results = await Promise.all(
             aiSubtasks.map(sub =>
                 createSubtask(taskId, userId, sub.title, sub.estimateMinutes)
             )
         );
+        if (results.some((result) => !result.success)) {
+            console.error("Failed to create one or more subtasks");
+            return;
+        }
         fetchSubtasks();
     };
 

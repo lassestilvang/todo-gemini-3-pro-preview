@@ -50,20 +50,20 @@ describeOrSkip("Property Tests: Authorization", () => {
 
                         // User A creates a task
                         setMockAuthUser({ id: userAId, email: `${userAId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
-                        const taskA = await createTask({
+                        const taskAResult = await createTask({
                             userId: userAId,
                             title: "User A's private task",
                         });
+                        expect(isSuccess(taskAResult)).toBe(true);
+                        if (!isSuccess(taskAResult)) return;
 
                         // User B tries to access User A's task by ID
                         setMockAuthUser({ id: userBId, email: `${userBId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
 
-                        try {
-                            const result = await getTask(taskA.id, userBId);
-                            expect(result).toBeNull();
-                        } catch {
-                            // If it throws, that's also fine (safe)
-                        }
+                        const result = await getTask(taskAResult.data.id, userBId);
+                        expect(isSuccess(result)).toBe(true);
+                        if (!isSuccess(result)) return;
+                        expect(result.data).toBeNull();
                     }
                 ),
                 { numRuns: 10 }
@@ -84,19 +84,24 @@ describeOrSkip("Property Tests: Authorization", () => {
 
                         // User A creates a task
                         setMockAuthUser({ id: userAId, email: `${userAId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
-                        const taskA = await createTask({
+                        const taskAResult = await createTask({
                             userId: userAId,
                             title: "Original title",
                         });
+                        expect(isSuccess(taskAResult)).toBe(true);
+                        if (!isSuccess(taskAResult)) return;
 
                         // User B tries to update User A's task
                         setMockAuthUser({ id: userBId, email: `${userBId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
-                        await updateTask(taskA.id, userBId, { title: "Hacked by B" });
+                        const updateResult = await updateTask(taskAResult.data.id, userBId, { title: "Hacked by B" });
+                        expect(isSuccess(updateResult)).toBe(false);
 
                         // Verify task is unchanged
                         setMockAuthUser({ id: userAId, email: `${userAId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
-                        const taskAfter = await getTask(taskA.id, userAId);
-                        expect(taskAfter?.title).toBe("Original title");
+                        const taskAfterResult = await getTask(taskAResult.data.id, userAId);
+                        expect(isSuccess(taskAfterResult)).toBe(true);
+                        if (!isSuccess(taskAfterResult)) return;
+                        expect(taskAfterResult.data?.title).toBe("Original title");
                     }
                 ),
                 { numRuns: 10 }
@@ -117,20 +122,25 @@ describeOrSkip("Property Tests: Authorization", () => {
 
                         // User A creates a task
                         setMockAuthUser({ id: userAId, email: `${userAId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
-                        const taskA = await createTask({
+                        const taskAResult = await createTask({
                             userId: userAId,
                             title: "User A's task",
                         });
+                        expect(isSuccess(taskAResult)).toBe(true);
+                        if (!isSuccess(taskAResult)) return;
 
                         // User B tries to delete User A's task
                         setMockAuthUser({ id: userBId, email: `${userBId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
-                        await deleteTask(taskA.id, userBId);
+                        const deleteResult = await deleteTask(taskAResult.data.id, userBId);
+                        expect(isSuccess(deleteResult)).toBe(false);
 
                         // Verify task still exists for User A
                         setMockAuthUser({ id: userAId, email: `${userAId}@test.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
-                        const taskAfter = await getTask(taskA.id, userAId);
-                        expect(taskAfter).not.toBeNull();
-                        expect(taskAfter?.title).toBe("User A's task");
+                        const taskAfterResult = await getTask(taskAResult.data.id, userAId);
+                        expect(isSuccess(taskAfterResult)).toBe(true);
+                        if (!isSuccess(taskAfterResult)) return;
+                        expect(taskAfterResult.data).not.toBeNull();
+                        expect(taskAfterResult.data?.title).toBe("User A's task");
                     }
                 ),
                 { numRuns: 10 }

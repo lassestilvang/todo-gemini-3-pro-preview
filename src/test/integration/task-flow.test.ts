@@ -44,21 +44,26 @@ describe("Integration: Task Flow", () => {
         expect(list.name).toBe(`Integration List ${timestamp}`);
 
         // 2. Add a task to the list
-        const task = await createTask({
+        const taskResult = await createTask({
             userId: testUserId,
             title: `Integration Task ${timestamp}`,
             listId: list.id,
             priority: "high"
         });
 
-        expect(task).toBeDefined();
+        expect(isSuccess(taskResult)).toBe(true);
+        if (!isSuccess(taskResult)) return;
+        const task = taskResult.data;
         expect(task.id).toBeGreaterThan(0);
         expect(task.listId).toBe(list.id);
         expect(task.isCompleted).toBe(false);
         expect(task.priority).toBe("high");
 
         // 3. Verify task is in the list
-        const tasks = await getTasks(testUserId, list.id);
+        const tasksResult = await getTasks(testUserId, list.id);
+        expect(isSuccess(tasksResult)).toBe(true);
+        if (!isSuccess(tasksResult)) return;
+        const tasks = tasksResult.data;
         expect(tasks.length).toBeGreaterThanOrEqual(1);
 
         const createdTask = tasks.find(t => t.id === task.id);
@@ -66,17 +71,19 @@ describe("Integration: Task Flow", () => {
         expect(createdTask?.title).toBe(`Integration Task ${timestamp}`);
 
         // 4. Complete the task
-        await toggleTaskCompletion(task.id, testUserId, true);
+        expect(isSuccess(await toggleTaskCompletion(task.id, testUserId, true))).toBe(true);
 
         // 5. Verify task is completed
-        const completedTasks = await getTasks(testUserId, list.id);
-        const completedTask = completedTasks.find(t => t.id === task.id);
+        const completedTasksResult = await getTasks(testUserId, list.id);
+        expect(isSuccess(completedTasksResult)).toBe(true);
+        if (!isSuccess(completedTasksResult)) return;
+        const completedTask = completedTasksResult.data.find(t => t.id === task.id);
 
         expect(completedTask).toBeDefined();
         expect(completedTask?.isCompleted).toBe(true);
 
         // Clean up
-        await deleteTask(task.id, testUserId);
+        expect(isSuccess(await deleteTask(task.id, testUserId))).toBe(true);
         await deleteList(list.id, testUserId);
     });
 });

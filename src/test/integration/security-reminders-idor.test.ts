@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll } from "bun:test";
 import { setupTestDb, createTestUser } from "@/test/setup";
 import { getReminders, createReminder } from "@/lib/actions/reminders";
 import { createTask } from "@/lib/actions/tasks";
+import { isSuccess } from "@/lib/action-result";
 import { setMockAuthUser } from "@/test/mocks";
 
 describe("Security: IDOR in Reminders", () => {
@@ -18,18 +19,22 @@ describe("Security: IDOR in Reminders", () => {
 
         // 2. User A creates a task and a reminder
         setMockAuthUser(userA);
-        const taskA = await createTask({
+        const taskResult = await createTask({
             userId: userA.id,
             title: "User A's Task",
         });
+        expect(isSuccess(taskResult)).toBe(true);
+        if (!isSuccess(taskResult)) {
+            return;
+        }
 
-        await createReminder(userA.id, taskA.id, new Date());
+        await createReminder(userA.id, taskResult.data.id, new Date());
 
         // 3. User B tries to access User A's reminders
         setMockAuthUser(userB);
 
         // getReminders now takes userId and verifies ownership
-        const reminders = await getReminders(taskA.id, userB.id);
+        const reminders = await getReminders(taskResult.data.id, userB.id);
 
         // 4. Assert that User B receives an empty array (Access Denied)
         expect(reminders.length).toBe(0);

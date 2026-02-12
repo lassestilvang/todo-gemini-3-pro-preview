@@ -1,12 +1,18 @@
 import { db, tasks } from "./src/db";
 import { getTasks } from "./src/lib/actions/tasks";
+import { isSuccess } from "./src/lib/action-result";
 import { eq } from "drizzle-orm";
 
 async function reproduce() {
     const userId = "dev_user"; // Default dev user
 
     console.log("--- All Tasks (filter='all') ---");
-    const allTasks = await getTasks(userId, undefined, "all");
+    const allTasksResult = await getTasks(userId, undefined, "all");
+    if (!isSuccess(allTasksResult)) {
+        console.error("Failed to load tasks:", allTasksResult.error);
+        return;
+    }
+    const allTasks = allTasksResult.data;
     console.log(`Count: ${allTasks.length}`);
     allTasks.forEach(t => {
         console.log(`- [${t.isCompleted ? 'x' : ' '}] ${t.title} (Due: ${t.dueDate})`);

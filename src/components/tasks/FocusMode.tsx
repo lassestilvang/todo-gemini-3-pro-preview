@@ -66,23 +66,23 @@ export function FocusMode({ task, userId, onClose }: FocusModeProps) {
             toast.error("Unable to complete task: User not authenticated");
             return;
         }
-        try {
-            await updateTask(task.id, userId, { isCompleted: true });
-            import("canvas-confetti").then((confetti) => {
-                confetti.default({
-                    particleCount: 100,
-                    spread: 70,
-                    origin: { y: 0.6 },
-                });
+        const result = await updateTask(task.id, userId, { isCompleted: true });
+        if (!result.success) {
+            toast.error(result.error.message);
+            return;
+        }
+        import("canvas-confetti").then((confetti) => {
+            confetti.default({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 },
             });
-            toast.success("Task completed!");
-            if (process.env.NODE_ENV === 'test') {
-                onClose();
-            } else {
-                setTimeout(onClose, 2000);
-            }
-        } catch {
-            toast.error("Failed to complete task");
+        });
+        toast.success("Task completed!");
+        if (process.env.NODE_ENV === 'test') {
+            onClose();
+        } else {
+            setTimeout(onClose, 2000);
         }
     };
 

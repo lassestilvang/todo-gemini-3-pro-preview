@@ -31,8 +31,13 @@ export function PlanningRitual({ open, onOpenChange, type, userId }: PlanningRit
     useEffect(() => {
         const loadTodayTasks = async () => {
             if (!userId) return;
-            const tasks = await getTasks(userId, undefined, "today");
-            setTodayTasks(tasks as TaskType[]);
+            const tasksResult = await getTasks(userId, undefined, "today");
+            if (!tasksResult.success) {
+                console.error(tasksResult.error.message);
+                setTodayTasks([]);
+                return;
+            }
+            setTodayTasks(tasksResult.data as TaskType[]);
         };
 
         if (open) {

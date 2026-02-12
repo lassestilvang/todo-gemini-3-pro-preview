@@ -27,10 +27,14 @@ async function ListTaskSection({
     userId: string;
     listId: number;
 }) {
-    const [tasks, dbSettings] = await Promise.all([
+    const [tasksResult, dbSettings] = await Promise.all([
         getTasks(userId, listId),
         getViewSettings(userId, `list-${listId}`),
     ]);
+    if (!tasksResult.success) {
+        console.error(tasksResult.error.message);
+    }
+    const tasks = tasksResult.success ? tasksResult.data : [];
     let initialSettings = mapDbSettingsToViewSettings(dbSettings);
 
     // Default to "Created" descending for Lists if no settings exist
