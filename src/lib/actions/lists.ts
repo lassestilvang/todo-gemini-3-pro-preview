@@ -77,6 +77,10 @@ async function reorderListsImpl(userId: string, items: { id: number; position: n
     details: `Reordered ${items.length} lists`,
   });
   revalidateTag(`lists-${userId}`, 'max');
+  const { syncTodoistNow } = await import("@/lib/actions/todoist");
+  const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
+  await syncTodoistNow();
+  await syncGoogleTasksNow();
   // Also revalidate path to ensure client router cache is updated for side effects
   revalidatePath("/", "layout");
 }

@@ -7,6 +7,32 @@ type RequestOptions = {
     body?: unknown;
 };
 
+const MAX_RETRY_ATTEMPTS = 4;
+const BASE_RETRY_DELAY_MS = 300;
+const MAX_RETRY_DELAY_MS = 4000;
+const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504]);
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const parseRetryAfterMs = (value: string | null) => {
+    if (!value) return null;
+    const seconds = Number(value);
+    if (!Number.isNaN(seconds)) {
+        return Math.max(0, seconds * 1000);
+    }
+    const dateMs = Date.parse(value);
+    if (!Number.isNaN(dateMs)) {
+        return Math.max(0, dateMs - Date.now());
+    }
+    return null;
+};
+
+const computeBackoffMs = (attempt: number) => {
+    const exp = Math.min(MAX_RETRY_DELAY_MS, BASE_RETRY_DELAY_MS * 2 ** (attempt - 1));
+    const jitter = Math.random() * BASE_RETRY_DELAY_MS;
+    return Math.round(exp + jitter);
+};
+
 export class GoogleTasksClient {
     private token: string;
     private baseUrl = "https://tasks.googleapis.com/tasks/v1";
@@ -24,25 +50,50 @@ export class GoogleTasksClient {
             }
         }
 
-        const response = await fetch(url.toString(), {
-            method: options.method ?? "GET",
-            headers: {
-                Authorization: `Bearer ${this.token}`,
-                "Content-Type": "application/json",
-            },
-            body: options.body ? JSON.stringify(options.body) : undefined,
-        });
+        let lastError: Error | null = null;
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Google Tasks API error: ${response.status} ${errorText}`);
+        for (let attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt += 1) {
+            try {
+                const response = await fetch(url.toString(), {
+                    method: options.method ?? "GET",
+                    headers: {
+                        Authorization: `Bearer ${this.token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: options.body ? JSON.stringify(options.body) : undefined,
+                });
+
+                if (!response.ok) {
+                    if (!RETRYABLE_STATUS.has(response.status) || attempt === MAX_RETRY_ATTEMPTS) {
+                        const errorText = await response.text();
+                        throw new Error(`Google Tasks API error: ${response.status} ${errorText}`);
+                    }
+                    const retryAfterMs = parseRetryAfterMs(response.headers.get("retry-after"));
+                    const delayMs = retryAfterMs ?? computeBackoffMs(attempt);
+                    await sleep(delayMs);
+                    continue;
+                }
+
+                if (response.status === 204) {
+                    return undefined as T;
+                }
+
+                return (await response.json()) as T;
+            } catch (error) {
+                if (error instanceof Error) {
+                    lastError = error;
+                } else {
+                    lastError = new Error("Unknown Google Tasks API error");
+                }
+                if (attempt === MAX_RETRY_ATTEMPTS) {
+                    throw lastError;
+                }
+                const delayMs = computeBackoffMs(attempt);
+                await sleep(delayMs);
+            }
         }
 
-        if (response.status === 204) {
-            return undefined as T;
-        }
-
-        return (await response.json()) as T;
+        throw lastError ?? new Error("Google Tasks API error");
     }
 
     async listTasklists(): Promise<GoogleTasklist[]> {
