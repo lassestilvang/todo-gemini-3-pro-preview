@@ -68,13 +68,7 @@ describe("Integration: Security Task Labels IDOR", () => {
         const tasksResult = await getTasks(attackerId);
         expect(isSuccess(tasksResult)).toBe(true);
         if (!isSuccess(tasksResult)) return;
-
         const createdTask = tasksResult.data.find(t => t.id === taskResult.data.id);
-
-        if (!createdTask) {
-            console.log("DEBUG: Task not found in getTasks result. Tasks found:", tasksResult.data.length);
-            console.log("DEBUG: Created task ID:", taskResult.data.id);
-        }
 
         expect(createdTask).toBeDefined();
 

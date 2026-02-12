@@ -64,10 +64,6 @@ describe("Integration: Task Flow", () => {
         expect(isSuccess(tasksResult)).toBe(true);
         if (!isSuccess(tasksResult)) return;
         const tasks = tasksResult.data;
-        if (tasks.length === 0) {
-            console.log("DEBUG: No tasks found for user", testUserId, "list", list.id);
-            console.log("DEBUG: Created task was:", task);
-        }
         expect(tasks.length).toBeGreaterThanOrEqual(1);
 
         const createdTask = tasks.find(t => t.id === task.id);

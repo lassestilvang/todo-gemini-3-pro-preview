@@ -22,7 +22,7 @@ import {
 import { rateLimit } from "@/lib/rate-limit";
 import { requireUser } from "@/lib/auth";
 import { transformNullableTimestamp } from "@/lib/migration-utils";
-import { getLists, getList } from "../lists";
+import { getLists, getListInternal } from "../lists";
 import { getLabels } from "../labels";
 import { updateUserProgress } from "../gamification";
 import { createTaskSchema, updateTaskSchema } from "@/lib/validation/tasks";
@@ -65,7 +65,7 @@ async function createTaskImpl(data: typeof tasks.$inferInsert & { labelIds?: num
         throw new Error("Invalid list ID");
       }
 
-      const list = await getList(taskData.listId, taskData.userId);
+      const list = await getListInternal(taskData.listId, taskData.userId);
       if (!list) {
         throw new NotFoundError("List not found or access denied");
       }
@@ -236,7 +236,7 @@ async function updateTaskImpl(
     }
 
     if (taskData.listId) {
-       const toList = await getList(taskData.listId, userId);
+       const toList = await getListInternal(taskData.listId, userId);
        if (!toList) {
           throw new NotFoundError("List not found or access denied");
        }
@@ -321,8 +321,8 @@ async function updateTaskImpl(
 
   if (taskData.listId !== undefined && taskData.listId !== currentTask.listId) {
     const [fromList, toList] = await Promise.all([
-      currentTask.listId ? getList(currentTask.listId, userId) : Promise.resolve(null),
-      taskData.listId ? getList(taskData.listId, userId) : Promise.resolve(null),
+      currentTask.listId ? getListInternal(currentTask.listId, userId) : Promise.resolve(null),
+      taskData.listId ? getListInternal(taskData.listId, userId) : Promise.resolve(null),
     ]);
 
     const fromListName = fromList?.name || "Inbox";
