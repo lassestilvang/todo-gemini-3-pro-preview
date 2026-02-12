@@ -1,13 +1,12 @@
 "use server";
 
 import { and, eq } from "drizzle-orm";
-import { db, externalEntityMap, externalIntegrations, externalSyncConflicts, tasks } from "@/db";
+import { db, externalEntityMap, externalIntegrations, externalSyncConflicts, lists, tasks } from "@/db";
 import { getCurrentUser } from "@/lib/auth";
 import { createGoogleTasksClient, getGoogleTasksAccessToken } from "@/lib/google-tasks/service";
 import { mapGoogleTaskToLocal, mapLocalTaskToGoogle } from "@/lib/google-tasks/mapper";
 import { syncGoogleTasksForUser } from "@/lib/google-tasks/sync";
 import { updateTask } from "@/lib/actions/tasks";
-import type { GoogleTask } from "@/lib/google-tasks/types";
 
 export async function syncGoogleTasksNow() {
     if (process.env.NODE_ENV === "test") {
@@ -82,6 +81,84 @@ export async function getGoogleTasksConflicts() {
     return { success: true, conflicts };
 }
 
+export async function getGoogleTasksMappingData() {
+    if (process.env.NODE_ENV === "test") {
+        return { success: false, error: "Google Tasks sync disabled in tests." };
+    }
+
+    const user = await getCurrentUser();
+    if (!user) {
+        return { success: false, error: "Not authenticated" };
+    }
+
+    const integration = await db.query.externalIntegrations.findFirst({
+        where: and(eq(externalIntegrations.userId, user.id), eq(externalIntegrations.provider, "google_tasks")),
+    });
+
+    if (!integration) {
+        return { success: false, error: "Google Tasks integration not connected." };
+    }
+
+    const { accessToken } = await getGoogleTasksAccessToken(user.id);
+    const client = createGoogleTasksClient(accessToken);
+
+    const [tasklists, userLists, mappings] = await Promise.all([
+        client.listTasklists(),
+        db.select().from(lists).where(eq(lists.userId, user.id)),
+        db
+            .select()
+            .from(externalEntityMap)
+            .where(
+                and(
+                    eq(externalEntityMap.userId, user.id),
+                    eq(externalEntityMap.provider, "google_tasks"),
+                    eq(externalEntityMap.entityType, "list")
+                )
+            ),
+    ]);
+
+    return {
+        success: true,
+        tasklists,
+        lists: userLists,
+        listMappings: mappings.map((mapping) => ({
+            tasklistId: mapping.externalId,
+            listId: mapping.localId,
+        })),
+    };
+}
+
+export async function setGoogleTasksListMappings(mappings: { tasklistId: string; listId: number | null }[]) {
+    if (process.env.NODE_ENV === "test") {
+        return { success: true };
+    }
+
+    const user = await getCurrentUser();
+    if (!user) {
+        return { success: false, error: "Not authenticated" };
+    }
+
+    await db
+        .delete(externalEntityMap)
+        .where(and(eq(externalEntityMap.userId, user.id), eq(externalEntityMap.provider, "google_tasks"), eq(externalEntityMap.entityType, "list")));
+
+    if (mappings.length > 0) {
+        await db.insert(externalEntityMap).values(
+            mappings.map((mapping) => ({
+                userId: user.id,
+                provider: "google_tasks" as const,
+                entityType: "list" as const,
+                localId: mapping.listId,
+                externalId: mapping.tasklistId,
+            }))
+        );
+    }
+
+    await syncGoogleTasksNow();
+
+    return { success: true };
+}
+
 export async function resolveGoogleTasksConflict(conflictId: number, resolution: "local" | "remote") {
     if (process.env.NODE_ENV === "test") {
         return { success: true };
@@ -144,38 +221,44 @@ export async function resolveGoogleTasksConflict(conflictId: number, resolution:
     }
 
     if (resolution === "remote") {
-        if (!conflict.externalPayload || !conflict.localId) {
+        if (!conflict.externalPayload || !conflict.localId || !conflict.externalId) {
             return { success: false, error: "Missing payload for conflict resolution." };
         }
 
         const externalPayload = JSON.parse(conflict.externalPayload) as {
-            title: string;
-            notes?: string | null;
-            status: "needsAction" | "completed";
-            due?: string | null;
-            completed?: string | null;
-            listId: number;
             tasklistId: string;
         };
 
-        const remoteTask: GoogleTask = {
-            id: conflict.externalId ?? "",
-            title: externalPayload.title,
-            notes: externalPayload.notes ?? undefined,
-            status: externalPayload.status,
-            due: externalPayload.due ?? undefined,
-            completed: externalPayload.completed ?? undefined,
-        };
+        if (!externalPayload.tasklistId) {
+            return { success: false, error: "Missing tasklist mapping for conflict resolution." };
+        }
 
-        const updates = mapGoogleTaskToLocal(remoteTask, externalPayload.listId);
+        const { accessToken } = await getGoogleTasksAccessToken(user.id);
+        const client = createGoogleTasksClient(accessToken);
+        const remoteTask = await client.getTask(externalPayload.tasklistId, conflict.externalId);
+
+        const listMapping = await db.query.externalEntityMap.findFirst({
+            where: and(
+                eq(externalEntityMap.userId, user.id),
+                eq(externalEntityMap.provider, "google_tasks"),
+                eq(externalEntityMap.entityType, "list"),
+                eq(externalEntityMap.externalId, externalPayload.tasklistId)
+            ),
+        });
+
+        if (!listMapping || !listMapping.localId) {
+            return { success: false, error: "List mapping not found." };
+        }
+
+        const updates = mapGoogleTaskToLocal(remoteTask, listMapping.localId);
         await updateTask(conflict.localId, user.id, {
             title: updates.title,
             description: updates.description ?? null,
             isCompleted: updates.isCompleted ?? false,
-            completedAt: updates.isCompleted ? new Date(externalPayload.completed ?? Date.now()) : null,
+            completedAt: updates.isCompleted ? new Date(remoteTask.completed ?? Date.now()) : null,
             dueDate: updates.dueDate ?? null,
             dueDatePrecision: updates.dueDatePrecision ?? null,
-            listId: updates.listId ?? externalPayload.listId,
+            listId: updates.listId ?? listMapping.localId,
         });
     }
 

@@ -84,6 +84,7 @@ export async function syncGoogleTasksForUser(userId: string): Promise<SyncResult
             listExternalToLocal,
             listLocalToExternal,
             localListMap,
+            useUserMappings: listMappings.length > 0,
         });
 
         const updatedListMappings = await db
@@ -158,12 +159,20 @@ async function syncTasklists(params: {
     listExternalToLocal: Map<string, number | null>;
     listLocalToExternal: Map<number, string>;
     localListMap: Map<number, { id: number; name: string; position: number; slug: string }>;
+    useUserMappings: boolean;
 }) {
-    const { userId, client, tasklists, existingLists, listExternalToLocal, listLocalToExternal, localListMap } = params;
+    const { userId, client, tasklists, existingLists, listExternalToLocal, listLocalToExternal, localListMap, useUserMappings } = params;
     let maxPosition = Math.max(0, ...existingLists.map((list) => list.position ?? 0));
 
     for (const remoteList of tasklists) {
+        const hasMapping = listExternalToLocal.has(remoteList.id);
         const mappedLocalId = listExternalToLocal.get(remoteList.id) ?? null;
+        if (useUserMappings && !hasMapping) {
+            continue;
+        }
+        if (hasMapping && !mappedLocalId) {
+            continue;
+        }
         if (mappedLocalId) {
             const localList = localListMap.get(mappedLocalId);
             if (localList && localList.name !== remoteList.title) {
@@ -202,6 +211,10 @@ async function syncTasklists(params: {
                 .delete(externalEntityMap)
                 .where(and(eq(externalEntityMap.userId, userId), eq(externalEntityMap.provider, "google_tasks"), eq(externalEntityMap.entityType, "list"), eq(externalEntityMap.localId, localId)));
         }
+    }
+
+    if (useUserMappings) {
+        return;
     }
 
     const unmappedLists = existingLists.filter((list) => !listLocalToExternal.has(list.id));

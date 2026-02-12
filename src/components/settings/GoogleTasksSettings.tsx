@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { disconnectGoogleTasks, getGoogleTasksStatus, syncGoogleTasksNow } from "@/lib/actions/google-tasks";
 import { GoogleTasksConflicts } from "@/components/settings/GoogleTasksConflicts";
+import { GoogleTasksMappingForm } from "@/components/settings/GoogleTasksMappingForm";
 
 export function GoogleTasksSettings() {
     const [status, setStatus] = useState<string | null>(null);
@@ -70,6 +71,7 @@ export function GoogleTasksSettings() {
                         Disconnect
                     </Button>
                 </div>
+                {isConnected ? <GoogleTasksMappingForm /> : null}
                 <GoogleTasksConflicts />
                 {status ? <p className="text-sm text-muted-foreground">{status}</p> : null}
             </div>

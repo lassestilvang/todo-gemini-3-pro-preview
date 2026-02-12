@@ -19,13 +19,17 @@
 - Completed: Phase 7 settings UI for connect/sync/disconnect and conflict resolution.
 - Completed: Background sync API route mirroring Todoist cron flow.
 - Completed: Unit tests for Google Tasks mapping + conflict UI helpers.
+- Completed: Google Tasks list mapping actions and settings UI for user-controlled tasklist selection.
+- Completed: Conflict resolution now re-fetches the latest remote task payload before applying updates.
+- Completed: Sync tasklist handling now honors user mappings and skips auto-creating remote lists when mappings exist.
 - Deviations:
   - Stored `refreshTokenKeyId` in `external_integrations.metadata` JSON because schema lacks a dedicated refresh token key ID column.
-  - Conflict resolution for Google Tasks uses stored conflict payloads rather than re-fetching remote tasks to reduce API calls.
+  - List mappings are now user-controlled, so auto-creation of remote tasklists is skipped when mappings are present.
 - Technical Decisions:
   - OAuth PKCE flow via `/api/google-tasks/auth/start` + `/api/google-tasks/auth/callback`, with state + verifier cookies.
   - Use `updatedMin = lastSyncedAt` for incremental pulls; `external_updated_at` saved per mapping for conflict awareness.
   - Labels remain local-only; list mapping is 1:1 tasklist mapping.
+  - Conflict resolution re-fetches the latest remote payload to avoid applying stale data.
 - API Integration Details:
   - OAuth endpoints: `https://accounts.google.com/o/oauth2/v2/auth`, `https://oauth2.googleapis.com/token`.
   - Tasks API base: `https://tasks.googleapis.com/tasks/v1`.
