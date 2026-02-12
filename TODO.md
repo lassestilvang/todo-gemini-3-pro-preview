@@ -6,6 +6,7 @@
 - Som Hey/Timestripe?
 - Timeline view? Har full calendar det?
 - blacksmith/depot?
+- Convex...
 
 ## 🚨 High Priority (Bugs & Core Issues)
 
