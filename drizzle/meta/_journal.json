@@ -120,20 +120,6 @@
       "when": 1770836762730,
       "tag": "0016_confused_winter_soldier",
       "breakpoints": true
-    },
-    {
-      "idx": 17,
-      "version": "7",
-      "when": 1770850890763,
-      "tag": "0017_far_masque",
-      "breakpoints": true
-    },
-    {
-      "idx": 18,
-      "version": "7",
-      "when": 1770850932612,
-      "tag": "0018_ambiguous_cardiac",
-      "breakpoints": true
     }
   ]
 }
