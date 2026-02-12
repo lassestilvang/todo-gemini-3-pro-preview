@@ -180,16 +180,7 @@ export async function GET() {
 - Support key versioning so old tokens can be decrypted during rotation.
 
 **Status**
-- Resolved (2026-02-12)
-
-**Changes Applied**
-- Wrapped `getTasks`, `getTask`, and `getSubtasks` with `withErrorHandling`.
-- Updated callers to handle `ActionResult` responses.
-
-**Implementation**
-- [tasks.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/actions/tasks.ts#L67-L980)
-- [data-loader.tsx](file:///Users/lasse/Sites/todo-gemini-3-pro/src/components/providers/data-loader.tsx#L21-L54)
-- [PlanningRitual](file:///Users/lasse/Sites/todo-gemini-3-pro/src/components/tasks/PlanningRitual.tsx#L31-L45)
+- Pending
 
 ### 6) Inconsistent Error Handling Across Server Actions (Medium)
 
@@ -210,7 +201,16 @@ export async function GET() {
 - Add validation wrappers for all input-facing actions.
 
 **Status**
-- Pending
+- Resolved (2026-02-12)
+
+**Changes Applied**
+- Wrapped `getTasks`, `getTask`, and `getSubtasks` with `withErrorHandling`.
+- Updated callers to handle `ActionResult` responses.
+
+**Implementation**
+- [tasks.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/lib/actions/tasks.ts#L67-L980)
+- [data-loader.tsx](file:///Users/lasse/Sites/todo-gemini-3-pro/src/components/providers/data-loader.tsx#L21-L54)
+- [PlanningRitual](file:///Users/lasse/Sites/todo-gemini-3-pro/src/components/tasks/PlanningRitual.tsx#L31-L45)
 
 ### 7) Logging of Test Session Data (Low)
 
