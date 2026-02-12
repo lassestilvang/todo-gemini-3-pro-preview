@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { connectTodoist, disconnectTodoist, syncTodoistNow } from "@/lib/actions/todoist";
+import { connectTodoist, disconnectTodoist, rotateTodoistTokens, syncTodoistNow } from "@/lib/actions/todoist";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -46,6 +46,18 @@ export function TodoistSettings() {
         setIsLoading(false);
     };
 
+    const handleRotate = async () => {
+        setIsLoading(true);
+        setStatus(null);
+        const result = await rotateTodoistTokens();
+        if (result.success) {
+            setStatus("Tokens rotated.");
+        } else {
+            setStatus(result.error ?? "Token rotation failed.");
+        }
+        setIsLoading(false);
+    };
+
     return (
         <Card className="p-6">
             <div className="space-y-4">
@@ -69,6 +81,9 @@ export function TodoistSettings() {
                         </Button>
                         <Button variant="secondary" onClick={handleSync} disabled={isLoading}>
                             Sync Now
+                        </Button>
+                        <Button variant="secondary" onClick={handleRotate} disabled={isLoading}>
+                            Rotate Tokens
                         </Button>
                         <Button variant="outline" onClick={handleDisconnect} disabled={isLoading}>
                             Disconnect

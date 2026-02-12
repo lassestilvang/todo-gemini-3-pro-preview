@@ -24,7 +24,7 @@ fc.configureGlobal({
     seed: FAST_CHECK_SEED,
 });
 
-const describeOrSkip = process.env.CI ? describe.skip : describe;
+const describeOrSkip = describe;
 
 // Arbitrary for valid user IDs
 const validUserIdArb = fc.uuid();

@@ -10,11 +10,39 @@ type EncryptedPayload = {
 const ENCRYPTION_ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
 const DEFAULT_KEY_ID = "default";
+let keyRingPromise: Promise<Map<string, Buffer>> | null = null;
 
-function parseKeyRing() {
+async function decryptKeyMaterial(encrypted: string) {
+    const { KMSClient, DecryptCommand } = await import("@aws-sdk/client-kms");
+    const client = new KMSClient({});
+    const response = await client.send(new DecryptCommand({
+        CiphertextBlob: Buffer.from(encrypted.trim(), "base64"),
+    }));
+    const plaintext = response.Plaintext;
+    if (!plaintext) {
+        throw new Error("KMS did not return plaintext key material.");
+    }
+    return Buffer.from(plaintext as Uint8Array);
+}
+
+async function parseKeyRing() {
     const keyRing = new Map<string, Buffer>();
+    const encryptedMultiKeyEnv = process.env.TODOIST_ENCRYPTION_KEYS_ENCRYPTED;
     const multiKeyEnv = process.env.TODOIST_ENCRYPTION_KEYS;
-    if (multiKeyEnv) {
+    if (encryptedMultiKeyEnv) {
+        const entries = encryptedMultiKeyEnv.split(",").map((entry) => entry.trim()).filter(Boolean);
+        for (const entry of entries) {
+            const [keyId, encryptedKey] = entry.split(":").map((part) => part.trim());
+            if (!keyId || !encryptedKey) {
+                throw new Error("TODOIST_ENCRYPTION_KEYS_ENCRYPTED entries must be in keyId:base64 format.");
+            }
+            const keyBuffer = await decryptKeyMaterial(encryptedKey);
+            if (keyBuffer.length !== 32) {
+                throw new Error("TODOIST_ENCRYPTION_KEYS_ENCRYPTED entries must decrypt to 32-byte keys.");
+            }
+            keyRing.set(keyId, keyBuffer);
+        }
+    } else if (multiKeyEnv) {
         const entries = multiKeyEnv.split(",").map((entry) => entry.trim()).filter(Boolean);
         for (const entry of entries) {
             const [keyId, hexKey] = entry.split(":").map((part) => part.trim());
@@ -29,16 +57,25 @@ function parseKeyRing() {
         }
     }
 
-    if (!multiKeyEnv) {
-        const key = process.env.TODOIST_ENCRYPTION_KEY;
-        if (!key) {
-            throw new Error("TODOIST_ENCRYPTION_KEY is required for Todoist token encryption.");
+    if (!encryptedMultiKeyEnv && !multiKeyEnv) {
+        const encryptedKey = process.env.TODOIST_ENCRYPTION_KEY_ENCRYPTED;
+        if (encryptedKey) {
+            const keyBuffer = await decryptKeyMaterial(encryptedKey);
+            if (keyBuffer.length !== 32) {
+                throw new Error("TODOIST_ENCRYPTION_KEY_ENCRYPTED must decrypt to a 32-byte key.");
+            }
+            keyRing.set(DEFAULT_KEY_ID, keyBuffer);
+        } else {
+            const key = process.env.TODOIST_ENCRYPTION_KEY;
+            if (!key) {
+                throw new Error("TODOIST_ENCRYPTION_KEY is required for Todoist token encryption.");
+            }
+            const keyBuffer = Buffer.from(key, "hex");
+            if (keyBuffer.length !== 32) {
+                throw new Error("TODOIST_ENCRYPTION_KEY must be a 64-character hex string.");
+            }
+            keyRing.set(DEFAULT_KEY_ID, keyBuffer);
         }
-        const keyBuffer = Buffer.from(key, "hex");
-        if (keyBuffer.length !== 32) {
-            throw new Error("TODOIST_ENCRYPTION_KEY must be a 64-character hex string.");
-        }
-        keyRing.set(DEFAULT_KEY_ID, keyBuffer);
     }
 
     if (keyRing.size === 0) {
@@ -64,8 +101,15 @@ function getActiveKeyId(keyRing: Map<string, Buffer>) {
     return keyRing.keys().next().value as string;
 }
 
-function getKeyForEncrypt() {
-    const keyRing = parseKeyRing();
+async function getKeyRing() {
+    if (!keyRingPromise) {
+        keyRingPromise = parseKeyRing();
+    }
+    return keyRingPromise;
+}
+
+async function getKeyForEncrypt() {
+    const keyRing = await getKeyRing();
     const keyId = getActiveKeyId(keyRing);
     const key = keyRing.get(keyId);
     if (!key) {
@@ -74,8 +118,8 @@ function getKeyForEncrypt() {
     return { keyId, key };
 }
 
-function getKeyForDecrypt(keyId?: string) {
-    const keyRing = parseKeyRing();
+async function getKeyForDecrypt(keyId?: string) {
+    const keyRing = await getKeyRing();
     const resolvedKeyId = keyId ?? (keyRing.has(DEFAULT_KEY_ID) ? DEFAULT_KEY_ID : getActiveKeyId(keyRing));
     const key = keyRing.get(resolvedKeyId);
     if (!key) {
@@ -84,9 +128,9 @@ function getKeyForDecrypt(keyId?: string) {
     return { keyId: resolvedKeyId, key };
 }
 
-export function encryptToken(token: string): EncryptedPayload {
+export async function encryptToken(token: string): Promise<EncryptedPayload> {
     const iv = randomBytes(IV_LENGTH);
-    const { keyId, key } = getKeyForEncrypt();
+    const { keyId, key } = await getKeyForEncrypt();
     const cipher = createCipheriv(ENCRYPTION_ALGORITHM, key, iv);
 
     const ciphertext = Buffer.concat([cipher.update(token, "utf8"), cipher.final()]).toString("hex");
@@ -100,8 +144,8 @@ export function encryptToken(token: string): EncryptedPayload {
     };
 }
 
-export function decryptToken(payload: EncryptedPayload): string {
-    const { key } = getKeyForDecrypt(payload.keyId);
+export async function decryptToken(payload: EncryptedPayload): Promise<string> {
+    const { key } = await getKeyForDecrypt(payload.keyId);
     const decipher = createDecipheriv(
         ENCRYPTION_ALGORITHM,
         key,

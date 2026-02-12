@@ -31,7 +31,7 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
         return { status: "error", error: "Todoist integration not connected." };
     }
 
-    const accessToken = decryptToken({
+    const accessToken = await decryptToken({
         ciphertext: integration.accessTokenEncrypted,
         iv: integration.accessTokenIv,
         tag: integration.accessTokenTag,

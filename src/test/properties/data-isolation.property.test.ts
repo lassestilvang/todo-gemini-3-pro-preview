@@ -25,7 +25,7 @@ fc.configureGlobal({
     seed: FAST_CHECK_SEED,
 });
 
-const describeOrSkip = process.env.CI ? describe.skip : describe;
+const describeOrSkip = describe;
 
 describeOrSkip("Property Tests: Data Isolation", () => {
     beforeAll(async () => {

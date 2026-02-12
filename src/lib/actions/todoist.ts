@@ -21,7 +21,7 @@ export async function connectTodoist(token: string) {
         return { success: false, error: "Not authenticated" };
     }
 
-    const encrypted = encryptToken(token.trim());
+    const encrypted = await encryptToken(token.trim());
 
     await db
         .insert(externalIntegrations)
@@ -83,13 +83,13 @@ export async function rotateTodoistTokens() {
     }
 
     const { decryptToken } = await import("@/lib/todoist/crypto");
-    const accessToken = decryptToken({
+    const accessToken = await decryptToken({
         ciphertext: integration.accessTokenEncrypted,
         iv: integration.accessTokenIv,
         tag: integration.accessTokenTag,
         keyId: integration.accessTokenKeyId,
     });
-    const encryptedAccess = encryptToken(accessToken);
+    const encryptedAccess = await encryptToken(accessToken);
 
     const updates: Partial<typeof externalIntegrations.$inferInsert> = {
         accessTokenEncrypted: encryptedAccess.ciphertext,
@@ -100,13 +100,13 @@ export async function rotateTodoistTokens() {
     };
 
     if (integration.refreshTokenEncrypted && integration.refreshTokenIv && integration.refreshTokenTag) {
-        const refreshToken = decryptToken({
+        const refreshToken = await decryptToken({
             ciphertext: integration.refreshTokenEncrypted,
             iv: integration.refreshTokenIv,
             tag: integration.refreshTokenTag,
             keyId: integration.accessTokenKeyId,
         });
-        const encryptedRefresh = encryptToken(refreshToken);
+        const encryptedRefresh = await encryptToken(refreshToken);
         updates.refreshTokenEncrypted = encryptedRefresh.ciphertext;
         updates.refreshTokenIv = encryptedRefresh.iv;
         updates.refreshTokenTag = encryptedRefresh.tag;
@@ -153,7 +153,7 @@ export async function getTodoistMappingData() {
     }
 
     const { decryptToken } = await import("@/lib/todoist/crypto");
-    const accessToken = decryptToken({
+    const accessToken = await decryptToken({
         ciphertext: integration.accessTokenEncrypted,
         iv: integration.accessTokenIv,
         tag: integration.accessTokenTag,
@@ -304,7 +304,7 @@ export async function resolveTodoistConflict(conflictId: number, resolution: "lo
     }
 
     const { decryptToken } = await import("@/lib/todoist/crypto");
-    const accessToken = decryptToken({
+    const accessToken = await decryptToken({
         ciphertext: integration.accessTokenEncrypted,
         iv: integration.accessTokenIv,
         tag: integration.accessTokenTag,

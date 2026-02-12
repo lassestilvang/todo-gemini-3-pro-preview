@@ -13,6 +13,7 @@ import {
     getActivityLog, deleteReminder,
     getViewSettings, saveViewSettings, resetViewSettings
 } from "./actions";
+import { rotateTodoistTokens } from "./actions/todoist";
 import { isSuccess } from "./action-result";
 import { normalizeDueAnchor } from "./due-utils";
 
@@ -665,6 +666,13 @@ describe("Server Actions", () => {
 
             const remindersAfter = await getReminders(task.id, testUserId);
             expect(remindersAfter.length).toBe(0);
+        });
+    });
+
+    describe("Todoist", () => {
+        it("should allow token rotation in test mode", async () => {
+            const result = await rotateTodoistTokens();
+            expect(result.success).toBe(true);
         });
     });
 });

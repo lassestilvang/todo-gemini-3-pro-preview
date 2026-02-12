@@ -328,7 +328,7 @@ export async function GET() {
 - Security-focused property tests (authorization, session security).
 
 **Gaps**
-- Several property-based tests are skipped in CI (flaky or heavy) ([server-actions.property.test.ts](file:///Users/lasse/Sites/todo-gemini-3-pro/src/test/properties/server-actions.property.test.ts#L27-L28)).
+- Property-based tests are included in CI; monitor runtime and flakiness.
 - Missing explicit coverage reports; no automated coverage enforcement in CI.
 
 ## Recommended Remediation Timeline
@@ -358,7 +358,7 @@ export async function GET() {
 | Standardize `withErrorHandling` usage | Backend Engineer | Completed (2026-02-12) |
 | Add search indexes | DBA/Backend | Completed (2026-02-12) |
 | Add cross-tab sync lock | Frontend Engineer | Completed (2026-02-12) |
-| Re-enable CI property tests | QA/Infra | Remaining |
+| Re-enable CI property tests | QA/Infra | Completed (2026-02-12) |
 
 ## Validation
 

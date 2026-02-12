@@ -41,6 +41,7 @@ import {
 } from "./shared";
 import { rateLimit } from "@/lib/rate-limit";
 import { requireUser } from "@/lib/auth";
+import { transformNullableTimestamp } from "@/lib/migration-utils";
 
 /**
  * Validates that an ID is a safe 32-bit integer for Postgres.
@@ -465,6 +466,22 @@ async function createTaskImpl(data: typeof tasks.$inferInsert & { labelIds?: num
     const task = Array.isArray(result) ? result[0] : null;
 
     if (!task) throw new Error("Failed to create task");
+    const isSqlite = !!sqliteConnection;
+    const coerceTimestamp = (value: Date | number | null | undefined) => {
+      if (value === null || value === undefined) return value;
+      if (value instanceof Date) return value;
+      return transformNullableTimestamp(value);
+    };
+    const normalizedTask = (isSqlite
+      ? {
+        ...task,
+        dueDate: coerceTimestamp(task.dueDate),
+        deadline: coerceTimestamp(task.deadline),
+        completedAt: coerceTimestamp(task.completedAt),
+        createdAt: coerceTimestamp(task.createdAt),
+        updatedAt: coerceTimestamp(task.updatedAt),
+      }
+      : task) as typeof tasks.$inferSelect;
 
     if (finalLabelIds.length > 0) {
       // Validate label ownership to prevent IDOR
@@ -496,7 +513,7 @@ async function createTaskImpl(data: typeof tasks.$inferInsert & { labelIds?: num
     await syncTodoistNow();
 
     revalidatePath("/", "layout");
-    return task;
+    return normalizedTask;
   } catch (error) {
     console.error("Failed to create task:", error);
     // Rethrow to allow caller to handle, but at least we logged it
