@@ -422,6 +422,9 @@ export async function setupTestDb() {
     sqliteConnection.run("CREATE TABLE IF NOT EXISTS external_sync_state(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, provider TEXT NOT NULL, sync_token TEXT, last_synced_at INTEGER, status TEXT DEFAULT 'idle' NOT NULL, error TEXT, created_at INTEGER DEFAULT(strftime('%s', 'now')), updated_at INTEGER DEFAULT(strftime('%s', 'now')));");
     sqliteConnection.run("CREATE TABLE IF NOT EXISTS external_entity_map(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, provider TEXT NOT NULL, entity_type TEXT NOT NULL, local_id INTEGER, external_id TEXT NOT NULL, external_parent_id TEXT, deleted_at INTEGER, created_at INTEGER DEFAULT(strftime('%s', 'now')), updated_at INTEGER DEFAULT(strftime('%s', 'now')));");
     sqliteConnection.run("CREATE TABLE IF NOT EXISTS external_sync_conflicts(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, provider TEXT NOT NULL, entity_type TEXT NOT NULL, local_id INTEGER, external_id TEXT, conflict_type TEXT NOT NULL, local_payload TEXT, external_payload TEXT, status TEXT DEFAULT 'pending' NOT NULL, resolution TEXT, created_at INTEGER DEFAULT(strftime('%s', 'now')), updated_at INTEGER DEFAULT(strftime('%s', 'now')), resolved_at INTEGER);");
+
+    // Add indexes manually since we're not running migrations in test setup
+    sqliteConnection.run("CREATE INDEX IF NOT EXISTS tasks_all_view_idx ON tasks(user_id, is_completed, position);");
 }
 
 /**

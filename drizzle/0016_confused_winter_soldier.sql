@@ -1,4 +1,4 @@
-CREATE TABLE "external_entity_map" (
+CREATE TABLE IF NOT EXISTS "external_entity_map" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" text NOT NULL,
 	"provider" text NOT NULL,
@@ -11,7 +11,7 @@ CREATE TABLE "external_entity_map" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "external_integrations" (
+CREATE TABLE IF NOT EXISTS "external_integrations" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" text NOT NULL,
 	"provider" text NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE "external_integrations" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "external_sync_conflicts" (
+CREATE TABLE IF NOT EXISTS "external_sync_conflicts" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" text NOT NULL,
 	"provider" text NOT NULL,
@@ -45,7 +45,7 @@ CREATE TABLE "external_sync_conflicts" (
 	"resolved_at" timestamp
 );
 --> statement-breakpoint
-CREATE TABLE "external_sync_state" (
+CREATE TABLE IF NOT EXISTS "external_sync_state" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" text NOT NULL,
 	"provider" text NOT NULL,
@@ -57,17 +57,37 @@ CREATE TABLE "external_sync_state" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-ALTER TABLE "external_entity_map" ADD CONSTRAINT "external_entity_map_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "external_integrations" ADD CONSTRAINT "external_integrations_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "external_sync_conflicts" ADD CONSTRAINT "external_sync_conflicts_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "external_sync_state" ADD CONSTRAINT "external_sync_state_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "external_entity_map_user_id_idx" ON "external_entity_map" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "external_entity_map_external_id_idx" ON "external_entity_map" USING btree ("external_id");--> statement-breakpoint
-CREATE INDEX "external_entity_map_local_id_idx" ON "external_entity_map" USING btree ("local_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "external_entity_map_provider_entity_unique" ON "external_entity_map" USING btree ("user_id","provider","entity_type","external_id");--> statement-breakpoint
-CREATE INDEX "external_integrations_user_id_idx" ON "external_integrations" USING btree ("user_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "external_integrations_provider_user_unique" ON "external_integrations" USING btree ("user_id","provider");--> statement-breakpoint
-CREATE INDEX "external_sync_conflicts_user_id_idx" ON "external_sync_conflicts" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "external_sync_conflicts_status_idx" ON "external_sync_conflicts" USING btree ("status");--> statement-breakpoint
-CREATE INDEX "external_sync_state_user_id_idx" ON "external_sync_state" USING btree ("user_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "external_sync_state_provider_user_unique" ON "external_sync_state" USING btree ("user_id","provider");
+DO $$ BEGIN
+ ALTER TABLE "external_entity_map" ADD CONSTRAINT "external_entity_map_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "external_integrations" ADD CONSTRAINT "external_integrations_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "external_sync_conflicts" ADD CONSTRAINT "external_sync_conflicts_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "external_sync_state" ADD CONSTRAINT "external_sync_state_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "external_entity_map_user_id_idx" ON "external_entity_map" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "external_entity_map_external_id_idx" ON "external_entity_map" USING btree ("external_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "external_entity_map_local_id_idx" ON "external_entity_map" USING btree ("local_id");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "external_entity_map_provider_entity_unique" ON "external_entity_map" USING btree ("user_id","provider","entity_type","external_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "external_integrations_user_id_idx" ON "external_integrations" USING btree ("user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "external_integrations_provider_user_unique" ON "external_integrations" USING btree ("user_id","provider");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "external_sync_conflicts_user_id_idx" ON "external_sync_conflicts" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "external_sync_conflicts_status_idx" ON "external_sync_conflicts" USING btree ("status");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "external_sync_state_user_id_idx" ON "external_sync_state" USING btree ("user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "external_sync_state_provider_user_unique" ON "external_sync_state" USING btree ("user_id","provider");
