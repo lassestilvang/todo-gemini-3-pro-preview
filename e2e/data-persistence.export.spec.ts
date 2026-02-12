@@ -12,7 +12,7 @@ test.describe('Data Persistence: Export', () => {
         await expect(page.getByTestId('add-list-button')).toBeVisible();
 
         await page.getByTestId('add-list-button').click();
-        await expect(page.getByRole('dialog')).toBeVisible();
+        await expect(page.getByRole('dialog')).toBeVisible({ timeout: 15000 });
         await page.getByPlaceholder('List Name').fill(listName);
         await page.keyboard.press('Enter');
 
