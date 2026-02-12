@@ -40,6 +40,14 @@ import {
 import { rateLimit } from "@/lib/rate-limit";
 import { requireUser } from "@/lib/auth";
 
+/**
+ * Validates that an ID is a safe 32-bit integer for Postgres.
+ * Returns true if valid, false if out of range or invalid.
+ */
+function isValidId(id: number): boolean {
+  return Number.isInteger(id) && id >= -2147483648 && id <= 2147483647;
+}
+
 // Import from other domain modules
 import { getLists, getList } from "./lists";
 import { getLabels } from "./labels";
@@ -66,6 +74,13 @@ export async function getTasks(
 
   const user = await requireUser(userId);
 
+  // Validate inputs to prevent integer overflow errors
+  if (listId !== undefined && listId !== null && !isValidId(listId)) {
+    return [];
+  }
+  if (labelId !== undefined && !isValidId(labelId)) {
+    return [];
+  }
 
   const conditions = [];
 
@@ -188,17 +203,16 @@ export async function getTasks(
   const taskIds = tasksResult.map((t) => t.id);
   if (taskIds.length === 0) return [];
 
-  const [labelsResult, subtasksResult, blockedCountsResult] = await Promise.all([
+  // Fetch labels separately to avoid potential SQLite concurrency issues in tests
+  const allLabels = await getLabels(userId);
+
+  const [taskLabelsResult, subtasksResult, blockedCountsResult] = await Promise.all([
     db
       .select({
         taskId: taskLabels.taskId,
         labelId: taskLabels.labelId,
-        name: labels.name,
-        color: labels.color,
-        icon: labels.icon,
       })
       .from(taskLabels)
-      .leftJoin(labels, eq(taskLabels.labelId, labels.id))
       .where(inArray(taskLabels.taskId, taskIds)),
 
     db
@@ -227,18 +241,23 @@ export async function getTasks(
     blockedCountsResult.map((r) => [r.taskId, Number(r.count)])
   );
 
+  const labelsMap = new Map(allLabels.map((l) => [l.id, l]));
+
   // Perf: pre-group labels and subtasks by taskId once to avoid O(N×M) filters.
   // For 500 tasks with 3 labels each, this drops ~1,500 filter passes down to 1.
   const labelsByTaskId = new Map<number, { id: number; name: string; color: string; icon: string | null }[]>();
-  for (const label of labelsResult) {
-    const list = labelsByTaskId.get(label.taskId) ?? [];
-    list.push({
-      id: label.labelId,
-      name: label.name || "", // Handle null name from left join
-      color: label.color || "#000000", // Handle null color
-      icon: label.icon,
-    });
-    labelsByTaskId.set(label.taskId, list);
+  for (const labelLink of taskLabelsResult) {
+    const label = labelsMap.get(labelLink.labelId);
+    if (label) {
+      const list = labelsByTaskId.get(labelLink.taskId) ?? [];
+      list.push({
+        id: label.id,
+        name: label.name,
+        color: label.color || "#000000",
+        icon: label.icon,
+      });
+      labelsByTaskId.set(labelLink.taskId, list);
+    }
   }
 
   const subtasksByParentId = new Map<number, typeof subtasksResult>();
@@ -284,6 +303,8 @@ export async function getTasks(
  */
 export async function getTask(id: number, userId: string) {
   await requireUser(userId);
+
+  if (!isValidId(id)) return null;
 
   const result = await db
     .select({
@@ -365,6 +386,10 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
 
     // Validate parent task ownership if parentId is provided to prevent IDOR
     if (taskData.parentId) {
+      if (!isValidId(taskData.parentId)) {
+        throw new Error("Invalid parent ID");
+      }
+
       const parentTask = await db
         .select({ id: tasks.id })
         .from(tasks)
@@ -374,6 +399,10 @@ export async function createTask(data: typeof tasks.$inferInsert & { labelIds?: 
       if (parentTask.length === 0) {
         throw new NotFoundError("Parent task not found or access denied");
       }
+    }
+
+    if (taskData.listId && !isValidId(taskData.listId)) {
+      throw new Error("Invalid list ID");
     }
 
     // Smart Tagging: If no list or labels provided, try to guess them
@@ -487,6 +516,8 @@ export async function updateTask(
   existingTask?: Awaited<ReturnType<typeof getTask>> | null
 ) {
   const user = await requireUser(userId);
+
+  if (!isValidId(id)) return;
 
   // Validate and parse input data
   const parsedData = updateTaskSchema.parse(data);
@@ -673,6 +704,9 @@ export async function updateTask(
  */
 export async function deleteTask(id: number, userId: string) {
   await requireUser(userId);
+
+  if (!isValidId(id)) return;
+
   await db.delete(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   await syncTodoistNow();
@@ -689,6 +723,10 @@ export async function deleteTask(id: number, userId: string) {
  */
 export async function toggleTaskCompletion(id: number, userId: string, isCompleted: boolean) {
   await requireUser(userId);
+
+  if (!isValidId(id)) {
+    throw new NotFoundError("Task not found or access denied");
+  }
 
   const task = await getTask(id, userId);
   if (!task) {
@@ -936,6 +974,8 @@ export async function createSubtask(
 export async function updateSubtask(id: number, userId: string, isCompleted: boolean) {
   await requireUser(userId);
 
+  if (!isValidId(id)) return;
+
   await db
     .update(tasks)
     .set({
@@ -954,6 +994,9 @@ export async function updateSubtask(id: number, userId: string, isCompleted: boo
  */
 export async function deleteSubtask(id: number, userId: string) {
   await requireUser(userId);
+
+  if (!isValidId(id)) return;
+
   await db.delete(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
   revalidatePath("/", "layout");
 }

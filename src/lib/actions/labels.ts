@@ -18,7 +18,7 @@ import {
   withErrorHandling,
   ValidationError,
 } from "./shared";
-import { revalidateTag } from "next/cache";
+import { revalidateTag, unstable_cache } from "next/cache";
 import { logActivity } from "./logs";
 import { requireUser } from "@/lib/auth";
 
@@ -30,11 +30,18 @@ import { requireUser } from "@/lib/auth";
  */
 export async function getLabels(userId: string) {
   await requireUser(userId);
-  return await db
-    .select()
-    .from(labels)
-    .where(eq(labels.userId, userId))
-    .orderBy(asc(labels.position), asc(labels.id));
+
+  return await unstable_cache(
+    async () => {
+      return await db
+        .select()
+        .from(labels)
+        .where(eq(labels.userId, userId))
+        .orderBy(asc(labels.position), asc(labels.id));
+    },
+    [`user-labels-${userId}`],
+    { tags: [`labels-${userId}`] }
+  )();
 }
 
 /**
@@ -73,7 +80,7 @@ async function reorderLabelsImpl(userId: string, items: { id: number; position: 
     action: "label_updated",
     details: `Reordered ${items.length} labels`,
   });
-  revalidateTag(`labels-${userId}`, 'max');
+  revalidateTag(`labels-${userId}`);
   revalidatePath("/", "layout");
 }
 
@@ -135,7 +142,7 @@ async function createLabelImpl(data: typeof labels.$inferInsert) {
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   await syncTodoistNow();
 
-  revalidateTag(`labels-${data.userId}`, 'max');
+  revalidateTag(`labels-${data.userId}`);
   revalidatePath("/", "layout");
   return result[0];
 }
@@ -189,7 +196,7 @@ async function updateLabelImpl(
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   await syncTodoistNow();
 
-  revalidateTag(`labels-${userId}`, 'max');
+  revalidateTag(`labels-${userId}`);
   revalidatePath("/", "layout");
 }
 
@@ -233,7 +240,7 @@ async function deleteLabelImpl(id: number, userId: string) {
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   await syncTodoistNow();
 
-  revalidateTag(`labels-${userId}`, 'max');
+  revalidateTag(`labels-${userId}`);
   revalidatePath("/", "layout");
 }
 
