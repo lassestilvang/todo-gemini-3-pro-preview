@@ -22,6 +22,10 @@
 - Completed: Google Tasks list mapping actions and settings UI for user-controlled tasklist selection.
 - Completed: Conflict resolution now re-fetches the latest remote task payload before applying updates.
 - Completed: Sync tasklist handling now honors user mappings and skips auto-creating remote lists when mappings exist.
+- Completed: Added retry with exponential backoff (with jitter + Retry-After support) in Google Tasks client.
+- Completed: Added Google Tasks integration tests with mocked API snapshot and client behaviors.
+- Completed: List reorder now triggers Google Tasks sync to keep list ordering aligned.
+- Completed: Test DB setup includes unique indexes required for external sync upserts.
 - Deviations:
   - Stored `refreshTokenKeyId` in `external_integrations.metadata` JSON because schema lacks a dedicated refresh token key ID column.
   - List mappings are now user-controlled, so auto-creation of remote tasklists is skipped when mappings are present.
@@ -46,6 +50,7 @@
 - Testing Procedures:
   - Completed: `bun lint`, `bun test`, `bun --env-file=.env.local run db:push`, `bun run build`.
   - Completed: `src/lib/google-tasks/mapper.test.ts` and `src/lib/google-tasks/conflict-ui.test.ts`.
+  - Completed: `src/test/integration/google-tasks-sync.test.ts`.
 
 ## API Summary
 
