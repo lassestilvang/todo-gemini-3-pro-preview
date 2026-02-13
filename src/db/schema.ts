@@ -110,8 +110,10 @@ export const tasks = pgTable("tasks", {
     // Composite index for "All Tasks" view (where listId is null/ignored)
     allViewIdx: index("tasks_all_view_idx").on(
         table.userId,
+        table.parentId,
         table.isCompleted,
-        table.position
+        table.position,
+        desc(table.createdAt)
     ),
     titleIdx: index("tasks_title_idx").on(table.title),
     descriptionIdx: index("tasks_description_idx").on(table.description),
