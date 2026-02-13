@@ -60,6 +60,8 @@ describe("Integration: Task Flow", () => {
         expect(task.priority).toBe("high");
 
         // 3. Verify task is in the list
+        // Add small delay to mitigate potential CI race conditions with SQLite
+        await new Promise(resolve => setTimeout(resolve, 100));
         const tasksResult = await getTasks(testUserId, list.id);
         expect(isSuccess(tasksResult)).toBe(true);
         if (!isSuccess(tasksResult)) return;

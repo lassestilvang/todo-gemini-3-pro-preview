@@ -28,7 +28,7 @@ import {
 } from "../shared";
 import { rateLimit } from "@/lib/rate-limit";
 import { requireUser } from "@/lib/auth";
-import { getLabels } from "../labels";
+import { getLabelsInternal } from "../labels";
 import { isValidId } from "./helpers";
 
 async function getTasksImpl(
@@ -162,7 +162,7 @@ async function getTasksImpl(
   const taskIds = tasksResult.map((t) => t.id);
   if (taskIds.length === 0) return [];
 
-  const allLabels = await getLabels(userId);
+  const allLabels = await getLabelsInternal(userId);
 
   const [taskLabelsResult, subtasksResult, blockedCountsResult] = await Promise.all([
     db
