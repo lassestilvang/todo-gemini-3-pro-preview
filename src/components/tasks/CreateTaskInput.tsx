@@ -405,15 +405,19 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                                 </Button>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <Button
-                                            type="submit"
-                                            size="sm"
-                                            disabled={!title.trim() || !userId || isSubmitting}
-                                            data-testid="add-task-button"
-                                        >
-                                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            Add Task
-                                        </Button>
+                                        {/* Wrap in span to allow tooltip on disabled button */}
+                                        <span tabIndex={0} className="inline-block">
+                                            <Button
+                                                type="submit"
+                                                size="sm"
+                                                disabled={!title.trim() || !userId || isSubmitting}
+                                                data-testid="add-task-button"
+                                                className="w-full"
+                                            >
+                                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                Add Task
+                                            </Button>
+                                        </span>
                                     </TooltipTrigger>
                                     <TooltipContent>
                                         <p>Add Task (⌘Enter)</p>
