@@ -35,13 +35,17 @@
 
 ### Spike 1: Auth Proof-of-Concept (1 day)
 
-Stand up a minimal Convex project using the **official `@convex-dev/workos-authkit` integration** (NOT the custom token-template approach):
+Stand up a minimal Convex project using the **official `@convex-dev/workos-authkit` integration** (https://www.convex.dev/components/workos-authkit) (NOT the custom token-template approach):
 1. Verify the client can obtain a JWT acceptable to Convex via WorkOS AuthKit.
 2. Confirm `ctx.auth.getUserIdentity()` returns non-null with a stable `subject` matching the WorkOS user ID.
 3. Verify SSR `preloadQuery` works with auth token forwarding using WorkOS cookie sessions.
 4. Verify in both local dev and a staging deployment.
 
 **Why this is blocking:** WorkOS AuthKit uses session-cookie auth, not bearer tokens. The approach for bridging this to Convex's JWT-based auth must be proven before any function migration.
+
+### Spike 1b: Test Runner Compatibility (0.5 day)
+
+Verify `convex-test` runs successfully under `bun test` in this repo. If it fails, plan to switch Convex unit tests to Vitest and update imports, scripts, and CI accordingly.
 
 ### Spike 2: Constraint Parity Matrix (1–2 days)
 
@@ -92,7 +96,7 @@ Test whether `@aws-sdk/client-kms` works in the Convex action runtime. AWS SDK v
 - **Database**: Neon PostgreSQL → Convex document database
 - **ORM**: Drizzle ORM → Convex's built-in `ctx.db` API
 - **Backend functions**: Next.js Server Actions → Convex queries/mutations/actions
-- **Auth**: WorkOS AuthKit middleware → WorkOS JWT verification in Convex via official `@convex-dev/workos-authkit` package
+- **Auth**: WorkOS AuthKit middleware → WorkOS JWT verification in Convex via official `@convex-dev/workos-authkit` package (https://www.convex.dev/components/workos-authkit)
 - **Client data**: Zustand stores + React Query + IndexedDB → Convex `useQuery`/`useMutation` hooks
 - **Offline sync**: Custom SyncProvider → **Product decision required (see Spike 4).** Convex optimistic updates cover online UX only; offline durability is lost without a replacement queue.
 - **AI features**: Server Actions calling Gemini → Convex actions calling Gemini
@@ -272,7 +276,7 @@ Add scripts to `package.json` (requires `bun add -D concurrently`):
 
 #### 0.3 Set Up ConvexProvider (Auth-Ready)
 
-Create `src/components/providers/ConvexClientProvider.tsx` using the **official `@convex-dev/workos-authkit` package** — NOT a custom token-template approach.
+Create `src/components/providers/ConvexClientProvider.tsx` using the **official `@convex-dev/workos-authkit` package** (https://www.convex.dev/components/workos-authkit) — NOT a custom token-template approach.
 
 > ⚠️ **The `getAccessToken({ template: "convex" })` pattern shown in earlier drafts is a Clerk API, not WorkOS.** WorkOS AuthKit uses session-cookie auth. Use the official integration package instead.
 
@@ -299,7 +303,7 @@ export default function ConvexClientProvider({ children }: { children: ReactNode
 
 Wrap in `src/app/layout.tsx` alongside existing providers (can co-exist during migration).
 
-> **Important:** If `@convex-dev/workos-authkit` does not exist or does not support your WorkOS AuthKit version, you must build a custom bridge (see Spike 1). The bridge must: (1) extract a JWT from the WorkOS session server-side, (2) expose it to the Convex client for WebSocket auth, and (3) handle token refresh. This is the highest-risk integration point in the entire migration.
+> **Important:** If `@convex-dev/workos-authkit` does not support your WorkOS AuthKit version, you must build a custom bridge (see Spike 1). The bridge must: (1) extract a JWT from the WorkOS session server-side, (2) expose it to the Convex client for WebSocket auth, and (3) handle token refresh. This is the highest-risk integration point in the entire migration.
 
 #### 0.4 Environment Variables
 
@@ -324,7 +328,7 @@ Convex needs a JWT to authenticate WebSocket connections. WorkOS AuthKit primari
 
 **Possible approaches (validate in Spike 1):**
 
-1. **Official `@convex-dev/workos-authkit` package** (preferred if it exists and supports your version)
+1. **Official `@convex-dev/workos-authkit` package** (preferred; see https://www.convex.dev/components/workos-authkit)
 2. **Custom `useAuth` hook** that calls a Next.js API route to exchange the WorkOS session for a JWT:
 
 ```ts
@@ -1287,6 +1291,58 @@ export const searchTasks = query({
 });
 ```
 
+#### 2.6 Unit Testing Convex Functions (During Migration)
+
+Write unit tests alongside each migrated module. Default to `bun test` + `convex-test` (validated in Spike 1b). If Spike 1b fails, switch these tests to Vitest.
+
+```typescript
+// convex/tests/tasks.test.ts
+import { convexTest } from "convex-test";
+import { expect, test } from "bun:test";
+import schema from "../schema";
+import { api } from "../_generated/api";
+
+test("create task", async () => {
+  const t = convexTest(schema);
+
+  // Set up authenticated user
+  const userId = await t.run(async (ctx) => {
+    return await ctx.db.insert("users", {
+      externalId: "test-user",
+      email: "test@example.com",
+      isInitialized: true,
+      updatedAt: Date.now(),
+    });
+  });
+
+  // Create a list
+  const listId = await t.run(async (ctx) => {
+    return await ctx.db.insert("lists", {
+      userId,
+      name: "Inbox",
+      slug: "inbox",
+      position: 0,
+      updatedAt: Date.now(),
+    });
+  });
+
+  // Test the mutation
+  const asUser = t.withIdentity({ subject: "test-user" });
+  const taskId = await asUser.mutation(api.tasks.mutations.createTask, {
+    title: "Test task",
+    listId,
+  });
+
+  // Verify
+  const task = await t.run(async (ctx) => {
+    return await ctx.db.get(taskId);
+  });
+
+  expect(task?.title).toBe("Test task");
+  expect(task?.userId).toBe(userId);
+});
+```
+
 ---
 
 ### Phase 3: Authentication
@@ -1330,10 +1386,19 @@ export default function ConvexClientProvider({ children }) {
 }
 ```
 
-**Dev bypass and E2E test mode:** The current auth bypass system (dev user, IP allowlist, E2E test cookies) does NOT translate to Convex. Convex auth requires valid JWTs — headers and cookies are not forwarded to Convex functions. You must design a new bypass strategy:
+**Dev bypass and E2E test mode:** The current auth bypass system (dev user, IP allowlist, E2E test cookies) does NOT translate to Convex. Convex auth requires valid JWTs — headers and cookies are not forwarded to Convex functions. You must design a new bypass strategy (and implement it in Phase 3 before Phase 4):
 - **Dev mode**: Use a test Convex deployment with a hardcoded test user (no auth required via `ConvexProvider` without auth).
 - **E2E tests**: Mint real WorkOS test tokens, or use Convex's `t.withIdentity()` in unit tests and a test WorkOS tenant for E2E.
 - **IP allowlist bypass**: Not possible with Convex (client IP is not available in Convex functions). Consider a Convex `internal` mutation for admin tasks instead.
+
+#### Auth Test Mode Strategy (Required before Phase 4)
+
+Applies to both Option A and Option B. Define a deterministic auth strategy early so Phase 4 and E2E can validate end-to-end flows.
+
+Options:
+- WorkOS test tenant with scripted login + token extraction
+- Convex `internal` test-auth mutation gated by `E2E_TEST_MODE` that issues a temporary token
+- Clerk/Convex test tokens (if you switch auth providers)
 
 #### Option B: Switch to Convex Auth (Clerk)
 
@@ -1483,15 +1548,17 @@ The following stores become unnecessary:
 - `src/lib/store/list-store.ts` → replaced by `useQuery(api.lists.queries.getLists)`
 - `src/lib/store/label-store.ts` → replaced by `useQuery(api.labels.queries.getLabels)`
 
-#### 4.3 Remove SyncProvider + IndexedDB
+#### 4.3 SyncProvider + IndexedDB (Conditional on Spike 4)
 
-Delete:
+If Spike 4 chooses **Option A (online-only)**, delete:
 - `src/components/providers/sync-provider.tsx`
 - `src/lib/sync/db.ts`
 - `src/lib/sync/registry.ts`
 - `src/lib/sync/types.ts`
 - `src/components/sync/SyncStatus.tsx`
 - `src/components/sync/ConflictDialog.tsx`
+
+If Spike 4 chooses **Option B/C (offline queue or hybrid)**, keep these files and refactor them to queue Convex mutations and reconcile on reconnect instead of deleting them.
 
 #### 4.4 Remove QueryProvider
 
@@ -1616,7 +1683,7 @@ The `smart-scheduler.ts` and `smart-tags.ts` pure logic can be moved into `conve
 - Queue mutations locally when offline.
 - Replay them through Convex mutations on reconnect.
 - Handle conflicts (last-write-wins or prompt user).
-- This essentially keeps parts of SyncProvider — budget 3–5 extra days.
+- This essentially keeps parts of SyncProvider — budget 2–3 weeks.
 
 **Option C: Hybrid (recommended if offline matters)**
 - Convex for online real-time sync.
@@ -1641,7 +1708,7 @@ The `smart-scheduler.ts` and `smart-tags.ts` pure logic can be moved into `conve
 | `src/components/sync/SyncStatus.tsx` | Optional Convex connection status |
 | `src/components/sync/ConflictDialog.tsx` | Not needed (or simplified) |
 | `idb` dependency | Remove from package.json |
-| `zustand` dependency | Remove if no other uses |
+| `zustand` dependency | Remove if no other uses (conditional on Spike 4) |
 | `@tanstack/react-query` dependency | Remove |
 
 **Add (optional):** A simple connection status indicator:
@@ -1718,60 +1785,12 @@ The current app uses AWS KMS for token encryption. In Convex:
 
 #### 8.1 Unit Testing Convex Functions
 
-Use Convex's testing utilities:
+Unit tests should already exist from Phase 2. At this stage, focus on expanding coverage and fixing gaps rather than introducing a new test framework.
 
-```typescript
-// convex/tests/tasks.test.ts
-import { convexTest } from "convex-test";
-import { expect, test } from "vitest";
-import schema from "../schema";
-import { api } from "../_generated/api";
-
-test("create task", async () => {
-  const t = convexTest(schema);
-
-  // Set up authenticated user
-  const userId = await t.run(async (ctx) => {
-    return await ctx.db.insert("users", {
-      externalId: "test-user",
-      email: "test@example.com",
-      isInitialized: true,
-      updatedAt: Date.now(),
-    });
-  });
-
-  // Create a list
-  const listId = await t.run(async (ctx) => {
-    return await ctx.db.insert("lists", {
-      userId,
-      name: "Inbox",
-      slug: "inbox",
-      position: 0,
-      updatedAt: Date.now(),
-    });
-  });
-
-  // Test the mutation
-  const asUser = t.withIdentity({ subject: "test-user" });
-  const taskId = await asUser.mutation(api.tasks.mutations.createTask, {
-    title: "Test task",
-    listId,
-  });
-
-  // Verify
-  const task = await t.run(async (ctx) => {
-    return await ctx.db.get(taskId);
-  });
-
-  expect(task?.title).toBe("Test task");
-  expect(task?.userId).toBe(userId);
-});
-```
-
-#### 8.2 Switch Test Runner
+#### 8.2 Test Runner Confirmation
 
 - Current: Bun test with in-memory SQLite
-- New: Vitest (recommended by Convex) or adapt to Bun test with `convex-test`
+- New: Keep Bun test and use `convex-test` (validated in Spike 1b). If Spike 1b fails, switch Convex unit tests to Vitest and update scripts/CI.
 
 #### 8.3 E2E Tests
 
@@ -1782,10 +1801,7 @@ Playwright E2E tests largely stay the same — they test the UI, not the backend
 
 #### 8.3.1 Auth Test Mode Strategy
 
-Define one of the following for deterministic E2E auth:
-- WorkOS test tenant with a scripted login + token extraction
-- A server-only Convex `internal` test auth mutation gated by `E2E_TEST_MODE` that issues a temporary token
-- Clerk/Convex test tokens (if you switch auth providers)
+Already defined in Phase 3. Confirm it still works after frontend migration.
 
 #### 8.4 Files to Delete
 
@@ -1821,7 +1837,7 @@ src/components/providers/data-loader.tsx
 src/components/sync/
 
 # Test infrastructure
-src/test/setup.ts                # Replace with convex-test setup
+src/test/setup.tsx               # Replace with convex-test setup
 src/db/schema-sqlite.ts
 
 # Config
@@ -1844,8 +1860,7 @@ drizzle.config.ts
     "convex",
     "convex-test",
     "@convex-dev/workos-authkit",
-    "concurrently",
-    "vitest"
+    "concurrently"
   ]
 }
 ```
@@ -1987,8 +2002,8 @@ Before cutover, run an export from Convex and verify you can re-import into a st
 | `drizzle-orm` | Convex `ctx.db` |
 | `drizzle-kit` (dev) | Convex schema auto-sync |
 | `@tanstack/react-query` | Convex `useQuery` |
-| `zustand` | Convex `useQuery` (if no other uses) |
-| `idb` | Not needed |
+| `zustand` | Convex `useQuery` (if no other uses; conditional on Spike 4) |
+| `idb` | Not needed (conditional on Spike 4) |
 | `@workos-inc/authkit-nextjs` | Optional: keep or replace with Clerk |
 
 ### Files/Directories Removed (~30+ files)
@@ -2005,7 +2020,7 @@ Before cutover, run an export from Convex and verify you can re-import into a st
 - `src/components/providers/QueryProvider.tsx`
 - `src/components/providers/data-loader.tsx`
 - `src/components/sync/`
-- `src/test/setup.ts`
+- `src/test/setup.tsx`
 - `drizzle/` (migration files)
 - `drizzle.config.ts`
 
@@ -2016,7 +2031,7 @@ Before cutover, run an export from Convex and verify you can re-import into a st
 | `revalidatePath("/")` | Convex subscriptions auto-update |
 | `"use server"` directive | Convex functions run on Convex backend |
 | SQLite test schema | Convex has its own test utilities |
-| IndexedDB offline queue | Convex handles offline automatically |
+| IndexedDB offline queue | Convex does not handle offline automatically; remove only if Spike 4 selects Option A |
 | Zustand client cache | Convex reactive cache replaces it |
 | React Query caching | Convex's own reactive system |
 | Manual WebSocket/polling | Convex WebSocket is automatic |
@@ -2144,8 +2159,8 @@ function TaskList() {
 - [ ] **Phase 6**: Offline sync removal/replacement (per Spike 4 decision)
   - [ ] PWA service worker updated for new architecture
 - [ ] **Phase 7**: External integrations → Convex actions + crons
-- [ ] **Phase 8**: Testing + cleanup
-  - [ ] New test setup with `convex-test` (Vitest, not Bun test)
+  - [ ] **Phase 8**: Testing + cleanup
+  - [ ] Confirm test runner decision from Spike 1b (Bun + `convex-test` or Vitest)
   - [ ] E2E tests passing with new auth strategy
   - [ ] E2E auth strategy selected + implemented
   - [ ] Remove unused dependencies
