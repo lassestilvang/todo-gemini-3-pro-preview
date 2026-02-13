@@ -49,7 +49,10 @@ const getLazyIcon = (name: string): React.LazyExoticComponent<LucideIcon> => {
     return LazyIcon;
 };
 
-export function ResolvedIcon({ icon, color, className, fallback }: ResolvedIconProps) {
+// PERF: Memoize ResolvedIcon to prevent unnecessary re-renders of the Suspense/Lazy logic.
+// In task lists with many icons (task icon, list icon, labels), this prevents re-rendering
+// all icons when a parent task re-renders due to local state changes (e.g. expansion).
+export const ResolvedIcon = React.memo(function ResolvedIcon({ icon, color, className, fallback }: ResolvedIconProps) {
     const FallbackIcon = fallback || ListTodo;
 
     // Memoize the resolved icon data to prevent unnecessary re-parsing
@@ -139,4 +142,4 @@ export function ResolvedIcon({ icon, color, className, fallback }: ResolvedIconP
             style={{ color: color || undefined }}
         />
     );
-}
+});
