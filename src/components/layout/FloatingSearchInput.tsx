@@ -81,11 +81,15 @@ export function FloatingSearchInput({ sidebarMode }: { sidebarMode: SidebarMode 
       className="fixed top-3 left-3 z-50 w-72 rounded-lg border bg-card shadow-lg p-2 animate-in fade-in slide-in-from-top-1 duration-150"
     >
       <form onSubmit={handleSubmit} className="relative">
-        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Search
+          className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+          aria-hidden="true"
+        />
         <Input
           ref={inputRef}
           type="text"
           placeholder="Search tasks..."
+          aria-label="Search tasks"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           className="h-9 w-full pl-8 pr-8 text-sm"
@@ -98,6 +102,7 @@ export function FloatingSearchInput({ sidebarMode }: { sidebarMode: SidebarMode 
               inputRef.current?.focus();
             }}
             className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            aria-label="Clear search"
           >
             <X className="h-3.5 w-3.5" />
           </button>

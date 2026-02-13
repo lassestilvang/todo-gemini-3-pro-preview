@@ -46,11 +46,15 @@ export function SidebarSearchInput() {
   return (
     <div className="w-full space-y-1">
       <form onSubmit={handleSubmit} className="relative w-full">
-        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Search
+          className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+          aria-hidden="true"
+        />
         <Input
           ref={inputRef}
           type="text"
           placeholder="Search tasks..."
+          aria-label="Search tasks"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => {
@@ -70,6 +74,7 @@ export function SidebarSearchInput() {
               inputRef.current?.focus();
             }}
             className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            aria-label="Clear search"
           >
             <X className="h-3.5 w-3.5" />
           </button>

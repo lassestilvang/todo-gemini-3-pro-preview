@@ -441,6 +441,9 @@ export async function createTestUser(id: string, email: string) {
 let resetQueue = Promise.resolve();
 
 export async function resetTestDb() {
+    // Ensure mock auth is cleared before resetting DB
+    resetMockAuthUser();
+
     resetQueue = resetQueue.then(async () => {
         try {
             // Turn off FKs to speed up and simplify deletion
