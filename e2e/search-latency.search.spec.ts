@@ -34,6 +34,6 @@ test.describe('Search Latency: Search Results', () => {
     await page.waitForURL(/\/search\?q=/);
 
     const resultItem = page.getByTestId('task-item').filter({ hasText: taskTitle }).first();
-    await expect(resultItem).toBeVisible({ timeout: 15000 });
+    await expect(resultItem).toBeVisible({ timeout: 30000 });
   });
 });

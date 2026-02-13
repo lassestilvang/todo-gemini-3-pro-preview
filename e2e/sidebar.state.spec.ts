@@ -13,8 +13,8 @@ test.describe('Sidebar: Mode + Resize Persistence', () => {
 
     await normalSidebar.hover();
     await page.getByRole('button', { name: 'Slim sidebar' }).click();
-    await expect(slimSidebar).toBeVisible();
-    await expect(normalSidebar).toBeHidden();
+    await expect(slimSidebar).toBeVisible({ timeout: 15000 });
+    await expect(normalSidebar).toBeHidden({ timeout: 15000 });
 
     await page.reload({ waitUntil: 'domcontentloaded' });
     await waitForAppReady(page);

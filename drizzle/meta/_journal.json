@@ -127,6 +127,13 @@
       "when": 1770920531000,
       "tag": "0017_task_search_trigram",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1770971441546,
+      "tag": "0018_all_tasks_idx",
+      "breakpoints": true
     }
   ]
 }

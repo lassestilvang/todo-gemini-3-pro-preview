@@ -425,6 +425,9 @@ export async function setupTestDb() {
     sqliteConnection.run("CREATE UNIQUE INDEX IF NOT EXISTS external_integrations_provider_user_unique ON external_integrations(user_id, provider);");
     sqliteConnection.run("CREATE UNIQUE INDEX IF NOT EXISTS external_sync_state_provider_user_unique ON external_sync_state(user_id, provider);");
     sqliteConnection.run("CREATE UNIQUE INDEX IF NOT EXISTS external_entity_map_provider_entity_unique ON external_entity_map(user_id, provider, entity_type, external_id);");
+
+    // Add indexes manually since we're not running migrations in test setup
+    sqliteConnection.run("CREATE INDEX IF NOT EXISTS tasks_all_view_idx ON tasks(user_id, is_completed, position);");
 }
 
 /**
