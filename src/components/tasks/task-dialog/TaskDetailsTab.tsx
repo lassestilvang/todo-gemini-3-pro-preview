@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect, createElement } from "react";
+import { useMemo, useState, createElement } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -86,7 +86,7 @@ interface TaskDetailsTabProps {
     reminders: ReminderType[];
     newReminderDate: Date | undefined;
     setNewReminderDate: (v: Date | undefined) => void;
-    handleAddReminder: () => void;
+    handleAddReminder: (date?: Date) => void;
     handleDeleteReminder: (id: number) => void;
     // Time Estimate
     estimateMinutes: number | null;
@@ -147,18 +147,15 @@ export function TaskDetailsTab({
         return getDueRange(dueDate, dueDatePrecision, weekStartsOnMonday ?? false);
     }, [dueDate, dueDatePrecision, weekStartsOnMonday]);
 
-    useEffect(() => {
-        if (!isEdit) return;
-        if (!reminderRange) return;
-        if (!newReminderDate) {
-            setNewReminderDate(reminderRange.start);
-            return;
-        }
+    const effectiveReminderDate = useMemo(() => {
+        if (!isEdit || !reminderRange) return newReminderDate;
+        if (!newReminderDate) return reminderRange.start;
         const time = newReminderDate.getTime();
         if (time < reminderRange.start.getTime() || time >= reminderRange.endExclusive.getTime()) {
-            setNewReminderDate(reminderRange.start);
+            return reminderRange.start;
         }
-    }, [isEdit, newReminderDate, reminderRange, setNewReminderDate]);
+        return newReminderDate;
+    }, [isEdit, newReminderDate, reminderRange]);
 
     const reminderDisabled = reminderRange
         ? (date: Date) =>
@@ -730,14 +727,22 @@ export function TaskDetailsTab({
                         <div className="flex items-center gap-2 mb-2">
                             <div className="flex-1">
                                 <DatePicker
-                                    date={newReminderDate}
+                                    date={effectiveReminderDate}
                                     setDate={setNewReminderDate}
                                     disabled={reminderDisabled}
                                     fromDate={reminderRange?.start}
                                     toDate={reminderToDate}
                                 />
                             </div>
-                            <Button type="button" onClick={handleAddReminder} size="sm" disabled={!newReminderDate} aria-label="Add reminder">Add reminder</Button>
+                            <Button
+                                type="button"
+                                onClick={() => handleAddReminder(effectiveReminderDate)}
+                                size="sm"
+                                disabled={!effectiveReminderDate}
+                                aria-label="Add reminder"
+                            >
+                                Add reminder
+                            </Button>
                         </div>
                         {reminderRangeLabel && (
                             <p className="text-xs text-muted-foreground">

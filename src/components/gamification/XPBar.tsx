@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Progress } from "@/components/ui/progress";
 import { getUserStats } from "@/lib/actions";
 import { calculateProgress, calculateXPForNextLevel } from "@/lib/gamification";
@@ -22,11 +22,12 @@ export function XPBar({ userId }: { userId?: string }) {
         // Only update if data changed structurally, but confetti logic needs previous value
     });
 
-    // We need to track previous level to trigger confetti
-    const [prevLevel, setPrevLevel] = useState<number | null>(null);
+    const prevLevelRef = useRef<number | null>(null);
 
     useEffect(() => {
-        if (stats && prevLevel !== null && stats.level > prevLevel) {
+        if (!stats) return;
+        const prevLevel = prevLevelRef.current;
+        if (prevLevel !== null && stats.level > prevLevel) {
             import("canvas-confetti").then((confetti) => {
                 confetti.default({
                     particleCount: 100,
@@ -35,9 +36,7 @@ export function XPBar({ userId }: { userId?: string }) {
                 });
             });
         }
-        if (stats) {
-            setPrevLevel(stats.level);
-        }
+        prevLevelRef.current = stats.level;
     }, [stats?.level]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Skeleton loading state - matches the exact height of the rendered XPBar
