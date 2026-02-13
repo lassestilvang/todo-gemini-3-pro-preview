@@ -420,7 +420,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                                         </span>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                        <p>Add Task (⌘/Ctrl+Enter)</p>
+                                        <p>Add Task (⌘Enter)</p>
                                     </TooltipContent>
                                 </Tooltip>
                             </div>
