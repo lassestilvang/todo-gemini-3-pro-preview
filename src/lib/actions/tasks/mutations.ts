@@ -22,8 +22,8 @@ import {
 import { rateLimit } from "@/lib/rate-limit";
 import { requireUser } from "@/lib/auth";
 import { transformNullableTimestamp } from "@/lib/migration-utils";
-import { getLists, getListInternal } from "../lists";
-import { getLabels } from "../labels";
+import { getLists, getListInternal, getListsInternal } from "../lists";
+import { getLabels, getLabelsInternal } from "../labels";
 import { updateUserProgress } from "../gamification";
 import { createTaskSchema, updateTaskSchema } from "@/lib/validation/tasks";
 import { coerceDuePrecision, normalizeDueAnchor } from "@/lib/due-utils";
@@ -74,8 +74,8 @@ async function createTaskImpl(data: typeof tasks.$inferInsert & { labelIds?: num
     if (!taskData.listId && finalLabelIds.length === 0 && taskData.title && taskData.userId) {
       try {
         const [allLists, allLabels] = await Promise.all([
-          getLists(taskData.userId),
-          getLabels(taskData.userId),
+          getListsInternal(taskData.userId),
+          getLabelsInternal(taskData.userId),
         ]);
         const suggestions = await suggestMetadata(taskData.title, allLists, allLabels);
 

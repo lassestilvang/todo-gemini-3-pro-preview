@@ -29,6 +29,21 @@ import { requireUser } from "@/lib/auth";
  */
 
 /**
+ * Internal implementation to retrieve all lists for a specific user without re-checking auth.
+ * Use this when you have already validated the user (e.g. in other Server Actions).
+ *
+ * @param userId - The ID of the user whose lists to retrieve
+ * @returns Array of lists ordered by creation date
+ */
+export async function getListsInternal(userId: string) {
+  return await db
+    .select()
+    .from(lists)
+    .where(eq(lists.userId, userId))
+    .orderBy(lists.position, lists.createdAt);
+}
+
+/**
  * Retrieves all lists for a specific user.
  *
  * @param userId - The ID of the user whose lists to retrieve
@@ -36,12 +51,7 @@ import { requireUser } from "@/lib/auth";
  */
 export async function getLists(userId: string) {
   await requireUser(userId);
-
-  return await db
-    .select()
-    .from(lists)
-    .where(eq(lists.userId, userId))
-    .orderBy(lists.position, lists.createdAt);
+  return getListsInternal(userId);
 }
 
 /**

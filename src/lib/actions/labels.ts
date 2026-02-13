@@ -23,14 +23,13 @@ import { logActivity } from "./logs";
 import { requireUser } from "@/lib/auth";
 
 /**
- * Retrieves all labels for a specific user.
+ * Internal implementation to retrieve all labels for a specific user without re-checking auth.
+ * Use this when you have already validated the user (e.g. in other Server Actions).
  *
  * @param userId - The ID of the user whose labels to retrieve
  * @returns Array of labels
  */
-export async function getLabels(userId: string) {
-  await requireUser(userId);
-
+export async function getLabelsInternal(userId: string) {
   return await unstable_cache(
     async () => {
       return await db
@@ -42,6 +41,17 @@ export async function getLabels(userId: string) {
     [`user-labels-${userId}`],
     { tags: [`labels-${userId}`] }
   )();
+}
+
+/**
+ * Retrieves all labels for a specific user.
+ *
+ * @param userId - The ID of the user whose labels to retrieve
+ * @returns Array of labels
+ */
+export async function getLabels(userId: string) {
+  await requireUser(userId);
+  return getLabelsInternal(userId);
 }
 
 /**
