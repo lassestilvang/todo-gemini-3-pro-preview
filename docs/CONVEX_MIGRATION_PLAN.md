@@ -264,6 +264,107 @@ bunx convex env set WORKOS_CLIENT_ID <value>
 
 Convex validates tokens by matching `iss` (domain) and `aud` (applicationID). Verify these by decoding a real WorkOS ID token and matching `iss`/`aud` exactly.
 
+#### 0.6 WorkOS ID Token Flow (Required)
+
+Convex needs an OIDC **ID token**. If WorkOS AuthKit only provides a session cookie, add a server route that exchanges the session for an ID token and use it in `useWorkOSAuth.fetchAccessToken`. Ensure SSR helpers can access the same token for `preloadQuery`.
+
+**Example: ID Token Exchange Route + Client/SSR Helpers**
+
+```ts
+// src/app/api/convex-token/route.ts
+import { NextResponse } from "next/server";
+import { withAuth } from "@workos-inc/authkit-nextjs";
+
+export async function GET() {
+  const { user, getAccessToken } = await withAuth();
+  if (!user) {
+    return NextResponse.json({ token: null }, { status: 401 });
+  }
+
+  // WorkOS AuthKit can return an ID token via getAccessToken when configured for OIDC.
+  const token = await getAccessToken({ template: "convex" });
+  return NextResponse.json({ token });
+}
+```
+
+```tsx
+// src/components/providers/useWorkOSAuth.ts
+"use client";
+import { useCallback, useMemo, useState, useEffect } from "react";
+
+export function useWorkOSAuth() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    fetch("/api/convex-token")
+      .then((res) => {
+        if (!mounted) return;
+        setIsAuthenticated(res.ok);
+      })
+      .finally(() => {
+        if (mounted) setIsLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const fetchAccessToken = useCallback(async ({ forceRefreshToken }: { forceRefreshToken: boolean }) => {
+    const response = await fetch("/api/convex-token", {
+      headers: forceRefreshToken ? { "Cache-Control": "no-cache" } : undefined,
+    });
+    if (!response.ok) return null;
+    const data = (await response.json()) as { token: string | null };
+    return data.token;
+  }, []);
+
+  return useMemo(() => ({ isLoading, isAuthenticated, fetchAccessToken }), [isLoading, isAuthenticated, fetchAccessToken]);
+}
+```
+
+```ts
+// src/lib/auth-tokens.ts
+import { cookies } from "next/headers";
+
+export async function getWorkOSIdToken() {
+  const response = await fetch("/api/convex-token", {
+    headers: { Cookie: cookies().toString() },
+  });
+  if (!response.ok) return null;
+  const data = (await response.json()) as { token: string | null };
+  return data.token;
+}
+```
+
+**Note:** Adjust `getAccessToken` usage based on WorkOS AuthKit support for ID token templates. If WorkOS cannot mint an ID token in this context, use WorkOS API to exchange the session for an ID token server-side.
+
+#### 0.6.1 SSR Token Retrieval Strategy
+
+For Server Components, avoid relative `fetch("/api/convex-token")` calls. Prefer a server-only helper that reads the WorkOS session and returns the ID token directly:
+
+```ts
+// src/lib/auth-tokens.ts (SSR-safe)
+import { withAuth } from "@workos-inc/authkit-nextjs";
+
+export async function getWorkOSIdToken() {
+  const { user, getAccessToken } = await withAuth();
+  if (!user) return null;
+  return getAccessToken({ template: "convex" });
+}
+```
+
+If you must call an API route, construct an absolute URL from `headers()` (`x-forwarded-proto`, `host`) to avoid runtime errors.
+
+#### 0.7 Auth Verification Checklist (Required)
+
+Before writing any Convex functions, validate the following with a real WorkOS token:
+- `iss` matches the `domain` configured in `convex/auth.config.ts`
+- `aud` matches the `applicationID`
+- Token is an OIDC ID token (not an access token)
+- `ctx.auth.getUserIdentity()` returns a non-null identity in a simple test mutation
+
 ---
 
 ### Phase 1: Schema & Data Layer
@@ -657,6 +758,11 @@ export const importAll = action({
 
 **Important:** Convex actions have a 10-minute limit and queries/mutations have size limits. Plan for chunked imports with a resumable cursor/checkpoint mechanism.
 
+**Implementation notes:**
+- Persist `oldId → newId` maps in a Convex table to allow resumable imports.
+- Use idempotency keys per batch to avoid double-inserts on retries.
+- Record a migration cursor per table in a `migrationState` table.
+
 **Migration order** (respecting foreign keys):
 1. `users` → build map: `oldId → newConvexId`
 2. `achievements` (no FK dependencies)
@@ -670,6 +776,47 @@ export const importAll = action({
 10. `timeEntries`, `templates`, `customIcons`
 11. `externalIntegrations`, `externalSyncState`, `externalEntityMap`, `externalSyncConflicts`
 12. `rateLimits` (optional — can start fresh)
+
+#### 1.4 Parallel Run + Delta Sync
+
+If you plan to run Postgres and Convex in parallel for weeks, add a delta sync step that replays changes since the initial import. Options:
+- Dual-write all mutations and reconcile by source-of-truth timestamps.
+- Poll a changelog table in Postgres and apply deltas in Convex.
+- Freeze writes briefly during cutover to avoid drift.
+
+**Recommendation:** Prefer a short cutover window with a write freeze + delta import if possible. Dual-write is high effort and introduces reconciliation complexity.
+
+#### 1.5 Migration Runner Outline (Pseudo)
+
+```ts
+// 1) Read batch from Postgres with cursor
+const batch = await fetchPostgres({ table: "tasks", cursor, limit: 500 });
+
+// 2) Build/lookup ID maps (persisted in Convex)
+const idMap = await ctx.db.query("migrationIdMap").collect();
+
+// 3) Transform rows with mapped IDs
+const transformed = batch.map((row) => ({
+  userId: idMap.users[row.user_id],
+  listId: row.list_id ? idMap.lists[row.list_id] : undefined,
+  title: row.title,
+  createdAt: row.created_at.getTime(),
+  updatedAt: row.updated_at.getTime(),
+}));
+
+// 4) Insert in chunks + record idempotency keys
+await ctx.db.insert("migrationBatchLog", {
+  table: "tasks",
+  cursor,
+  idempotencyKey,
+});
+for (const doc of transformed) {
+  await ctx.db.insert("tasks", doc);
+}
+
+// 5) Update cursor
+await ctx.db.patch(migrationStateId, { cursor: batch.nextCursor });
+```
 
 ---
 
@@ -846,6 +993,30 @@ export async function requireOwnership(
 }
 ```
 
+#### 2.3.1 Ownership Checks on Junction Tables
+
+Because Convex has no joins, include `userId` on tables like `taskLabels`, `taskDependencies`, `reminders`, and `habitCompletions`, and validate `userId` in queries/mutations before returning data.
+
+#### 2.3.2 Access Control Checklist (Required)
+
+For each public query/mutation, verify:
+- `users`: only return the authenticated user or use `internal` for admin tasks.
+- `lists`: filter by `userId` and validate ownership on get/update/delete.
+- `tasks`: always scope by `userId` and verify list ownership when `listId` is present.
+- `labels`: filter by `userId` and validate ownership on get/update/delete.
+- `taskLabels`: filter by `userId` and ensure `taskId` + `labelId` belong to the same user.
+- `taskDependencies`: filter by `userId` and validate both task IDs belong to the same user.
+- `reminders`: filter by `userId` and validate `taskId` ownership.
+- `taskLogs`: filter by `userId`.
+- `habitCompletions`: filter by `userId` and validate `taskId` ownership.
+- `templates`: filter by `userId` and validate ownership on get/update/delete.
+- `userStats`: filter by `userId` and ensure single row per user.
+- `userAchievements`: filter by `userId` and validate `achievementId` exists.
+- `viewSettings`/`savedViews`: filter by `userId` and validate ownership.
+- `timeEntries`: filter by `userId` and validate `taskId` ownership.
+- `customIcons`: filter by `userId`.
+- `externalIntegrations`/`externalSyncState`/`externalEntityMap`/`externalSyncConflicts`: use `internal` queries for token reads and always scope by `userId`.
+
 #### 2.4 Cascading Deletes
 
 Convex doesn't have automatic cascading deletes. Implement manually in mutations:
@@ -958,6 +1129,8 @@ export default function ConvexClientProvider({ children }) {
   );
 }
 ```
+
+**Search limits note:** Convex search indexes return at most 1024 results and have query term limits. Add pagination + UI messaging for truncated results if you expect large datasets.
 
 #### Option B: Switch to Convex Auth (Clerk)
 
@@ -1081,6 +1254,16 @@ function TaskList() {
 ```
 
 **Pagination note:** Convex queries have execution and scan limits. For `tasks`, `taskLogs`, and `timeEntries`, use cursor-based pagination (`take` + `startAfter`) rather than unbounded `collect()` in production.
+
+**Access control note:** Ensure every public query/mutation scopes by `userId` (or verifies ownership) before returning data. Add `internal` functions for cross-user admin or sync jobs only.
+
+#### 4.1.1 Pagination Map (Required)
+
+Replace each unbounded list query with cursor-based pagination:
+- `getTasks`, `getTasksByList`, `getCompletedTasks`: use `take` + `startAfter` on `by_listView` and `by_completedAt` indexes.
+- `getTaskLogs`, `getActivityLog`, `getCompletionHistory`: page by `createdAt` or `_creationTime` with a `by_user` index.
+- `getTimeEntries`, `getTimeStats`: page by `startedAt` using `by_startedAt`.
+- `searchTasks`, `searchAll`: page results and surface “more results available” when hit the 1024‑result cap.
 
 #### 4.2 Remove Zustand Stores
 
@@ -1358,7 +1541,14 @@ test("create task", async () => {
 Playwright E2E tests largely stay the same — they test the UI, not the backend implementation. Update:
 - Remove test-auth API route (use Convex auth testing patterns instead)
 - Update `e2e/fixtures.ts` for Convex-compatible auth setup
- - Ensure E2E can mint/attach an ID token for Convex auth (WorkOS or Clerk) to avoid `ctx.auth.getUserIdentity()` returning null
+- Ensure E2E can mint/attach an ID token for Convex auth (WorkOS or Clerk) to avoid `ctx.auth.getUserIdentity()` returning null
+
+#### 8.3.1 Auth Test Mode Strategy
+
+Define one of the following for deterministic E2E auth:
+- WorkOS test tenant with a scripted login + token extraction
+- A server-only Convex `internal` test auth mutation gated by `E2E_TEST_MODE` that issues a temporary token
+- Clerk/Convex test tokens (if you switch auth providers)
 
 #### 8.4 Files to Delete
 
@@ -1419,6 +1609,10 @@ drizzle.config.ts
   ]
 }
 ```
+
+#### 8.6 Convex Backup Rehearsal
+
+Before cutover, run an export from Convex and verify you can re-import into a staging deployment. This validates data safety and rollback readiness.
 
 ---
 
@@ -1635,7 +1829,9 @@ function TaskList() {
 ## Appendix: Migration Checklist
 
 - [ ] **Phase 0**: `convex init`, ConvexProvider, env vars
+- [ ] **Phase 0**: Verify WorkOS ID token flow (`iss`/`aud`) and `ctx.auth.getUserIdentity()`
 - [ ] **Phase 1**: Schema in `convex/schema.ts`, data migration script
+- [ ] **Phase 1**: Chunked + resumable import with id-map persistence
 - [ ] **Phase 2**: All 50+ Server Actions → Convex functions
   - [ ] Tasks (CRUD, subtasks, search, reorder)
   - [ ] Lists (CRUD, reorder)
@@ -1661,7 +1857,56 @@ function TaskList() {
 - [ ] **Phase 8**: Testing + cleanup
   - [ ] New test setup with `convex-test`
   - [ ] E2E tests passing
+  - [ ] E2E auth strategy selected + implemented
   - [ ] Remove unused dependencies
   - [ ] Delete old files
   - [ ] Update AGENTS.md and README.md
 - [ ] **Final**: Remove feature flag, decommission Neon database
+
+---
+
+## Appendix: Bulletproofing Validation Plan
+
+This section lists concrete pre-flight checks that must pass before implementation and cutover.
+
+### A. Auth Proofs (Required)
+
+1. Capture a real WorkOS ID token from the browser.
+2. Decode it at https://jwt.io and verify:
+   - `iss` equals the `domain` in `convex/auth.config.ts`
+   - `aud` equals `applicationID`
+3. Run a Convex dev mutation that logs `ctx.auth.getUserIdentity()` and confirm it is non-null.
+4. SSR proof: call `getWorkOSIdToken()` in a Server Component and successfully `preloadQuery` an authenticated query.
+
+### B. Migration Dry Run (Required)
+
+1. Run migration against a **copy** of Postgres and a Convex dev deployment.
+2. For each table, compare counts and sample 100 random records to verify field-level correctness.
+3. Verify ID maps are complete by checking any foreign key in Convex resolves to a valid target doc.
+4. Simulate a failure mid-batch and verify the migration can resume without duplicate inserts.
+
+### C. Data Integrity Checks (Required)
+
+- All tasks have a valid `userId` and (if present) `listId`.
+- All junction tables (`taskLabels`, `taskDependencies`) reference valid task/label IDs and share `userId`.
+- All external integration rows are readable only by `internal` functions.
+
+### D. Performance Smoke Tests (Required)
+
+- Run `getTasks` with pagination in a dataset >10k tasks and confirm no timeout.
+- Run `searchTasks` on a large dataset and verify truncation messaging when capped.
+
+### E. E2E Auth Harness (Required)
+
+Choose one strategy and fully automate it:
+- WorkOS test tenant login + token extraction
+- Convex `internal` test auth mutation gated by `E2E_TEST_MODE`
+- Clerk test token flow (if migrating auth)
+
+### F. Cutover Checklist (Required)
+
+1. Freeze writes on Postgres.
+2. Run delta import.
+3. Run integrity + sample checks.
+4. Flip feature flag to Convex.
+5. Monitor errors/latency and rollback if required.
