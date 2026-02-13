@@ -164,36 +164,36 @@ async function getTasksImpl(
 
   const allLabels = await getLabels(userId);
 
-  const [taskLabelsResult, subtasksResult, blockedCountsResult] = await Promise.all([
-    db
-      .select({
-        taskId: taskLabels.taskId,
-        labelId: taskLabels.labelId,
-      })
-      .from(taskLabels)
-      .where(inArray(taskLabels.taskId, taskIds)),
+  // PERF: Execute these sequentially to prevent race conditions in bun:sqlite (used in tests/CI)
+  // concurrent Promise.all with db.select can cause issues with the single connection in some environments.
+  const taskLabelsResult = await db
+    .select({
+      taskId: taskLabels.taskId,
+      labelId: taskLabels.labelId,
+    })
+    .from(taskLabels)
+    .where(inArray(taskLabels.taskId, taskIds));
 
-    db
-      .select({
-        id: tasks.id,
-        parentId: tasks.parentId,
-        title: tasks.title,
-        isCompleted: tasks.isCompleted,
-        estimateMinutes: tasks.estimateMinutes,
-      })
-      .from(tasks)
-      .where(inArray(tasks.parentId, taskIds))
-      .orderBy(asc(tasks.isCompleted), asc(tasks.createdAt)),
+  const subtasksResult = await db
+    .select({
+      id: tasks.id,
+      parentId: tasks.parentId,
+      title: tasks.title,
+      isCompleted: tasks.isCompleted,
+      estimateMinutes: tasks.estimateMinutes,
+    })
+    .from(tasks)
+    .where(inArray(tasks.parentId, taskIds))
+    .orderBy(asc(tasks.isCompleted), asc(tasks.createdAt));
 
-    db
-      .select({
-        taskId: taskDependencies.taskId,
-        count: sql<number>`count(*)`,
-      })
-      .from(taskDependencies)
-      .where(inArray(taskDependencies.taskId, taskIds))
-      .groupBy(taskDependencies.taskId),
-  ]);
+  const blockedCountsResult = await db
+    .select({
+      taskId: taskDependencies.taskId,
+      count: sql<number>`count(*)`,
+    })
+    .from(taskDependencies)
+    .where(inArray(taskDependencies.taskId, taskIds))
+    .groupBy(taskDependencies.taskId);
 
   const blockedCountMap = new Map(
     blockedCountsResult.map((r) => [r.taskId, Number(r.count)])
@@ -285,30 +285,29 @@ export async function getTaskImpl(id: number, userId: string) {
   const task = result[0];
   if (!task) return null;
 
-  const [labelsResult, remindersResult, blockersResult] = await Promise.all([
-    db
-      .select({
-        id: labels.id,
-        name: labels.name,
-        color: labels.color,
-        icon: labels.icon,
-      })
-      .from(taskLabels)
-      .leftJoin(labels, eq(taskLabels.labelId, labels.id))
-      .where(eq(taskLabels.taskId, id)),
+  // PERF: Execute sequentially for stability (see above)
+  const labelsResult = await db
+    .select({
+      id: labels.id,
+      name: labels.name,
+      color: labels.color,
+      icon: labels.icon,
+    })
+    .from(taskLabels)
+    .leftJoin(labels, eq(taskLabels.labelId, labels.id))
+    .where(eq(taskLabels.taskId, id));
 
-    db.select().from(reminders).where(eq(reminders.taskId, id)),
+  const remindersResult = await db.select().from(reminders).where(eq(reminders.taskId, id));
 
-    db
-      .select({
-        id: tasks.id,
-        title: tasks.title,
-        isCompleted: tasks.isCompleted,
-      })
-      .from(taskDependencies)
-      .innerJoin(tasks, eq(taskDependencies.blockerId, tasks.id))
-      .where(eq(taskDependencies.taskId, id)),
-  ]);
+  const blockersResult = await db
+    .select({
+      id: tasks.id,
+      title: tasks.title,
+      isCompleted: tasks.isCompleted,
+    })
+    .from(taskDependencies)
+    .innerJoin(tasks, eq(taskDependencies.blockerId, tasks.id))
+    .where(eq(taskDependencies.taskId, id));
 
   return { ...task, labels: labelsResult, reminders: remindersResult, blockers: blockersResult };
 }
