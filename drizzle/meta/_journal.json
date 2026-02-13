@@ -124,15 +124,15 @@
     {
       "idx": 17,
       "version": "7",
-      "when": 1770971441546,
-      "tag": "0017_all_tasks_idx",
+      "when": 1770920531000,
+      "tag": "0017_task_search_trigram",
       "breakpoints": true
     },
     {
       "idx": 18,
       "version": "7",
-      "when": 1770971479529,
-      "tag": "0018_add_trigram_extension",
+      "when": 1770971441546,
+      "tag": "0018_all_tasks_idx",
       "breakpoints": true
     }
   ]
