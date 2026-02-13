@@ -77,6 +77,10 @@ async function reorderListsImpl(userId: string, items: { id: number; position: n
     details: `Reordered ${items.length} lists`,
   });
   revalidateTag(`lists-${userId}`, 'max');
+  const { syncTodoistNow } = await import("@/lib/actions/todoist");
+  const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
+  await syncTodoistNow();
+  await syncGoogleTasksNow();
   // Also revalidate path to ensure client router cache is updated for side effects
   revalidatePath("/", "layout");
 }
@@ -94,6 +98,22 @@ export const reorderLists: (
 ) => Promise<ActionResult<void>> = withErrorHandling(reorderListsImpl);
 
 /**
+ * Internal implementation to retrieve a single list by ID for a specific user without re-checking auth.
+ * Use this when you have already validated the user (e.g. in other Server Actions).
+ *
+ * @param id - The list ID
+ * @param userId - The ID of the user who owns the list
+ * @returns The list if found, undefined otherwise
+ */
+export async function getListInternal(id: number, userId: string) {
+  const result = await db
+    .select()
+    .from(lists)
+    .where(and(eq(lists.id, id), eq(lists.userId, userId)));
+  return result[0];
+}
+
+/**
  * Retrieves a single list by ID for a specific user.
  *
  * @param id - The list ID
@@ -102,12 +122,7 @@ export const reorderLists: (
  */
 export async function getList(id: number, userId: string) {
   await requireUser(userId);
-
-  const result = await db
-    .select()
-    .from(lists)
-    .where(and(eq(lists.id, id), eq(lists.userId, userId)));
-  return result[0];
+  return getListInternal(id, userId);
 }
 
 /**
@@ -149,7 +164,9 @@ async function createListImpl(data: typeof lists.$inferInsert) {
   });
 
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
+  const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
   await syncTodoistNow();
+  await syncGoogleTasksNow();
 
   revalidateTag(`lists-${effectiveUserId}`, 'max');
   revalidatePath("/", "layout");
@@ -204,7 +221,9 @@ async function updateListImpl(
   }
 
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
+  const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
   await syncTodoistNow();
+  await syncGoogleTasksNow();
 
   revalidateTag(`lists-${userId}`, 'max');
   revalidatePath("/", "layout");
@@ -248,7 +267,9 @@ async function deleteListImpl(id: number, userId: string) {
   }
 
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
+  const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
   await syncTodoistNow();
+  await syncGoogleTasksNow();
 
   revalidateTag(`lists-${userId}`, 'max');
   revalidatePath("/", "layout");

@@ -110,10 +110,8 @@ export const tasks = pgTable("tasks", {
     // Composite index for "All Tasks" view (where listId is null/ignored)
     allViewIdx: index("tasks_all_view_idx").on(
         table.userId,
-        table.parentId,
         table.isCompleted,
-        table.position,
-        desc(table.createdAt)
+        table.position
     ),
     titleIdx: index("tasks_title_idx").on(table.title),
     descriptionIdx: index("tasks_description_idx").on(table.description),
@@ -138,7 +136,7 @@ export const externalIntegrations = pgTable("external_integrations", {
     userId: text("user_id")
         .notNull()
         .references(() => users.id, { onDelete: "cascade" }),
-    provider: text("provider", { enum: ["todoist"] }).notNull(),
+    provider: text("provider", { enum: ["todoist", "google_tasks"] }).notNull(),
     accessTokenEncrypted: text("access_token_encrypted").notNull(),
     accessTokenIv: text("access_token_iv").notNull(),
     accessTokenTag: text("access_token_tag").notNull(),
@@ -166,7 +164,7 @@ export const externalSyncState = pgTable("external_sync_state", {
     userId: text("user_id")
         .notNull()
         .references(() => users.id, { onDelete: "cascade" }),
-    provider: text("provider", { enum: ["todoist"] }).notNull(),
+    provider: text("provider", { enum: ["todoist", "google_tasks"] }).notNull(),
     syncToken: text("sync_token"),
     lastSyncedAt: timestamp("last_synced_at"),
     status: text("status", { enum: ["idle", "syncing", "error"] }).notNull().default("idle"),
@@ -188,11 +186,13 @@ export const externalEntityMap = pgTable("external_entity_map", {
     userId: text("user_id")
         .notNull()
         .references(() => users.id, { onDelete: "cascade" }),
-    provider: text("provider", { enum: ["todoist"] }).notNull(),
+    provider: text("provider", { enum: ["todoist", "google_tasks"] }).notNull(),
     entityType: text("entity_type", { enum: ["task", "list", "label", "list_label"] }).notNull(),
     localId: integer("local_id"),
     externalId: text("external_id").notNull(),
     externalParentId: text("external_parent_id"),
+    externalEtag: text("external_etag"),
+    externalUpdatedAt: timestamp("external_updated_at"),
     deletedAt: timestamp("deleted_at"),
     createdAt: timestamp("created_at")
         .notNull()
@@ -218,7 +218,7 @@ export const externalSyncConflicts = pgTable("external_sync_conflicts", {
     userId: text("user_id")
         .notNull()
         .references(() => users.id, { onDelete: "cascade" }),
-    provider: text("provider", { enum: ["todoist"] }).notNull(),
+    provider: text("provider", { enum: ["todoist", "google_tasks"] }).notNull(),
     entityType: text("entity_type", { enum: ["task", "list", "label"] }).notNull(),
     localId: integer("local_id"),
     externalId: text("external_id"),

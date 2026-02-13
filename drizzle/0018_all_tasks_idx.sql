@@ -1,1 +1,0 @@
-CREATE INDEX "tasks_all_view_idx" ON "tasks" USING btree ("user_id","is_completed","position");
