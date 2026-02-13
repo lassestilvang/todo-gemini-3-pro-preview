@@ -2,7 +2,7 @@
 
 > **Migrating from**: Neon PostgreSQL + Drizzle ORM + Next.js Server Actions + WorkOS AuthKit + Zustand/IndexedDB offline sync  
 > **Migrating to**: Convex (database, real-time sync, backend functions, scheduling) + Convex Auth or WorkOS via Convex  
-> **Estimated effort**: 4–6 weeks for a team of 1–2 engineers
+> **Estimated effort**: 8–12 weeks for a team of 1–2 engineers (includes required spikes)
 
 ---
 
@@ -29,13 +29,58 @@
 
 ---
 
+## 0. Required Pre-Implementation Spikes
+
+> ⚠️ **Do NOT begin feature migration until all spikes pass.** These validate assumptions the rest of the plan depends on.
+
+### Spike 1: Auth Proof-of-Concept (1 day)
+
+Stand up a minimal Convex project using the **official `@convex-dev/workos-authkit` integration** (NOT the custom token-template approach):
+1. Verify the client can obtain a JWT acceptable to Convex via WorkOS AuthKit.
+2. Confirm `ctx.auth.getUserIdentity()` returns non-null with a stable `subject` matching the WorkOS user ID.
+3. Verify SSR `preloadQuery` works with auth token forwarding using WorkOS cookie sessions.
+4. Verify in both local dev and a staging deployment.
+
+**Why this is blocking:** WorkOS AuthKit uses session-cookie auth, not bearer tokens. The approach for bridging this to Convex's JWT-based auth must be proven before any function migration.
+
+### Spike 2: Constraint Parity Matrix (1–2 days)
+
+Create a written document mapping every Postgres PK/FK/unique/cascade to its Convex enforcement strategy:
+- Every unique constraint → mutation-level check with indexed query + `.unique()`
+- Every cascade → explicit delete chain (with batching for large datasets)
+- Every composite FK → ownership validation in mutation code
+- Every composite PK → dedupe pattern in junction table mutations
+
+### Spike 3: Cascade Delete + Transaction Limits (1 day)
+
+Build and test a prototype `deleteList` that cascades through tasks → subtasks → taskLabels → dependencies → reminders → habitCompletions → timeEntries → logs. Verify it works for a list with 200+ tasks without hitting Convex mutation time/document limits. Design the batched-delete pattern (using `ctx.scheduler`) that all cascades will follow.
+
+### Spike 4: Offline/PWA Decision (0.5 day)
+
+**Critical product decision:** Convex does NOT provide durable offline mutation queuing. When the WebSocket connection drops, mutations fail and subscriptions stop. The current IndexedDB + SyncProvider system is a true offline-first queue.
+
+Options:
+- **Accept regression**: App requires connectivity. Remove PWA offline claims. Update service worker to show "offline" UI.
+- **Keep lightweight offline queue**: Retain a simplified IndexedDB queue that replays through Convex mutations on reconnect (significantly more work).
+- **Hybrid**: Convex for online real-time, keep Zustand + IndexedDB for offline with reconciliation on reconnect.
+
+This decision affects Phases 4 and 6 significantly.
+
+### Spike 5: AWS KMS in Convex Runtime (0.5 day)
+
+Test whether `@aws-sdk/client-kms` works in the Convex action runtime. AWS SDK v3 assumes Node.js APIs (HTTP handlers, crypto, streams) that may not be available. If KMS fails:
+- Move encryption/decryption to a Next.js API route that Convex actions call via `fetch`.
+- Or switch to Convex environment variables + a pure-JS encryption library.
+
+---
+
 ## 1. Executive Summary
 
 ### Why Convex?
 
 | Current Pain Point | Convex Solution |
 |---|---|
-| Custom offline-first sync system (Zustand + IndexedDB + SyncProvider) | Convex handles real-time sync automatically via WebSocket subscriptions |
+| Custom offline-first sync system (Zustand + IndexedDB + SyncProvider) | Convex handles real-time sync automatically via WebSocket subscriptions. **⚠️ Note: This is NOT an offline-first replacement — see Spike 4.** |
 | Manual `revalidatePath` after every mutation | `useQuery` subscriptions update UI automatically |
 | Separate SQLite schema for tests | Convex has built-in testing utilities; no schema duplication |
 | Complex Server Action boilerplate (`"use server"`, auth checks, error handling) | Convex mutations with built-in auth context (`ctx.auth`) |
@@ -47,9 +92,9 @@
 - **Database**: Neon PostgreSQL → Convex document database
 - **ORM**: Drizzle ORM → Convex's built-in `ctx.db` API
 - **Backend functions**: Next.js Server Actions → Convex queries/mutations/actions
-- **Auth**: WorkOS AuthKit middleware → WorkOS JWT verification in Convex (or Convex Auth)
+- **Auth**: WorkOS AuthKit middleware → WorkOS JWT verification in Convex via official `@convex-dev/workos-authkit` package
 - **Client data**: Zustand stores + React Query + IndexedDB → Convex `useQuery`/`useMutation` hooks
-- **Offline sync**: Custom SyncProvider → Convex optimistic updates (built-in)
+- **Offline sync**: Custom SyncProvider → **Product decision required (see Spike 4).** Convex optimistic updates cover online UX only; offline durability is lost without a replacement queue.
 - **AI features**: Server Actions calling Gemini → Convex actions calling Gemini
 
 ### What Stays the Same
@@ -213,7 +258,7 @@ bunx convex dev
 bun run dev
 ```
 
-Add scripts to `package.json`:
+Add scripts to `package.json` (requires `bun add -D concurrently`):
 
 ```json
 {
@@ -227,27 +272,34 @@ Add scripts to `package.json`:
 
 #### 0.3 Set Up ConvexProvider (Auth-Ready)
 
-Create `src/components/providers/ConvexClientProvider.tsx` with auth wiring from day one. Convex functions in this plan depend on `ctx.auth.getUserIdentity()`.
+Create `src/components/providers/ConvexClientProvider.tsx` using the **official `@convex-dev/workos-authkit` package** — NOT a custom token-template approach.
+
+> ⚠️ **The `getAccessToken({ template: "convex" })` pattern shown in earlier drafts is a Clerk API, not WorkOS.** WorkOS AuthKit uses session-cookie auth. Use the official integration package instead.
+
+```bash
+bun add @convex-dev/workos-authkit
+```
 
 ```tsx
 "use client";
 import { ConvexReactClient } from "convex/react";
-import { ConvexProviderWithAuth } from "convex/react";
+import { ConvexProviderWithAuthKit } from "@convex-dev/workos-authkit";
 import { ReactNode } from "react";
-import { useWorkOSAuth } from "./useWorkOSAuth"; // Custom hook to return isLoading/isAuthenticated/fetchAccessToken
 
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export default function ConvexClientProvider({ children }: { children: ReactNode }) {
   return (
-    <ConvexProviderWithAuth client={convex} useAuth={useWorkOSAuth}>
+    <ConvexProviderWithAuthKit client={convex}>
       {children}
-    </ConvexProviderWithAuth>
+    </ConvexProviderWithAuthKit>
   );
 }
 ```
 
 Wrap in `src/app/layout.tsx` alongside existing providers (can co-exist during migration).
+
+> **Important:** If `@convex-dev/workos-authkit` does not exist or does not support your WorkOS AuthKit version, you must build a custom bridge (see Spike 1). The bridge must: (1) extract a JWT from the WorkOS session server-side, (2) expose it to the Convex client for WebSocket auth, and (3) handle token refresh. This is the highest-risk integration point in the entire migration.
 
 #### 0.4 Environment Variables
 
@@ -264,11 +316,16 @@ bunx convex env set WORKOS_CLIENT_ID <value>
 
 Convex validates tokens by matching `iss` (domain) and `aud` (applicationID). Verify these by decoding a real WorkOS ID token and matching `iss`/`aud` exactly.
 
-#### 0.6 WorkOS ID Token Flow (Required)
+#### 0.6 WorkOS Token Flow (Required — Determined by Spike 1)
 
-Convex needs an OIDC **ID token**. If WorkOS AuthKit only provides a session cookie, add a server route that exchanges the session for an ID token and use it in `useWorkOSAuth.fetchAccessToken`. Ensure SSR helpers can access the same token for `preloadQuery`.
+> ⚠️ **This section must be rewritten after Spike 1 completes.** The exact token flow depends on which integration approach works with your WorkOS AuthKit version.
 
-**Example: ID Token Exchange Route + Client/SSR Helpers**
+Convex needs a JWT to authenticate WebSocket connections. WorkOS AuthKit primarily uses **session cookies**, not bearer tokens. The bridge between these two models is the highest-risk integration point.
+
+**Possible approaches (validate in Spike 1):**
+
+1. **Official `@convex-dev/workos-authkit` package** (preferred if it exists and supports your version)
+2. **Custom `useAuth` hook** that calls a Next.js API route to exchange the WorkOS session for a JWT:
 
 ```ts
 // src/app/api/convex-token/route.ts
@@ -276,86 +333,42 @@ import { NextResponse } from "next/server";
 import { withAuth } from "@workos-inc/authkit-nextjs";
 
 export async function GET() {
-  const { user, getAccessToken } = await withAuth();
-  if (!user) {
+  const { user, accessToken } = await withAuth();
+  if (!user || !accessToken) {
     return NextResponse.json({ token: null }, { status: 401 });
   }
 
-  // WorkOS AuthKit can return an ID token via getAccessToken when configured for OIDC.
-  const token = await getAccessToken({ template: "convex" });
-  return NextResponse.json({ token });
+  // Return the WorkOS access token (JWT) for Convex to validate.
+  // Verify that this JWT has the correct `iss` and `aud` claims
+  // that match your convex/auth.config.ts configuration.
+  return NextResponse.json({ token: accessToken });
 }
 ```
 
-```tsx
-// src/components/providers/useWorkOSAuth.ts
-"use client";
-import { useCallback, useMemo, useState, useEffect } from "react";
+3. **Clerk migration** (Option B in Phase 3) — avoids the bridging problem entirely.
 
-export function useWorkOSAuth() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-    fetch("/api/convex-token")
-      .then((res) => {
-        if (!mounted) return;
-        setIsAuthenticated(res.ok);
-      })
-      .finally(() => {
-        if (mounted) setIsLoading(false);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  const fetchAccessToken = useCallback(async ({ forceRefreshToken }: { forceRefreshToken: boolean }) => {
-    const response = await fetch("/api/convex-token", {
-      headers: forceRefreshToken ? { "Cache-Control": "no-cache" } : undefined,
-    });
-    if (!response.ok) return null;
-    const data = (await response.json()) as { token: string | null };
-    return data.token;
-  }, []);
-
-  return useMemo(() => ({ isLoading, isAuthenticated, fetchAccessToken }), [isLoading, isAuthenticated, fetchAccessToken]);
-}
-```
-
-```ts
-// src/lib/auth-tokens.ts
-import { cookies } from "next/headers";
-
-export async function getWorkOSIdToken() {
-  const response = await fetch("/api/convex-token", {
-    headers: { Cookie: cookies().toString() },
-  });
-  if (!response.ok) return null;
-  const data = (await response.json()) as { token: string | null };
-  return data.token;
-}
-```
-
-**Note:** Adjust `getAccessToken` usage based on WorkOS AuthKit support for ID token templates. If WorkOS cannot mint an ID token in this context, use WorkOS API to exchange the session for an ID token server-side.
+**Critical verification steps (before proceeding past this phase):**
+- Decode the actual JWT from WorkOS and verify `iss`/`aud` match Convex config.
+- Confirm the token is an OIDC-compatible JWT (not an opaque session token).
+- Confirm `ctx.auth.getUserIdentity()` returns non-null in a Convex mutation.
+- Confirm token refresh works without forcing page reloads.
 
 #### 0.6.1 SSR Token Retrieval Strategy
 
-For Server Components, avoid relative `fetch("/api/convex-token")` calls. Prefer a server-only helper that reads the WorkOS session and returns the ID token directly:
+For Server Components using `preloadQuery`, you need the JWT server-side. Use a server-only helper:
 
 ```ts
 // src/lib/auth-tokens.ts (SSR-safe)
 import { withAuth } from "@workos-inc/authkit-nextjs";
 
-export async function getWorkOSIdToken() {
-  const { user, getAccessToken } = await withAuth();
-  if (!user) return null;
-  return getAccessToken({ template: "convex" });
+export async function getConvexToken(): Promise<string | null> {
+  const { user, accessToken } = await withAuth();
+  if (!user || !accessToken) return null;
+  return accessToken;
 }
 ```
 
-If you must call an API route, construct an absolute URL from `headers()` (`x-forwarded-proto`, `host`) to avoid runtime errors.
+> **Warning:** If WorkOS does not expose a JWT-format access token (only opaque session cookies), SSR `preloadQuery` with auth will NOT work. In that case, SSR pages must render loading states and hydrate via client-side `useQuery`. This is a significant architectural change from the current Server Component data-fetching pattern.
 
 #### 0.7 Auth Verification Checklist (Required)
 
@@ -559,6 +572,9 @@ export default defineSchema({
     .index("by_user", ["userId"]),
 
   // ─── Achievements ──────────────────────────────────────
+  // ⚠️ NOTE: In Postgres, achievements.id is a text PK (e.g., "first_task").
+  // In Convex, the PK is the auto-generated _id. The achievementId field
+  // stores the logical string ID for lookups and migration mapping.
   achievements: defineTable({
     achievementId: v.string(),   // Logical ID (e.g., "first_task")
     name: v.string(),
@@ -571,6 +587,13 @@ export default defineSchema({
     .index("by_achievementId", ["achievementId"]),
 
   // ─── User Achievements ─────────────────────────────────
+  // ⚠️ IMPORTANT: achievementId here is v.id("achievements") (Convex doc ID),
+  // NOT the logical string ID. During data migration, you must:
+  // 1. Insert all achievements first
+  // 2. Build a map: logical achievementId string → Convex _id
+  // 3. Use the Convex _id when inserting userAchievements
+  // All code that previously compared achievement IDs as strings must be updated
+  // to use Convex doc IDs or look up via the by_achievementId index.
   userAchievements: defineTable({
     userId: v.id("users"),
     achievementId: v.id("achievements"),
@@ -693,7 +716,10 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_user", ["userId"])
-    .index("by_externalId", ["userId", "provider", "externalId"])
+    // ⚠️ FIXED: Must include entityType to match Postgres unique constraint
+    // (userId, provider, entityType, externalId). Without entityType, different
+    // entity types sharing the same externalId will collide.
+    .index("by_externalId", ["userId", "provider", "entityType", "externalId"])
     .index("by_localId", ["localId"]),
 
   // ─── External Sync Conflicts ───────────────────────────
@@ -732,9 +758,87 @@ export default defineSchema({
 | **`v.id("table")` for foreign keys** | Type-safe references. No cascading deletes — handle in mutations. |
 | **Keep junction tables** | `taskLabels` and `taskDependencies` remain as separate tables with indexes on both sides. |
 | **`externalId` on users** | Store WorkOS user ID as `externalId`, use Convex's `_id` as the internal reference everywhere. |
-| **Search indexes on tasks** | Replace PostgreSQL text indexes with Convex `searchIndex` for full-text search. |
+| **Search indexes on tasks** | Replace PostgreSQL text indexes with Convex `searchIndex` for full-text search. **⚠️ Note: Convex search is NOT equivalent to Fuse.js fuzzy matching — see Search Limitations below.** |
 | **No rate limits table (future)** | Consider using Convex's built-in rate limiting or a scheduled cleanup instead. |
 | **Denormalize `userId` on child tables** | Avoid N+1 queries and simplify access control checks in Convex (no joins). |
+
+#### 1.2.1 ⚠️ User ID Strategy — Breaking Change
+
+> **This is the single highest-impact schema change in the migration.**
+
+Current system: `users.id` = WorkOS user ID (text primary key). Every FK, access check, and client reference uses this string directly.
+
+Convex system: `users._id` = auto-generated Convex ID. WorkOS user ID stored as `externalId`.
+
+**Impact on every table and function:**
+- All `userId` foreign keys change type from `string` (WorkOS ID) to `Id<"users">` (Convex ID).
+- Every access control check (`resource.userId === auth.user.id`) must be updated to use Convex IDs.
+- External integrations, logs, and sync state that store `userId` must use Convex IDs internally.
+- Client-side code that references user IDs (e.g., URLs, local storage keys) must be updated.
+- **If you miss ONE comparison**, you get a cross-tenant data leak.
+
+**Mitigation:**
+- Create a `getUserByExternalId` helper used in every mutation/query (already in helpers.ts plan).
+- Audit every access check during migration — add this to the constraint parity matrix (Spike 2).
+- Never expose or compare `externalId` outside of the user lookup helper.
+
+#### 1.2.2 ⚠️ Lost Relational Constraints
+
+The following Postgres guarantees are **silently dropped** in Convex and must be enforced in application code:
+
+| Postgres Constraint | Convex Replacement | Risk if Missed |
+|---|---|---|
+| `ON DELETE CASCADE` on ~12 FKs | Manual cascade in mutation code | Orphaned documents, broken UI, storage leaks |
+| Composite FK `(tasks.listId, tasks.userId) → (lists.id, lists.userId)` | Ownership check in every mutation touching `listId` | Task assigned to another user's list (IDOR) |
+| `UNIQUE(userId, slug)` on lists | Check-then-insert in mutation | Duplicate list slugs, broken routing |
+| `UNIQUE(userId, provider)` on integrations | Check-then-insert in mutation | Duplicate integration rows, token confusion |
+| `UNIQUE(userId, provider, entityType, externalId)` on entity map | Check-then-insert in mutation | Wrong sync mapping, data corruption |
+| Composite PKs on junction tables | Indexed query + `.unique()` check before insert | Duplicate junction rows |
+| `ON CONFLICT DO UPDATE` / `DO NOTHING` (atomic upserts) | Read-then-write in single mutation (serializable within mutation, but NOT across concurrent requests without careful index use) | Duplicate rows on concurrent requests |
+
+**Required pattern for uniqueness enforcement:**
+
+```typescript
+// Standard pattern: check-then-insert within a mutation (serializable)
+export const createList = mutation({
+  args: { name: v.string() },
+  handler: async (ctx, args) => {
+    const user = await getAuthUser(ctx);
+    const slug = args.name.toLowerCase().replace(/\s+/g, "-");
+
+    // Check uniqueness using indexed query
+    const existing = await ctx.db
+      .query("lists")
+      .withIndex("by_user_slug", (q) => q.eq("userId", user._id).eq("slug", slug))
+      .unique();
+
+    if (existing) {
+      throw new Error(`List with slug "${slug}" already exists`);
+    }
+
+    return await ctx.db.insert("lists", { userId: user._id, name: args.name, slug, ... });
+  },
+});
+```
+
+> **Note:** This pattern is safe within a single Convex mutation (serializable transactions). However, Convex may retry mutations on conflict — ensure all mutations are idempotent-safe.
+
+#### 1.2.3 ⚠️ Search Limitations
+
+Convex `searchIndex` is NOT a drop-in replacement for the current search system:
+
+| Feature | Current (Fuse.js + SQL) | Convex searchIndex |
+|---|---|---|
+| Fuzzy matching (typo-tolerant) | ✅ Fuse.js | ❌ Not supported |
+| Client-side instant search | ✅ Fuse.js on cached data | ❌ Round-trip to server |
+| Max results | Unlimited | 1024 per search query |
+| Ranking/scoring | ✅ Fuse.js scoring | Basic relevance |
+| Combined field search | ✅ SQL OR queries | Separate queries per field, manual dedup |
+
+**Options:**
+1. **Accept regression**: Use Convex search for basic matching, remove fuzzy search.
+2. **Keep Fuse.js client-side**: Load task data via `useQuery` and run Fuse.js on the client (works for small-medium datasets, but defeats server-side search for large datasets).
+3. **Hybrid**: Convex search for server-side filtering, Fuse.js for client-side refinement on the results.
 
 #### 1.3 Data Migration Script
 
@@ -821,7 +925,7 @@ await ctx.db.patch(migrationStateId, { cursor: batch.nextCursor });
 ---
 
 ### Phase 2: Server Actions → Convex Functions
-**Duration**: 5–7 days (largest phase)
+**Duration**: 7–10 days (largest phase — includes constraint enforcement for all 50+ functions)
 
 #### 2.1 File Structure
 
@@ -1019,9 +1123,93 @@ For each public query/mutation, verify:
 
 #### 2.4 Cascading Deletes
 
-Convex doesn't have automatic cascading deletes. Implement manually in mutations:
+> ⚠️ **This is one of the most error-prone parts of the migration.** Postgres has `ON DELETE CASCADE` on ~12 foreign keys. Every cascade path must be manually implemented and tested.
+
+Convex doesn't have automatic cascading deletes. Implement manually in mutations.
+
+**Complete cascade dependency map:**
+
+```
+User deletion cascades into:
+├── lists → (each list cascades into tasks, see below)
+├── labels → taskLabels (by label), taskLogs (by label)
+├── tasks → (see task cascade below)
+├── templates
+├── userStats
+├── userAchievements
+├── viewSettings
+├── savedViews
+├── timeEntries
+├── customIcons
+├── taskLogs
+├── externalIntegrations
+├── externalSyncState
+├── externalEntityMap
+├── externalSyncConflicts
+└── rateLimits (if user-scoped)
+
+List deletion cascades into:
+├── tasks → (each task cascades, see below)
+└── taskLogs (by list)
+
+Task deletion cascades into:
+├── taskLabels (by task)
+├── taskDependencies (by task — BOTH directions: as taskId AND as blockerId)
+├── reminders (by task)
+├── habitCompletions (by task)
+├── timeEntries (by task)
+├── taskLogs (by task)
+├── subtasks (tasks where parentId = this task) → recursive cascade!
+└── externalEntityMap entries referencing this task
+
+Label deletion cascades into:
+├── taskLabels (by label)
+└── taskLogs (by label)
+```
+
+**⚠️ Transaction limit risk:** Deleting a list with 100+ tasks, each with labels/dependencies/time entries, can require touching 1000+ documents in a single mutation. This **will** hit Convex mutation time/document limits.
+
+**Required pattern: batched cascade with `ctx.scheduler`:**
 
 ```typescript
+// convex/helpers.ts — Shared cascade helper
+async function deleteTaskCascade(ctx: MutationCtx, taskId: Id<"tasks">) {
+  // Delete junction tables and child records
+  const taskLabels = await ctx.db.query("taskLabels")
+    .withIndex("by_task", (q) => q.eq("taskId", taskId)).collect();
+  for (const tl of taskLabels) await ctx.db.delete(tl._id);
+
+  const depsAsTask = await ctx.db.query("taskDependencies")
+    .withIndex("by_task", (q) => q.eq("taskId", taskId)).collect();
+  for (const d of depsAsTask) await ctx.db.delete(d._id);
+
+  // ⚠️ IMPORTANT: Also delete where this task is the BLOCKER
+  const depsAsBlocker = await ctx.db.query("taskDependencies")
+    .withIndex("by_blocker", (q) => q.eq("blockerId", taskId)).collect();
+  for (const d of depsAsBlocker) await ctx.db.delete(d._id);
+
+  const reminders = await ctx.db.query("reminders")
+    .withIndex("by_task", (q) => q.eq("taskId", taskId)).collect();
+  for (const r of reminders) await ctx.db.delete(r._id);
+
+  const habits = await ctx.db.query("habitCompletions")
+    .withIndex("by_task_date", (q) => q.eq("taskId", taskId)).collect();
+  for (const h of habits) await ctx.db.delete(h._id);
+
+  const timeEntries = await ctx.db.query("timeEntries")
+    .withIndex("by_task", (q) => q.eq("taskId", taskId)).collect();
+  for (const te of timeEntries) await ctx.db.delete(te._id);
+
+  // Recursive: delete subtasks
+  const subtasks = await ctx.db.query("tasks")
+    .withIndex("by_parent", (q) => q.eq("parentId", taskId)).collect();
+  for (const sub of subtasks) {
+    await deleteTaskCascade(ctx, sub._id); // Recursive
+  }
+
+  await ctx.db.delete(taskId);
+}
+
 // convex/lists/mutations.ts
 export const deleteList = mutation({
   args: { listId: v.id("lists") },
@@ -1030,18 +1218,28 @@ export const deleteList = mutation({
     const list = await ctx.db.get(args.listId);
     if (!list || list.userId !== user._id) throw new Error("Not found");
 
-    // 1. Delete all tasks in this list
     const tasksInList = await ctx.db
       .query("tasks")
       .withIndex("by_list", (q) => q.eq("userId", user._id).eq("listId", args.listId))
       .collect();
 
+    // ⚠️ For large lists, consider batching:
+    // If tasksInList.length > BATCH_THRESHOLD, soft-delete the list
+    // and schedule background cleanup via ctx.scheduler.runAfter()
+    if (tasksInList.length > 50) {
+      // Mark list as deleted (soft delete), schedule cleanup
+      await ctx.db.patch(args.listId, { _deleted: true });
+      await ctx.scheduler.runAfter(0, internal.lists.cleanup.cleanupDeletedList, {
+        listId: args.listId,
+        userId: user._id,
+      });
+      return;
+    }
+
     for (const task of tasksInList) {
-      // Delete task's labels, dependencies, reminders, time entries, etc.
       await deleteTaskCascade(ctx, task._id);
     }
 
-    // 2. Delete the list itself
     await ctx.db.delete(args.listId);
   },
 });
@@ -1096,41 +1294,46 @@ export const searchTasks = query({
 
 #### Option A: Keep WorkOS AuthKit (Recommended for minimal disruption)
 
-Configure Convex to verify WorkOS OIDC ID tokens. Ensure you are minting an ID token on the client (not just an access token) for Convex to validate.
+> ⚠️ **This option requires Spike 1 to pass first.** The exact auth.config.ts values depend on the actual JWT claims from WorkOS.
+
+Configure Convex to verify WorkOS JWTs. The `domain` and `applicationID` must match the `iss` and `aud` claims in the actual WorkOS JWT — decode a real token to verify these values.
 
 ```typescript
 // convex/auth.config.ts
+// ⚠️ These values MUST be verified against a real decoded WorkOS JWT.
+// Decode at https://jwt.io and check the `iss` and `aud` fields.
 export default {
   providers: [
     {
-      domain: process.env.WORKOS_ISSUER_URL,   // e.g., "https://api.workos.com"
-      applicationID: "convex",
+      domain: process.env.WORKOS_ISSUER_URL,   // Must match JWT `iss` claim exactly
+      applicationID: "your-workos-client-id",  // Must match JWT `aud` claim exactly
     },
   ],
 };
 ```
 
-Update the Next.js middleware to pass WorkOS tokens to the Convex client:
+Use the official integration package (determined in Spike 1):
 
 ```typescript
 // src/components/providers/ConvexClientProvider.tsx
 "use client";
 import { ConvexReactClient } from "convex/react";
-import { ConvexProviderWithAuth } from "convex/react";
-import { useWorkOSAuth } from "./useWorkOSAuth"; // Custom hook
-
+import { ConvexProviderWithAuthKit } from "@convex-dev/workos-authkit"; // Or custom bridge
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export default function ConvexClientProvider({ children }) {
   return (
-    <ConvexProviderWithAuth client={convex} useAuth={useWorkOSAuth}>
+    <ConvexProviderWithAuthKit client={convex}>
       {children}
-    </ConvexProviderWithAuth>
+    </ConvexProviderWithAuthKit>
   );
 }
 ```
 
-**Search limits note:** Convex search indexes return at most 1024 results and have query term limits. Add pagination + UI messaging for truncated results if you expect large datasets.
+**Dev bypass and E2E test mode:** The current auth bypass system (dev user, IP allowlist, E2E test cookies) does NOT translate to Convex. Convex auth requires valid JWTs — headers and cookies are not forwarded to Convex functions. You must design a new bypass strategy:
+- **Dev mode**: Use a test Convex deployment with a hardcoded test user (no auth required via `ConvexProvider` without auth).
+- **E2E tests**: Mint real WorkOS test tokens, or use Convex's `t.withIdentity()` in unit tests and a test WorkOS tenant for E2E.
+- **IP allowlist bypass**: Not possible with Convex (client IP is not available in Convex functions). Consider a Convex `internal` mutation for admin tasks instead.
 
 #### Option B: Switch to Convex Auth (Clerk)
 
@@ -1212,7 +1415,15 @@ export const syncUser = mutation({
 ---
 
 ### Phase 4: Real-Time & Client Integration
-**Duration**: 3–5 days
+**Duration**: 5–7 days
+
+> ⚠️ **Architecture shift warning:** Almost ALL pages (~15) are currently Server Components that call server actions directly for data fetching. With Convex, `useQuery` cannot run in Server Components — only in Client Components.
+>
+> **Impact:**
+> - Most page components must become Client Components (add `"use client"`) or be split into a Server Component shell + Client Component body.
+> - `preloadQuery` can provide SSR-like behavior but requires auth token forwarding (see Phase 0.6.1).
+> - If SSR auth token forwarding doesn't work with WorkOS, pages will render loading states server-side and hydrate client-side — this is a UX regression from the current instant server-rendered pages.
+> - Bundle size will increase as more code moves to the client.
 
 #### 4.1 Replace React Query with Convex Hooks
 
@@ -1379,15 +1590,41 @@ The `smart-scheduler.ts` and `smart-tags.ts` pure logic can be moved into `conve
 
 ---
 
-### Phase 6: Offline Sync Removal
-**Duration**: 1 day
+### Phase 6: Offline Sync Removal / Replacement
+**Duration**: 1–3 days (depends on Spike 4 decision)
 
-With Convex, the custom offline-first architecture is no longer needed. Convex automatically:
-- Queues mutations when offline
-- Replays them when reconnected
-- Handles conflicts at the mutation level (last-write-wins or custom logic)
+> ⚠️ **CRITICAL CORRECTION:** The original plan stated "Convex automatically queues mutations when offline and replays them when reconnected." **This is incorrect.**
+>
+> Convex uses WebSocket connections. When offline:
+> - **Subscriptions stop** — `useQuery` returns stale data, no updates.
+> - **Mutations fail** — they are NOT durably queued. The WebSocket is disconnected.
+> - **Optimistic updates revert** — the UI snaps back when the mutation fails.
+>
+> This is a **product regression** from the current IndexedDB + SyncProvider system, which provides true offline-first durability.
 
-**Important:** Convex conflict handling is still last-write-wins unless you implement custom merge logic in mutations. Identify any flows that currently surface conflicts in the UI and decide whether to keep a simplified conflict dialog.
+**Based on Spike 4 decision:**
+
+**Option A: Accept online-only (simplest)**
+- Remove all offline sync code.
+- Add a connection status indicator (see below).
+- Update PWA service worker to show "offline — read-only" state.
+- Disable mutation UI elements when disconnected.
+- **Users WILL notice** if they currently rely on offline task creation.
+
+**Option B: Keep lightweight offline queue (more work)**
+- Retain a simplified version of the IndexedDB queue.
+- Queue mutations locally when offline.
+- Replay them through Convex mutations on reconnect.
+- Handle conflicts (last-write-wins or prompt user).
+- This essentially keeps parts of SyncProvider — budget 3–5 extra days.
+
+**Option C: Hybrid (recommended if offline matters)**
+- Convex for online real-time sync.
+- IndexedDB for offline mutation queue + read cache.
+- On reconnect, replay queued mutations and refresh Zustand stores from Convex.
+- Most complex, but preserves current UX.
+
+**Important:** Convex conflict handling is last-write-wins unless you implement custom merge logic in mutations. Identify any flows that currently surface conflicts in the UI and decide whether to keep a simplified conflict dialog.
 
 **Remove:**
 
@@ -1605,7 +1842,10 @@ drizzle.config.ts
   ],
   "add": [
     "convex",
-    "convex-test"
+    "convex-test",
+    "@convex-dev/workos-authkit",
+    "concurrently",
+    "vitest"
   ]
 }
 ```
@@ -1723,6 +1963,18 @@ Before cutover, run an export from Convex and verify you can re-import into a st
 | Todoist sync | `api.integrations.todoist.sync` | `convex/integrations/todoist.ts` |
 | Google Tasks sync | `api.integrations.googleTasks.sync` | `convex/integrations/googleTasks.ts` |
 
+### Missing from Original Map (Added)
+
+| Server Action / Module | Convex Equivalent | File |
+|---|---|---|
+| `custom-icons.ts` (CRUD) | `api.customIcons.mutations.*` | `convex/customIcons/mutations.ts` |
+| `data-migration.ts` | One-time migration action (Phase 1) | `convex/migrations/importFromPostgres.ts` |
+| `shared.ts` (shared helpers) | `convex/helpers.ts` | Already planned |
+| `actions/index.ts` (re-exports) | Not needed — Convex `api` object replaces all re-exports | N/A |
+| `task-safe.ts` (Zod-validated wrappers) | Convex validators replace Zod (`v.string()`, etc.) | Inline in mutation `args` |
+| `todoist.ts` (OAuth + sync) | `api.integrations.todoist.*` | `convex/integrations/todoist.ts` |
+| `google-tasks.ts` (OAuth + sync) | `api.integrations.googleTasks.*` | `convex/integrations/googleTasks.ts` |
+
 ---
 
 ## 7. What Gets Removed
@@ -1776,18 +2028,25 @@ Before cutover, run an export from Convex and verify you can re-import into a st
 
 | Risk | Severity | Mitigation |
 |---|---|---|
-| **Data loss during migration** | High | Run PostgreSQL and Convex in parallel during transition. Verify row counts match. |
-| **ID format change** (serial → Convex ID) | High | Build comprehensive ID mapping. Update all client-side ID references. |
-| **Auth token compatibility** | Medium | Test WorkOS JWT verification with Convex thoroughly before switching. |
-| **Performance regression** | Medium | Convex indexes must cover all current query patterns. Benchmark critical paths. |
-| **No cascading deletes** | Medium | Implement and test all cascade paths manually in mutations. |
-| **No unique constraints** | Medium | Enforce uniqueness in mutations (check-then-insert). Possible race conditions — accept or use transactions. |
-| **Convex query limits** | Low | Convex queries have time limits. Paginate large result sets. |
-| **Auth token mismatch** | Medium | Verify WorkOS `iss`/`aud` against tokens; ensure Convex receives ID tokens from the client. |
-| **Data divergence during dual-write** | Medium | Define a single source of truth, or implement ordered dual-write + reconciliation strategy. |
-| **External integration downtime** | Low | Migrate integrations last. Can run on old Server Actions temporarily. |
-| **E2E test breakage** | Low | UI tests are implementation-agnostic. Update auth fixtures only. |
-| **Convex vendor lock-in** | Strategic | Convex schema is TypeScript — data can be exported. Evaluate against open-source alternatives. |
+| **WorkOS AuthKit ↔ Convex JWT bridge** | 🔴 Critical | Spike 1 MUST pass before any function migration. WorkOS uses session cookies, Convex needs JWTs. If bridging fails, must switch to Clerk (adds weeks). |
+| **Data loss during migration** | 🔴 High | Run PostgreSQL and Convex in parallel during transition. Verify row counts match. |
+| **ID format change** (text/serial → Convex ID) | 🔴 High | Build comprehensive ID mapping. Audit EVERY access check. User ID change from WorkOS string PK to Convex `_id` affects every table and every auth comparison. One missed check = cross-tenant data leak. |
+| **Offline/PWA functionality loss** | 🔴 High | Convex does NOT provide durable offline mutation queuing. Current IndexedDB queue is lost. Must decide: accept regression, keep offline queue, or build hybrid (Spike 4). |
+| **Cascading delete completeness** | 🟠 High | ~12 cascade paths must be manually implemented. Must handle transaction limits for large datasets (soft-delete + scheduled cleanup). Missing one cascade = orphaned data. |
+| **No unique constraints** | 🟠 High | Enforce uniqueness in mutations (check-then-insert within a mutation transaction). Still possible to get duplicates from bugs. Add background repair jobs. |
+| **Server Component → Client Component shift** | 🟠 High | ~15 pages change rendering model. Bundle size increases. SSR performance may regress if token forwarding doesn't work. |
+| **AWS KMS in Convex runtime** | 🟠 Medium | May not work in Convex action runtime. Spike 5 must verify. Fallback: proxy encryption through Next.js API routes. |
+| **Search quality regression** | 🟠 Medium | Convex search ≠ Fuse.js fuzzy matching. Users will perceive worse search. Keep Fuse.js client-side or accept regression. |
+| **Auth token mismatch (`iss`/`aud`)** | 🟠 Medium | Verify WorkOS `iss`/`aud` against actual JWT claims. Common cause of `isAuthenticated === false`. |
+| **Auth bypass / E2E test mode** | 🟠 Medium | Current dev bypass, IP allowlist, and E2E test cookies don't translate to Convex. Must design new bypass strategy. |
+| **Performance regression** | 🟡 Medium | Convex indexes must cover all current query patterns. Benchmark critical paths. Use pagination for large datasets. |
+| **Convex query/mutation limits** | 🟡 Medium | Large cascading deletes and unbounded `.collect()` queries may hit limits. Paginate and batch. |
+| **Feature flag dual-write complexity** | 🟡 Medium | Different ID systems (serial vs Convex ID) make rollback non-trivial. Dual-write requires reconciliation strategy. |
+| **Data divergence during dual-write** | 🟡 Medium | Define a single source of truth, or implement ordered dual-write + reconciliation strategy. |
+| **Missing action modules in migration map** | 🟡 Low | `data-migration.ts`, `custom-icons.ts`, `shared.ts`, `index.ts` not explicitly in function map. Verify complete inventory. |
+| **External integration downtime** | 🟡 Low | Migrate integrations last. Can run on old Server Actions temporarily. |
+| **E2E test breakage** | 🟡 Low | UI tests are implementation-agnostic. Update auth fixtures only. |
+| **Convex vendor lock-in** | 📌 Strategic | Convex schema is TypeScript — data can be exported. Evaluate against open-source alternatives. |
 
 ---
 
@@ -1809,6 +2068,11 @@ Before cutover, run an export from Convex and verify you can re-import into a st
 
 ### Feature Flag Implementation
 
+> ⚠️ **Dual-backend complexity warning:** Running two backends simultaneously with DIFFERENT ID systems (Postgres serial/text IDs vs Convex document IDs) makes true rollback non-trivial. Consider:
+> - Feature-flagging at the **deployment level** (Vercel preview = Convex, production = Postgres) rather than runtime toggles.
+> - Using a **short cutover window** (write-freeze → migrate → verify → go-live) instead of long dual-write periods.
+> - If dual-write is required, you need an ID reconciliation layer that maps between both systems.
+
 ```tsx
 // src/lib/feature-flags.ts
 export const USE_CONVEX = process.env.NEXT_PUBLIC_USE_CONVEX === "true";
@@ -1828,10 +2092,25 @@ function TaskList() {
 
 ## Appendix: Migration Checklist
 
+### Pre-Implementation Spikes (BLOCKING — must pass before feature work)
+
+- [ ] **Spike 1**: Auth PoC — `@convex-dev/workos-authkit` or custom bridge working, `ctx.auth.getUserIdentity()` returns non-null in dev + staging
+- [ ] **Spike 2**: Constraint parity matrix — every PK/FK/unique/cascade documented with Convex enforcement strategy
+- [ ] **Spike 3**: Cascade delete prototype — `deleteList` with 200+ tasks works within Convex limits, batching pattern designed
+- [ ] **Spike 4**: Offline/PWA decision documented — Option A/B/C selected with stakeholder sign-off
+- [ ] **Spike 5**: AWS KMS tested in Convex action runtime — fallback plan documented if it fails
+
+### Phase Checklist
+
 - [ ] **Phase 0**: `convex init`, ConvexProvider, env vars
-- [ ] **Phase 0**: Verify WorkOS ID token flow (`iss`/`aud`) and `ctx.auth.getUserIdentity()`
-- [ ] **Phase 1**: Schema in `convex/schema.ts`, data migration script
-- [ ] **Phase 1**: Chunked + resumable import with id-map persistence
+- [ ] **Phase 0**: Verify WorkOS JWT flow (`iss`/`aud`) and `ctx.auth.getUserIdentity()`
+- [ ] **Phase 0**: Design auth bypass strategy for dev mode and E2E tests (current bypass system won't work)
+- [ ] **Phase 1**: Schema in `convex/schema.ts` with all constraint warnings addressed
+  - [ ] `externalEntityMap` index includes `entityType`
+  - [ ] Achievement ID mapping strategy documented
+  - [ ] User ID strategy (WorkOS string → Convex `_id`) fully mapped
+  - [ ] All uniqueness constraints have mutation-level enforcement
+- [ ] **Phase 1**: Chunked + resumable data migration with id-map persistence
 - [ ] **Phase 2**: All 50+ Server Actions → Convex functions
   - [ ] Tasks (CRUD, subtasks, search, reorder)
   - [ ] Lists (CRUD, reorder)
@@ -1843,20 +2122,31 @@ function TaskList() {
   - [ ] Reminders (CRUD)
   - [ ] Dependencies (add, remove, query)
   - [ ] Logs (activity, completion history)
-  - [ ] Search (full-text)
+  - [ ] Search (full-text — with search regression decision documented)
   - [ ] User (preferences, sync)
+  - [ ] **Custom icons** (CRUD — was missing from original map)
+  - [ ] **Data migration utilities** (was missing from original map)
+  - [ ] **Shared helpers** (was missing from original map)
+  - [ ] All cascade delete paths implemented and tested
+  - [ ] All junction table mutations have dedupe checks
+  - [ ] All mutations validate cross-user ownership (composite FK replacement)
 - [ ] **Phase 3**: Authentication (WorkOS JWT or Clerk migration)
 - [ ] **Phase 4**: Client components → Convex hooks
+  - [ ] Convert ~15 Server Component pages to Client Components or preloaded pattern
   - [ ] Remove React Query
   - [ ] Remove Zustand stores
-  - [ ] Remove SyncProvider + IndexedDB
+  - [ ] Remove SyncProvider + IndexedDB (based on Spike 4 decision)
   - [ ] Add optimistic updates where needed
+  - [ ] Verify SSR/preload works with auth tokens (or accept client-only rendering)
 - [ ] **Phase 5**: AI actions → Convex actions
-- [ ] **Phase 6**: Delete offline sync layer
+  - [ ] Verify `@google/generative-ai` works in Convex action runtime
+  - [ ] Verify KMS encryption works (or use fallback from Spike 5)
+- [ ] **Phase 6**: Offline sync removal/replacement (per Spike 4 decision)
+  - [ ] PWA service worker updated for new architecture
 - [ ] **Phase 7**: External integrations → Convex actions + crons
 - [ ] **Phase 8**: Testing + cleanup
-  - [ ] New test setup with `convex-test`
-  - [ ] E2E tests passing
+  - [ ] New test setup with `convex-test` (Vitest, not Bun test)
+  - [ ] E2E tests passing with new auth strategy
   - [ ] E2E auth strategy selected + implemented
   - [ ] Remove unused dependencies
   - [ ] Delete old files
