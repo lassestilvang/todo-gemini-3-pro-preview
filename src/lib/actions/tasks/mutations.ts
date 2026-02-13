@@ -73,10 +73,9 @@ async function createTaskImpl(data: typeof tasks.$inferInsert & { labelIds?: num
 
     if (!taskData.listId && finalLabelIds.length === 0 && taskData.title && taskData.userId) {
       try {
-        const [allLists, allLabels] = await Promise.all([
-          getListsInternal(taskData.userId),
-          getLabelsInternal(taskData.userId),
-        ]);
+        // Fetch lists and labels sequentially to avoid SQLite concurrency issues in tests
+        const allLists = await getListsInternal(taskData.userId);
+        const allLabels = await getLabelsInternal(taskData.userId);
         const suggestions = await suggestMetadata(taskData.title, allLists, allLabels);
 
         // Security check: Ensure suggested listId belongs to the user
@@ -169,10 +168,16 @@ async function createTaskImpl(data: typeof tasks.$inferInsert & { labelIds?: num
       details: "Task created",
     });
 
-    const { syncTodoistNow } = await import("@/lib/actions/todoist");
-    const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
-    await syncTodoistNow();
-    await syncGoogleTasksNow();
+    // Run sync in background (fire and forget or catch errors) to avoid blocking response
+    // and prevent auth errors in nested contexts affecting the main action
+    try {
+      const { syncTodoistNow } = await import("@/lib/actions/todoist");
+      const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
+      await syncTodoistNow().catch((e) => console.error("Todoist sync failed:", e));
+      await syncGoogleTasksNow().catch((e) => console.error("Google Tasks sync failed:", e));
+    } catch (error) {
+      console.error("Sync dispatch failed:", error);
+    }
 
     revalidatePath("/", "layout");
     return normalizedTask;
