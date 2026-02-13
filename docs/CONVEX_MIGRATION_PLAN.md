@@ -1878,6 +1878,10 @@ This section lists concrete pre-flight checks that must pass before implementati
 3. Run a Convex dev mutation that logs `ctx.auth.getUserIdentity()` and confirm it is non-null.
 4. SSR proof: call `getWorkOSIdToken()` in a Server Component and successfully `preloadQuery` an authenticated query.
 
+**Acceptance thresholds:**
+- Auth proof must succeed in both local dev and a staging deployment.
+- `ctx.auth.getUserIdentity()` must return a stable `subject` matching the WorkOS user ID across refreshes.
+
 ### B. Migration Dry Run (Required)
 
 1. Run migration against a **copy** of Postgres and a Convex dev deployment.
@@ -1885,16 +1889,29 @@ This section lists concrete pre-flight checks that must pass before implementati
 3. Verify ID maps are complete by checking any foreign key in Convex resolves to a valid target doc.
 4. Simulate a failure mid-batch and verify the migration can resume without duplicate inserts.
 
+**Acceptance thresholds:**
+- Counts match exactly for every table.
+- Random sample (>=100 rows) passes field-level comparison with no mismatches.
+- No orphaned foreign keys in Convex (0 unresolved references).
+
 ### C. Data Integrity Checks (Required)
 
 - All tasks have a valid `userId` and (if present) `listId`.
 - All junction tables (`taskLabels`, `taskDependencies`) reference valid task/label IDs and share `userId`.
 - All external integration rows are readable only by `internal` functions.
 
+**Acceptance thresholds:**
+- Integrity checks must pass on both dev and staging datasets.
+- Any failed check blocks cutover until resolved.
+
 ### D. Performance Smoke Tests (Required)
 
 - Run `getTasks` with pagination in a dataset >10k tasks and confirm no timeout.
 - Run `searchTasks` on a large dataset and verify truncation messaging when capped.
+
+**Acceptance thresholds:**
+- `getTasks` P95 response time < 400ms for 10k tasks dataset on staging.
+- Search results return within 1 second with clear pagination/truncation UI.
 
 ### E. E2E Auth Harness (Required)
 
@@ -1903,6 +1920,10 @@ Choose one strategy and fully automate it:
 - Convex `internal` test auth mutation gated by `E2E_TEST_MODE`
 - Clerk test token flow (if migrating auth)
 
+**Acceptance thresholds:**
+- E2E suite passes in CI with no manual token setup.
+- Auth setup is deterministic and repeatable across environments.
+
 ### F. Cutover Checklist (Required)
 
 1. Freeze writes on Postgres.
@@ -1910,3 +1931,166 @@ Choose one strategy and fully automate it:
 3. Run integrity + sample checks.
 4. Flip feature flag to Convex.
 5. Monitor errors/latency and rollback if required.
+
+**Acceptance thresholds:**
+- 24 hours of error-free operation before decommissioning Postgres.
+- Rollback verified by re-enabling Postgres feature flag within 5 minutes.
+
+---
+
+## Appendix: Validation Execution Checklist
+
+This is an execution-ready checklist for running the bulletproofing plan.
+
+### 1. Auth Validation
+
+1. Capture ID token and verify `iss`/`aud`.
+2. Run `debugAuth` mutation in dev/staging (must log non-null identity).
+3. SSR `preloadQuery` runs with token and returns expected user-scoped data.
+
+### 2. Migration Validation
+
+1. Run migration on snapshot database.
+2. Run count comparison script per table.
+3. Run 100-row sample diff script per table.
+4. Run foreign key integrity audit.
+5. Simulate a mid-batch crash and resume.
+
+### 3. Performance Validation
+
+1. Seed 10k tasks per user in staging.
+2. Measure P50/P95 latency for `getTasks` and `getTaskLogs`.
+3. Validate pagination UX for large lists.
+
+### 4. E2E Auth Validation
+
+1. Run full Playwright suite in CI with the chosen auth strategy.
+2. Confirm tests pass with a fresh environment (no cached tokens).
+
+### 5. Cutover Validation
+
+1. Freeze writes.
+2. Run delta import.
+3. Run integrity + sample checks.
+4. Flip feature flag.
+5. Monitor logs and rollback if necessary.
+
+---
+
+## Appendix: Validation Script Stubs
+
+These are minimal starter scripts to automate validation steps.
+
+### 1. Token Decode Helper
+
+```bash
+# Decode a JWT (header + payload) without verification
+node -e "const t=process.argv[1].split('.'); console.log(Buffer.from(t[0], 'base64url').toString()); console.log(Buffer.from(t[1], 'base64url').toString());" "<JWT>"
+```
+
+### 2. Count Comparison (Postgres vs Convex)
+
+```ts
+// scripts/compare-counts.ts
+// Pseudo: use a SQL client for Postgres and Convex HTTP API for Convex.
+// For each table, print Postgres count vs Convex count.
+```
+
+### 3. Random Sample Diff
+
+```ts
+// scripts/sample-diff.ts
+// Pseudo: select 100 random IDs from Postgres, fetch matching docs in Convex,
+// normalize timestamps, and diff fields.
+```
+
+### 4. Foreign Key Integrity Audit
+
+```ts
+// scripts/fk-audit.ts
+// Pseudo: for each junction table in Convex, verify referenced docs exist.
+```
+
+### 5. Migration Resume Simulation
+
+```ts
+// scripts/migration-resume-test.ts
+// Pseudo: run a batch, crash after N inserts, re-run and assert no duplicates.
+```
+
+---
+
+## Appendix: Validation Task List
+
+This converts the validation plan into concrete tasks with owners, estimates, and pass/fail criteria.
+
+### Auth Validation Tasks
+
+1. **Capture + decode ID token**
+   - Owner: Backend
+   - Estimate: 2 hours
+   - Pass: `iss`/`aud` match Convex config and token is an OIDC ID token
+2. **Convex auth mutation proof**
+   - Owner: Backend
+   - Estimate: 1 hour
+   - Pass: `ctx.auth.getUserIdentity()` returns a stable subject across refreshes
+3. **SSR `preloadQuery` proof**
+   - Owner: Fullstack
+   - Estimate: 2 hours
+   - Pass: SSR preloaded query returns user-scoped data in staging
+
+### Migration Validation Tasks
+
+1. **Snapshot DB + run migration**
+   - Owner: Backend
+   - Estimate: 1 day
+   - Pass: Migration completes without timeouts
+2. **Counts + sample diff**
+   - Owner: Backend
+   - Estimate: 1 day
+   - Pass: Counts equal and sample diff has 0 mismatches
+3. **FK audit**
+   - Owner: Backend
+   - Estimate: 4 hours
+   - Pass: 0 orphaned references
+4. **Resume test**
+   - Owner: Backend
+   - Estimate: 4 hours
+   - Pass: No duplicate inserts after resume
+
+### Performance Validation Tasks
+
+1. **Seed 10k tasks dataset**
+   - Owner: Backend
+   - Estimate: 2 hours
+   - Pass: Data seeded in staging
+2. **Latency measurements**
+   - Owner: Fullstack
+   - Estimate: 1 day
+   - Pass: P95 < 400ms for `getTasks` and < 1s for search
+
+### E2E Auth Validation Tasks
+
+1. **Select auth strategy**
+   - Owner: Tech lead
+   - Estimate: 2 hours
+   - Pass: Decision documented
+2. **Implement strategy + CI pass**
+   - Owner: Fullstack
+   - Estimate: 1 day
+   - Pass: Playwright suite passes in CI without manual steps
+
+### Cutover Validation Tasks
+
+1. **Write freeze + delta import**
+   - Owner: Backend
+   - Estimate: 4 hours
+   - Pass: Delta import completes with 0 errors
+2. **Final integrity check**
+   - Owner: Backend
+   - Estimate: 2 hours
+   - Pass: All integrity checks pass
+3. **Flip feature flag**
+   - Owner: Fullstack
+   - Estimate: 30 minutes
+   - Pass: Production traffic uses Convex without errors
