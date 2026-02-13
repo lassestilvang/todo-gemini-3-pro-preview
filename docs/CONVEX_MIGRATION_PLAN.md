@@ -1,8 +1,10 @@
 # Convex Migration Plan: Todo Gemini
 
-> **Migrating from**: Neon PostgreSQL + Drizzle ORM + Next.js Server Actions + WorkOS AuthKit + Zustand/IndexedDB offline sync  
-> **Migrating to**: Convex (database, real-time sync, backend functions, scheduling) + Convex Auth or WorkOS via Convex  
+> **Migrating from**: Neon PostgreSQL + Drizzle ORM + Next.js Server Actions + WorkOS AuthKit + Zustand/IndexedDB offline sync
+> **Migrating to**: Convex (database, real-time sync, backend functions, scheduling) + Convex Auth or WorkOS via Convex
 > **Estimated effort**: 8–12 weeks for a team of 1–2 engineers (includes required spikes)
+
+IMPORTANT: Use the Convex MCP for any Convex doubts or questions or clarifications.
 
 ---
 
@@ -36,9 +38,10 @@
 ### Spike 1: Auth Proof-of-Concept (1 day)
 
 Stand up a minimal Convex project using the **official `@convex-dev/workos-authkit` integration** (https://www.convex.dev/components/workos-authkit) (NOT the custom token-template approach):
+
 1. Verify the client can obtain a JWT acceptable to Convex via WorkOS AuthKit.
 2. Confirm `ctx.auth.getUserIdentity()` returns non-null with a stable `subject` matching the WorkOS user ID.
-3. Verify SSR `preloadQuery` works with auth token forwarding using WorkOS cookie sessions.
+3. Confirm client-only `useQuery` loading for authenticated pages (skip SSR `preloadQuery`).
 4. Verify in both local dev and a staging deployment.
 
 **Why this is blocking:** WorkOS AuthKit uses session-cookie auth, not bearer tokens. The approach for bridging this to Convex's JWT-based auth must be proven before any function migration.
@@ -50,6 +53,7 @@ Verify `convex-test` runs successfully under `bun test` in this repo. If it fail
 ### Spike 2: Constraint Parity Matrix (1–2 days)
 
 Create a written document mapping every Postgres PK/FK/unique/cascade to its Convex enforcement strategy:
+
 - Every unique constraint → mutation-level check with indexed query + `.unique()`
 - Every cascade → explicit delete chain (with batching for large datasets)
 - Every composite FK → ownership validation in mutation code
@@ -61,20 +65,13 @@ Build and test a prototype `deleteList` that cascades through tasks → subtasks
 
 ### Spike 4: Offline/PWA Decision (0.5 day)
 
-**Critical product decision:** Convex does NOT provide durable offline mutation queuing. When the WebSocket connection drops, mutations fail and subscriptions stop. The current IndexedDB + SyncProvider system is a true offline-first queue.
+**Decision:** Accept regression. The app will be online-only after migration. Remove PWA offline claims and update the service worker to show an "offline" UI state.
 
-Options:
-- **Accept regression**: App requires connectivity. Remove PWA offline claims. Update service worker to show "offline" UI.
-- **Keep lightweight offline queue**: Retain a simplified IndexedDB queue that replays through Convex mutations on reconnect (significantly more work).
-- **Hybrid**: Convex for online real-time, keep Zustand + IndexedDB for offline with reconciliation on reconnect.
+### Spike 5: Encryption Approach (0.5 day)
 
-This decision affects Phases 4 and 6 significantly.
+**Decision:** Use Convex environment variables for key management and a pure-JS encryption library in Convex actions. Avoid AWS KMS for simplicity.
 
-### Spike 5: AWS KMS in Convex Runtime (0.5 day)
-
-Test whether `@aws-sdk/client-kms` works in the Convex action runtime. AWS SDK v3 assumes Node.js APIs (HTTP handlers, crypto, streams) that may not be available. If KMS fails:
-- Move encryption/decryption to a Next.js API route that Convex actions call via `fetch`.
-- Or switch to Convex environment variables + a pure-JS encryption library.
+If stricter key management is required later, move encryption/decryption to a Convex action that proxies to a separate service, or reintroduce KMS.
 
 ---
 
@@ -82,24 +79,28 @@ Test whether `@aws-sdk/client-kms` works in the Convex action runtime. AWS SDK v
 
 ### Why Convex?
 
-| Current Pain Point | Convex Solution |
-|---|---|
-| Custom offline-first sync system (Zustand + IndexedDB + SyncProvider) | Convex handles real-time sync automatically via WebSocket subscriptions. **⚠️ Note: This is NOT an offline-first replacement — see Spike 4.** |
-| Manual `revalidatePath` after every mutation | `useQuery` subscriptions update UI automatically |
-| Separate SQLite schema for tests | Convex has built-in testing utilities; no schema duplication |
-| Complex Server Action boilerplate (`"use server"`, auth checks, error handling) | Convex mutations with built-in auth context (`ctx.auth`) |
-| No real-time updates without polling or manual refresh | Every `useQuery` is a live subscription |
-| React Query for client-side caching | Replaced by Convex's reactive cache |
+| Current Pain Point                                                              | Convex Solution                                                                                                                               |
+| ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Custom offline-first sync system (Zustand + IndexedDB + SyncProvider)           | Convex handles real-time sync automatically via WebSocket subscriptions. **⚠️ Note: This is NOT an offline-first replacement — see Spike 4.** |
+| Manual `revalidatePath` after every mutation                                    | `useQuery` subscriptions update UI automatically                                                                                              |
+| Separate SQLite schema for tests                                                | Convex has built-in testing utilities; no schema duplication                                                                                  |
+| Complex Server Action boilerplate (`"use server"`, auth checks, error handling) | Convex mutations with built-in auth context (`ctx.auth`)                                                                                      |
+| No real-time updates without polling or manual refresh                          | Every `useQuery` is a live subscription                                                                                                       |
+| React Query for client-side caching                                             | Replaced by Convex's reactive cache                                                                                                           |
 
 ### What Changes
 
 - **Database**: Neon PostgreSQL → Convex document database
 - **ORM**: Drizzle ORM → Convex's built-in `ctx.db` API
-- **Backend functions**: Next.js Server Actions → Convex queries/mutations/actions
+- **Backend functions**: Next.js Server Actions + API routes → Convex queries/mutations/actions only
 - **Auth**: WorkOS AuthKit middleware → WorkOS JWT verification in Convex via official `@convex-dev/workos-authkit` package (https://www.convex.dev/components/workos-authkit)
-- **Client data**: Zustand stores + React Query + IndexedDB → Convex `useQuery`/`useMutation` hooks
-- **Offline sync**: Custom SyncProvider → **Product decision required (see Spike 4).** Convex optimistic updates cover online UX only; offline durability is lost without a replacement queue.
+- **Client data**: Zustand stores + React Query + IndexedDB → Convex `useQuery`/`useMutation` hooks (no custom caches)
+- **Offline sync**: Custom SyncProvider → Remove offline queue (online-only after migration per Spike 4 decision).
+- **View settings**: Move to client-only state (keep saved views in Convex).
+- **Views logic**: Compute views client-side from Convex data; remove server-side view composition.
+- **Audit logs**: Drop `taskLogs` if audit history is not required.
 - **AI features**: Server Actions calling Gemini → Convex actions calling Gemini
+- **Background workflows**: Move all recurring jobs and cleanup to `convex/crons.ts` + internal actions
 
 ### What Stays the Same
 
@@ -147,38 +148,38 @@ Test whether `@aws-sdk/client-kms` works in the Convex action runtime. AWS SDK v
 
 ### Database Tables (19 total)
 
-| Table | Rows/User | Relationships | Notes |
-|---|---|---|---|
-| `users` | 1 | Parent of all | WorkOS user data + preferences |
-| `tasks` | Many | → lists, self-referencing (parentId) | Core entity, 12+ indexed columns |
-| `lists` | ~5-20 | → users | Task groupings |
-| `labels` | ~5-20 | → users | Tag system |
-| `taskLabels` | Many | → tasks, labels | Junction table (M2M) |
-| `taskDependencies` | Some | → tasks (self) | Junction table (M2M) |
-| `reminders` | Some | → tasks | Future alerts |
-| `taskLogs` | Many | → users, tasks, lists, labels | Activity audit log |
-| `habitCompletions` | Some | → tasks | Habit tracking |
-| `templates` | Few | → users | Task templates (JSON content) |
-| `userStats` | 1 | → users | XP, level, streaks |
-| `achievements` | Static | — | Global achievement definitions |
-| `userAchievements` | Some | → users, achievements | Junction table |
-| `viewSettings` | ~5-10 | → users | Per-view filter/sort state |
-| `savedViews` | Few | → users | Custom saved view configs |
-| `timeEntries` | Many | → tasks, users | Work session tracking |
-| `rateLimits` | Transient | — | API rate limiting |
-| `customIcons` | Few | → users | User-uploaded icons |
-| `externalIntegrations` | Few | → users | Todoist/Google Tasks tokens |
-| `externalSyncState` | Few | → users | Sync cursor state |
-| `externalEntityMap` | Many | → users | ID mapping for external sync |
-| `externalSyncConflicts` | Few | → users | Unresolved sync conflicts |
+| Table                   | Rows/User | Relationships                        | Notes                            |
+| ----------------------- | --------- | ------------------------------------ | -------------------------------- |
+| `users`                 | 1         | Parent of all                        | WorkOS user data + preferences   |
+| `tasks`                 | Many      | → lists, self-referencing (parentId) | Core entity, 12+ indexed columns |
+| `lists`                 | ~5-20     | → users                              | Task groupings                   |
+| `labels`                | ~5-20     | → users                              | Tag system                       |
+| `taskLabels`            | Many      | → tasks, labels                      | Junction table (M2M)             |
+| `taskDependencies`      | Some      | → tasks (self)                       | Junction table (M2M)             |
+| `reminders`             | Some      | → tasks                              | Future alerts                    |
+| `taskLogs`              | Many      | → users, tasks, lists, labels        | Optional (drop if audit not needed) |
+| `habitCompletions`      | Some      | → tasks                              | Habit tracking                   |
+| `templates`             | Few       | → users                              | Task templates (JSON content)    |
+| `userStats`             | 1         | → users                              | XP, level, streaks               |
+| `achievements`          | Static    | —                                    | Global achievement definitions   |
+| `userAchievements`      | Some      | → users, achievements                | Junction table                   |
+| `viewSettings`          | ~5-10     | → users                              | Move to client-only state if purely UI |
+| `savedViews`            | Few       | → users                              | Custom saved view configs        |
+| `timeEntries`           | Many      | → tasks, users                       | Work session tracking            |
+| `rateLimits`            | Transient | —                                    | Remove (use Convex limits)       |
+| `customIcons`           | Few       | → users                              | User-uploaded icons              |
+| `externalIntegrations`  | Few       | → users                              | Todoist/Google Tasks tokens      |
+| `externalSyncState`     | Few       | → users                              | Sync cursor state                |
+| `externalEntityMap`     | Many      | → users                              | ID mapping for external sync     |
+| `externalSyncConflicts` | Few       | → users                              | Unresolved sync conflicts        |
 
 ### Server Action Modules (20+ files)
 
 - `tasks/` (queries, mutations, subtasks, streak)
 - `lists.ts`, `labels.ts`
 - `gamification.ts`, `time-tracking.ts`
-- `search.ts`, `view-settings.ts`, `views.ts`
-- `templates.ts`, `reminders.ts`, `dependencies.ts`, `logs.ts`
+- `search.ts`, `view-settings.ts` (optional if view settings are client-only), `views.ts` (server-side view logic removed)
+- `templates.ts`, `reminders.ts`, `dependencies.ts`, `logs.ts` (drop if audit logs are removed)
 - `task-safe.ts` (Zod-validated wrappers)
 - `todoist.ts`, `google-tasks.ts` (external integrations)
 - `user.ts`, `custom-icons.ts`, `data-migration.ts`
@@ -192,8 +193,8 @@ Test whether `@aws-sdk/client-kms` works in the Convex action runtime. AWS SDK v
 │                    Next.js App Router                     │
 │  ┌──────────────┐  ┌──────────────┐  ┌───────────────┐  │
 │  │ Server Comps  │  │ Client Comps  │  │  Middleware    │  │
-│  │ (preloaded    │  │ (useQuery,   │  │  (Convex Auth  │  │
-│  │  queries)     │  │  useMutation) │  │   or WorkOS)  │  │
+│  │ (shell only)  │  │ (useQuery,   │  │  (Convex Auth  │  │
+│  │               │  │  useMutation) │  │   or WorkOS)  │  │
 │  └──────┬───────┘  └──────┬───────┘  └───────────────┘  │
 │         │                 │                               │
 │         │     ┌───────────▼──────────┐                   │
@@ -221,7 +222,7 @@ Test whether `@aws-sdk/client-kms` works in the Convex action runtime. AWS SDK v
           │   │  └────────────────────┘              │
           │   └──────────────────────────────────────┘
           │
-          └── preloadQuery (SSR, optional)
+          └── Client-only queries (no SSR preload)
 ```
 
 ### Key Benefits of Target Architecture
@@ -239,6 +240,7 @@ Test whether `@aws-sdk/client-kms` works in the Convex action runtime. AWS SDK v
 ## 4. Migration Phases
 
 ### Phase 0: Setup & Infrastructure
+
 **Duration**: 1 day
 
 #### 0.1 Install Convex
@@ -249,6 +251,7 @@ bunx convex init
 ```
 
 This creates:
+
 - `convex/` directory with `_generated/`, `tsconfig.json`
 - `.env.local` updated with `NEXT_PUBLIC_CONVEX_URL`
 
@@ -292,7 +295,11 @@ import { ReactNode } from "react";
 
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
-export default function ConvexClientProvider({ children }: { children: ReactNode }) {
+export default function ConvexClientProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
   return (
     <ConvexProviderWithAuthKit client={convex}>
       {children}
@@ -329,7 +336,7 @@ Convex needs a JWT to authenticate WebSocket connections. WorkOS AuthKit primari
 **Possible approaches (validate in Spike 1):**
 
 1. **Official `@convex-dev/workos-authkit` package** (preferred; see https://www.convex.dev/components/workos-authkit)
-2. **Custom `useAuth` hook** that calls a Next.js API route to exchange the WorkOS session for a JWT:
+2. **Custom `useAuth` hook** that calls a Next.js API route to exchange the WorkOS session for a JWT (only if the official integration is not viable; goal is no API routes):
 
 ```ts
 // src/app/api/convex-token/route.ts
@@ -352,31 +359,20 @@ export async function GET() {
 3. **Clerk migration** (Option B in Phase 3) — avoids the bridging problem entirely.
 
 **Critical verification steps (before proceeding past this phase):**
+
 - Decode the actual JWT from WorkOS and verify `iss`/`aud` match Convex config.
 - Confirm the token is an OIDC-compatible JWT (not an opaque session token).
 - Confirm `ctx.auth.getUserIdentity()` returns non-null in a Convex mutation.
 - Confirm token refresh works without forcing page reloads.
 
-#### 0.6.1 SSR Token Retrieval Strategy
+#### 0.6.1 SSR Strategy (Simplified)
 
-For Server Components using `preloadQuery`, you need the JWT server-side. Use a server-only helper:
-
-```ts
-// src/lib/auth-tokens.ts (SSR-safe)
-import { withAuth } from "@workos-inc/authkit-nextjs";
-
-export async function getConvexToken(): Promise<string | null> {
-  const { user, accessToken } = await withAuth();
-  if (!user || !accessToken) return null;
-  return accessToken;
-}
-```
-
-> **Warning:** If WorkOS does not expose a JWT-format access token (only opaque session cookies), SSR `preloadQuery` with auth will NOT work. In that case, SSR pages must render loading states and hydrate via client-side `useQuery`. This is a significant architectural change from the current Server Component data-fetching pattern.
+Skip SSR `preloadQuery` for authenticated pages to avoid token forwarding complexity. Treat all authenticated pages as client-only `useQuery` views.
 
 #### 0.7 Auth Verification Checklist (Required)
 
 Before writing any Convex functions, validate the following with a real WorkOS token:
+
 - `iss` matches the `domain` configured in `convex/auth.config.ts`
 - `aud` matches the `applicationID`
 - Token is an OIDC ID token (not an access token)
@@ -385,11 +381,12 @@ Before writing any Convex functions, validate the following with a real WorkOS t
 ---
 
 ### Phase 1: Schema & Data Layer
+
 **Duration**: 2–3 days
 
 #### 1.1 Create Convex Schema
 
-Create `convex/schema.ts` translating all 19+ Drizzle tables. Preserve `createdAt` where it is used for sorting or analytics, and denormalize `userId` on child/junction tables to avoid N+1 queries.
+Create `convex/schema.ts` translating all 19+ Drizzle tables. Preserve `createdAt` where it is used for sorting or analytics, and denormalize `userId` on child/junction tables to avoid N+1 queries. Favor denormalized counters updated in mutations instead of batch analytics jobs.
 
 ```typescript
 import { defineSchema, defineTable } from "convex/server";
@@ -398,7 +395,7 @@ import { v } from "convex/values";
 export default defineSchema({
   // ─── Users ──────────────────────────────────────────────
   users: defineTable({
-    externalId: v.string(),          // WorkOS user ID
+    externalId: v.string(), // WorkOS user ID
     email: v.string(),
     firstName: v.optional(v.string()),
     lastName: v.optional(v.string()),
@@ -441,34 +438,36 @@ export default defineSchema({
       v.literal("medium"),
       v.literal("high"),
     ),
-    dueDate: v.optional(v.number()),         // timestamp ms
-    dueDatePrecision: v.optional(v.union(
-      v.literal("day"),
-      v.literal("week"),
-      v.literal("month"),
-      v.literal("year"),
-    )),
+    dueDate: v.optional(v.number()), // timestamp ms
+    dueDatePrecision: v.optional(
+      v.union(
+        v.literal("day"),
+        v.literal("week"),
+        v.literal("month"),
+        v.literal("year"),
+      ),
+    ),
     isCompleted: v.boolean(),
     completedAt: v.optional(v.number()),
     isRecurring: v.boolean(),
-    recurringRule: v.optional(v.string()),     // RRule string
-    parentId: v.optional(v.id("tasks")),       // For subtasks
+    recurringRule: v.optional(v.string()), // RRule string
+    parentId: v.optional(v.id("tasks")), // For subtasks
     estimateMinutes: v.optional(v.number()),
     position: v.number(),
     actualMinutes: v.optional(v.number()),
-    energyLevel: v.optional(v.union(
-      v.literal("high"),
-      v.literal("medium"),
-      v.literal("low"),
-    )),
-    context: v.optional(v.union(
-      v.literal("computer"),
-      v.literal("phone"),
-      v.literal("errands"),
-      v.literal("meeting"),
-      v.literal("home"),
-      v.literal("anywhere"),
-    )),
+    energyLevel: v.optional(
+      v.union(v.literal("high"), v.literal("medium"), v.literal("low")),
+    ),
+    context: v.optional(
+      v.union(
+        v.literal("computer"),
+        v.literal("phone"),
+        v.literal("errands"),
+        v.literal("meeting"),
+        v.literal("home"),
+        v.literal("anywhere"),
+      ),
+    ),
     isHabit: v.boolean(),
     deadline: v.optional(v.number()),
     createdAt: v.number(),
@@ -499,8 +498,7 @@ export default defineSchema({
     description: v.optional(v.string()),
     position: v.number(),
     createdAt: v.number(),
-  })
-    .index("by_user", ["userId"]),
+  }).index("by_user", ["userId"]),
 
   // ─── Task Labels (Junction) ─────────────────────────────
   taskLabels: defineTable({
@@ -532,6 +530,7 @@ export default defineSchema({
     .index("by_remindAt", ["isSent", "remindAt"]),
 
   // ─── Task Logs ──────────────────────────────────────────
+  // Optional: drop taskLogs if audit history is not required
   taskLogs: defineTable({
     userId: v.id("users"),
     taskId: v.optional(v.id("tasks")),
@@ -550,18 +549,16 @@ export default defineSchema({
     taskId: v.id("tasks"),
     completedAt: v.number(),
     createdAt: v.number(),
-  })
-    .index("by_task_date", ["taskId", "completedAt"]),
+  }).index("by_task_date", ["taskId", "completedAt"]),
 
   // ─── Templates ──────────────────────────────────────────
   templates: defineTable({
     userId: v.id("users"),
     name: v.string(),
-    content: v.string(),     // JSON string of task data
+    content: v.string(), // JSON string of task data
     createdAt: v.number(),
     updatedAt: v.number(),
-  })
-    .index("by_user", ["userId"]),
+  }).index("by_user", ["userId"]),
 
   // ─── User Stats ─────────────────────────────────────────
   userStats: defineTable({
@@ -572,23 +569,21 @@ export default defineSchema({
     currentStreak: v.number(),
     longestStreak: v.number(),
     streakFreezes: v.number(),
-  })
-    .index("by_user", ["userId"]),
+  }).index("by_user", ["userId"]),
 
   // ─── Achievements ──────────────────────────────────────
   // ⚠️ NOTE: In Postgres, achievements.id is a text PK (e.g., "first_task").
   // In Convex, the PK is the auto-generated _id. The achievementId field
   // stores the logical string ID for lookups and migration mapping.
   achievements: defineTable({
-    achievementId: v.string(),   // Logical ID (e.g., "first_task")
+    achievementId: v.string(), // Logical ID (e.g., "first_task")
     name: v.string(),
     description: v.string(),
     icon: v.string(),
     conditionType: v.string(),
     conditionValue: v.number(),
     xpReward: v.number(),
-  })
-    .index("by_achievementId", ["achievementId"]),
+  }).index("by_achievementId", ["achievementId"]),
 
   // ─── User Achievements ─────────────────────────────────
   // ⚠️ IMPORTANT: achievementId here is v.id("achievements") (Convex doc ID),
@@ -607,41 +602,61 @@ export default defineSchema({
     .index("by_user_achievement", ["userId", "achievementId"]),
 
   // ─── View Settings ─────────────────────────────────────
+  // Optional: move to client-only state if view settings are purely UI
   viewSettings: defineTable({
     userId: v.id("users"),
     viewId: v.string(),
-    layout: v.optional(v.union(v.literal("list"), v.literal("board"), v.literal("calendar"))),
+    layout: v.optional(
+      v.union(v.literal("list"), v.literal("board"), v.literal("calendar")),
+    ),
     showCompleted: v.optional(v.boolean()),
-    groupBy: v.optional(v.union(
-      v.literal("none"), v.literal("dueDate"),
-      v.literal("priority"), v.literal("label"),
-    )),
-    sortBy: v.optional(v.union(
-      v.literal("manual"), v.literal("dueDate"),
-      v.literal("priority"), v.literal("name"), v.literal("created"),
-    )),
+    groupBy: v.optional(
+      v.union(
+        v.literal("none"),
+        v.literal("dueDate"),
+        v.literal("priority"),
+        v.literal("label"),
+      ),
+    ),
+    sortBy: v.optional(
+      v.union(
+        v.literal("manual"),
+        v.literal("dueDate"),
+        v.literal("priority"),
+        v.literal("name"),
+        v.literal("created"),
+      ),
+    ),
     sortOrder: v.optional(v.union(v.literal("asc"), v.literal("desc"))),
-    filterDate: v.optional(v.union(v.literal("all"), v.literal("hasDate"), v.literal("noDate"))),
+    filterDate: v.optional(
+      v.union(v.literal("all"), v.literal("hasDate"), v.literal("noDate")),
+    ),
     filterPriority: v.optional(v.string()),
     filterLabelId: v.optional(v.id("labels")),
-    filterEnergyLevel: v.optional(v.union(v.literal("high"), v.literal("medium"), v.literal("low"))),
-    filterContext: v.optional(v.union(
-      v.literal("computer"), v.literal("phone"), v.literal("errands"),
-      v.literal("meeting"), v.literal("home"), v.literal("anywhere"),
-    )),
+    filterEnergyLevel: v.optional(
+      v.union(v.literal("high"), v.literal("medium"), v.literal("low")),
+    ),
+    filterContext: v.optional(
+      v.union(
+        v.literal("computer"),
+        v.literal("phone"),
+        v.literal("errands"),
+        v.literal("meeting"),
+        v.literal("home"),
+        v.literal("anywhere"),
+      ),
+    ),
     updatedAt: v.optional(v.number()),
-  })
-    .index("by_user_view", ["userId", "viewId"]),
+  }).index("by_user_view", ["userId", "viewId"]),
 
   // ─── Saved Views ────────────────────────────────────────
   savedViews: defineTable({
     userId: v.id("users"),
     name: v.string(),
     icon: v.optional(v.string()),
-    settings: v.string(),        // JSON string
+    settings: v.string(), // JSON string
     createdAt: v.number(),
-  })
-    .index("by_user", ["userId"]),
+  }).index("by_user", ["userId"]),
 
   // ─── Time Entries ───────────────────────────────────────
   timeEntries: defineTable({
@@ -665,8 +680,7 @@ export default defineSchema({
     name: v.string(),
     url: v.string(),
     createdAt: v.number(),
-  })
-    .index("by_user", ["userId"]),
+  }).index("by_user", ["userId"]),
 
   // ─── External Integrations ──────────────────────────────
   externalIntegrations: defineTable({
@@ -694,7 +708,11 @@ export default defineSchema({
     provider: v.union(v.literal("todoist"), v.literal("google_tasks")),
     syncToken: v.optional(v.string()),
     lastSyncedAt: v.optional(v.number()),
-    status: v.union(v.literal("idle"), v.literal("syncing"), v.literal("error")),
+    status: v.union(
+      v.literal("idle"),
+      v.literal("syncing"),
+      v.literal("error"),
+    ),
     error: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -707,10 +725,12 @@ export default defineSchema({
     userId: v.id("users"),
     provider: v.union(v.literal("todoist"), v.literal("google_tasks")),
     entityType: v.union(
-      v.literal("task"), v.literal("list"),
-      v.literal("label"), v.literal("list_label"),
+      v.literal("task"),
+      v.literal("list"),
+      v.literal("label"),
+      v.literal("list_label"),
     ),
-    localId: v.optional(v.string()),   // Convex ID as string
+    localId: v.optional(v.string()), // Convex ID as string
     externalId: v.string(),
     externalParentId: v.optional(v.string()),
     externalEtag: v.optional(v.string()),
@@ -730,7 +750,11 @@ export default defineSchema({
   externalSyncConflicts: defineTable({
     userId: v.id("users"),
     provider: v.union(v.literal("todoist"), v.literal("google_tasks")),
-    entityType: v.union(v.literal("task"), v.literal("list"), v.literal("label")),
+    entityType: v.union(
+      v.literal("task"),
+      v.literal("list"),
+      v.literal("label"),
+    ),
     localId: v.optional(v.string()),
     externalId: v.optional(v.string()),
     conflictType: v.string(),
@@ -745,26 +769,21 @@ export default defineSchema({
     .index("by_status", ["userId", "status"]),
 
   // ─── Rate Limits ────────────────────────────────────────
-  rateLimits: defineTable({
-    key: v.string(),
-    count: v.number(),
-    lastRequest: v.number(),
-  })
-    .index("by_key", ["key"]),
+  // rateLimits table removed (use Convex limits or per-user throttling in mutations)
 });
 ```
 
 #### 1.2 Key Schema Decisions
 
-| Decision | Rationale |
-|---|---|
-| **Timestamps as `v.number()`** | Convex stores timestamps as milliseconds (numbers). Use `Date.now()` in mutations. Keep explicit `createdAt` fields where the app sorts or filters by creation time; `_creationTime` is available but not a full replacement. |
-| **`v.id("table")` for foreign keys** | Type-safe references. No cascading deletes — handle in mutations. |
-| **Keep junction tables** | `taskLabels` and `taskDependencies` remain as separate tables with indexes on both sides. |
-| **`externalId` on users** | Store WorkOS user ID as `externalId`, use Convex's `_id` as the internal reference everywhere. |
-| **Search indexes on tasks** | Replace PostgreSQL text indexes with Convex `searchIndex` for full-text search. **⚠️ Note: Convex search is NOT equivalent to Fuse.js fuzzy matching — see Search Limitations below.** |
-| **No rate limits table (future)** | Consider using Convex's built-in rate limiting or a scheduled cleanup instead. |
-| **Denormalize `userId` on child tables** | Avoid N+1 queries and simplify access control checks in Convex (no joins). |
+| Decision                                 | Rationale                                                                                                                                                                                                                     |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Timestamps as `v.number()`**           | Convex stores timestamps as milliseconds (numbers). Use `Date.now()` in mutations. Keep explicit `createdAt` fields where the app sorts or filters by creation time; `_creationTime` is available but not a full replacement. |
+| **`v.id("table")` for foreign keys**     | Type-safe references. No cascading deletes — handle in mutations.                                                                                                                                                             |
+| **Keep junction tables**                 | `taskLabels` and `taskDependencies` remain as separate tables with indexes on both sides.                                                                                                                                     |
+| **`externalId` on users**                | Store WorkOS user ID as `externalId`, use Convex's `_id` as the internal reference everywhere.                                                                                                                                |
+| **Search indexes on tasks**              | Replace PostgreSQL text indexes with Convex `searchIndex` for full-text search. **Simplification:** accept basic Convex search and remove Fuse.js.                                                        |
+| **No rate limits table (future)**        | Drop the rateLimits table and rely on Convex limits + a simple per-user throttle in mutations if needed.                                                                                                                  |
+| **Denormalize `userId` on child tables** | Avoid N+1 queries and simplify access control checks in Convex (no joins).                                                                                                                                                    |
 
 #### 1.2.1 ⚠️ User ID Strategy — Breaking Change
 
@@ -775,6 +794,7 @@ Current system: `users.id` = WorkOS user ID (text primary key). Every FK, access
 Convex system: `users._id` = auto-generated Convex ID. WorkOS user ID stored as `externalId`.
 
 **Impact on every table and function:**
+
 - All `userId` foreign keys change type from `string` (WorkOS ID) to `Id<"users">` (Convex ID).
 - Every access control check (`resource.userId === auth.user.id`) must be updated to use Convex IDs.
 - External integrations, logs, and sync state that store `userId` must use Convex IDs internally.
@@ -782,6 +802,7 @@ Convex system: `users._id` = auto-generated Convex ID. WorkOS user ID stored as 
 - **If you miss ONE comparison**, you get a cross-tenant data leak.
 
 **Mitigation:**
+
 - Create a `getUserByExternalId` helper used in every mutation/query (already in helpers.ts plan).
 - Audit every access check during migration — add this to the constraint parity matrix (Spike 2).
 - Never expose or compare `externalId` outside of the user lookup helper.
@@ -790,15 +811,15 @@ Convex system: `users._id` = auto-generated Convex ID. WorkOS user ID stored as 
 
 The following Postgres guarantees are **silently dropped** in Convex and must be enforced in application code:
 
-| Postgres Constraint | Convex Replacement | Risk if Missed |
-|---|---|---|
-| `ON DELETE CASCADE` on ~12 FKs | Manual cascade in mutation code | Orphaned documents, broken UI, storage leaks |
-| Composite FK `(tasks.listId, tasks.userId) → (lists.id, lists.userId)` | Ownership check in every mutation touching `listId` | Task assigned to another user's list (IDOR) |
-| `UNIQUE(userId, slug)` on lists | Check-then-insert in mutation | Duplicate list slugs, broken routing |
-| `UNIQUE(userId, provider)` on integrations | Check-then-insert in mutation | Duplicate integration rows, token confusion |
-| `UNIQUE(userId, provider, entityType, externalId)` on entity map | Check-then-insert in mutation | Wrong sync mapping, data corruption |
-| Composite PKs on junction tables | Indexed query + `.unique()` check before insert | Duplicate junction rows |
-| `ON CONFLICT DO UPDATE` / `DO NOTHING` (atomic upserts) | Read-then-write in single mutation (serializable within mutation, but NOT across concurrent requests without careful index use) | Duplicate rows on concurrent requests |
+| Postgres Constraint                                                    | Convex Replacement                                                                                                              | Risk if Missed                               |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `ON DELETE CASCADE` on ~12 FKs                                         | Manual cascade in mutation code                                                                                                 | Orphaned documents, broken UI, storage leaks |
+| Composite FK `(tasks.listId, tasks.userId) → (lists.id, lists.userId)` | Ownership check in every mutation touching `listId`                                                                             | Task assigned to another user's list (IDOR)  |
+| `UNIQUE(userId, slug)` on lists                                        | Check-then-insert in mutation                                                                                                   | Duplicate list slugs, broken routing         |
+| `UNIQUE(userId, provider)` on integrations                             | Check-then-insert in mutation                                                                                                   | Duplicate integration rows, token confusion  |
+| `UNIQUE(userId, provider, entityType, externalId)` on entity map       | Check-then-insert in mutation                                                                                                   | Wrong sync mapping, data corruption          |
+| Composite PKs on junction tables                                       | Indexed query + `.unique()` check before insert                                                                                 | Duplicate junction rows                      |
+| `ON CONFLICT DO UPDATE` / `DO NOTHING` (atomic upserts)                | Read-then-write in single mutation (serializable within mutation, but NOT across concurrent requests without careful index use) | Duplicate rows on concurrent requests        |
 
 **Required pattern for uniqueness enforcement:**
 
@@ -827,22 +848,9 @@ export const createList = mutation({
 
 > **Note:** This pattern is safe within a single Convex mutation (serializable transactions). However, Convex may retry mutations on conflict — ensure all mutations are idempotent-safe.
 
-#### 1.2.3 ⚠️ Search Limitations
+#### 1.2.3 Search Simplification
 
-Convex `searchIndex` is NOT a drop-in replacement for the current search system:
-
-| Feature | Current (Fuse.js + SQL) | Convex searchIndex |
-|---|---|---|
-| Fuzzy matching (typo-tolerant) | ✅ Fuse.js | ❌ Not supported |
-| Client-side instant search | ✅ Fuse.js on cached data | ❌ Round-trip to server |
-| Max results | Unlimited | 1024 per search query |
-| Ranking/scoring | ✅ Fuse.js scoring | Basic relevance |
-| Combined field search | ✅ SQL OR queries | Separate queries per field, manual dedup |
-
-**Options:**
-1. **Accept regression**: Use Convex search for basic matching, remove fuzzy search.
-2. **Keep Fuse.js client-side**: Load task data via `useQuery` and run Fuse.js on the client (works for small-medium datasets, but defeats server-side search for large datasets).
-3. **Hybrid**: Convex search for server-side filtering, Fuse.js for client-side refinement on the results.
+Use Convex `searchIndex` for all search. Accept loss of fuzzy matching and client-side instant search to remove Fuse.js and dual search paths.
 
 #### 1.3 Data Migration Script
 
@@ -867,11 +875,13 @@ export const importAll = action({
 **Important:** Convex actions have a 10-minute limit and queries/mutations have size limits. Plan for chunked imports with a resumable cursor/checkpoint mechanism.
 
 **Implementation notes:**
+
 - Persist `oldId → newId` maps in a Convex table to allow resumable imports.
 - Use idempotency keys per batch to avoid double-inserts on retries.
 - Record a migration cursor per table in a `migrationState` table.
 
 **Migration order** (respecting foreign keys):
+
 1. `users` → build map: `oldId → newConvexId`
 2. `achievements` (no FK dependencies)
 3. `lists` → map old serial IDs
@@ -879,20 +889,21 @@ export const importAll = action({
 5. `tasks` → map old serial IDs, resolve `listId`, `parentId`
 6. `taskLabels` → resolve `taskId`, `labelId`
 7. `taskDependencies` → resolve both task IDs
-8. `reminders`, `taskLogs`, `habitCompletions`
-9. `userStats`, `userAchievements`, `viewSettings`, `savedViews`
+8. `reminders`, `habitCompletions` (skip `taskLogs` if audit is dropped)
+9. `userStats`, `userAchievements`, `savedViews` (skip `viewSettings` if client-only)
 10. `timeEntries`, `templates`, `customIcons`
 11. `externalIntegrations`, `externalSyncState`, `externalEntityMap`, `externalSyncConflicts`
-12. `rateLimits` (optional — can start fresh)
+12. `rateLimits` (remove; rely on Convex limits)
 
 #### 1.4 Parallel Run + Delta Sync
 
 If you plan to run Postgres and Convex in parallel for weeks, add a delta sync step that replays changes since the initial import. Options:
+
 - Dual-write all mutations and reconcile by source-of-truth timestamps.
 - Poll a changelog table in Postgres and apply deltas in Convex.
 - Freeze writes briefly during cutover to avoid drift.
 
-**Recommendation:** Prefer a short cutover window with a write freeze + delta import if possible. Dual-write is high effort and introduces reconciliation complexity.
+**Recommendation:** Prefer a short cutover window with a write freeze + delta import if possible. Keep migration validation inside Convex internal actions to avoid maintaining separate Node scripts.
 
 #### 1.5 Migration Runner Outline (Pseudo)
 
@@ -929,6 +940,7 @@ await ctx.db.patch(migrationStateId, { cursor: batch.nextCursor });
 ---
 
 ### Phase 2: Server Actions → Convex Functions
+
 **Duration**: 7–10 days (largest phase — includes constraint enforcement for all 50+ functions)
 
 #### 2.1 File Structure
@@ -937,7 +949,7 @@ await ctx.db.patch(migrationStateId, { cursor: batch.nextCursor });
 convex/
 ├── schema.ts
 ├── auth.config.ts          # Auth provider config
-├── helpers.ts              # Shared helpers (auth check, ownership)
+├── helpers.ts              # Shared helpers (auth check, ownership, view guards)
 │
 ├── tasks/
 │   ├── queries.ts          # getTasks, getTask, searchTasks, getTasksForSearch
@@ -1001,6 +1013,7 @@ convex/
 #### 2.2 Function Translation Pattern
 
 **Before (Server Action):**
+
 ```typescript
 // src/lib/actions/lists.ts
 "use server";
@@ -1009,23 +1022,31 @@ import { requireAuth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { eq, and } from "drizzle-orm";
 
-export async function createList(data: { name: string; color?: string; icon?: string }) {
+export async function createList(data: {
+  name: string;
+  color?: string;
+  icon?: string;
+}) {
   const user = await requireAuth();
   const slug = data.name.toLowerCase().replace(/\s+/g, "-");
-  const [newList] = await db.insert(lists).values({
-    userId: user.id,
-    name: data.name,
-    color: data.color ?? "#000000",
-    icon: data.icon,
-    slug,
-    position: 0,
-  }).returning();
+  const [newList] = await db
+    .insert(lists)
+    .values({
+      userId: user.id,
+      name: data.name,
+      color: data.color ?? "#000000",
+      icon: data.icon,
+      slug,
+      position: 0,
+    })
+    .returning();
   revalidatePath("/");
   return newList;
 }
 ```
 
 **After (Convex Mutation):**
+
 ```typescript
 // convex/lists/mutations.ts
 import { mutation } from "../_generated/server";
@@ -1038,14 +1059,7 @@ export const createList = mutation({
     icon: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_externalId", (q) => q.eq("externalId", identity.subject))
-      .unique();
-    if (!user) throw new Error("User not found");
+    const user = await getAuthUser(ctx); // central guard in helpers.ts
 
     const slug = args.name.toLowerCase().replace(/\s+/g, "-");
 
@@ -1074,16 +1088,14 @@ import { QueryCtx, MutationCtx } from "./_generated/server";
 import { Doc } from "./_generated/dataModel";
 
 export async function getAuthUser(
-  ctx: QueryCtx | MutationCtx
+  ctx: QueryCtx | MutationCtx,
 ): Promise<Doc<"users">> {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) throw new Error("Not authenticated");
 
   const user = await ctx.db
     .query("users")
-    .withIndex("by_externalId", (q) =>
-      q.eq("externalId", identity.subject)
-    )
+    .withIndex("by_externalId", (q) => q.eq("externalId", identity.subject))
     .unique();
 
   if (!user) throw new Error("User not found");
@@ -1093,7 +1105,7 @@ export async function getAuthUser(
 export async function requireOwnership(
   ctx: QueryCtx | MutationCtx,
   userId: any, // Doc["users"]["_id"]
-  resourceUserId: any
+  resourceUserId: any,
 ): void {
   if (userId !== resourceUserId) {
     throw new Error("Forbidden: resource does not belong to you");
@@ -1108,6 +1120,7 @@ Because Convex has no joins, include `userId` on tables like `taskLabels`, `task
 #### 2.3.2 Access Control Checklist (Required)
 
 For each public query/mutation, verify:
+
 - `users`: only return the authenticated user or use `internal` for admin tasks.
 - `lists`: filter by `userId` and validate ownership on get/update/delete.
 - `tasks`: always scope by `userId` and verify list ownership when `listId` is present.
@@ -1115,12 +1128,13 @@ For each public query/mutation, verify:
 - `taskLabels`: filter by `userId` and ensure `taskId` + `labelId` belong to the same user.
 - `taskDependencies`: filter by `userId` and validate both task IDs belong to the same user.
 - `reminders`: filter by `userId` and validate `taskId` ownership.
-- `taskLogs`: filter by `userId`.
+- `taskLogs`: remove if audit history is dropped.
 - `habitCompletions`: filter by `userId` and validate `taskId` ownership.
 - `templates`: filter by `userId` and validate ownership on get/update/delete.
 - `userStats`: filter by `userId` and ensure single row per user.
 - `userAchievements`: filter by `userId` and validate `achievementId` exists.
-- `viewSettings`/`savedViews`: filter by `userId` and validate ownership.
+- `viewSettings`: move to client-only state if purely UI; keep `savedViews` scoped by `userId`.
+- `savedViews`: keep in Convex; compute view filtering client-side.
 - `timeEntries`: filter by `userId` and validate `taskId` ownership.
 - `customIcons`: filter by `userId`.
 - `externalIntegrations`/`externalSyncState`/`externalEntityMap`/`externalSyncConflicts`: use `internal` queries for token reads and always scope by `userId`.
@@ -1136,25 +1150,25 @@ Convex doesn't have automatic cascading deletes. Implement manually in mutations
 ```
 User deletion cascades into:
 ├── lists → (each list cascades into tasks, see below)
-├── labels → taskLabels (by label), taskLogs (by label)
+├── labels → taskLabels (by label), taskLogs (by label, if retained)
 ├── tasks → (see task cascade below)
 ├── templates
 ├── userStats
 ├── userAchievements
-├── viewSettings
+├── viewSettings (if retained)
 ├── savedViews
 ├── timeEntries
 ├── customIcons
-├── taskLogs
+├── taskLogs (if retained)
 ├── externalIntegrations
 ├── externalSyncState
 ├── externalEntityMap
 ├── externalSyncConflicts
-└── rateLimits (if user-scoped)
+└── rateLimits (remove)
 
 List deletion cascades into:
 ├── tasks → (each task cascades, see below)
-└── taskLogs (by list)
+└── taskLogs (by list, if retained)
 
 Task deletion cascades into:
 ├── taskLabels (by task)
@@ -1162,13 +1176,13 @@ Task deletion cascades into:
 ├── reminders (by task)
 ├── habitCompletions (by task)
 ├── timeEntries (by task)
-├── taskLogs (by task)
+├── taskLogs (by task, if retained)
 ├── subtasks (tasks where parentId = this task) → recursive cascade!
 └── externalEntityMap entries referencing this task
 
 Label deletion cascades into:
 ├── taskLabels (by label)
-└── taskLogs (by label)
+└── taskLogs (by label, if retained)
 ```
 
 **⚠️ Transaction limit risk:** Deleting a list with 100+ tasks, each with labels/dependencies/time entries, can require touching 1000+ documents in a single mutation. This **will** hit Convex mutation time/document limits.
@@ -1179,34 +1193,48 @@ Label deletion cascades into:
 // convex/helpers.ts — Shared cascade helper
 async function deleteTaskCascade(ctx: MutationCtx, taskId: Id<"tasks">) {
   // Delete junction tables and child records
-  const taskLabels = await ctx.db.query("taskLabels")
-    .withIndex("by_task", (q) => q.eq("taskId", taskId)).collect();
+  const taskLabels = await ctx.db
+    .query("taskLabels")
+    .withIndex("by_task", (q) => q.eq("taskId", taskId))
+    .collect();
   for (const tl of taskLabels) await ctx.db.delete(tl._id);
 
-  const depsAsTask = await ctx.db.query("taskDependencies")
-    .withIndex("by_task", (q) => q.eq("taskId", taskId)).collect();
+  const depsAsTask = await ctx.db
+    .query("taskDependencies")
+    .withIndex("by_task", (q) => q.eq("taskId", taskId))
+    .collect();
   for (const d of depsAsTask) await ctx.db.delete(d._id);
 
   // ⚠️ IMPORTANT: Also delete where this task is the BLOCKER
-  const depsAsBlocker = await ctx.db.query("taskDependencies")
-    .withIndex("by_blocker", (q) => q.eq("blockerId", taskId)).collect();
+  const depsAsBlocker = await ctx.db
+    .query("taskDependencies")
+    .withIndex("by_blocker", (q) => q.eq("blockerId", taskId))
+    .collect();
   for (const d of depsAsBlocker) await ctx.db.delete(d._id);
 
-  const reminders = await ctx.db.query("reminders")
-    .withIndex("by_task", (q) => q.eq("taskId", taskId)).collect();
+  const reminders = await ctx.db
+    .query("reminders")
+    .withIndex("by_task", (q) => q.eq("taskId", taskId))
+    .collect();
   for (const r of reminders) await ctx.db.delete(r._id);
 
-  const habits = await ctx.db.query("habitCompletions")
-    .withIndex("by_task_date", (q) => q.eq("taskId", taskId)).collect();
+  const habits = await ctx.db
+    .query("habitCompletions")
+    .withIndex("by_task_date", (q) => q.eq("taskId", taskId))
+    .collect();
   for (const h of habits) await ctx.db.delete(h._id);
 
-  const timeEntries = await ctx.db.query("timeEntries")
-    .withIndex("by_task", (q) => q.eq("taskId", taskId)).collect();
+  const timeEntries = await ctx.db
+    .query("timeEntries")
+    .withIndex("by_task", (q) => q.eq("taskId", taskId))
+    .collect();
   for (const te of timeEntries) await ctx.db.delete(te._id);
 
   // Recursive: delete subtasks
-  const subtasks = await ctx.db.query("tasks")
-    .withIndex("by_parent", (q) => q.eq("parentId", taskId)).collect();
+  const subtasks = await ctx.db
+    .query("tasks")
+    .withIndex("by_parent", (q) => q.eq("parentId", taskId))
+    .collect();
   for (const sub of subtasks) {
     await deleteTaskCascade(ctx, sub._id); // Recursive
   }
@@ -1224,7 +1252,9 @@ export const deleteList = mutation({
 
     const tasksInList = await ctx.db
       .query("tasks")
-      .withIndex("by_list", (q) => q.eq("userId", user._id).eq("listId", args.listId))
+      .withIndex("by_list", (q) =>
+        q.eq("userId", user._id).eq("listId", args.listId),
+      )
       .collect();
 
     // ⚠️ For large lists, consider batching:
@@ -1233,10 +1263,14 @@ export const deleteList = mutation({
     if (tasksInList.length > 50) {
       // Mark list as deleted (soft delete), schedule cleanup
       await ctx.db.patch(args.listId, { _deleted: true });
-      await ctx.scheduler.runAfter(0, internal.lists.cleanup.cleanupDeletedList, {
-        listId: args.listId,
-        userId: user._id,
-      });
+      await ctx.scheduler.runAfter(
+        0,
+        internal.lists.cleanup.cleanupDeletedList,
+        {
+          listId: args.listId,
+          userId: user._id,
+        },
+      );
       return;
     }
 
@@ -1266,14 +1300,14 @@ export const searchTasks = query({
     const titleResults = await ctx.db
       .query("tasks")
       .withSearchIndex("search_title", (q) =>
-        q.search("title", args.query).eq("userId", user._id)
+        q.search("title", args.query).eq("userId", user._id),
       )
       .take(20);
 
     const descResults = await ctx.db
       .query("tasks")
       .withSearchIndex("search_description", (q) =>
-        q.search("description", args.query).eq("userId", user._id)
+        q.search("description", args.query).eq("userId", user._id),
       )
       .take(20);
 
@@ -1346,6 +1380,7 @@ test("create task", async () => {
 ---
 
 ### Phase 3: Authentication
+
 **Duration**: 1–2 days
 
 #### Option A: Keep WorkOS AuthKit (Recommended for minimal disruption)
@@ -1361,8 +1396,8 @@ Configure Convex to verify WorkOS JWTs. The `domain` and `applicationID` must ma
 export default {
   providers: [
     {
-      domain: process.env.WORKOS_ISSUER_URL,   // Must match JWT `iss` claim exactly
-      applicationID: "your-workos-client-id",  // Must match JWT `aud` claim exactly
+      domain: process.env.WORKOS_ISSUER_URL, // Must match JWT `iss` claim exactly
+      applicationID: "your-workos-client-id", // Must match JWT `aud` claim exactly
     },
   ],
 };
@@ -1387,6 +1422,7 @@ export default function ConvexClientProvider({ children }) {
 ```
 
 **Dev bypass and E2E test mode:** The current auth bypass system (dev user, IP allowlist, E2E test cookies) does NOT translate to Convex. Convex auth requires valid JWTs — headers and cookies are not forwarded to Convex functions. You must design a new bypass strategy (and implement it in Phase 3 before Phase 4):
+
 - **Dev mode**: Use a test Convex deployment with a hardcoded test user (no auth required via `ConvexProvider` without auth).
 - **E2E tests**: Mint real WorkOS test tokens, or use Convex's `t.withIdentity()` in unit tests and a test WorkOS tenant for E2E.
 - **IP allowlist bypass**: Not possible with Convex (client IP is not available in Convex functions). Consider a Convex `internal` mutation for admin tasks instead.
@@ -1396,6 +1432,7 @@ export default function ConvexClientProvider({ children }) {
 Applies to both Option A and Option B. Define a deterministic auth strategy early so Phase 4 and E2E can validate end-to-end flows.
 
 Options:
+
 - WorkOS test tenant with scripted login + token extraction
 - Convex `internal` test-auth mutation gated by `E2E_TEST_MODE` that issues a temporary token
 - Clerk/Convex test tokens (if you switch auth providers)
@@ -1479,20 +1516,22 @@ export const syncUser = mutation({
 
 ---
 
-### Phase 4: Real-Time & Client Integration
+### Phase 4: Real-Time & Client Integration (Convex-Only)
+
 **Duration**: 5–7 days
 
 > ⚠️ **Architecture shift warning:** Almost ALL pages (~15) are currently Server Components that call server actions directly for data fetching. With Convex, `useQuery` cannot run in Server Components — only in Client Components.
 >
 > **Impact:**
+>
 > - Most page components must become Client Components (add `"use client"`) or be split into a Server Component shell + Client Component body.
-> - `preloadQuery` can provide SSR-like behavior but requires auth token forwarding (see Phase 0.6.1).
-> - If SSR auth token forwarding doesn't work with WorkOS, pages will render loading states server-side and hydrate client-side — this is a UX regression from the current instant server-rendered pages.
+> - All authenticated pages will be client-rendered with `useQuery` (no SSR preload) to simplify auth token handling.
 > - Bundle size will increase as more code moves to the client.
 
 #### 4.1 Replace React Query with Convex Hooks
 
 **Before:**
+
 ```tsx
 // Component using React Query + Server Actions
 "use client";
@@ -1511,6 +1550,7 @@ function TaskList() {
 ```
 
 **After:**
+
 ```tsx
 // Component using Convex hooks
 "use client";
@@ -1529,13 +1569,14 @@ function TaskList() {
 }
 ```
 
-**Pagination note:** Convex queries have execution and scan limits. For `tasks`, `taskLogs`, and `timeEntries`, use cursor-based pagination (`take` + `startAfter`) rather than unbounded `collect()` in production.
+**Pagination note:** Convex queries have execution and scan limits. For `tasks` and `timeEntries`, use cursor-based pagination (`paginate()` or `take` + `startAfter`) rather than unbounded `collect()` in production. Include `taskLogs` only if audit logs are retained.
 
-**Access control note:** Ensure every public query/mutation scopes by `userId` (or verifies ownership) before returning data. Add `internal` functions for cross-user admin or sync jobs only.
+**Access control note:** Centralize auth + ownership checks in `convex/helpers.ts` so queries/mutations call a single guard rather than duplicating checks.
 
 #### 4.1.1 Pagination Map (Required)
 
 Replace each unbounded list query with cursor-based pagination:
+
 - `getTasks`, `getTasksByList`, `getCompletedTasks`: use `take` + `startAfter` on `by_listView` and `by_completedAt` indexes.
 - `getTaskLogs`, `getActivityLog`, `getCompletionHistory`: page by `createdAt` or `_creationTime` with a `by_user` index.
 - `getTimeEntries`, `getTimeStats`: page by `startedAt` using `by_startedAt`.
@@ -1544,21 +1585,21 @@ Replace each unbounded list query with cursor-based pagination:
 #### 4.2 Remove Zustand Stores
 
 The following stores become unnecessary:
+
 - `src/lib/store/task-store.ts` → replaced by `useQuery(api.tasks.queries.getTasks)`
 - `src/lib/store/list-store.ts` → replaced by `useQuery(api.lists.queries.getLists)`
 - `src/lib/store/label-store.ts` → replaced by `useQuery(api.labels.queries.getLabels)`
 
-#### 4.3 SyncProvider + IndexedDB (Conditional on Spike 4)
+#### 4.3 Remove SyncProvider + IndexedDB (Online-Only)
 
-If Spike 4 chooses **Option A (online-only)**, delete:
+Delete:
+
 - `src/components/providers/sync-provider.tsx`
 - `src/lib/sync/db.ts`
 - `src/lib/sync/registry.ts`
 - `src/lib/sync/types.ts`
 - `src/components/sync/SyncStatus.tsx`
 - `src/components/sync/ConflictDialog.tsx`
-
-If Spike 4 chooses **Option B/C (offline queue or hybrid)**, keep these files and refactor them to queue Convex mutations and reconcile on reconnect instead of deleting them.
 
 #### 4.4 Remove QueryProvider
 
@@ -1567,47 +1608,31 @@ Delete `src/components/providers/QueryProvider.tsx` and remove `@tanstack/react-
 #### 4.5 Add Optimistic Updates (Optional Enhancement)
 
 ```typescript
-const createTask = useMutation(api.tasks.mutations.createTask)
-  .withOptimisticUpdate((localStore, args) => {
-    const currentTasks = localStore.getQuery(api.tasks.queries.getTasks, {});
-    if (currentTasks) {
-      localStore.setQuery(api.tasks.queries.getTasks, {}, [
-        ...currentTasks,
-        {
-          _id: "optimistic_" + Date.now(), // temporary
-          _creationTime: Date.now(),
-          ...args,
-        },
-      ]);
-    }
-  });
+const createTask = useMutation(
+  api.tasks.mutations.createTask,
+).withOptimisticUpdate((localStore, args) => {
+  const currentTasks = localStore.getQuery(api.tasks.queries.getTasks, {});
+  if (currentTasks) {
+    localStore.setQuery(api.tasks.queries.getTasks, {}, [
+      ...currentTasks,
+      {
+        _id: "optimistic_" + Date.now(), // temporary
+        _creationTime: Date.now(),
+        ...args,
+      },
+    ]);
+  }
+});
 ```
 
-#### 4.6 Server Component Integration (SSR)
+#### 4.6 Server Component Integration (Simplified)
 
-For pages that need SSR, use `preloadQuery` and `usePreloadedQuery` with proper auth token forwarding. Authenticated queries require explicitly passing a token during SSR.
-
-```tsx
-// src/app/inbox/page.tsx
-import { preloadQuery } from "convex/nextjs";
-import { api } from "@/convex/_generated/api";
-import InboxClient from "./InboxClient";
-import { getWorkOSIdToken } from "@/lib/auth-tokens"; // Example helper
-
-export default async function InboxPage() {
-  const token = await getWorkOSIdToken();
-  const preloadedTasks = await preloadQuery(
-    api.tasks.queries.getTasksByList,
-    { listSlug: "inbox" },
-    { token }
-  );
-  return <InboxClient preloadedTasks={preloadedTasks} />;
-}
-```
+Treat authenticated pages as client-only components that use `useQuery`. Skip `preloadQuery` to avoid server-side token handling.
 
 ---
 
 ### Phase 5: AI Features (Gemini Actions)
+
 **Duration**: 1–2 days
 
 AI features (calling external APIs) become Convex **actions**:
@@ -1639,7 +1664,7 @@ export const rescheduleOverdueTasks = action({
   handler: async (ctx) => {
     // 1. Read overdue tasks via internal query
     const overdueTasks = await ctx.runQuery(
-      internal.tasks.queries.getOverdueTasks
+      internal.tasks.queries.getOverdueTasks,
     );
 
     // 2. Call Gemini API
@@ -1657,59 +1682,47 @@ The `smart-scheduler.ts` and `smart-tags.ts` pure logic can be moved into `conve
 
 ---
 
-### Phase 6: Offline Sync Removal / Replacement
-**Duration**: 1–3 days (depends on Spike 4 decision)
+### Phase 6: Offline Sync Removal
+
+**Duration**: 1–2 days
 
 > ⚠️ **CRITICAL CORRECTION:** The original plan stated "Convex automatically queues mutations when offline and replays them when reconnected." **This is incorrect.**
 >
 > Convex uses WebSocket connections. When offline:
+>
 > - **Subscriptions stop** — `useQuery` returns stale data, no updates.
 > - **Mutations fail** — they are NOT durably queued. The WebSocket is disconnected.
 > - **Optimistic updates revert** — the UI snaps back when the mutation fails.
 >
 > This is a **product regression** from the current IndexedDB + SyncProvider system, which provides true offline-first durability.
 
-**Based on Spike 4 decision:**
+**Online-only plan:**
 
-**Option A: Accept online-only (simplest)**
 - Remove all offline sync code.
 - Add a connection status indicator (see below).
 - Update PWA service worker to show "offline — read-only" state.
 - Disable mutation UI elements when disconnected.
 - **Users WILL notice** if they currently rely on offline task creation.
 
-**Option B: Keep lightweight offline queue (more work)**
-- Retain a simplified version of the IndexedDB queue.
-- Queue mutations locally when offline.
-- Replay them through Convex mutations on reconnect.
-- Handle conflicts (last-write-wins or prompt user).
-- This essentially keeps parts of SyncProvider — budget 2–3 weeks.
-
-**Option C: Hybrid (recommended if offline matters)**
-- Convex for online real-time sync.
-- IndexedDB for offline mutation queue + read cache.
-- On reconnect, replay queued mutations and refresh Zustand stores from Convex.
-- Most complex, but preserves current UX.
-
 **Important:** Convex conflict handling is last-write-wins unless you implement custom merge logic in mutations. Identify any flows that currently surface conflicts in the UI and decide whether to keep a simplified conflict dialog.
 
 **Remove:**
 
-| File/Directory | Replacement |
-|---|---|
-| `src/lib/sync/db.ts` | Convex built-in |
-| `src/lib/sync/registry.ts` | `api.*` auto-generated |
-| `src/lib/sync/types.ts` | Not needed |
-| `src/lib/store/task-store.ts` | `useQuery` |
-| `src/lib/store/list-store.ts` | `useQuery` |
-| `src/lib/store/label-store.ts` | `useQuery` |
-| `src/components/providers/sync-provider.tsx` | Not needed |
-| `src/components/providers/QueryProvider.tsx` | `ConvexProvider` |
-| `src/components/sync/SyncStatus.tsx` | Optional Convex connection status |
-| `src/components/sync/ConflictDialog.tsx` | Not needed (or simplified) |
-| `idb` dependency | Remove from package.json |
-| `zustand` dependency | Remove if no other uses (conditional on Spike 4) |
-| `@tanstack/react-query` dependency | Remove |
+| File/Directory                               | Replacement                       |
+| -------------------------------------------- | --------------------------------- |
+| `src/lib/sync/db.ts`                         | Convex built-in                   |
+| `src/lib/sync/registry.ts`                   | `api.*` auto-generated            |
+| `src/lib/sync/types.ts`                      | Not needed                        |
+| `src/lib/store/task-store.ts`                | `useQuery`                        |
+| `src/lib/store/list-store.ts`                | `useQuery`                        |
+| `src/lib/store/label-store.ts`               | `useQuery`                        |
+| `src/components/providers/sync-provider.tsx` | Not needed                        |
+| `src/components/providers/QueryProvider.tsx` | `ConvexProvider`                  |
+| `src/components/sync/SyncStatus.tsx`         | Optional Convex connection status |
+| `src/components/sync/ConflictDialog.tsx`     | Not needed (or simplified)        |
+| `idb` dependency                             | Remove from package.json          |
+| `zustand` dependency                         | Remove if no other uses           |
+| `@tanstack/react-query` dependency           | Remove                            |
 
 **Add (optional):** A simple connection status indicator:
 
@@ -1724,10 +1737,11 @@ function ConnectionStatus() {
 
 ---
 
-### Phase 7: External Integrations
+### Phase 7: External Integrations (Fully Convex)
+
 **Duration**: 2–3 days
 
-Todoist and Google Tasks sync become Convex **actions** (since they call external APIs) + **scheduled functions** for periodic sync:
+Todoist and Google Tasks sync become Convex **actions** (since they call external APIs) + **scheduled functions** for periodic sync. Remove any external cron or Vercel scheduled jobs.
 
 ```typescript
 // convex/integrations/todoist.ts
@@ -1739,7 +1753,7 @@ export const syncFromTodoist = action({
     // 1. Get integration credentials via internal query
     const integration = await ctx.runQuery(
       internal.integrations.queries.getIntegration,
-      { provider: "todoist" }
+      { provider: "todoist" },
     );
 
     // 2. Call Todoist API
@@ -1748,10 +1762,9 @@ export const syncFromTodoist = action({
     });
 
     // 3. Process and write to Convex via internal mutation
-    await ctx.runMutation(
-      internal.integrations.mutations.processTodoistSync,
-      { data: await todoistData.json() }
-    );
+    await ctx.runMutation(internal.integrations.mutations.processTodoistSync, {
+      data: await todoistData.json(),
+    });
   },
 });
 
@@ -1765,7 +1778,7 @@ const crons = cronJobs();
 crons.interval(
   "sync-todoist",
   { minutes: 15 },
-  internal.integrations.todoist.syncFromTodoist
+  internal.integrations.todoist.syncFromTodoist,
 );
 
 export default crons;
@@ -1774,13 +1787,15 @@ export default crons;
 #### Encryption Considerations
 
 The current app uses AWS KMS for token encryption. In Convex:
-- Environment variables are encrypted at rest
-- Keep KMS envelope encryption for access/refresh tokens stored in Convex tables
-- Restrict token reads to `internal` queries/actions; avoid exposing integration tokens via public queries
+
+- Store a symmetric key in Convex environment variables (encrypted at rest).
+- Encrypt/decrypt integration tokens in Convex actions using a pure-JS library.
+- Restrict token reads to `internal` queries/actions; avoid exposing integration tokens via public queries.
 
 ---
 
 ### Phase 8: Testing & Cleanup
+
 **Duration**: 2–3 days
 
 #### 8.1 Unit Testing Convex Functions
@@ -1795,6 +1810,7 @@ Unit tests should already exist from Phase 2. At this stage, focus on expanding 
 #### 8.3 E2E Tests
 
 Playwright E2E tests largely stay the same — they test the UI, not the backend implementation. Update:
+
 - Remove test-auth API route (use Convex auth testing patterns instead)
 - Update `e2e/fixtures.ts` for Convex-compatible auth setup
 - Ensure E2E can mint/attach an ID token for Convex auth (WorkOS or Clerk) to avoid `ctx.auth.getUserIdentity()` returning null
@@ -1821,7 +1837,7 @@ src/lib/action-result.ts
 src/lib/ai-actions.ts
 src/lib/smart-scheduler.ts
 src/lib/smart-tags.ts
-src/lib/rate-limit.ts            # Use Convex rate limiting
+src/lib/rate-limit.ts            # Remove; rely on Convex limits + mutation throttling if needed
 
 # Auth (simplified)
 src/lib/auth.ts                  # Replaced by convex/helpers.ts
@@ -1856,12 +1872,7 @@ drizzle.config.ts
     "zustand",
     "idb"
   ],
-  "add": [
-    "convex",
-    "convex-test",
-    "@convex-dev/workos-authkit",
-    "concurrently"
-  ]
+  "add": ["convex", "convex-test", "@convex-dev/workos-authkit", "concurrently"]
 }
 ```
 
@@ -1873,24 +1884,24 @@ Before cutover, run an export from Convex and verify you can re-import into a st
 
 ## 5. Schema Translation Reference
 
-| Drizzle (PostgreSQL) | Convex | Notes |
-|---|---|---|
-| `serial("id").primaryKey()` | `_id` (automatic) | Auto-generated `Id<"table">` |
-| `text("col").notNull()` | `v.string()` | Required by default |
-| `text("col")` (nullable) | `v.optional(v.string())` | Omit field = not present |
-| `integer("col")` | `v.number()` | JS number (float64) |
-| `boolean("col")` | `v.boolean()` | |
-| `timestamp("col").defaultNow()` | `_creationTime` | Automatic, milliseconds |
-| `timestamp("col")` | `v.number()` | Store as `Date.now()` |
-| `.default("value")` | Set in mutation code | No schema-level defaults |
-| `text("col", { enum: [...] })` | `v.union(v.literal(...), ...)` | Union of literals |
-| `.references(() => table.id)` | `v.id("table")` | Type-safe, no enforcement |
-| `primaryKey({ columns: [a, b] })` | Separate table + index | Convex has no composite PKs |
-| `index("name").on(col)` | `.index("name", ["col"])` | Chained on table definition |
-| `uniqueIndex(...)` | Check uniqueness in mutation | No unique constraints |
-| `.onDelete("cascade")` | Implement in mutation | Manual cascade |
-| `.$onUpdate(() => new Date())` | Set `updatedAt: Date.now()` in mutation | Manual |
-| `foreignKey({ columns, foreignColumns })` | Document relationship via `v.id()` | No composite FKs |
+| Drizzle (PostgreSQL)                      | Convex                                  | Notes                        |
+| ----------------------------------------- | --------------------------------------- | ---------------------------- |
+| `serial("id").primaryKey()`               | `_id` (automatic)                       | Auto-generated `Id<"table">` |
+| `text("col").notNull()`                   | `v.string()`                            | Required by default          |
+| `text("col")` (nullable)                  | `v.optional(v.string())`                | Omit field = not present     |
+| `integer("col")`                          | `v.number()`                            | JS number (float64)          |
+| `boolean("col")`                          | `v.boolean()`                           |                              |
+| `timestamp("col").defaultNow()`           | `_creationTime`                         | Automatic, milliseconds      |
+| `timestamp("col")`                        | `v.number()`                            | Store as `Date.now()`        |
+| `.default("value")`                       | Set in mutation code                    | No schema-level defaults     |
+| `text("col", { enum: [...] })`            | `v.union(v.literal(...), ...)`          | Union of literals            |
+| `.references(() => table.id)`             | `v.id("table")`                         | Type-safe, no enforcement    |
+| `primaryKey({ columns: [a, b] })`         | Separate table + index                  | Convex has no composite PKs  |
+| `index("name").on(col)`                   | `.index("name", ["col"])`               | Chained on table definition  |
+| `uniqueIndex(...)`                        | Check uniqueness in mutation            | No unique constraints        |
+| `.onDelete("cascade")`                    | Implement in mutation                   | Manual cascade               |
+| `.$onUpdate(() => new Date())`            | Set `updatedAt: Date.now()` in mutation | Manual                       |
+| `foreignKey({ columns, foreignColumns })` | Document relationship via `v.id()`      | No composite FKs             |
 
 ---
 
@@ -1898,97 +1909,97 @@ Before cutover, run an export from Convex and verify you can re-import into a st
 
 ### Queries (read-only, real-time subscriptions)
 
-| Server Action | Convex Query | File |
-|---|---|---|
-| `getTasks()` | `api.tasks.queries.getTasks` | `convex/tasks/queries.ts` |
-| `getTask(id)` | `api.tasks.queries.getTask` | `convex/tasks/queries.ts` |
-| `searchTasks(q)` | `api.search.queries.searchTasks` | `convex/search/queries.ts` |
-| `getTasksForSearch()` | `api.tasks.queries.getTasksForSearch` | `convex/tasks/queries.ts` |
-| `getSubtasks(parentId)` | `api.tasks.subtasks.getSubtasks` | `convex/tasks/subtasks.ts` |
-| `getLists()` | `api.lists.queries.getLists` | `convex/lists/queries.ts` |
-| `getList(id)` | `api.lists.queries.getList` | `convex/lists/queries.ts` |
-| `getLabels()` | `api.labels.queries.getLabels` | `convex/labels/queries.ts` |
-| `getLabel(id)` | `api.labels.queries.getLabel` | `convex/labels/queries.ts` |
-| `getUserStats()` | `api.gamification.queries.getUserStats` | `convex/gamification/queries.ts` |
-| `getAchievements()` | `api.gamification.queries.getAchievements` | `convex/gamification/queries.ts` |
-| `getUserAchievements()` | `api.gamification.queries.getUserAchievements` | `convex/gamification/queries.ts` |
-| `getReminders(taskId)` | `api.reminders.queries.getReminders` | `convex/reminders/queries.ts` |
-| `getBlockers(taskId)` | `api.dependencies.queries.getBlockers` | `convex/dependencies/queries.ts` |
-| `getBlockedTasks(taskId)` | `api.dependencies.queries.getBlockedTasks` | `convex/dependencies/queries.ts` |
-| `getViewSettings(viewId)` | `api.views.queries.getViewSettings` | `convex/views/queries.ts` |
-| `getTemplates()` | `api.templates.queries.getTemplates` | `convex/templates/queries.ts` |
-| `getTaskLogs()` | `api.logs.queries.getTaskLogs` | `convex/logs/queries.ts` |
-| `getActivityLog()` | `api.logs.queries.getActivityLog` | `convex/logs/queries.ts` |
-| `getCompletionHistory()` | `api.logs.queries.getCompletionHistory` | `convex/logs/queries.ts` |
-| `getTimeEntries()` | `api.time.queries.getTimeEntries` | `convex/time/queries.ts` |
-| `getActiveTimeEntry()` | `api.time.queries.getActiveTimeEntry` | `convex/time/queries.ts` |
-| `getTimeStats()` | `api.time.queries.getTimeStats` | `convex/time/queries.ts` |
-| `searchAll(q)` | `api.search.queries.searchAll` | `convex/search/queries.ts` |
+| Server Action             | Convex Query                                   | File                             |
+| ------------------------- | ---------------------------------------------- | -------------------------------- |
+| `getTasks()`              | `api.tasks.queries.getTasks`                   | `convex/tasks/queries.ts`        |
+| `getTask(id)`             | `api.tasks.queries.getTask`                    | `convex/tasks/queries.ts`        |
+| `searchTasks(q)`          | `api.search.queries.searchTasks`               | `convex/search/queries.ts`       |
+| `getTasksForSearch()`     | `api.tasks.queries.getTasksForSearch`          | `convex/tasks/queries.ts`        |
+| `getSubtasks(parentId)`   | `api.tasks.subtasks.getSubtasks`               | `convex/tasks/subtasks.ts`       |
+| `getLists()`              | `api.lists.queries.getLists`                   | `convex/lists/queries.ts`        |
+| `getList(id)`             | `api.lists.queries.getList`                    | `convex/lists/queries.ts`        |
+| `getLabels()`             | `api.labels.queries.getLabels`                 | `convex/labels/queries.ts`       |
+| `getLabel(id)`            | `api.labels.queries.getLabel`                  | `convex/labels/queries.ts`       |
+| `getUserStats()`          | `api.gamification.queries.getUserStats`        | `convex/gamification/queries.ts` |
+| `getAchievements()`       | `api.gamification.queries.getAchievements`     | `convex/gamification/queries.ts` |
+| `getUserAchievements()`   | `api.gamification.queries.getUserAchievements` | `convex/gamification/queries.ts` |
+| `getReminders(taskId)`    | `api.reminders.queries.getReminders`           | `convex/reminders/queries.ts`    |
+| `getBlockers(taskId)`     | `api.dependencies.queries.getBlockers`         | `convex/dependencies/queries.ts` |
+| `getBlockedTasks(taskId)` | `api.dependencies.queries.getBlockedTasks`     | `convex/dependencies/queries.ts` |
+| `getViewSettings(viewId)` | `api.views.queries.getViewSettings` (optional) | `convex/views/queries.ts`        |
+| `getTemplates()`          | `api.templates.queries.getTemplates`           | `convex/templates/queries.ts`    |
+| `getTaskLogs()`           | `api.logs.queries.getTaskLogs` (optional)      | `convex/logs/queries.ts`         |
+| `getActivityLog()`        | `api.logs.queries.getActivityLog` (optional)   | `convex/logs/queries.ts`         |
+| `getCompletionHistory()`  | `api.logs.queries.getCompletionHistory` (optional) | `convex/logs/queries.ts`     |
+| `getTimeEntries()`        | `api.time.queries.getTimeEntries`              | `convex/time/queries.ts`         |
+| `getActiveTimeEntry()`    | `api.time.queries.getActiveTimeEntry`          | `convex/time/queries.ts`         |
+| `getTimeStats()`          | `api.time.queries.getTimeStats`                | `convex/time/queries.ts`         |
+| `searchAll(q)`            | `api.search.queries.searchAll`                 | `convex/search/queries.ts`       |
 
 ### Mutations (transactional writes)
 
-| Server Action | Convex Mutation | File |
-|---|---|---|
-| `createTask(data)` | `api.tasks.mutations.createTask` | `convex/tasks/mutations.ts` |
-| `updateTask(id, data)` | `api.tasks.mutations.updateTask` | `convex/tasks/mutations.ts` |
-| `deleteTask(id)` | `api.tasks.mutations.deleteTask` | `convex/tasks/mutations.ts` |
-| `toggleTaskCompletion(id)` | `api.tasks.mutations.toggleCompletion` | `convex/tasks/mutations.ts` |
-| `createSubtask(...)` | `api.tasks.subtasks.createSubtask` | `convex/tasks/subtasks.ts` |
-| `updateSubtask(...)` | `api.tasks.subtasks.updateSubtask` | `convex/tasks/subtasks.ts` |
-| `deleteSubtask(id)` | `api.tasks.subtasks.deleteSubtask` | `convex/tasks/subtasks.ts` |
-| `updateStreak()` | `api.tasks.streak.updateStreak` | `convex/tasks/streak.ts` |
-| `createList(data)` | `api.lists.mutations.createList` | `convex/lists/mutations.ts` |
-| `updateList(id, data)` | `api.lists.mutations.updateList` | `convex/lists/mutations.ts` |
-| `deleteList(id)` | `api.lists.mutations.deleteList` | `convex/lists/mutations.ts` |
-| `reorderLists(ids)` | `api.lists.mutations.reorderLists` | `convex/lists/mutations.ts` |
-| `createLabel(data)` | `api.labels.mutations.createLabel` | `convex/labels/mutations.ts` |
-| `updateLabel(id, data)` | `api.labels.mutations.updateLabel` | `convex/labels/mutations.ts` |
-| `deleteLabel(id)` | `api.labels.mutations.deleteLabel` | `convex/labels/mutations.ts` |
-| `reorderLabels(ids)` | `api.labels.mutations.reorderLabels` | `convex/labels/mutations.ts` |
-| `addXP(amount)` | `api.gamification.mutations.addXP` | `convex/gamification/mutations.ts` |
-| `checkAchievements()` | `api.gamification.mutations.checkAchievements` | `convex/gamification/mutations.ts` |
-| `saveViewSettings(...)` | `api.views.mutations.saveViewSettings` | `convex/views/mutations.ts` |
-| `resetViewSettings(...)` | `api.views.mutations.resetViewSettings` | `convex/views/mutations.ts` |
-| `createReminder(...)` | `api.reminders.mutations.createReminder` | `convex/reminders/mutations.ts` |
-| `deleteReminder(id)` | `api.reminders.mutations.deleteReminder` | `convex/reminders/mutations.ts` |
-| `addDependency(...)` | `api.dependencies.mutations.addDependency` | `convex/dependencies/mutations.ts` |
-| `removeDependency(...)` | `api.dependencies.mutations.removeDependency` | `convex/dependencies/mutations.ts` |
-| `createTemplate(...)` | `api.templates.mutations.createTemplate` | `convex/templates/mutations.ts` |
-| `updateTemplate(...)` | `api.templates.mutations.updateTemplate` | `convex/templates/mutations.ts` |
-| `deleteTemplate(id)` | `api.templates.mutations.deleteTemplate` | `convex/templates/mutations.ts` |
-| `instantiateTemplate(id)` | `api.templates.mutations.instantiateTemplate` | `convex/templates/mutations.ts` |
-| `startTimeEntry(...)` | `api.time.mutations.startTimeEntry` | `convex/time/mutations.ts` |
-| `stopTimeEntry(id)` | `api.time.mutations.stopTimeEntry` | `convex/time/mutations.ts` |
-| `createManualTimeEntry(...)` | `api.time.mutations.createManualEntry` | `convex/time/mutations.ts` |
-| `updateTimeEntry(...)` | `api.time.mutations.updateTimeEntry` | `convex/time/mutations.ts` |
-| `deleteTimeEntry(id)` | `api.time.mutations.deleteTimeEntry` | `convex/time/mutations.ts` |
-| `updateTaskEstimate(...)` | `api.time.mutations.updateTaskEstimate` | `convex/time/mutations.ts` |
-| `updateUserPreferences(...)` | `api.user.mutations.updatePreferences` | `convex/user/mutations.ts` |
+| Server Action                | Convex Mutation                                | File                               |
+| ---------------------------- | ---------------------------------------------- | ---------------------------------- |
+| `createTask(data)`           | `api.tasks.mutations.createTask`               | `convex/tasks/mutations.ts`        |
+| `updateTask(id, data)`       | `api.tasks.mutations.updateTask`               | `convex/tasks/mutations.ts`        |
+| `deleteTask(id)`             | `api.tasks.mutations.deleteTask`               | `convex/tasks/mutations.ts`        |
+| `toggleTaskCompletion(id)`   | `api.tasks.mutations.toggleCompletion`         | `convex/tasks/mutations.ts`        |
+| `createSubtask(...)`         | `api.tasks.subtasks.createSubtask`             | `convex/tasks/subtasks.ts`         |
+| `updateSubtask(...)`         | `api.tasks.subtasks.updateSubtask`             | `convex/tasks/subtasks.ts`         |
+| `deleteSubtask(id)`          | `api.tasks.subtasks.deleteSubtask`             | `convex/tasks/subtasks.ts`         |
+| `updateStreak()`             | `api.tasks.streak.updateStreak`                | `convex/tasks/streak.ts`           |
+| `createList(data)`           | `api.lists.mutations.createList`               | `convex/lists/mutations.ts`        |
+| `updateList(id, data)`       | `api.lists.mutations.updateList`               | `convex/lists/mutations.ts`        |
+| `deleteList(id)`             | `api.lists.mutations.deleteList`               | `convex/lists/mutations.ts`        |
+| `reorderLists(ids)`          | `api.lists.mutations.reorderLists`             | `convex/lists/mutations.ts`        |
+| `createLabel(data)`          | `api.labels.mutations.createLabel`             | `convex/labels/mutations.ts`       |
+| `updateLabel(id, data)`      | `api.labels.mutations.updateLabel`             | `convex/labels/mutations.ts`       |
+| `deleteLabel(id)`            | `api.labels.mutations.deleteLabel`             | `convex/labels/mutations.ts`       |
+| `reorderLabels(ids)`         | `api.labels.mutations.reorderLabels`           | `convex/labels/mutations.ts`       |
+| `addXP(amount)`              | `api.gamification.mutations.addXP`             | `convex/gamification/mutations.ts` |
+| `checkAchievements()`        | `api.gamification.mutations.checkAchievements` | `convex/gamification/mutations.ts` |
+| `saveViewSettings(...)`      | `api.views.mutations.saveViewSettings` (optional) | `convex/views/mutations.ts`    |
+| `resetViewSettings(...)`     | `api.views.mutations.resetViewSettings` (optional) | `convex/views/mutations.ts`   |
+| `createReminder(...)`        | `api.reminders.mutations.createReminder`       | `convex/reminders/mutations.ts`    |
+| `deleteReminder(id)`         | `api.reminders.mutations.deleteReminder`       | `convex/reminders/mutations.ts`    |
+| `addDependency(...)`         | `api.dependencies.mutations.addDependency`     | `convex/dependencies/mutations.ts` |
+| `removeDependency(...)`      | `api.dependencies.mutations.removeDependency`  | `convex/dependencies/mutations.ts` |
+| `createTemplate(...)`        | `api.templates.mutations.createTemplate`       | `convex/templates/mutations.ts`    |
+| `updateTemplate(...)`        | `api.templates.mutations.updateTemplate`       | `convex/templates/mutations.ts`    |
+| `deleteTemplate(id)`         | `api.templates.mutations.deleteTemplate`       | `convex/templates/mutations.ts`    |
+| `instantiateTemplate(id)`    | `api.templates.mutations.instantiateTemplate`  | `convex/templates/mutations.ts`    |
+| `startTimeEntry(...)`        | `api.time.mutations.startTimeEntry`            | `convex/time/mutations.ts`         |
+| `stopTimeEntry(id)`          | `api.time.mutations.stopTimeEntry`             | `convex/time/mutations.ts`         |
+| `createManualTimeEntry(...)` | `api.time.mutations.createManualEntry`         | `convex/time/mutations.ts`         |
+| `updateTimeEntry(...)`       | `api.time.mutations.updateTimeEntry`           | `convex/time/mutations.ts`         |
+| `deleteTimeEntry(id)`        | `api.time.mutations.deleteTimeEntry`           | `convex/time/mutations.ts`         |
+| `updateTaskEstimate(...)`    | `api.time.mutations.updateTaskEstimate`        | `convex/time/mutations.ts`         |
+| `updateUserPreferences(...)` | `api.user.mutations.updatePreferences`         | `convex/user/mutations.ts`         |
 
 ### Actions (external API calls / side effects)
 
-| Server Action | Convex Action | File |
-|---|---|---|
-| `parseVoiceCommand(text)` | `api.ai.actions.parseVoiceCommand` | `convex/ai/actions.ts` |
-| `rescheduleOverdueTasks()` | `api.ai.actions.rescheduleOverdueTasks` | `convex/ai/actions.ts` |
-| `extractDeadline(text)` | `api.ai.actions.extractDeadline` | `convex/ai/actions.ts` |
-| `suggestSubtasks(task)` | `api.ai.actions.suggestSubtasks` | `convex/ai/actions.ts` |
-| `scheduleUnscheduledTasks()` | `api.ai.actions.scheduleUnscheduled` | `convex/ai/actions.ts` |
-| `suggestMetadata(title)` | `api.ai.actions.suggestMetadata` | `convex/ai/actions.ts` |
-| Todoist sync | `api.integrations.todoist.sync` | `convex/integrations/todoist.ts` |
-| Google Tasks sync | `api.integrations.googleTasks.sync` | `convex/integrations/googleTasks.ts` |
+| Server Action                | Convex Action                           | File                                 |
+| ---------------------------- | --------------------------------------- | ------------------------------------ |
+| `parseVoiceCommand(text)`    | `api.ai.actions.parseVoiceCommand`      | `convex/ai/actions.ts`               |
+| `rescheduleOverdueTasks()`   | `api.ai.actions.rescheduleOverdueTasks` | `convex/ai/actions.ts`               |
+| `extractDeadline(text)`      | `api.ai.actions.extractDeadline`        | `convex/ai/actions.ts`               |
+| `suggestSubtasks(task)`      | `api.ai.actions.suggestSubtasks`        | `convex/ai/actions.ts`               |
+| `scheduleUnscheduledTasks()` | `api.ai.actions.scheduleUnscheduled`    | `convex/ai/actions.ts`               |
+| `suggestMetadata(title)`     | `api.ai.actions.suggestMetadata`        | `convex/ai/actions.ts`               |
+| Todoist sync                 | `api.integrations.todoist.sync`         | `convex/integrations/todoist.ts`     |
+| Google Tasks sync            | `api.integrations.googleTasks.sync`     | `convex/integrations/googleTasks.ts` |
 
 ### Missing from Original Map (Added)
 
-| Server Action / Module | Convex Equivalent | File |
-|---|---|---|
-| `custom-icons.ts` (CRUD) | `api.customIcons.mutations.*` | `convex/customIcons/mutations.ts` |
-| `data-migration.ts` | One-time migration action (Phase 1) | `convex/migrations/importFromPostgres.ts` |
-| `shared.ts` (shared helpers) | `convex/helpers.ts` | Already planned |
-| `actions/index.ts` (re-exports) | Not needed — Convex `api` object replaces all re-exports | N/A |
-| `task-safe.ts` (Zod-validated wrappers) | Convex validators replace Zod (`v.string()`, etc.) | Inline in mutation `args` |
-| `todoist.ts` (OAuth + sync) | `api.integrations.todoist.*` | `convex/integrations/todoist.ts` |
-| `google-tasks.ts` (OAuth + sync) | `api.integrations.googleTasks.*` | `convex/integrations/googleTasks.ts` |
+| Server Action / Module                  | Convex Equivalent                                        | File                                      |
+| --------------------------------------- | -------------------------------------------------------- | ----------------------------------------- |
+| `custom-icons.ts` (CRUD)                | `api.customIcons.mutations.*`                            | `convex/customIcons/mutations.ts`         |
+| `data-migration.ts`                     | One-time migration action (Phase 1)                      | `convex/migrations/importFromPostgres.ts` |
+| `shared.ts` (shared helpers)            | `convex/helpers.ts`                                      | Already planned                           |
+| `actions/index.ts` (re-exports)         | Not needed — Convex `api` object replaces all re-exports | N/A                                       |
+| `task-safe.ts` (Zod-validated wrappers) | Convex validators replace Zod (`v.string()`, etc.)       | Inline in mutation `args`                 |
+| `todoist.ts` (OAuth + sync)             | `api.integrations.todoist.*`                             | `convex/integrations/todoist.ts`          |
+| `google-tasks.ts` (OAuth + sync)        | `api.integrations.googleTasks.*`                         | `convex/integrations/googleTasks.ts`      |
 
 ---
 
@@ -1996,14 +2007,14 @@ Before cutover, run an export from Convex and verify you can re-import into a st
 
 ### Dependencies Removed (~7)
 
-| Package | Replacement |
-|---|---|
-| `@neondatabase/serverless` | Convex DB |
-| `drizzle-orm` | Convex `ctx.db` |
-| `drizzle-kit` (dev) | Convex schema auto-sync |
-| `@tanstack/react-query` | Convex `useQuery` |
-| `zustand` | Convex `useQuery` (if no other uses; conditional on Spike 4) |
-| `idb` | Not needed (conditional on Spike 4) |
+| Package                      | Replacement                          |
+| ---------------------------- | ------------------------------------ |
+| `@neondatabase/serverless`   | Convex DB                            |
+| `drizzle-orm`                | Convex `ctx.db`                      |
+| `drizzle-kit` (dev)          | Convex schema auto-sync              |
+| `@tanstack/react-query`      | Convex `useQuery`                    |
+| `zustand`                    | Convex `useQuery` (if no other uses) |
+| `idb`                        | Not needed                           |
 | `@workos-inc/authkit-nextjs` | Optional: keep or replace with Clerk |
 
 ### Files/Directories Removed (~30+ files)
@@ -2026,42 +2037,42 @@ Before cutover, run an export from Convex and verify you can re-import into a st
 
 ### Concepts Removed
 
-| Concept | Why |
-|---|---|
-| `revalidatePath("/")` | Convex subscriptions auto-update |
+| Concept                  | Why                                    |
+| ------------------------ | -------------------------------------- |
+| `revalidatePath("/")`    | Remove; Convex subscriptions auto-update |
 | `"use server"` directive | Convex functions run on Convex backend |
-| SQLite test schema | Convex has its own test utilities |
-| IndexedDB offline queue | Convex does not handle offline automatically; remove only if Spike 4 selects Option A |
-| Zustand client cache | Convex reactive cache replaces it |
-| React Query caching | Convex's own reactive system |
-| Manual WebSocket/polling | Convex WebSocket is automatic |
-| Drizzle migration files | Convex schema is pushed, not migrated |
+| SQLite test schema       | Convex has its own test utilities      |
+| IndexedDB offline queue  | Remove (online-only after migration)   |
+| Zustand client cache     | Convex reactive cache replaces it      |
+| React Query caching      | Convex's own reactive system           |
+| Manual WebSocket/polling | Convex WebSocket is automatic          |
+| Drizzle migration files  | Convex schema is pushed, not migrated  |
 
 ---
 
 ## 8. Risk Assessment
 
-| Risk | Severity | Mitigation |
-|---|---|---|
-| **WorkOS AuthKit ↔ Convex JWT bridge** | 🔴 Critical | Spike 1 MUST pass before any function migration. WorkOS uses session cookies, Convex needs JWTs. If bridging fails, must switch to Clerk (adds weeks). |
-| **Data loss during migration** | 🔴 High | Run PostgreSQL and Convex in parallel during transition. Verify row counts match. |
-| **ID format change** (text/serial → Convex ID) | 🔴 High | Build comprehensive ID mapping. Audit EVERY access check. User ID change from WorkOS string PK to Convex `_id` affects every table and every auth comparison. One missed check = cross-tenant data leak. |
-| **Offline/PWA functionality loss** | 🔴 High | Convex does NOT provide durable offline mutation queuing. Current IndexedDB queue is lost. Must decide: accept regression, keep offline queue, or build hybrid (Spike 4). |
-| **Cascading delete completeness** | 🟠 High | ~12 cascade paths must be manually implemented. Must handle transaction limits for large datasets (soft-delete + scheduled cleanup). Missing one cascade = orphaned data. |
-| **No unique constraints** | 🟠 High | Enforce uniqueness in mutations (check-then-insert within a mutation transaction). Still possible to get duplicates from bugs. Add background repair jobs. |
-| **Server Component → Client Component shift** | 🟠 High | ~15 pages change rendering model. Bundle size increases. SSR performance may regress if token forwarding doesn't work. |
-| **AWS KMS in Convex runtime** | 🟠 Medium | May not work in Convex action runtime. Spike 5 must verify. Fallback: proxy encryption through Next.js API routes. |
-| **Search quality regression** | 🟠 Medium | Convex search ≠ Fuse.js fuzzy matching. Users will perceive worse search. Keep Fuse.js client-side or accept regression. |
-| **Auth token mismatch (`iss`/`aud`)** | 🟠 Medium | Verify WorkOS `iss`/`aud` against actual JWT claims. Common cause of `isAuthenticated === false`. |
-| **Auth bypass / E2E test mode** | 🟠 Medium | Current dev bypass, IP allowlist, and E2E test cookies don't translate to Convex. Must design new bypass strategy. |
-| **Performance regression** | 🟡 Medium | Convex indexes must cover all current query patterns. Benchmark critical paths. Use pagination for large datasets. |
-| **Convex query/mutation limits** | 🟡 Medium | Large cascading deletes and unbounded `.collect()` queries may hit limits. Paginate and batch. |
-| **Feature flag dual-write complexity** | 🟡 Medium | Different ID systems (serial vs Convex ID) make rollback non-trivial. Dual-write requires reconciliation strategy. |
-| **Data divergence during dual-write** | 🟡 Medium | Define a single source of truth, or implement ordered dual-write + reconciliation strategy. |
-| **Missing action modules in migration map** | 🟡 Low | `data-migration.ts`, `custom-icons.ts`, `shared.ts`, `index.ts` not explicitly in function map. Verify complete inventory. |
-| **External integration downtime** | 🟡 Low | Migrate integrations last. Can run on old Server Actions temporarily. |
-| **E2E test breakage** | 🟡 Low | UI tests are implementation-agnostic. Update auth fixtures only. |
-| **Convex vendor lock-in** | 📌 Strategic | Convex schema is TypeScript — data can be exported. Evaluate against open-source alternatives. |
+| Risk                                           | Severity     | Mitigation                                                                                                                                                                                               |
+| ---------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **WorkOS AuthKit ↔ Convex JWT bridge**         | 🔴 Critical  | Spike 1 MUST pass before any function migration. WorkOS uses session cookies, Convex needs JWTs. If bridging fails, must switch to Clerk (adds weeks).                                                   |
+| **Data loss during migration**                 | 🔴 High      | Run PostgreSQL and Convex in parallel during transition. Verify row counts match.                                                                                                                        |
+| **ID format change** (text/serial → Convex ID) | 🔴 High      | Build comprehensive ID mapping. Audit EVERY access check. User ID change from WorkOS string PK to Convex `_id` affects every table and every auth comparison. One missed check = cross-tenant data leak. |
+| **Offline/PWA functionality loss**             | 🔴 High      | Convex does NOT provide durable offline mutation queuing. Decision: accept regression and remove offline queue (Spike 4).                                                                                |
+| **Cascading delete completeness**              | 🟠 High      | ~12 cascade paths must be manually implemented. Must handle transaction limits for large datasets (soft-delete + scheduled cleanup). Missing one cascade = orphaned data.                                |
+| **No unique constraints**                      | 🟠 High      | Enforce uniqueness in mutations (check-then-insert within a mutation transaction). Still possible to get duplicates from bugs. Add background repair jobs.                                               |
+| **Server Component → Client Component shift**  | 🟠 High      | ~15 pages change rendering model. Bundle size increases. Authenticated pages are client-only to simplify auth token handling.                                                                           |
+| **Encryption key management**                 | 🟠 Medium    | Use Convex environment variables for a symmetric key. If compliance requires KMS, proxy encryption through a Convex action to a separate service or reintroduce KMS.                                     |
+| **Search quality regression**                  | 🟠 Medium    | Convex search ≠ Fuse.js fuzzy matching. Decision: accept regression and remove Fuse.js.                                                                                                                |
+| **Auth token mismatch (`iss`/`aud`)**          | 🟠 Medium    | Verify WorkOS `iss`/`aud` against actual JWT claims. Common cause of `isAuthenticated === false`.                                                                                                        |
+| **Auth bypass / E2E test mode**                | 🟠 Medium    | Current dev bypass, IP allowlist, and E2E test cookies don't translate to Convex. Must design new bypass strategy.                                                                                       |
+| **Performance regression**                     | 🟡 Medium    | Convex indexes must cover all current query patterns. Benchmark critical paths. Use pagination for large datasets.                                                                                       |
+| **Convex query/mutation limits**               | 🟡 Medium    | Large cascading deletes and unbounded `.collect()` queries may hit limits. Paginate and batch.                                                                                                           |
+| **Feature flag dual-write complexity**         | 🟡 Medium    | Different ID systems (serial vs Convex ID) make rollback non-trivial. Dual-write requires reconciliation strategy.                                                                                       |
+| **Data divergence during dual-write**          | 🟡 Medium    | Define a single source of truth, or implement ordered dual-write + reconciliation strategy.                                                                                                              |
+| **Missing action modules in migration map**    | 🟡 Low       | `data-migration.ts`, `custom-icons.ts`, `shared.ts`, `index.ts` not explicitly in function map. Verify complete inventory.                                                                               |
+| **External integration downtime**              | 🟡 Low       | Migrate integrations last. Can run on old Server Actions temporarily.                                                                                                                                    |
+| **E2E test breakage**                          | 🟡 Low       | UI tests are implementation-agnostic. Update auth fixtures only.                                                                                                                                         |
+| **Convex vendor lock-in**                      | 📌 Strategic | Convex schema is TypeScript — data can be exported. Evaluate against open-source alternatives.                                                                                                           |
 
 ---
 
@@ -2084,6 +2095,7 @@ Before cutover, run an export from Convex and verify you can re-import into a st
 ### Feature Flag Implementation
 
 > ⚠️ **Dual-backend complexity warning:** Running two backends simultaneously with DIFFERENT ID systems (Postgres serial/text IDs vs Convex document IDs) makes true rollback non-trivial. Consider:
+>
 > - Feature-flagging at the **deployment level** (Vercel preview = Convex, production = Postgres) rather than runtime toggles.
 > - Using a **short cutover window** (write-freeze → migrate → verify → go-live) instead of long dual-write periods.
 > - If dual-write is required, you need an ID reconciliation layer that maps between both systems.
@@ -2112,14 +2124,15 @@ function TaskList() {
 - [ ] **Spike 1**: Auth PoC — `@convex-dev/workos-authkit` or custom bridge working, `ctx.auth.getUserIdentity()` returns non-null in dev + staging
 - [ ] **Spike 2**: Constraint parity matrix — every PK/FK/unique/cascade documented with Convex enforcement strategy
 - [ ] **Spike 3**: Cascade delete prototype — `deleteList` with 200+ tasks works within Convex limits, batching pattern designed
-- [ ] **Spike 4**: Offline/PWA decision documented — Option A/B/C selected with stakeholder sign-off
-- [ ] **Spike 5**: AWS KMS tested in Convex action runtime — fallback plan documented if it fails
+- [ ] **Spike 4**: Offline/PWA decision documented — accept online-only regression with stakeholder sign-off
+- [ ] **Spike 5**: Encryption approach confirmed — use Convex env vars + pure-JS encryption library
 
 ### Phase Checklist
 
 - [ ] **Phase 0**: `convex init`, ConvexProvider, env vars
 - [ ] **Phase 0**: Verify WorkOS JWT flow (`iss`/`aud`) and `ctx.auth.getUserIdentity()`
 - [ ] **Phase 0**: Design auth bypass strategy for dev mode and E2E tests (current bypass system won't work)
+- [ ] **Phase 0**: Remove or avoid all Next.js API routes for backend logic (Convex-only backend surface)
 - [ ] **Phase 1**: Schema in `convex/schema.ts` with all constraint warnings addressed
   - [ ] `externalEntityMap` index includes `entityType`
   - [ ] Achievement ID mapping strategy documented
@@ -2132,12 +2145,12 @@ function TaskList() {
   - [ ] Labels (CRUD, reorder)
   - [ ] Gamification (stats, XP, achievements)
   - [ ] Time tracking (entries, stats)
-  - [ ] Views (settings, saved views)
+  - [ ] Views (saved views only; view settings moved client-only)
   - [ ] Templates (CRUD, instantiate)
   - [ ] Reminders (CRUD)
   - [ ] Dependencies (add, remove, query)
-  - [ ] Logs (activity, completion history)
-  - [ ] Search (full-text — with search regression decision documented)
+  - [ ] Logs (optional; drop if audit logs are not required)
+- [ ] Search (full-text via Convex searchIndex only; Fuse.js removed)
   - [ ] User (preferences, sync)
   - [ ] **Custom icons** (CRUD — was missing from original map)
   - [ ] **Data migration utilities** (was missing from original map)
@@ -2147,18 +2160,18 @@ function TaskList() {
   - [ ] All mutations validate cross-user ownership (composite FK replacement)
 - [ ] **Phase 3**: Authentication (WorkOS JWT or Clerk migration)
 - [ ] **Phase 4**: Client components → Convex hooks
-  - [ ] Convert ~15 Server Component pages to Client Components or preloaded pattern
+  - [ ] Convert ~15 Server Component pages to Client Components
   - [ ] Remove React Query
   - [ ] Remove Zustand stores
-  - [ ] Remove SyncProvider + IndexedDB (based on Spike 4 decision)
+  - [ ] Remove SyncProvider + IndexedDB (online-only)
   - [ ] Add optimistic updates where needed
-  - [ ] Verify SSR/preload works with auth tokens (or accept client-only rendering)
+  - [ ] Client-only rendering for authenticated pages (no SSR preload)
 - [ ] **Phase 5**: AI actions → Convex actions
   - [ ] Verify `@google/generative-ai` works in Convex action runtime
-  - [ ] Verify KMS encryption works (or use fallback from Spike 5)
-- [ ] **Phase 6**: Offline sync removal/replacement (per Spike 4 decision)
+  - [ ] Implement Convex-side encryption for integration tokens per Spike 5
+- [ ] **Phase 6**: Offline sync removal (online-only)
   - [ ] PWA service worker updated for new architecture
-- [ ] **Phase 7**: External integrations → Convex actions + crons
+- [ ] **Phase 7**: External integrations → Convex actions + crons (no external schedulers)
   - [ ] **Phase 8**: Testing + cleanup
   - [ ] Confirm test runner decision from Spike 1b (Bun + `convex-test` or Vitest)
   - [ ] E2E tests passing with new auth strategy
@@ -2181,9 +2194,10 @@ This section lists concrete pre-flight checks that must pass before implementati
    - `iss` equals the `domain` in `convex/auth.config.ts`
    - `aud` equals `applicationID`
 3. Run a Convex dev mutation that logs `ctx.auth.getUserIdentity()` and confirm it is non-null.
-4. SSR proof: call `getWorkOSIdToken()` in a Server Component and successfully `preloadQuery` an authenticated query.
+4. Client-only proof: authenticated pages load via `useQuery` without server-side token handling.
 
 **Acceptance thresholds:**
+
 - Auth proof must succeed in both local dev and a staging deployment.
 - `ctx.auth.getUserIdentity()` must return a stable `subject` matching the WorkOS user ID across refreshes.
 
@@ -2195,6 +2209,7 @@ This section lists concrete pre-flight checks that must pass before implementati
 4. Simulate a failure mid-batch and verify the migration can resume without duplicate inserts.
 
 **Acceptance thresholds:**
+
 - Counts match exactly for every table.
 - Random sample (>=100 rows) passes field-level comparison with no mismatches.
 - No orphaned foreign keys in Convex (0 unresolved references).
@@ -2206,6 +2221,7 @@ This section lists concrete pre-flight checks that must pass before implementati
 - All external integration rows are readable only by `internal` functions.
 
 **Acceptance thresholds:**
+
 - Integrity checks must pass on both dev and staging datasets.
 - Any failed check blocks cutover until resolved.
 
@@ -2215,17 +2231,20 @@ This section lists concrete pre-flight checks that must pass before implementati
 - Run `searchTasks` on a large dataset and verify truncation messaging when capped.
 
 **Acceptance thresholds:**
+
 - `getTasks` P95 response time < 400ms for 10k tasks dataset on staging.
 - Search results return within 1 second with clear pagination/truncation UI.
 
 ### E. E2E Auth Harness (Required)
 
 Choose one strategy and fully automate it:
+
 - WorkOS test tenant login + token extraction
 - Convex `internal` test auth mutation gated by `E2E_TEST_MODE`
 - Clerk test token flow (if migrating auth)
 
 **Acceptance thresholds:**
+
 - E2E suite passes in CI with no manual token setup.
 - Auth setup is deterministic and repeatable across environments.
 
@@ -2238,6 +2257,7 @@ Choose one strategy and fully automate it:
 5. Monitor errors/latency and rollback if required.
 
 **Acceptance thresholds:**
+
 - 24 hours of error-free operation before decommissioning Postgres.
 - Rollback verified by re-enabling Postgres feature flag within 5 minutes.
 
@@ -2251,15 +2271,12 @@ This is an execution-ready checklist for running the bulletproofing plan.
 
 1. Capture ID token and verify `iss`/`aud`.
 2. Run `debugAuth` mutation in dev/staging (must log non-null identity).
-3. SSR `preloadQuery` runs with token and returns expected user-scoped data.
+3. Authenticated pages load via client-only `useQuery` without SSR preload.
 
 ### 2. Migration Validation
 
 1. Run migration on snapshot database.
-2. Run count comparison script per table.
-3. Run 100-row sample diff script per table.
-4. Run foreign key integrity audit.
-5. Simulate a mid-batch crash and resume.
+2. Trigger Convex internal validation actions (counts, sample diff, FK audit, resume test).
 
 ### 3. Performance Validation
 
@@ -2293,35 +2310,20 @@ These are minimal starter scripts to automate validation steps.
 node -e "const t=process.argv[1].split('.'); console.log(Buffer.from(t[0], 'base64url').toString()); console.log(Buffer.from(t[1], 'base64url').toString());" "<JWT>"
 ```
 
-### 2. Count Comparison (Postgres vs Convex)
+### 2. Migration Validation Actions (Convex)
 
 ```ts
-// scripts/compare-counts.ts
-// Pseudo: use a SQL client for Postgres and Convex HTTP API for Convex.
-// For each table, print Postgres count vs Convex count.
+// convex/migrations/validation.ts
+// Pseudo: implement as Convex internal actions + scheduled jobs
+// - compareCounts
+// - sampleDiff
+// - fkAudit
+// - migrationResumeTest
 ```
 
-### 3. Random Sample Diff
+### 3. Migration Validation Scripts (Optional)
 
-```ts
-// scripts/sample-diff.ts
-// Pseudo: select 100 random IDs from Postgres, fetch matching docs in Convex,
-// normalize timestamps, and diff fields.
-```
-
-### 4. Foreign Key Integrity Audit
-
-```ts
-// scripts/fk-audit.ts
-// Pseudo: for each junction table in Convex, verify referenced docs exist.
-```
-
-### 5. Migration Resume Simulation
-
-```ts
-// scripts/migration-resume-test.ts
-// Pseudo: run a batch, crash after N inserts, re-run and assert no duplicates.
-```
+If you still need external scripts, keep minimal one-off helpers under `scripts/` to call the Convex validation actions.
 
 ---
 
@@ -2339,10 +2341,10 @@ This converts the validation plan into concrete tasks with owners, estimates, an
    - Owner: Backend
    - Estimate: 1 hour
    - Pass: `ctx.auth.getUserIdentity()` returns a stable subject across refreshes
-3. **SSR `preloadQuery` proof**
+3. **Client-only auth proof**
    - Owner: Fullstack
    - Estimate: 2 hours
-   - Pass: SSR preloaded query returns user-scoped data in staging
+   - Pass: Authenticated pages load via `useQuery` in staging without SSR preload
 
 ### Migration Validation Tasks
 
@@ -2399,3 +2401,184 @@ This converts the validation plan into concrete tasks with owners, estimates, an
    - Owner: Fullstack
    - Estimate: 30 minutes
    - Pass: Production traffic uses Convex without errors
+
+---
+
+## Appendix: Deep Convex Integration — Additional Simplifications
+
+> Beyond the core migration, these are systems that can be **eliminated or dramatically simplified** by leaning fully into the Convex platform. Each item reduces custom code, removes dependencies, or replaces bespoke infrastructure with built-in Convex primitives.
+
+### 1. Remove All Zod Validation Schemas (`src/lib/validation/`)
+
+**Current state:** Three Zod schema files (`tasks.ts`, `reminders.ts`, `time-tracking.ts`) plus `task-safe.ts` wrappers that validate Server Action inputs at runtime.
+
+**Convex replacement:** Convex mutation `args` validators (`v.string()`, `v.number()`, `v.optional(...)`, `v.union(v.literal(...), ...)`) provide the same runtime validation, are type-safe end-to-end, and auto-generate TypeScript types for the client. No separate validation layer needed.
+
+**Remove:**
+- `src/lib/validation/tasks.ts`
+- `src/lib/validation/reminders.ts`
+- `src/lib/validation/time-tracking.ts`
+- `src/lib/actions/task-safe.ts`
+- `zod` dependency (if no other uses remain)
+
+### 2. Remove `ActionResult` / `withErrorHandling` Error Infrastructure
+
+**Current state:** A 300-line `action-result.ts` module with `ActionResult<T>` discriminated union, 7 custom error classes (`ValidationError`, `NotFoundError`, `ConflictError`, etc.), `withErrorHandling` wrapper, `sanitizeError`, and pattern matching for sensitive data. Every Server Action is wrapped.
+
+**Convex replacement:** Convex mutations/queries throw `ConvexError` for user-facing errors. The Convex client automatically serializes errors across the wire. Use `ConvexError` with structured data:
+
+```typescript
+import { ConvexError } from "convex/values";
+throw new ConvexError({ code: "NOT_FOUND", message: "Task not found" });
+```
+
+On the client, catch with `try/catch` or Convex's error callback. No custom wrapper, no error sanitization layer, no `ActionResult` type.
+
+**Remove:**
+- `src/lib/action-result.ts` (+ test)
+- `src/lib/auth-errors.ts`
+- All `withErrorHandling` wrappers in action files
+- All `ActionResult<T>` return types
+- Custom error classes (`ValidationError`, `DatabaseError`, `NetworkError`, `ConflictError`, etc.)
+- `src/lib/actions/shared.ts` (barrel re-export file — Convex functions import directly)
+
+### 3. Remove Rate Limiting Table & Module — Use Convex Component
+
+**Current state:** A custom `rateLimits` database table with an atomic upsert-based rate limiter in `rate-limit.ts`, including SQLite/Postgres branching logic. Used in time-tracking actions.
+
+**Convex replacement:** Use the [`@convex-dev/ratelimiter`](https://www.convex.dev/components/rate-limiter) Convex component, which provides token-bucket and fixed-window rate limiting as a drop-in:
+
+```typescript
+import { RateLimiter } from "@convex-dev/ratelimiter";
+const rateLimiter = new RateLimiter(components.rateLimiter, {
+  timeTracking: { kind: "fixed window", rate: 20, period: 60_000 },
+});
+// In mutation:
+await rateLimiter.limit(ctx, "timeTracking", { key: userId });
+```
+
+**Remove:**
+- `src/lib/rate-limit.ts` (+ test)
+- `rateLimits` table from schema
+- SQLite/Postgres branching logic in rate limiter
+
+### 4. Remove `env.ts` Environment Validation
+
+**Current state:** `src/lib/env.ts` validates `DATABASE_URL`, WorkOS keys, `GEMINI_API_KEY`, and Todoist encryption key formats at startup.
+
+**Convex replacement:** Convex environment variables are managed via the Convex dashboard or CLI (`npx convex env set`). `DATABASE_URL` is eliminated entirely (Convex IS the database). API keys are accessed via `process.env` in Convex actions. The only client-side env var is `NEXT_PUBLIC_CONVEX_URL`, auto-set by `npx convex dev`.
+
+**Remove:**
+- `src/lib/env.ts`
+- `DATABASE_URL` from all env config
+- Todoist KMS-related env validation (replaced by Convex env vars + pure-JS encryption)
+
+### 5. Remove `UserProvider` — Use Convex Query for Preferences
+
+**Current state:** `UserProvider.tsx` is a React context that receives user preferences (24h clock, week start day, calendar tooltip settings) from Server Components and passes them via context.
+
+**Convex replacement:** Store user preferences in the Convex `users` table. Consume directly via `useQuery(api.user.queries.getPreferences)` wherever needed. Convex's reactive system means preference changes propagate instantly to all components without context plumbing.
+
+**Remove:**
+- `src/components/providers/UserProvider.tsx`
+- All `<UserProvider>` wrappers in layouts
+- `useUser()` hook (replace with `useQuery(api.user.queries.getPreferences)`)
+
+### 6. Remove Next.js Middleware for Auth
+
+**Current state:** 110-line `middleware.ts` with WorkOS `authkitMiddleware`, dev bypass logic, E2E test mode handling, IP allowlist checking, and HMAC signature verification.
+
+**Convex replacement:** Auth is handled entirely by Convex JWT verification. Route protection uses `useConvexAuth()` in a layout to redirect unauthenticated users. No middleware needed.
+
+**Remove:**
+- `middleware.ts`
+- `src/lib/auth-bypass.ts` (+ test)
+- `src/lib/ip-utils.ts` (+ test)
+- `@workos-inc/authkit-nextjs` middleware integration (keep if still using WorkOS for identity)
+
+### 7. Move Reminders to Convex Scheduled Functions
+
+**Current state:** Reminders are stored in a `reminders` table with `remindAt` timestamps, but there's no actual notification delivery mechanism — they're just stored records.
+
+**Convex replacement:** Use `ctx.scheduler.runAt(remindAt, internal.reminders.send, { taskId })` to schedule actual delivery when a reminder is created. The reminder fires as a Convex function at the specified time, enabling push notifications, email, or in-app alerts. No external cron needed.
+
+### 8. Move Analytics to a Real-Time Convex Query
+
+**Current state:** A 278-line Server Action that does single-pass aggregation over all user tasks and time entries, computing completion rates, priority distributions, heatmaps, and time tracking stats.
+
+**Convex replacement:** Implement as a Convex query. Benefits:
+- **Real-time dashboard:** Analytics update live as tasks are completed (no page refresh)
+- **Reactive cache:** Convex caches query results and only re-executes when underlying data changes
+- Alternatively, pre-compute aggregates in a `userAnalytics` table via trigger-style mutations for O(1) reads
+
+**Remove:**
+- `src/lib/analytics.ts`
+
+### 9. Move Weekly Review to a Convex Cron + Action
+
+**Current state:** `weekly-review.ts` is a Server Action that fetches completed tasks, calls Gemini, and returns a motivational report. Triggered manually.
+
+**Convex replacement:** Register as a Convex cron that runs weekly. Results are stored in a `weeklyReviews` table for the user to read anytime:
+
+```typescript
+// convex/crons.ts
+crons.weekly("weekly-review",
+  { dayOfWeek: "sunday", hourUTC: 20, minuteUTC: 0 },
+  internal.ai.actions.generateWeeklyReviews
+);
+```
+
+**Remove:**
+- `src/lib/weekly-review.ts`
+
+### 10. Move Habit Streaks to Denormalized Fields
+
+**Current state:** `src/lib/habits.ts` fetches up to a year of habit completions and calculates streaks in a loop — O(n) per read.
+
+**Convex replacement:** Maintain `currentStreak` and `bestStreak` as denormalized fields on the task document, updated via a mutation when a habit is completed. Streak reads become O(1).
+
+**Remove:**
+- `src/lib/habits.ts` (logic moves to `convex/habits/mutations.ts`)
+
+### 11. Move Time Export to a Convex Action
+
+**Current state:** `time-export.ts` is a Server Action that queries time entries, joins with task titles, and generates JSON/CSV.
+
+**Convex replacement:** A Convex action that reads data via `ctx.runQuery` and formats the export. Also enables scheduled exports (e.g., weekly CSV email via cron).
+
+**Remove:**
+- `src/lib/time-export.ts`
+
+### 12. Remove `OnboardingProvider` localStorage — Use Convex User Record
+
+**Current state:** Onboarding completion tracked in `localStorage` — doesn't persist across devices/browsers.
+
+**Convex replacement:** Add `onboardingCompleted: v.optional(v.boolean())` to the `users` table. Cross-device persistent and queryable.
+
+### 13. Update CSP for Convex WebSocket
+
+**Current state:** `next.config.ts` has a strict CSP that will block Convex connections.
+
+**Required change:** Add Convex domains to CSP:
+
+```
+connect-src 'self' https://*.convex.cloud wss://*.convex.cloud;
+```
+
+### Summary: Total Removable Code
+
+| Category | Files Removed | Lines Saved (approx) |
+|----------|--------------|---------------------|
+| Zod validation schemas | 4 files | ~150 |
+| ActionResult / error infrastructure | 3 files | ~400 |
+| Rate limiting | 2 files | ~120 |
+| Environment validation | 1 file | ~95 |
+| UserProvider context | 1 file | ~90 |
+| Middleware + auth bypass | 4 files | ~220 |
+| Analytics Server Action | 1 file | ~280 |
+| Weekly review | 1 file | ~100 |
+| Habits | 1 file | ~125 |
+| Time export | 1 file | ~185 |
+| **Total** | **~19 files** | **~1,765 lines** |
+
+These are **in addition to** the ~30 files already planned for removal in Phase 8 (sync layer, stores, Drizzle schema, etc.), bringing the total to **~50 files and ~4,000+ lines removed**.

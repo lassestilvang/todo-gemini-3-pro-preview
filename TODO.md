@@ -5,14 +5,11 @@
 - Snooze? Eller er det bare "This week"?
 - Som Hey/Timestripe?
 - Timeline view? Har full calendar det?
-- blacksmith/depot?
-- Convex...
 
 ## 🚨 High Priority (Bugs & Core Issues)
 
 ## 🚀 Features & Enhancements
 
-- [-] **[Feature] Google Tasks Sync**: Add support for syncing tasks with Google Tasks. https://developers.google.com/workspace/tasks/reference/rest
 - [ ] **[Feature] Google Calendar Sync**: Sync events from Google Calendar to the calendar view - not as tasks but as events. https://developers.google.com/workspace/calendar/api/guides/overview
 - [ ] **[Feature] Calendar Version 4**: New page: /calendar4 and add it to the sidebar. Use "Full Calendar v7". It should support drag and drop of tasks to reschedule them. It should support resizing to change the duration of a task. It should also support multiple lists/calendars. It should be possible to create a new task by clicking on a date in the calendar. It should support multiple views (month, week, day). The installation guide is here: https://raw.githubusercontent.com/fullcalendar/fullcalendar-docs/refs/heads/v7/INSTALL-GUIDE.md
   - **Support for weekly/monthly/yearly tasks**: Display like HEY.com
@@ -41,6 +38,8 @@
 
 ## 🛠 Engineering & Quality
 
+- [ ] **[Improvement] Convex Migration**: Migrate the database to Convex. @docs/CONVEX_MIGRATION_PLAN.md
+- [ ] **[Improvement] CI Runner**: Migrate from GitHub Actions to Blacksmith/Depot.
 - [ ] **[Improvement] Settings Page A11y Test**: Complete the skipped accessibility test in `e2e/a11y.spec.ts`.
 - [ ] **[Improvement] Visual Regression CI baselines**: Add Linux-based snapshots for CI.
 - [ ] **[Improvement] LazyMotion domMax**: Consider upgrading `domAnimation` to `domMax` in `LazyMotionProvider.tsx`.
@@ -57,6 +56,7 @@
 
 ## ✅ Completed
 
+- [x] **[Feature] Google Tasks Sync**: Add support for syncing tasks with Google Tasks. https://developers.google.com/workspace/tasks/reference/rest
 - [x] **[Feature] Todoist Sync**: Add support for syncing tasks with Todoist. It should be 2-way sync, with the limitation of a maximum of 5 Todoist Projects (Lists). So for additional lists in this app, they should be synced to labels in Todoist. https://developer.todoist.com/api/v1/
 - [x] **[Feature] Slim Sidebar**: Add a slim version of the sidebar that only shows the icons.
 - [x] **[Feature] Sidebar Toggle**: Add a toggle to the sidebar to toggle between slim, normal and hidden sidebar. When hidden we should have a small icon in the top left corner to toggle it back.
