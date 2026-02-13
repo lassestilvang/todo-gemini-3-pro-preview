@@ -79,7 +79,14 @@ async function createTaskImpl(data: typeof tasks.$inferInsert & { labelIds?: num
         ]);
         const suggestions = await suggestMetadata(taskData.title, allLists, allLabels);
 
-        if (suggestions.listId) taskData.listId = suggestions.listId;
+        // Security check: Ensure suggested listId belongs to the user
+        if (suggestions.listId) {
+          const isValidList = allLists.some((list) => list.id === suggestions.listId);
+          if (isValidList) {
+            taskData.listId = suggestions.listId;
+          }
+        }
+
         if (suggestions.labelIds.length > 0) finalLabelIds = suggestions.labelIds;
       } catch (error) {
         console.warn("Smart tagging failed:", error);
