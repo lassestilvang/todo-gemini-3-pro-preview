@@ -164,6 +164,8 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                             onChange={(e) => updateTitle(e.target.value)}
                             onFocus={() => setIsExpanded(true)}
                             onKeyDown={(e) => {
+                                if (isSubmitting) return;
+
                                 if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
                                     e.preventDefault();
                                     handleSubmit();
