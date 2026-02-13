@@ -65,6 +65,8 @@ describe("Integration: Security Task Labels IDOR", () => {
         if (!isSuccess(taskResult)) return;
 
         // Fetch tasks to see if the label was attached and leaked
+        // Add small delay to mitigate potential CI race conditions with SQLite
+        await new Promise(resolve => setTimeout(resolve, 100));
         const tasksResult = await getTasks(attackerId);
         expect(isSuccess(tasksResult)).toBe(true);
         if (!isSuccess(tasksResult)) return;

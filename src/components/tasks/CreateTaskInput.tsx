@@ -39,6 +39,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
     const [context, setContext] = useState<"computer" | "phone" | "errands" | "meeting" | "home" | "anywhere" | undefined>(undefined);
     const [isExpanded, setIsExpanded] = useState(false);
     const [isAiLoading, setIsAiLoading] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const [isPriorityOpen, setIsPriorityOpen] = useState(false);
@@ -94,6 +95,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
             return;
         }
 
+        setIsSubmitting(true);
         try {
             // Use SyncProvider dispatch instead of direct server action
             await dispatch('createTask', {
@@ -125,6 +127,8 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
         } catch (error) {
             console.error("Failed to create task:", error);
             toast.error("Failed to create task");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -159,6 +163,14 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                             value={title}
                             onChange={(e) => updateTitle(e.target.value)}
                             onFocus={() => setIsExpanded(true)}
+                            onKeyDown={(e) => {
+                                if (isSubmitting) return;
+
+                                if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                                    e.preventDefault();
+                                    handleSubmit();
+                                }
+                            }}
                             placeholder="Add a task... (try 'Buy milk tomorrow !high @errands')"
                             className="border-0 bg-transparent shadow-none focus-visible:ring-0 text-lg py-6 pr-10"
                             data-testid="task-input"
@@ -393,9 +405,26 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                                 <Button type="button" variant="ghost" size="sm" onClick={() => setIsExpanded(false)}>
                                     Cancel
                                 </Button>
-                                <Button type="submit" size="sm" disabled={!title.trim() || !userId} data-testid="add-task-button">
-                                    Add Task
-                                </Button>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        {/* Wrap in span to allow tooltip on disabled button */}
+                                        <span tabIndex={0} className="inline-block">
+                                            <Button
+                                                type="submit"
+                                                size="sm"
+                                                disabled={!title.trim() || !userId || isSubmitting}
+                                                data-testid="add-task-button"
+                                                className="w-full"
+                                            >
+                                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                Add Task
+                                            </Button>
+                                        </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Add Task (⌘Enter)</p>
+                                    </TooltipContent>
+                                </Tooltip>
                             </div>
                         </div>
                     )}
