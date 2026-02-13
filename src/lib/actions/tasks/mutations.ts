@@ -83,6 +83,8 @@ async function createTaskImpl(data: typeof tasks.$inferInsert & { labelIds?: num
           const isValidList = allLists.some((list) => list.id === suggestions.listId);
           if (isValidList) {
             taskData.listId = suggestions.listId;
+          } else {
+            console.warn(`[SECURITY] Smart tagging suggested an invalid listId (${suggestions.listId}) for user ${taskData.userId}. This may indicate a bug or an attack attempt.`);
           }
         }
 
