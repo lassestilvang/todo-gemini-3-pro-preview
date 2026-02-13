@@ -22,7 +22,7 @@ import {
 import { rateLimit } from "@/lib/rate-limit";
 import { requireUser } from "@/lib/auth";
 import { transformNullableTimestamp } from "@/lib/migration-utils";
-import { getLists, getList } from "../lists";
+import { getLists, getListInternal } from "../lists";
 import { getLabels } from "../labels";
 import { updateUserProgress } from "../gamification";
 import { createTaskSchema, updateTaskSchema } from "@/lib/validation/tasks";
@@ -60,8 +60,15 @@ async function createTaskImpl(data: typeof tasks.$inferInsert & { labelIds?: num
       }
     }
 
-    if (taskData.listId && !isValidId(taskData.listId)) {
-      throw new Error("Invalid list ID");
+    if (taskData.listId) {
+      if (!isValidId(taskData.listId)) {
+        throw new Error("Invalid list ID");
+      }
+
+      const list = await getListInternal(taskData.listId, taskData.userId);
+      if (!list) {
+        throw new NotFoundError("List not found or access denied");
+      }
     }
 
     if (!taskData.listId && finalLabelIds.length === 0 && taskData.title && taskData.userId) {
@@ -224,6 +231,20 @@ async function updateTaskImpl(
     updatedAt: new Date(),
   } as Partial<typeof tasks.$inferInsert>;
 
+  // Validate list ownership before updating
+  if (taskData.listId !== undefined && taskData.listId !== currentTask.listId) {
+    if (taskData.listId !== null && !isValidId(taskData.listId)) {
+      throw new Error("Invalid list ID");
+    }
+
+    if (taskData.listId) {
+       const toList = await getListInternal(taskData.listId, userId);
+       if (!toList) {
+          throw new NotFoundError("List not found or access denied");
+       }
+    }
+  }
+
   await db
     .update(tasks)
     .set(updatePayload)
@@ -302,8 +323,8 @@ async function updateTaskImpl(
 
   if (taskData.listId !== undefined && taskData.listId !== currentTask.listId) {
     const [fromList, toList] = await Promise.all([
-      currentTask.listId ? getList(currentTask.listId, userId) : Promise.resolve(null),
-      taskData.listId ? getList(taskData.listId, userId) : Promise.resolve(null),
+      currentTask.listId ? getListInternal(currentTask.listId, userId) : Promise.resolve(null),
+      taskData.listId ? getListInternal(taskData.listId, userId) : Promise.resolve(null),
     ]);
 
     const fromListName = fromList?.name || "Inbox";

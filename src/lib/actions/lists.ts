@@ -98,6 +98,22 @@ export const reorderLists: (
 ) => Promise<ActionResult<void>> = withErrorHandling(reorderListsImpl);
 
 /**
+ * Internal implementation to retrieve a single list by ID for a specific user without re-checking auth.
+ * Use this when you have already validated the user (e.g. in other Server Actions).
+ *
+ * @param id - The list ID
+ * @param userId - The ID of the user who owns the list
+ * @returns The list if found, undefined otherwise
+ */
+export async function getListInternal(id: number, userId: string) {
+  const result = await db
+    .select()
+    .from(lists)
+    .where(and(eq(lists.id, id), eq(lists.userId, userId)));
+  return result[0];
+}
+
+/**
  * Retrieves a single list by ID for a specific user.
  *
  * @param id - The list ID
@@ -106,12 +122,7 @@ export const reorderLists: (
  */
 export async function getList(id: number, userId: string) {
   await requireUser(userId);
-
-  const result = await db
-    .select()
-    .from(lists)
-    .where(and(eq(lists.id, id), eq(lists.userId, userId)));
-  return result[0];
+  return getListInternal(id, userId);
 }
 
 /**
