@@ -96,3 +96,11 @@
 ## 2026-02-14 - CI Branch Name Limits
 **Learning:** Neon preview branch creation fails with 422 Unprocessable Entity if the branch name is too long (e.g., combined with `preview/` prefix and system suffixes).
 **Action:** Use `preview/pr-${{ github.event.number }}` for deterministic, short, and unique branch names in CI workflows instead of `github.head_ref`.
+
+## 2026-02-14 - CI Neon Branch Concurrency
+**Learning:** Parallel jobs (e.g., build and e2e shards) attempting to create/use the same Neon preview branch () cause race conditions and  errors.
+**Action:** Use unique branch names for every job/shard (e.g., ) and explicitly delete them at the end of the job using .
+
+## 2026-02-14 - CI Neon Branch Concurrency
+**Learning:** Parallel jobs (e.g., build and e2e shards) attempting to create/use the same Neon preview branch (`preview/pr-X`) cause race conditions and `422 Unprocessable Entity` errors.
+**Action:** Use unique branch names for every job/shard (e.g., `ci-e2e-${{ github.run_id }}-${{ strategy.job-index }}`) and explicitly delete them at the end of the job using `if: always()`.
