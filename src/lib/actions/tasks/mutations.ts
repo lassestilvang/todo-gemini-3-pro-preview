@@ -18,6 +18,7 @@ import {
   NotFoundError,
   ConflictError,
   withErrorHandling,
+  ValidationError,
 } from "../shared";
 import { rateLimit } from "@/lib/rate-limit";
 import { requireUser } from "@/lib/auth";
@@ -256,6 +257,28 @@ async function updateTaskImpl(
        if (!toList) {
           throw new NotFoundError("List not found or access denied");
        }
+    }
+  }
+
+  if (taskData.parentId !== undefined && taskData.parentId !== currentTask.parentId) {
+    if (taskData.parentId !== null && !isValidId(taskData.parentId)) {
+      throw new Error("Invalid parent ID");
+    }
+
+    if (taskData.parentId === id) {
+      throw new ValidationError("Task cannot be its own parent");
+    }
+
+    if (taskData.parentId) {
+      const parentTask = await db
+        .select({ id: tasks.id })
+        .from(tasks)
+        .where(and(eq(tasks.id, taskData.parentId), eq(tasks.userId, userId)))
+        .limit(1);
+
+      if (parentTask.length === 0) {
+        throw new NotFoundError("Parent task not found or access denied");
+      }
     }
   }
 
