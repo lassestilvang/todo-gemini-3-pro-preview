@@ -159,6 +159,15 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Generate Neon Branch Name
+        if: github.event_name == 'pull_request'
+        id: gen-branch-name
+        run: |
+          # Sanitize branch name: lowercase, replace non-alphanumeric with -, truncate to 35 chars
+          # This prevents 422 errors from Neon due to long branch names
+          CLEAN_REF=$(echo "${{ github.head_ref }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | cut -c 1-35 | sed 's/-$//')
+          echo "name=preview/${CLEAN_REF}" >> $GITHUB_OUTPUT
+
       - name: Get Neon Branch URL (PR)
         if: github.event_name == 'pull_request'
         uses: neondatabase/create-branch-action@v6
@@ -166,7 +175,7 @@ jobs:
         with:
           project_id: ${{ secrets.NEON_PROJECT_ID }}
           api_key: ${{ secrets.NEON_API_KEY }}
-          branch_name: preview/${{ github.head_ref }}
+          branch_name: ${{ steps.gen-branch-name.outputs.name }}
           database: neondb
           suspend_timeout: 0
 
@@ -230,6 +239,14 @@ jobs:
       - name: Install Playwright Browsers
         run: bunx playwright install --with-deps chromium
 
+      - name: Generate Neon Branch Name
+        if: github.event_name == 'pull_request'
+        id: gen-branch-name
+        run: |
+          # Sanitize branch name: lowercase, replace non-alphanumeric with -, truncate to 35 chars
+          CLEAN_REF=$(echo "${{ github.head_ref }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | cut -c 1-35 | sed 's/-$//')
+          echo "name=preview/${CLEAN_REF}" >> $GITHUB_OUTPUT
+
       - name: Get Neon Branch URL (PR)
         if: github.event_name == 'pull_request'
         uses: neondatabase/create-branch-action@v6
@@ -237,7 +254,7 @@ jobs:
         with:
           project_id: ${{ secrets.NEON_PROJECT_ID }}
           api_key: ${{ secrets.NEON_API_KEY }}
-          branch_name: preview/${{ github.head_ref }}
+          branch_name: ${{ steps.gen-branch-name.outputs.name }}
           database: neondb
           suspend_timeout: 0
 
