@@ -161,14 +161,13 @@ jobs:
 
       - name: Get Neon Branch URL (PR)
         if: github.event_name == 'pull_request'
-        uses: neondatabase/create-branch-action@v6
+        uses: neondatabase/create-branch-action@v5
         id: neon-branch
         with:
           project_id: ${{ secrets.NEON_PROJECT_ID }}
           api_key: ${{ secrets.NEON_API_KEY }}
           branch_name: ci-build-${{ github.run_id }}
           database: neondb
-          suspend_timeout: 0
 
       - name: Setup Database (PR)
         if: github.event_name == 'pull_request' && steps.neon-branch.outputs.db_url != ''
@@ -240,14 +239,13 @@ jobs:
 
       - name: Get Neon Branch URL (PR)
         if: github.event_name == 'pull_request'
-        uses: neondatabase/create-branch-action@v6
+        uses: neondatabase/create-branch-action@v5
         id: neon-branch
         with:
           project_id: ${{ secrets.NEON_PROJECT_ID }}
           api_key: ${{ secrets.NEON_API_KEY }}
           branch_name: ci-e2e-${{ github.run_id }}-${{ strategy.job-index }}
           database: neondb
-          suspend_timeout: 0
 
       - name: Setup Database (PR)
         if: github.event_name == 'pull_request' && steps.neon-branch.outputs.db_url != ''
