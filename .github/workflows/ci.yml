@@ -159,6 +159,14 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Generate Neon Branch Name
+        if: github.event_name == 'pull_request'
+        id: neon-name
+        run: |
+          # Truncate to 40 chars to avoid 422 errors and remove trailing hyphens
+          SHORT_REF=$(echo "${{ github.head_ref }}" | cut -c 1-40 | sed 's/-$//')
+          echo "branch_name=preview/$SHORT_REF" >> $GITHUB_OUTPUT
+
       - name: Get Neon Branch URL (PR)
         if: github.event_name == 'pull_request'
         uses: neondatabase/create-branch-action@v6
@@ -166,7 +174,7 @@ jobs:
         with:
           project_id: ${{ secrets.NEON_PROJECT_ID }}
           api_key: ${{ secrets.NEON_API_KEY }}
-          branch_name: preview/${{ github.head_ref }}
+          branch_name: ${{ steps.neon-name.outputs.branch_name }}
           database: neondb
           suspend_timeout: 0
 
@@ -230,6 +238,14 @@ jobs:
       - name: Install Playwright Browsers
         run: bunx playwright install --with-deps chromium
 
+      - name: Generate Neon Branch Name
+        if: github.event_name == 'pull_request'
+        id: neon-name
+        run: |
+          # Truncate to 40 chars to avoid 422 errors and remove trailing hyphens
+          SHORT_REF=$(echo "${{ github.head_ref }}" | cut -c 1-40 | sed 's/-$//')
+          echo "branch_name=preview/$SHORT_REF" >> $GITHUB_OUTPUT
+
       - name: Get Neon Branch URL (PR)
         if: github.event_name == 'pull_request'
         uses: neondatabase/create-branch-action@v6
@@ -237,7 +253,7 @@ jobs:
         with:
           project_id: ${{ secrets.NEON_PROJECT_ID }}
           api_key: ${{ secrets.NEON_API_KEY }}
-          branch_name: preview/${{ github.head_ref }}
+          branch_name: ${{ steps.neon-name.outputs.branch_name }}
           database: neondb
           suspend_timeout: 0
 
