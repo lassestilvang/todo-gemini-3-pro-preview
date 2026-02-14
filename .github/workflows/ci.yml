@@ -161,10 +161,11 @@ jobs:
 
       - name: Generate Neon Branch Name
         if: github.event_name == 'pull_request'
-        id: gen-branch-name
+        id: neon-name
         run: |
-          # Use PR number for stable, short, and valid branch names
-          echo "name=preview-pr-${{ github.event.number }}" >> $GITHUB_OUTPUT
+          # Use run_id to ensure uniqueness and avoid 422 state conflicts
+          # Format: preview/run-<id>
+          echo "branch_name=preview/run-${{ github.run_id }}" >> $GITHUB_OUTPUT
 
       - name: Get Neon Branch URL (PR)
         if: github.event_name == 'pull_request'
@@ -173,7 +174,7 @@ jobs:
         with:
           project_id: ${{ secrets.NEON_PROJECT_ID }}
           api_key: ${{ secrets.NEON_API_KEY }}
-          branch_name: ${{ steps.gen-branch-name.outputs.name }}
+          branch_name: ${{ steps.neon-name.outputs.branch_name }}
           database: neondb
 
       - name: Setup Database (PR)
@@ -246,10 +247,11 @@ jobs:
 
       - name: Generate Neon Branch Name
         if: github.event_name == 'pull_request'
-        id: gen-branch-name
+        id: neon-name
         run: |
-          # Use PR number for stable, short, and valid branch names
-          echo "name=preview-pr-${{ github.event.number }}" >> $GITHUB_OUTPUT
+          # Use run_id to ensure uniqueness and avoid 422 state conflicts
+          # Format: preview/run-<id>
+          echo "branch_name=preview/run-${{ github.run_id }}" >> $GITHUB_OUTPUT
 
       - name: Get Neon Branch URL (PR)
         if: github.event_name == 'pull_request'
@@ -258,7 +260,7 @@ jobs:
         with:
           project_id: ${{ secrets.NEON_PROJECT_ID }}
           api_key: ${{ secrets.NEON_API_KEY }}
-          branch_name: ${{ steps.gen-branch-name.outputs.name }}
+          branch_name: ${{ steps.neon-name.outputs.branch_name }}
           database: neondb
 
       - name: Setup Database (PR)
