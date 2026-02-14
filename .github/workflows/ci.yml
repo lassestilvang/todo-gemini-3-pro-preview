@@ -166,7 +166,7 @@ jobs:
         with:
           project_id: ${{ secrets.NEON_PROJECT_ID }}
           api_key: ${{ secrets.NEON_API_KEY }}
-          branch_name: preview/${{ github.head_ref }}
+          branch_name: preview/pr-${{ github.event.number }}
           database: neondb
           suspend_timeout: 0
 
@@ -237,7 +237,7 @@ jobs:
         with:
           project_id: ${{ secrets.NEON_PROJECT_ID }}
           api_key: ${{ secrets.NEON_API_KEY }}
-          branch_name: preview/${{ github.head_ref }}
+          branch_name: preview/pr-${{ github.event.number }}
           database: neondb
           suspend_timeout: 0
 

@@ -88,3 +88,11 @@
 ## 2026-02-05 - Parallel Reference Data Fetching
 **Learning:** Reference data (like user labels) that only depends on the user ID can be fetched in parallel with the main entity query (like tasks), rather than waiting for the main query to complete. This saves the latency of the reference data fetch from the critical path.
 **Action:** Identify data dependencies early. If a fetch only needs userId, start it immediately alongside other independent queries, even if its result is only used later. Ensure to handle promise rejections if the main query returns early.
+
+## 2026-02-14 - CI Branch Name Limits
+**Learning:** Neon preview branch creation fails with 422 Unprocessable Entity if the branch name is too long (e.g., combined with  prefix and system suffixes).
+**Action:** Use  for deterministic, short, and unique branch names in CI workflows instead of .
+
+## 2026-02-14 - CI Branch Name Limits
+**Learning:** Neon preview branch creation fails with 422 Unprocessable Entity if the branch name is too long (e.g., combined with `preview/` prefix and system suffixes).
+**Action:** Use `preview/pr-${{ github.event.number }}` for deterministic, short, and unique branch names in CI workflows instead of `github.head_ref`.
