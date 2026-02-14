@@ -84,3 +84,31 @@
 ## 2026-02-04 - Async Queue Processing Race Condition
 **Learning:** Checking a lock flag (`processingRef.current`) before an `await` call (like `getQueue()`) but setting the lock *after* the `await` creates a race window. Multiple calls can pass the check, wait on the promise, and then all enter the critical section.
 **Action:** Always set the lock flag *synchronously* before starting any asynchronous work in the critical section. Handle cleanup/unlocking in `finally` or error blocks.
+
+## 2026-02-05 - Parallel Reference Data Fetching
+**Learning:** Reference data (like user labels) that only depends on the user ID can be fetched in parallel with the main entity query (like tasks), rather than waiting for the main query to complete. This saves the latency of the reference data fetch from the critical path.
+**Action:** Identify data dependencies early. If a fetch only needs userId, start it immediately alongside other independent queries, even if its result is only used later. Ensure to handle promise rejections if the main query returns early.
+
+## 2026-02-14 - CI Branch Name Limits
+**Learning:** Neon preview branch creation fails with 422 Unprocessable Entity if the branch name is too long (e.g., combined with  prefix and system suffixes).
+**Action:** Use  for deterministic, short, and unique branch names in CI workflows instead of .
+
+## 2026-02-14 - CI Branch Name Limits
+**Learning:** Neon preview branch creation fails with 422 Unprocessable Entity if the branch name is too long (e.g., combined with `preview/` prefix and system suffixes).
+**Action:** Use `preview/pr-${{ github.event.number }}` for deterministic, short, and unique branch names in CI workflows instead of `github.head_ref`.
+
+## 2026-02-14 - CI Neon Branch Concurrency
+**Learning:** Parallel jobs (e.g., build and e2e shards) attempting to create/use the same Neon preview branch () cause race conditions and  errors.
+**Action:** Use unique branch names for every job/shard (e.g., ) and explicitly delete them at the end of the job using .
+
+## 2026-02-14 - CI Neon Branch Concurrency
+**Learning:** Parallel jobs (e.g., build and e2e shards) attempting to create/use the same Neon preview branch (`preview/pr-X`) cause race conditions and `422 Unprocessable Entity` errors.
+**Action:** Use unique branch names for every job/shard (e.g., `ci-e2e-${{ github.run_id }}-${{ strategy.job-index }}`) and explicitly delete them at the end of the job using `if: always()`.
+
+## 2026-02-14 - CI Neon Action Version
+**Learning:**  may behave differently or reject certain configurations (like  or specific branch name patterns) with 422 errors.
+**Action:** Reverted to  and simplified inputs to minimum required fields to restore stability.
+
+## 2026-02-14 - CI Neon Action Version
+**Learning:** `neondatabase/create-branch-action@v6` may behave differently or reject certain configurations (like `suspend_timeout: 0` or specific branch name patterns) with 422 errors.
+**Action:** Reverted to `v5` and simplified inputs to minimum required fields to restore stability.

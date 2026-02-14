@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { m } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { usePerformanceMode } from "@/components/providers/PerformanceContext";
+import { toast } from "sonner";
 
 type TimerMode = "pomodoro" | "shortBreak" | "longBreak";
 
@@ -33,18 +34,19 @@ export function PomodoroTimer() {
             interval = setInterval(() => {
                 setTimeLeft((prev) => prev - 1);
             }, 1000);
-        } else if (timeLeft === 0) {
+        } else if (timeLeft === 0 && isActive) {
             setIsActive(false);
             // Play sound or show notification
             if (typeof window !== "undefined") {
                 const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
                 audio.play().catch(() => { });
+                toast.success(`${MODES[mode].label} complete!`);
             }
         }
         return () => {
             if (interval) clearInterval(interval);
         };
-    }, [isActive, timeLeft]);
+    }, [isActive, timeLeft, mode]);
 
     useEffect(() => {
         resetTimer();
@@ -62,7 +64,11 @@ export function PomodoroTimer() {
 
     return (
         <div className="flex flex-col items-center gap-6 p-6">
-            <div className="flex bg-muted/50 p-1 rounded-full border">
+            <div
+                className="flex bg-muted/50 p-1 rounded-full border"
+                role="tablist"
+                aria-label="Timer mode"
+            >
                 {(Object.keys(MODES) as TimerMode[]).map((m) => (
                     <button
                         key={m}
@@ -73,6 +79,10 @@ export function PomodoroTimer() {
                                 ? "bg-background shadow-sm text-foreground"
                                 : "text-muted-foreground hover:text-foreground"
                         )}
+                        role="tab"
+                        aria-selected={mode === m}
+                        aria-controls="timer-display"
+                        aria-label={MODES[m].label}
                     >
                         {MODES[m].icon}
                         <span className="hidden sm:inline">{MODES[m].label}</span>
@@ -121,7 +131,12 @@ export function PomodoroTimer() {
                         />
                     )}
                 </svg>
-                <div className="absolute flex flex-col items-center" role="timer">
+                <div
+                    id="timer-display"
+                    className="absolute flex flex-col items-center"
+                    role="timer"
+                    aria-live="off"
+                >
                     <span className="text-6xl font-bold tracking-tighter tabular-nums">
                         {formatTime(timeLeft)}
                     </span>
