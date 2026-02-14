@@ -37,17 +37,16 @@ describe("PomodoroTimer", () => {
         render(<PomodoroTimer />);
 
         // Check for tablist
-        const tablist = screen.getByRole("tablist", { name: "Timer mode" });
-        expect(tablist).toBeTruthy();
+        screen.getByRole("tablist", { name: "Timer mode" });
 
         // Check for tabs
         const tabs = screen.getAllByRole("tab");
         expect(tabs).toHaveLength(3);
 
         // Check labels
-        expect(screen.getByLabelText("Focus")).toBeTruthy();
-        expect(screen.getByLabelText("Short Break")).toBeTruthy();
-        expect(screen.getByLabelText("Long Break")).toBeTruthy();
+        screen.getByLabelText("Focus");
+        screen.getByLabelText("Short Break");
+        screen.getByLabelText("Long Break");
 
         // Check initial selection
         const focusTab = screen.getByLabelText("Focus");
