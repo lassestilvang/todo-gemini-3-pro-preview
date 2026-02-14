@@ -1,5 +1,5 @@
 
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { PomodoroTimer } from "./PomodoroTimer";
 import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 
@@ -31,5 +31,33 @@ describe("PomodoroTimer", () => {
 
         // Check for timer role
         expect(screen.getByRole("timer")).toBeTruthy();
+    });
+
+    it("has accessible mode tabs", () => {
+        render(<PomodoroTimer />);
+
+        // Check for tablist
+        screen.getByRole("tablist", { name: "Timer mode" });
+
+        // Check for tabs
+        const tabs = screen.getAllByRole("tab");
+        expect(tabs).toHaveLength(3);
+
+        // Check labels
+        screen.getByLabelText("Focus");
+        screen.getByLabelText("Short Break");
+        screen.getByLabelText("Long Break");
+
+        // Check initial selection
+        const focusTab = screen.getByLabelText("Focus");
+        expect(focusTab.getAttribute("aria-selected")).toBe("true");
+
+        const shortBreakTab = screen.getByLabelText("Short Break");
+        expect(shortBreakTab.getAttribute("aria-selected")).toBe("false");
+
+        // Interaction
+        fireEvent.click(shortBreakTab);
+        expect(shortBreakTab.getAttribute("aria-selected")).toBe("true");
+        expect(focusTab.getAttribute("aria-selected")).toBe("false");
     });
 });
