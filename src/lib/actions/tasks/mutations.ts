@@ -262,7 +262,7 @@ async function updateTaskImpl(
 
   if (taskData.parentId !== undefined && taskData.parentId !== currentTask.parentId) {
     if (taskData.parentId !== null && !isValidId(taskData.parentId)) {
-      throw new Error("Invalid parent ID");
+      throw new ValidationError("Invalid parent ID");
     }
 
     if (taskData.parentId === id) {
