@@ -163,9 +163,9 @@ jobs:
         if: github.event_name == 'pull_request'
         id: neon-name
         run: |
-          # Truncate to 25 chars to avoid 422 errors, sanitize, and remove trailing hyphens
-          SHORT_REF=$(echo "${{ github.head_ref }}" | sed 's/[^a-zA-Z0-9-]//g' | cut -c 1-25 | sed 's/-$//')
-          echo "branch_name=preview/$SHORT_REF" >> $GITHUB_OUTPUT
+          # Use run_id to ensure uniqueness and avoid 422 state conflicts
+          # Format: preview/run-<id>
+          echo "branch_name=preview/run-${{ github.run_id }}" >> $GITHUB_OUTPUT
 
       - name: Get Neon Branch URL (PR)
         if: github.event_name == 'pull_request'
@@ -242,9 +242,9 @@ jobs:
         if: github.event_name == 'pull_request'
         id: neon-name
         run: |
-          # Truncate to 25 chars to avoid 422 errors, sanitize, and remove trailing hyphens
-          SHORT_REF=$(echo "${{ github.head_ref }}" | sed 's/[^a-zA-Z0-9-]//g' | cut -c 1-25 | sed 's/-$//')
-          echo "branch_name=preview/$SHORT_REF" >> $GITHUB_OUTPUT
+          # Use run_id to ensure uniqueness and avoid 422 state conflicts
+          # Format: preview/run-<id>
+          echo "branch_name=preview/run-${{ github.run_id }}" >> $GITHUB_OUTPUT
 
       - name: Get Neon Branch URL (PR)
         if: github.event_name == 'pull_request'
