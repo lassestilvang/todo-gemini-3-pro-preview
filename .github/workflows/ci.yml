@@ -135,10 +135,27 @@ jobs:
             }
           '
 
+  cleanup-neon:
+    name: Cleanup Leaked Branches
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Setup Node
+        uses: actions/setup-node@v4
+      - name: Install neonctl
+        run: npm i -g neonctl@2
+      - name: Delete Leaked Branches
+        run: |
+          # Delete orphaned preview/run-* branches to clear quota
+          neonctl branches list --project-id ${{ secrets.NEON_PROJECT_ID }} --api-key ${{ secrets.NEON_API_KEY }} -o json | \
+          jq -r '.[] | select(.name | startswith("preview/run-")) | .id' | \
+          xargs -I {} -P 5 neonctl branches delete {} --project-id ${{ secrets.NEON_PROJECT_ID }} --api-key ${{ secrets.NEON_API_KEY }} || true
+
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    # Added cleanup-neon dependency
+    needs: [lint, test, cleanup-neon]
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -163,9 +180,9 @@ jobs:
         if: github.event_name == 'pull_request'
         id: neon-name
         run: |
-          # Use run_id to ensure uniqueness and avoid 422 state conflicts
-          # Format: preview/run-<id>
-          echo "branch_name=preview/run-${{ github.run_id }}" >> $GITHUB_OUTPUT
+          # Use stable branch name per PR to avoid leaking branches
+          # Format: preview/pr-<number>
+          echo "branch_name=preview/pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
 
       - name: Get Neon Branch URL (PR)
         if: github.event_name == 'pull_request'
@@ -198,18 +215,14 @@ jobs:
           WORKOS_COOKIE_PASSWORD: ${{ secrets.WORKOS_COOKIE_PASSWORD }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-      - name: Delete Neon Branch
-        if: always() && github.event_name == 'pull_request' && steps.neon-branch.outputs.branch_id != ''
-        uses: neondatabase/delete-branch-action@v3
-        with:
-          project_id: ${{ secrets.NEON_PROJECT_ID }}
-          branch_id: ${{ steps.neon-branch.outputs.branch_id }}
-          api_key: ${{ secrets.NEON_API_KEY }}
+      # Removed Delete Neon Branch step to persist branch for PR duration
 
   e2e:
     name: E2E Tests (${{ matrix.shard }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Added cleanup-neon dependency
+    needs: [cleanup-neon]
     strategy:
       fail-fast: false
       matrix:
@@ -249,9 +262,9 @@ jobs:
         if: github.event_name == 'pull_request'
         id: neon-name
         run: |
-          # Use run_id to ensure uniqueness and avoid 422 state conflicts
-          # Format: preview/run-<id>
-          echo "branch_name=preview/run-${{ github.run_id }}" >> $GITHUB_OUTPUT
+          # Use stable branch name per PR to avoid leaking branches
+          # Format: preview/pr-<number>
+          echo "branch_name=preview/pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
 
       - name: Get Neon Branch URL (PR)
         if: github.event_name == 'pull_request'
@@ -286,13 +299,7 @@ jobs:
           WORKOS_COOKIE_PASSWORD: ${{ secrets.WORKOS_COOKIE_PASSWORD }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-      - name: Delete Neon Branch
-        if: always() && github.event_name == 'pull_request' && steps.neon-branch.outputs.branch_id != ''
-        uses: neondatabase/delete-branch-action@v3
-        with:
-          project_id: ${{ secrets.NEON_PROJECT_ID }}
-          branch_id: ${{ steps.neon-branch.outputs.branch_id }}
-          api_key: ${{ secrets.NEON_API_KEY }}
+      # Removed Delete Neon Branch step to persist branch for PR duration
 
       - name: Upload Blob Report
         uses: actions/upload-artifact@v6
