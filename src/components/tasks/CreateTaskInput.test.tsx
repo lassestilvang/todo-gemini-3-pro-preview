@@ -176,6 +176,61 @@ describe("CreateTaskInput", () => {
         expect((input as HTMLInputElement).value).toBe("Buy milk !high ");
     });
 
+    it("should remove badge when X button is clicked", async () => {
+        const user = userEvent.setup();
+        render(<CreateTaskInput userId="test_user_123" />);
+        const input = screen.getByPlaceholderText(/Add a task/i);
+
+        // Type something with priority syntax
+        await user.click(input);
+        await user.type(input, "Buy milk !high");
+
+        // Wait for badge to appear
+        await waitFor(() => {
+            expect(screen.getByText("high")).toBeDefined();
+        });
+
+        // Find remove button and click it
+        const removeButton = await screen.findByLabelText("Remove priority");
+        await user.click(removeButton);
+
+        // Expect badge to be gone
+        await waitFor(() => {
+            expect(screen.queryByText("high", { selector: "[data-slot='badge']" })).toBeNull();
+        });
+
+        // Expect input to be focused
+        expect(document.activeElement).toBe(input);
+    });
+
+    it("should not submit removed metadata from raw syntax", async () => {
+        const user = userEvent.setup();
+        render(
+            <SyncProvider>
+                <CreateTaskInput userId="test_user_123" />
+            </SyncProvider>
+        );
+
+        const input = screen.getByPlaceholderText(/Add a task/i);
+
+        await user.click(input);
+        await user.type(input, "Buy milk !high");
+
+        const removeButton = await screen.findByLabelText("Remove priority");
+        await user.click(removeButton);
+
+        const addButton = screen.getByRole("button", { name: /Add Task/i });
+        await user.click(addButton);
+
+        await waitFor(() => {
+            expect(mockCreateTask).toHaveBeenCalled();
+        });
+
+        const payload = mockCreateTask.mock.calls[0]?.[0] as { title: string; priority: string };
+        expect(payload.title).toBe("Buy milk");
+        expect(payload.priority).toBe("none");
+    });
+
     it.each([
         { keyName: "Cmd", key: "{Meta>}{Enter}{/Meta}", taskName: "Keyboard Task" },
         { keyName: "Ctrl", key: "{Control>}{Enter}{/Control}", taskName: "Ctrl Task" },
