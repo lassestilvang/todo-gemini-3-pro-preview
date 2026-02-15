@@ -23,6 +23,22 @@ import { useSync } from "@/components/providers/sync-provider";
 import { useUser } from "@/components/providers/UserProvider";
 import { formatDuePeriod } from "@/lib/due-utils";
 
+function BadgeRemoveButton({ onClick, label }: { onClick: () => void, label: string }) {
+    return (
+        <button
+            type="button"
+            onClick={(e) => {
+                e.stopPropagation();
+                onClick();
+            }}
+            className="ml-1 hover:bg-muted rounded-full p-0.5 transition-colors"
+            aria-label={label}
+        >
+            <X className="h-3 w-3 text-muted-foreground" />
+        </button>
+    );
+}
+
 export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelIds }: { listId?: number, defaultDueDate?: Date | string, userId: string, defaultLabelIds?: number[] }) {
     const { dispatch } = useSync();
     const { weekStartsOnMonday } = useUser();
@@ -194,29 +210,37 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                     {title.trim() && (priority !== "none" || dueDate || energyLevel || context) && (
                         <div className="px-4 pb-2 flex flex-wrap gap-1.5">
                             {priority !== "none" && (
-                                <Badge variant="outline" className="text-xs gap-1">
+                                <Badge variant="outline" className="text-xs gap-1 pr-1.5">
                                     <Flag className="h-3 w-3" />
                                     {priority}
+                                    <BadgeRemoveButton onClick={() => { setPriority("none"); inputRef.current?.focus(); }} label="Remove priority" />
                                 </Badge>
                             )}
                             {dueDate && (
-                                <Badge variant="outline" className="text-xs gap-1">
+                                <Badge variant="outline" className="text-xs gap-1 pr-1.5">
                                     <Calendar className="h-3 w-3" />
                                     {dueDatePrecision === "day"
                                         ? format(dueDate, "MMM d")
                                         : formatDuePeriod({ dueDate, dueDatePrecision })}
+                                    <BadgeRemoveButton onClick={() => {
+                                        setDueDate(undefined);
+                                        setDueDateSource("none");
+                                        inputRef.current?.focus();
+                                    }} label="Remove due date" />
                                 </Badge>
                             )}
                             {energyLevel && (
-                                <Badge variant="outline" className="text-xs gap-1">
+                                <Badge variant="outline" className="text-xs gap-1 pr-1.5">
                                     <Zap className="h-3 w-3" />
                                     {energyLevel}
+                                    <BadgeRemoveButton onClick={() => { setEnergyLevel(undefined); inputRef.current?.focus(); }} label="Remove energy level" />
                                 </Badge>
                             )}
                             {context && (
-                                <Badge variant="outline" className="text-xs gap-1">
+                                <Badge variant="outline" className="text-xs gap-1 pr-1.5">
                                     <MapPin className="h-3 w-3" />
                                     {context}
+                                    <BadgeRemoveButton onClick={() => { setContext(undefined); inputRef.current?.focus(); }} label="Remove context" />
                                 </Badge>
                             )}
                         </div>

@@ -176,6 +176,33 @@ describe("CreateTaskInput", () => {
         expect((input as HTMLInputElement).value).toBe("Buy milk !high ");
     });
 
+    it("should remove badge when X button is clicked", async () => {
+        const user = userEvent.setup();
+        render(<CreateTaskInput userId="test_user_123" />);
+        const input = screen.getByPlaceholderText(/Add a task/i);
+
+        // Type something with priority syntax
+        await user.click(input);
+        await user.type(input, "Buy milk !high");
+
+        // Wait for badge to appear
+        await waitFor(() => {
+            expect(screen.getByText("high")).toBeDefined();
+        });
+
+        // Find remove button and click it
+        const removeButton = await screen.findByLabelText("Remove priority");
+        await user.click(removeButton);
+
+        // Expect badge to be gone
+        await waitFor(() => {
+            expect(screen.queryByText("high", { selector: "[data-slot='badge']" })).toBeNull();
+        });
+
+        // Expect input to be focused
+        expect(document.activeElement).toBe(input);
+    });
+
     it.each([
         { keyName: "Cmd", key: "{Meta>}{Enter}{/Meta}", taskName: "Keyboard Task" },
         { keyName: "Ctrl", key: "{Control>}{Enter}{/Control}", taskName: "Ctrl Task" },
