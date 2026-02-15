@@ -144,32 +144,37 @@ jobs:
         uses: actions/setup-node@v4
       - name: Install neonctl
         run: npm i -g neonctl@2
-      - name: Delete Leaked Branches
+
+      - name: Cleanup Current PR Branch
+        continue-on-error: true
         run: |
-          echo "Listing branches..."
-          neonctl branches list --project-id ${{ secrets.NEON_PROJECT_ID }} --api-key ${{ secrets.NEON_API_KEY }} -o json > branches.json
+          # Explicitly delete the branch for this PR if it exists to ensure a fresh start
+          # and clear the "already exists" state if the limit is hit.
+          BRANCH_NAME="preview/pr-${{ github.event.pull_request.number }}"
+          echo "Attempting to delete current PR branch: $BRANCH_NAME"
 
-          echo "Found branches:"
-          cat branches.json | jq -r '.[].name'
+          # Find branch ID by name
+          BRANCH_ID=$(neonctl branches list --project-id ${{ secrets.NEON_PROJECT_ID }} --api-key ${{ secrets.NEON_API_KEY }} -o json | jq -r --arg name "$BRANCH_NAME" '.[] | select(.name == $name) | .id')
 
-          echo "Identifying leaks (preview/run-*)..."
-          LEAKED_IDS=$(cat branches.json | jq -r '.[] | select(.name | startswith("preview/run-")) | .id')
-
-          if [ -z "$LEAKED_IDS" ]; then
-            echo "No leaked preview/run-* branches found."
+          if [ ! -z "$BRANCH_ID" ]; then
+             echo "Found existing branch $BRANCH_NAME with ID $BRANCH_ID. Deleting..."
+             neonctl branches delete $BRANCH_ID --project-id ${{ secrets.NEON_PROJECT_ID }} --api-key ${{ secrets.NEON_API_KEY }}
           else
-            echo "Deleting leaked branches: $LEAKED_IDS"
-            echo "$LEAKED_IDS" | xargs -I {} -P 5 neonctl branches delete {} --project-id ${{ secrets.NEON_PROJECT_ID }} --api-key ${{ secrets.NEON_API_KEY }}
+             echo "Branch $BRANCH_NAME does not exist."
           fi
 
-          # Optional: Clean up current PR branch if it exists, to ensure fresh start (and handle limit edge cases)
-          CURRENT_PR_BRANCH="preview/pr-${{ github.event.pull_request.number }}"
-          echo "Checking for current PR branch: $CURRENT_PR_BRANCH"
-          CURRENT_ID=$(cat branches.json | jq -r --arg name "$CURRENT_PR_BRANCH" '.[] | select(.name == $name) | .id')
+      - name: Cleanup Orphaned Run Branches
+        continue-on-error: true
+        run: |
+          # Delete leaked 'preview/run-*' branches from previous failures
+          echo "Searching for leaked 'preview/run-*' branches..."
+          LEAKED_IDS=$(neonctl branches list --project-id ${{ secrets.NEON_PROJECT_ID }} --api-key ${{ secrets.NEON_API_KEY }} -o json | jq -r '.[] | select(.name | startswith("preview/run-")) | .id')
 
-          if [ ! -z "$CURRENT_ID" ]; then
-             echo "Deleting existing branch for this PR ($CURRENT_PR_BRANCH) to ensure fresh environment..."
-             neonctl branches delete $CURRENT_ID --project-id ${{ secrets.NEON_PROJECT_ID }} --api-key ${{ secrets.NEON_API_KEY }}
+          if [ ! -z "$LEAKED_IDS" ]; then
+            echo "Found leaked branches: $LEAKED_IDS"
+            echo "$LEAKED_IDS" | xargs -I {} -P 5 neonctl branches delete {} --project-id ${{ secrets.NEON_PROJECT_ID }} --api-key ${{ secrets.NEON_API_KEY }}
+          else
+            echo "No leaked 'preview/run-*' branches found."
           fi
 
   build:
@@ -234,6 +239,8 @@ jobs:
           WORKOS_CLIENT_ID: ${{ secrets.WORKOS_CLIENT_ID }}
           WORKOS_COOKIE_PASSWORD: ${{ secrets.WORKOS_COOKIE_PASSWORD }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+      # Removed Delete Neon Branch step to persist branch for PR duration
 
   e2e:
     name: E2E Tests (${{ matrix.shard }})
