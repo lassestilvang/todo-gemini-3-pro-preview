@@ -163,9 +163,9 @@ jobs:
         if: github.event_name == 'pull_request'
         id: neon-name
         run: |
-          # Use run_id to ensure uniqueness and avoid 422 state conflicts
-          # Format: preview/run-<id>
-          echo "branch_name=preview/run-${{ github.run_id }}" >> $GITHUB_OUTPUT
+          # Use pr_number to reuse the same branch for the PR life-cycle
+          # Format: preview/pr-<number>
+          echo "branch_name=preview/pr-${{ github.event.number }}" >> $GITHUB_OUTPUT
 
       - name: Get Neon Branch URL (PR)
         if: github.event_name == 'pull_request'
@@ -197,14 +197,6 @@ jobs:
           WORKOS_CLIENT_ID: ${{ secrets.WORKOS_CLIENT_ID }}
           WORKOS_COOKIE_PASSWORD: ${{ secrets.WORKOS_COOKIE_PASSWORD }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-
-      - name: Delete Neon Branch
-        if: always() && github.event_name == 'pull_request' && steps.neon-branch.outputs.branch_id != ''
-        uses: neondatabase/delete-branch-action@v3
-        with:
-          project_id: ${{ secrets.NEON_PROJECT_ID }}
-          branch_id: ${{ steps.neon-branch.outputs.branch_id }}
-          api_key: ${{ secrets.NEON_API_KEY }}
 
   e2e:
     name: E2E Tests (${{ matrix.shard }})
@@ -249,9 +241,9 @@ jobs:
         if: github.event_name == 'pull_request'
         id: neon-name
         run: |
-          # Use run_id to ensure uniqueness and avoid 422 state conflicts
-          # Format: preview/run-<id>
-          echo "branch_name=preview/run-${{ github.run_id }}" >> $GITHUB_OUTPUT
+          # Use pr_number to reuse the same branch for the PR life-cycle
+          # Format: preview/pr-<number>
+          echo "branch_name=preview/pr-${{ github.event.number }}" >> $GITHUB_OUTPUT
 
       - name: Get Neon Branch URL (PR)
         if: github.event_name == 'pull_request'
@@ -285,14 +277,6 @@ jobs:
           WORKOS_CLIENT_ID: ${{ secrets.WORKOS_CLIENT_ID }}
           WORKOS_COOKIE_PASSWORD: ${{ secrets.WORKOS_COOKIE_PASSWORD }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-
-      - name: Delete Neon Branch
-        if: always() && github.event_name == 'pull_request' && steps.neon-branch.outputs.branch_id != ''
-        uses: neondatabase/delete-branch-action@v3
-        with:
-          project_id: ${{ secrets.NEON_PROJECT_ID }}
-          branch_id: ${{ steps.neon-branch.outputs.branch_id }}
-          api_key: ${{ secrets.NEON_API_KEY }}
 
       - name: Upload Blob Report
         uses: actions/upload-artifact@v6
