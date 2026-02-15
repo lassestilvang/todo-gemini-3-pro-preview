@@ -440,7 +440,7 @@ export const timeEntries = sqliteTable("time_entries", {
     userIdIdx: index("time_entries_user_id_idx").on(table.userId),
     startedAtIdx: index("time_entries_started_at_idx").on(table.startedAt),
     // Composite index for analytics queries (stats by user and time range)
-    userIdStartedAtIdx: index("time_entries_user_id_started_at_idx").on(table.userId, table.startedAt, table.durationMinutes),
+    userIdStartedAtIdx: index("time_entries_user_id_started_at_duration_minutes_idx").on(table.userId, table.startedAt, table.durationMinutes),
 }));
 
 export const customIcons = sqliteTable("custom_icons", {
