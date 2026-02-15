@@ -203,6 +203,34 @@ describe("CreateTaskInput", () => {
         expect(document.activeElement).toBe(input);
     });
 
+    it("should not submit removed metadata from raw syntax", async () => {
+        const user = userEvent.setup();
+        render(
+            <SyncProvider>
+                <CreateTaskInput userId="test_user_123" />
+            </SyncProvider>
+        );
+
+        const input = screen.getByPlaceholderText(/Add a task/i);
+
+        await user.click(input);
+        await user.type(input, "Buy milk !high");
+
+        const removeButton = await screen.findByLabelText("Remove priority");
+        await user.click(removeButton);
+
+        const addButton = screen.getByRole("button", { name: /Add Task/i });
+        await user.click(addButton);
+
+        await waitFor(() => {
+            expect(mockCreateTask).toHaveBeenCalled();
+        });
+
+        const payload = mockCreateTask.mock.calls[0]?.[0] as { title: string; priority: string };
+        expect(payload.title).toBe("Buy milk");
+        expect(payload.priority).toBe("none");
+    });
+
     it.each([
         { keyName: "Cmd", key: "{Meta>}{Enter}{/Meta}", taskName: "Keyboard Task" },
         { keyName: "Ctrl", key: "{Control>}{Enter}{/Control}", taskName: "Ctrl Task" },
