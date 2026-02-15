@@ -146,15 +146,35 @@ jobs:
         run: npm i -g neonctl@2
       - name: Delete Leaked Branches
         run: |
-          # Delete orphaned preview/run-* branches to clear quota
-          neonctl branches list --project-id ${{ secrets.NEON_PROJECT_ID }} --api-key ${{ secrets.NEON_API_KEY }} -o json | \
-          jq -r '.[] | select(.name | startswith("preview/run-")) | .id' | \
-          xargs -I {} -P 5 neonctl branches delete {} --project-id ${{ secrets.NEON_PROJECT_ID }} --api-key ${{ secrets.NEON_API_KEY }} || true
+          echo "Listing branches..."
+          neonctl branches list --project-id ${{ secrets.NEON_PROJECT_ID }} --api-key ${{ secrets.NEON_API_KEY }} -o json > branches.json
+
+          echo "Found branches:"
+          cat branches.json | jq -r '.[].name'
+
+          echo "Identifying leaks (preview/run-*)..."
+          LEAKED_IDS=$(cat branches.json | jq -r '.[] | select(.name | startswith("preview/run-")) | .id')
+
+          if [ -z "$LEAKED_IDS" ]; then
+            echo "No leaked preview/run-* branches found."
+          else
+            echo "Deleting leaked branches: $LEAKED_IDS"
+            echo "$LEAKED_IDS" | xargs -I {} -P 5 neonctl branches delete {} --project-id ${{ secrets.NEON_PROJECT_ID }} --api-key ${{ secrets.NEON_API_KEY }}
+          fi
+
+          # Optional: Clean up current PR branch if it exists, to ensure fresh start (and handle limit edge cases)
+          CURRENT_PR_BRANCH="preview/pr-${{ github.event.pull_request.number }}"
+          echo "Checking for current PR branch: $CURRENT_PR_BRANCH"
+          CURRENT_ID=$(cat branches.json | jq -r --arg name "$CURRENT_PR_BRANCH" '.[] | select(.name == $name) | .id')
+
+          if [ ! -z "$CURRENT_ID" ]; then
+             echo "Deleting existing branch for this PR ($CURRENT_PR_BRANCH) to ensure fresh environment..."
+             neonctl branches delete $CURRENT_ID --project-id ${{ secrets.NEON_PROJECT_ID }} --api-key ${{ secrets.NEON_API_KEY }}
+          fi
 
   build:
     name: Build
     runs-on: ubuntu-latest
-    # Added cleanup-neon dependency
     needs: [lint, test, cleanup-neon]
     steps:
       - name: Checkout code
@@ -215,13 +235,10 @@ jobs:
           WORKOS_COOKIE_PASSWORD: ${{ secrets.WORKOS_COOKIE_PASSWORD }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-      # Removed Delete Neon Branch step to persist branch for PR duration
-
   e2e:
     name: E2E Tests (${{ matrix.shard }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    # Added cleanup-neon dependency
     needs: [cleanup-neon]
     strategy:
       fail-fast: false
@@ -298,8 +315,6 @@ jobs:
           WORKOS_CLIENT_ID: ${{ secrets.WORKOS_CLIENT_ID }}
           WORKOS_COOKIE_PASSWORD: ${{ secrets.WORKOS_COOKIE_PASSWORD }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-
-      # Removed Delete Neon Branch step to persist branch for PR duration
 
       - name: Upload Blob Report
         uses: actions/upload-artifact@v6
