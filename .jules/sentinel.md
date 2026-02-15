@@ -77,3 +77,8 @@
 **Vulnerability:** `addDependency`, `removeDependency`, `createReminder`, and `deleteReminder` accepted `taskId` or `blockerId` arguments without verifying if these tasks belonged to the authenticated `userId`. This allowed users to link/block other users' tasks or manage reminders for tasks they don't own.
 **Learning:** `requireUser(userId)` only validates the session user. It does NOT automatically validate that foreign keys (like `taskId`) belong to that user. Explicit ownership checks are mandatory for all relational IDs.
 **Prevention:** Before inserting/deleting dependent records (dependencies, reminders, subtasks), always query the parent `tasks` table with `where(and(eq(tasks.id, foreignId), eq(tasks.userId, userId)))` to confirm ownership.
+
+## 2026-02-14 - [Critical] IDOR in Google Tasks Mapping
+**Vulnerability:** `setGoogleTasksListMappings` in `src/lib/actions/google-tasks.ts` accepted `listId` without verifying ownership, allowing attackers to map their Google Task list to a victim's local list and view/modify tasks via sync.
+**Learning:** Checking `process.env.NODE_ENV === "test"` *before* security checks can mask vulnerabilities in tests if the test environment returns early. Security checks must always run before environment bypasses.
+**Prevention:** Always place `requireUser` and ownership verification at the very top of the function. Ensure regression tests (like `google-tasks.security.test.ts`) fail if these checks are missing or bypassed.

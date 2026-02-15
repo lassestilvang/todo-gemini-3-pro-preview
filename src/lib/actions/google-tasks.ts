@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db, externalEntityMap, externalIntegrations, externalSyncConflicts, lists, tasks } from "@/db";
 import { getCurrentUser } from "@/lib/auth";
 import { createGoogleTasksClient, getGoogleTasksAccessToken } from "@/lib/google-tasks/service";
@@ -129,13 +129,31 @@ export async function getGoogleTasksMappingData() {
 }
 
 export async function setGoogleTasksListMappings(mappings: { tasklistId: string; listId: number | null }[]) {
-    if (process.env.NODE_ENV === "test") {
-        return { success: true };
-    }
-
     const user = await getCurrentUser();
     if (!user) {
         return { success: false, error: "Not authenticated" };
+    }
+
+    const listIds = mappings
+        .map((m) => m.listId)
+        .filter((id): id is number => id !== null);
+
+    if (listIds.length > 0) {
+        const validLists = await db
+            .select({ id: lists.id })
+            .from(lists)
+            .where(and(eq(lists.userId, user.id), inArray(lists.id, listIds)));
+
+        const validListIds = new Set(validLists.map((l) => l.id));
+        const invalidIds = listIds.filter((id) => !validListIds.has(id));
+
+        if (invalidIds.length > 0) {
+            return { success: false, error: "One or more lists not found or access denied" };
+        }
+    }
+
+    if (process.env.NODE_ENV === "test") {
+        return { success: true };
     }
 
     await db
