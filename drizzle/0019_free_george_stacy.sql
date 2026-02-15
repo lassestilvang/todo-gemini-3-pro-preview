@@ -1,0 +1,1 @@
+CREATE INDEX "time_entries_user_id_started_at_idx" ON "time_entries" USING btree ("user_id","started_at","duration_minutes");
