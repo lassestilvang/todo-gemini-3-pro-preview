@@ -24,6 +24,7 @@ describe("Security Headers", () => {
     expect(headerMap.get("X-Frame-Options")).toBe("SAMEORIGIN");
     expect(headerMap.get("Referrer-Policy")).toBe("strict-origin-when-cross-origin");
     expect(headerMap.get("Permissions-Policy")).toContain("camera=()");
+    expect(headerMap.get("Permissions-Policy")).not.toContain("microphone=()");
   });
 
   it("should have correct CSP and HSTS in production", async () => {
