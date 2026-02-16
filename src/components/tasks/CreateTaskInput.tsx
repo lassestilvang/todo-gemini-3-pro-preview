@@ -362,17 +362,24 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                                     setIsExpanded(true);
                                 }} />
                                 <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                                            aria-label="Smart syntax guide"
-                                        >
-                                            <Keyboard className="h-4 w-4" />
-                                        </Button>
-                                    </PopoverTrigger>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                                    aria-label="Smart syntax guide"
+                                                >
+                                                    <Keyboard className="h-4 w-4" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Smart Syntax Guide</p>
+                                        </TooltipContent>
+                                    </Tooltip>
                                     <PopoverContent className="w-80">
                                         <div className="grid gap-4">
                                             <div className="space-y-1">
