@@ -14,7 +14,7 @@ describe("Security Headers", () => {
     expect(catchAllHeaders).toBeDefined();
 
     const headers = catchAllHeaders!.headers;
-    const headerMap = new Map(headers.map((h: any) => [h.key, h.value]));
+    const headerMap = new Map(headers.map((h: { key: string; value: string }) => [h.key, h.value]));
 
     // HSTS should NOT be present in non-prod
     expect(headerMap.has("Strict-Transport-Security")).toBe(false);
