@@ -589,6 +589,7 @@ export function TaskListWithSettings({
 
     const { overdueTasks, activeTasks, completedTasks } = useMemo(() => {
         const todayStart = startOfDay(new Date());
+        const todayStartTime = todayStart.getTime();
 
         const overdue: Task[] = [];
         const active: Task[] = [];
@@ -598,11 +599,21 @@ export function TaskListWithSettings({
             if (task.isCompleted) {
                 if (settings.showCompleted) completed.push(task);
             } else if (task.dueDate) {
-                const isOverdue = isDueOverdue(
-                    { dueDate: task.dueDate, dueDatePrecision: task.dueDatePrecision ?? null },
-                    todayStart,
-                    weekStartsOnMonday ?? false
-                );
+                // Perf: inline isDueOverdue check for 'day' precision to avoid function calls and Date allocations.
+                // For 1k tasks, this saves ~1000 Date allocations per render.
+                const precision = task.dueDatePrecision ?? "day";
+                let isOverdue = false;
+
+                if (precision === "day") {
+                    isOverdue = task.dueDate.getTime() < todayStartTime;
+                } else {
+                    isOverdue = isDueOverdue(
+                        { dueDate: task.dueDate, dueDatePrecision: precision },
+                        todayStart,
+                        weekStartsOnMonday ?? false
+                    );
+                }
+
                 if (isOverdue) {
                     overdue.push(task);
                 } else {
