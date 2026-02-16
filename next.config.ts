@@ -30,40 +30,46 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_WORKOS_REDIRECT_URI: getWorkOSRedirectURI(),
   },
   async headers() {
+    const headers = [
+      {
+        key: "X-DNS-Prefetch-Control",
+        value: "on",
+      },
+      {
+        key: "X-Frame-Options",
+        value: "SAMEORIGIN",
+      },
+      {
+        key: "X-Content-Type-Options",
+        value: "nosniff",
+      },
+      {
+        key: "Referrer-Policy",
+        value: "strict-origin-when-cross-origin",
+      },
+      {
+        key: "Permissions-Policy",
+        value: "camera=(), geolocation=(), browsing-topics=()",
+      },
+    ];
+
     if (process.env.NODE_ENV === "production") {
-      return [
-        {
-          source: "/:path*",
-          headers: [
-            {
-              key: "X-DNS-Prefetch-Control",
-              value: "on",
-            },
-            {
-              key: "Strict-Transport-Security",
-              value: "max-age=63072000; includeSubDomains; preload",
-            },
-            {
-              key: "X-Frame-Options",
-              value: "SAMEORIGIN",
-            },
-            {
-              key: "X-Content-Type-Options",
-              value: "nosniff",
-            },
-            {
-              key: "Referrer-Policy",
-              value: "origin-when-cross-origin",
-            },
-            {
-              key: "Content-Security-Policy",
-              value: "default-src 'self'; script-src 'self' 'sha256-d7OUjcahyX/tkd5XCsTfBJOwC4nLY0fH0sFPd3gTr/w='; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://cdn.jsdelivr.net; font-src 'self' data:;",
-            },
-          ],
-        },
-      ];
+      headers.push({
+        key: "Strict-Transport-Security",
+        value: "max-age=63072000; includeSubDomains; preload",
+      });
+      headers.push({
+        key: "Content-Security-Policy",
+        value: "default-src 'self'; script-src 'self' 'sha256-d7OUjcahyX/tkd5XCsTfBJOwC4nLY0fH0sFPd3gTr/w='; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://cdn.jsdelivr.net https://*.googleusercontent.com https://avatars.githubusercontent.com https://*.workos.com; font-src 'self' data:; connect-src 'self' https://*.workos.com;",
+      });
     }
-    return [];
+
+    return [
+      {
+        source: "/:path*",
+        headers,
+      },
+    ];
   },
 };
 
