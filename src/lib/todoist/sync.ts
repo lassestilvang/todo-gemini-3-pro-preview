@@ -280,18 +280,37 @@ async function removeDeletedTasks(params: {
     const remoteTasks = (await client.getTasks()) as TodoistTask[];
     const remoteTaskIds = new Set(remoteTasks.map((task) => task.id));
 
+    const externalIdsToDelete: string[] = [];
+    const mappingIdsForExternalDelete: number[] = [];
+    const mappingIdsForOrphanDelete: number[] = [];
+
     for (const mapping of taskMappings) {
         if (mapping.localId && !localTaskMap.has(mapping.localId)) {
             if (mapping.externalId) {
-                await client.deleteTask(mapping.externalId);
+                externalIdsToDelete.push(mapping.externalId);
+                mappingIdsForExternalDelete.push(mapping.id);
+            } else {
+                mappingIdsForOrphanDelete.push(mapping.id);
             }
-            await db.delete(externalEntityMap).where(eq(externalEntityMap.id, mapping.id));
             continue;
         }
 
         if (!mapping.localId && mapping.externalId && !remoteTaskIds.has(mapping.externalId)) {
-            await db.delete(externalEntityMap).where(eq(externalEntityMap.id, mapping.id));
+            mappingIdsForOrphanDelete.push(mapping.id);
         }
+    }
+
+    // Always delete orphan mappings that don't require external API calls
+    if (mappingIdsForOrphanDelete.length > 0) {
+        await db.delete(externalEntityMap).where(inArray(externalEntityMap.id, mappingIdsForOrphanDelete));
+    }
+
+    if (externalIdsToDelete.length > 0) {
+        // Parallelize external deletions to avoid N+1 API calls.
+        // If any deletion fails, the sync will throw and subsequent DB cleanup for these tasks will be skipped,
+        // maintaining a state where we retry the deletion in the next sync.
+        await Promise.all(externalIdsToDelete.map((id) => client.deleteTask(id)));
+        await db.delete(externalEntityMap).where(inArray(externalEntityMap.id, mappingIdsForExternalDelete));
     }
 }
 
