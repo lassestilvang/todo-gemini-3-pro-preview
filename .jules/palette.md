@@ -16,14 +16,6 @@
 **Learning:** Adding `aria-live="polite"` to a second-by-second countdown timer floods screen readers with constant updates, making the rest of the page unusable.
 **Action:** Use `role="timer"` without `aria-live` for frequently updating timers, or only announce major milestones.
 
-## 2024-05-23 - Contextual Empty States
-**Learning:** Generic "No items" empty states fail to guide users or explain *why* a list is empty. Users might think it's an error or feel lost.
-**Action:** Use context-aware empty states (e.g., "All caught up!" for Inbox vs "No completed tasks yet" for History) with relevant icons to provide clarity and delight.
-
-## 2024-05-23 - Contextual Empty States
-**Learning:** Generic "No items" empty states fail to guide users or explain *why* a list is empty. Users might think it's an error or feel lost.
-**Action:** Use context-aware empty states (e.g., "All caught up!" for Inbox vs "No completed tasks yet" for History) with relevant icons to provide clarity and delight.
-
 ## 2024-05-24 - Affordance Mismatch
 **Learning:** Elements styled with `cursor-pointer` must be interactive. Users interpret the pointer cursor as a promise of clickability. If clicking does nothing, trust is eroded.
 **Action:** Only apply `cursor-pointer` when an `onClick` handler is present, or ensure the element is a functional link/button.
@@ -36,3 +28,6 @@
 **Learning:** Rendering relative dates like "Today" directly during SSR causes hydration mismatches when server and client timezones differ.
 **Action:** Always gate relative date formatting with a `mounted` check to ensure the client re-renders with the correct local time.
 
+## 2025-02-18 - Mobile Accessibility of Icon-Only Buttons
+**Learning:** Buttons containing only an icon and text wrapped in `hidden sm:inline` are inaccessible on mobile devices because screen readers ignore content with `display: none` (implied by `hidden`).
+**Action:** Always add `aria-label` to buttons that might be icon-only on smaller breakpoints, ensuring the label matches the hidden text.
