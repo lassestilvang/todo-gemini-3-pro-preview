@@ -65,6 +65,23 @@ describe("CreateTaskInput", () => {
         });
     });
 
+    it("should show tooltip for smart syntax guide", async () => {
+        const user = userEvent.setup();
+        render(<CreateTaskInput userId="test_user_123" />);
+        const input = screen.getByPlaceholderText(/Add a task/i);
+
+        // Expand input
+        await user.click(input);
+
+        // Find and hover syntax guide button
+        const guideButton = await screen.findByLabelText("Smart syntax guide");
+        await user.hover(guideButton);
+
+        await waitFor(() => {
+            expect(screen.getByText("Smart Syntax Guide")).toBeDefined();
+        });
+    });
+
     afterEach(() => {
         consoleErrorSpy.mockRestore();
         cleanup();
