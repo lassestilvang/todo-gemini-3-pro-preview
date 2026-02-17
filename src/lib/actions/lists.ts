@@ -90,7 +90,13 @@ async function reorderListsImpl(userId: string, items: { id: number; position: n
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
   // ⚡ Bolt Opt: Parallelize syncs to reduce latency
-  await Promise.allSettled([syncTodoistNow(), syncGoogleTasksNow()]);
+  const results = await Promise.allSettled([syncTodoistNow(), syncGoogleTasksNow()]);
+  results.forEach((result, i) => {
+    if (result.status === "rejected") {
+      const service = i === 0 ? "Todoist" : "Google Tasks";
+      console.error(`${service} sync failed:`, result.reason);
+    }
+  });
   // Also revalidate path to ensure client router cache is updated for side effects
   revalidatePath("/", "layout");
 }
@@ -176,7 +182,13 @@ async function createListImpl(data: typeof lists.$inferInsert) {
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
   // ⚡ Bolt Opt: Parallelize syncs to reduce latency
-  await Promise.allSettled([syncTodoistNow(), syncGoogleTasksNow()]);
+  const results = await Promise.allSettled([syncTodoistNow(), syncGoogleTasksNow()]);
+  results.forEach((result, i) => {
+    if (result.status === "rejected") {
+      const service = i === 0 ? "Todoist" : "Google Tasks";
+      console.error(`${service} sync failed:`, result.reason);
+    }
+  });
 
   revalidateTag(`lists-${effectiveUserId}`, 'max');
   revalidatePath("/", "layout");
@@ -233,7 +245,13 @@ async function updateListImpl(
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
   // ⚡ Bolt Opt: Parallelize syncs to reduce latency
-  await Promise.allSettled([syncTodoistNow(), syncGoogleTasksNow()]);
+  const results = await Promise.allSettled([syncTodoistNow(), syncGoogleTasksNow()]);
+  results.forEach((result, i) => {
+    if (result.status === "rejected") {
+      const service = i === 0 ? "Todoist" : "Google Tasks";
+      console.error(`${service} sync failed:`, result.reason);
+    }
+  });
 
   revalidateTag(`lists-${userId}`, 'max');
   revalidatePath("/", "layout");
@@ -279,7 +297,13 @@ async function deleteListImpl(id: number, userId: string) {
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
   // ⚡ Bolt Opt: Parallelize syncs to reduce latency
-  await Promise.allSettled([syncTodoistNow(), syncGoogleTasksNow()]);
+  const results = await Promise.allSettled([syncTodoistNow(), syncGoogleTasksNow()]);
+  results.forEach((result, i) => {
+    if (result.status === "rejected") {
+      const service = i === 0 ? "Todoist" : "Google Tasks";
+      console.error(`${service} sync failed:`, result.reason);
+    }
+  });
 
   revalidateTag(`lists-${userId}`, 'max');
   revalidatePath("/", "layout");

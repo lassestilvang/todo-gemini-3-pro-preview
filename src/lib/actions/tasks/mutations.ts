@@ -177,10 +177,13 @@ async function createTaskImpl(data: typeof tasks.$inferInsert & { labelIds?: num
       const { syncTodoistNow } = await import("@/lib/actions/todoist");
       const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
       // ⚡ Bolt Opt: Parallelize syncs to reduce latency
-      await Promise.allSettled([
-        syncTodoistNow().catch((e) => console.error("Todoist sync failed:", e)),
-        syncGoogleTasksNow().catch((e) => console.error("Google Tasks sync failed:", e))
-      ]);
+      const results = await Promise.allSettled([syncTodoistNow(), syncGoogleTasksNow()]);
+      results.forEach((result, i) => {
+        if (result.status === "rejected") {
+          const service = i === 0 ? "Todoist" : "Google Tasks";
+          console.error(`${service} sync failed:`, result.reason);
+        }
+      });
     } catch (error) {
       console.error("Sync dispatch failed:", error);
     }
@@ -417,7 +420,13 @@ async function updateTaskImpl(
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
   // ⚡ Bolt Opt: Parallelize syncs to reduce latency
-  await Promise.allSettled([syncTodoistNow(), syncGoogleTasksNow()]);
+  const results = await Promise.allSettled([syncTodoistNow(), syncGoogleTasksNow()]);
+  results.forEach((result, i) => {
+    if (result.status === "rejected") {
+      const service = i === 0 ? "Todoist" : "Google Tasks";
+      console.error(`${service} sync failed:`, result.reason);
+    }
+  });
 
   revalidatePath("/", "layout");
 }
@@ -448,7 +457,13 @@ async function deleteTaskImpl(id: number, userId: string) {
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
   // ⚡ Bolt Opt: Parallelize syncs to reduce latency
-  await Promise.allSettled([syncTodoistNow(), syncGoogleTasksNow()]);
+  const results = await Promise.allSettled([syncTodoistNow(), syncGoogleTasksNow()]);
+  results.forEach((result, i) => {
+    if (result.status === "rejected") {
+      const service = i === 0 ? "Todoist" : "Google Tasks";
+      console.error(`${service} sync failed:`, result.reason);
+    }
+  });
   revalidatePath("/", "layout");
 }
 
