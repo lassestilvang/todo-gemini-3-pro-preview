@@ -24,20 +24,40 @@ async function updateUserPreferencesImpl(
 ) {
     await requireUser(userId);
 
-    const sanitizedData = { ...data };
-    if (typeof sanitizedData.calendarDenseTooltipThreshold === "number") {
-        // Perf: clamp threshold to a safe range to avoid extreme values that
-        // would either disable tooltips entirely or render too many tooltips.
-        const clamped = Math.max(1, Math.min(20, Math.round(sanitizedData.calendarDenseTooltipThreshold)));
-        sanitizedData.calendarDenseTooltipThreshold = clamped;
+    // Whitelist only allowed fields to prevent Mass Assignment
+    const updatePayload: Partial<typeof users.$inferInsert> = {};
+
+    if (data.use24HourClock !== undefined) {
+        updatePayload.use24HourClock = data.use24HourClock;
     }
 
-    await db
-        .update(users)
-        .set(sanitizedData)
-        .where(eq(users.id, userId));
+    if (data.weekStartsOnMonday !== undefined) {
+        updatePayload.weekStartsOnMonday = data.weekStartsOnMonday;
+    }
 
-    revalidatePath("/", "layout");
+    if (data.calendarUseNativeTooltipsOnDenseDays !== undefined) {
+        updatePayload.calendarUseNativeTooltipsOnDenseDays = data.calendarUseNativeTooltipsOnDenseDays;
+    }
+
+    if (data.calendarDenseTooltipThreshold !== undefined) {
+        if (typeof data.calendarDenseTooltipThreshold === "number") {
+            // Perf: clamp threshold to a safe range to avoid extreme values that
+            // would either disable tooltips entirely or render too many tooltips.
+            updatePayload.calendarDenseTooltipThreshold = Math.max(1, Math.min(20, Math.round(data.calendarDenseTooltipThreshold)));
+        } else {
+            updatePayload.calendarDenseTooltipThreshold = data.calendarDenseTooltipThreshold;
+        }
+    }
+
+    // Only update if there are changes to avoid empty update queries
+    if (Object.keys(updatePayload).length > 0) {
+        await db
+            .update(users)
+            .set(updatePayload)
+            .where(eq(users.id, userId));
+
+        revalidatePath("/", "layout");
+    }
 }
 
 export const updateUserPreferences: (
