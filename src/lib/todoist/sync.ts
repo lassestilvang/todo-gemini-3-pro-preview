@@ -307,9 +307,20 @@ async function removeDeletedTasks(params: {
 
     if (externalIdsToDelete.length > 0) {
         // Parallelize external deletions to avoid N+1 API calls.
-        // If any deletion fails, the sync will throw and subsequent DB cleanup for these tasks will be skipped,
-        // maintaining a state where we retry the deletion in the next sync.
-        await Promise.all(externalIdsToDelete.map((id) => client.deleteTask(id)));
+        // We handle 404 errors gracefully because if the task is already gone from Todoist,
+        // we should still proceed with deleting our local mapping.
+        await Promise.all(
+            externalIdsToDelete.map(async (id) => {
+                try {
+                    await client.deleteTask(id);
+                } catch (error) {
+                    if (error instanceof Error && error.message.includes("404")) {
+                        return;
+                    }
+                    throw error;
+                }
+            })
+        );
         await db.delete(externalEntityMap).where(inArray(externalEntityMap.id, mappingIdsForExternalDelete));
     }
 }
