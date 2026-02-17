@@ -14,7 +14,7 @@ import {
 import { DatePicker } from "@/components/ui/date-picker";
 import { TimePicker } from "@/components/ui/time-picker";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
+import { Badge, badgeVariants } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { X, Plus, Trash2, Sparkles, ChevronDown } from "lucide-react";
 import { TabsContent } from "@/components/ui/tabs";
@@ -700,17 +700,21 @@ export function TaskDetailsTab({
                             const label = labelById.get(id);
                             if (!label) return null;
                             return (
-                                <Badge
+                                <button
                                     key={id}
-                                    variant="secondary"
-                                    className="cursor-pointer hover:bg-destructive hover:text-destructive-foreground select-none"
+                                    type="button"
                                     onClick={() => toggleLabel(id)}
+                                    className={cn(
+                                        badgeVariants({ variant: "secondary" }),
+                                        "cursor-pointer hover:!bg-destructive hover:!text-destructive-foreground select-none"
+                                    )}
                                     style={{ backgroundColor: (label.color || '#000000') + '20', color: label.color || '#000000' }}
+                                    aria-label={`Remove label ${label.name}`}
                                 >
                                     {createElement(getLabelIcon(label.icon), { className: "h-3 w-3 mr-1" })}
                                     {label.name}
                                     <X className="ml-1 h-3 w-3" />
-                                </Badge>
+                                </button>
                             );
                         })}
                     </div>
