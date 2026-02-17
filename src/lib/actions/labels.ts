@@ -151,8 +151,14 @@ async function createLabelImpl(data: typeof labels.$inferInsert) {
 
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
-  await syncTodoistNow();
-  await syncGoogleTasksNow();
+  // ⚡ Bolt Opt: Parallelize syncs to reduce latency
+  const results = await Promise.allSettled([syncTodoistNow(), syncGoogleTasksNow()]);
+  results.forEach((result, i) => {
+    if (result.status === "rejected") {
+      const service = i === 0 ? "Todoist" : "Google Tasks";
+      console.error(`${service} sync failed:`, result.reason);
+    }
+  });
 
   revalidateTag(`labels-${data.userId}`, 'max');
   revalidatePath("/", "layout");
@@ -207,8 +213,14 @@ async function updateLabelImpl(
 
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
-  await syncTodoistNow();
-  await syncGoogleTasksNow();
+  // ⚡ Bolt Opt: Parallelize syncs to reduce latency
+  const results = await Promise.allSettled([syncTodoistNow(), syncGoogleTasksNow()]);
+  results.forEach((result, i) => {
+    if (result.status === "rejected") {
+      const service = i === 0 ? "Todoist" : "Google Tasks";
+      console.error(`${service} sync failed:`, result.reason);
+    }
+  });
 
   revalidateTag(`labels-${userId}`, 'max');
   revalidatePath("/", "layout");
@@ -253,8 +265,14 @@ async function deleteLabelImpl(id: number, userId: string) {
 
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
-  await syncTodoistNow();
-  await syncGoogleTasksNow();
+  // ⚡ Bolt Opt: Parallelize syncs to reduce latency
+  const results = await Promise.allSettled([syncTodoistNow(), syncGoogleTasksNow()]);
+  results.forEach((result, i) => {
+    if (result.status === "rejected") {
+      const service = i === 0 ? "Todoist" : "Google Tasks";
+      console.error(`${service} sync failed:`, result.reason);
+    }
+  });
 
   revalidateTag(`labels-${userId}`, 'max');
   revalidatePath("/", "layout");
