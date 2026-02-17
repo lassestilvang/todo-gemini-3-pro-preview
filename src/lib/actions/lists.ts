@@ -89,8 +89,8 @@ async function reorderListsImpl(userId: string, items: { id: number; position: n
   revalidateTag(`lists-${userId}`, 'max');
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
-  await syncTodoistNow();
-  await syncGoogleTasksNow();
+  // ⚡ Bolt Opt: Parallelize syncs to reduce latency
+  await Promise.allSettled([syncTodoistNow(), syncGoogleTasksNow()]);
   // Also revalidate path to ensure client router cache is updated for side effects
   revalidatePath("/", "layout");
 }
@@ -175,8 +175,8 @@ async function createListImpl(data: typeof lists.$inferInsert) {
 
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
-  await syncTodoistNow();
-  await syncGoogleTasksNow();
+  // ⚡ Bolt Opt: Parallelize syncs to reduce latency
+  await Promise.allSettled([syncTodoistNow(), syncGoogleTasksNow()]);
 
   revalidateTag(`lists-${effectiveUserId}`, 'max');
   revalidatePath("/", "layout");
@@ -232,8 +232,8 @@ async function updateListImpl(
 
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
-  await syncTodoistNow();
-  await syncGoogleTasksNow();
+  // ⚡ Bolt Opt: Parallelize syncs to reduce latency
+  await Promise.allSettled([syncTodoistNow(), syncGoogleTasksNow()]);
 
   revalidateTag(`lists-${userId}`, 'max');
   revalidatePath("/", "layout");
@@ -278,8 +278,8 @@ async function deleteListImpl(id: number, userId: string) {
 
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
-  await syncTodoistNow();
-  await syncGoogleTasksNow();
+  // ⚡ Bolt Opt: Parallelize syncs to reduce latency
+  await Promise.allSettled([syncTodoistNow(), syncGoogleTasksNow()]);
 
   revalidateTag(`lists-${userId}`, 'max');
   revalidatePath("/", "layout");

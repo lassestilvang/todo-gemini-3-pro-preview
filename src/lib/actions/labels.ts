@@ -151,8 +151,8 @@ async function createLabelImpl(data: typeof labels.$inferInsert) {
 
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
-  await syncTodoistNow();
-  await syncGoogleTasksNow();
+  // ⚡ Bolt Opt: Parallelize syncs to reduce latency
+  await Promise.allSettled([syncTodoistNow(), syncGoogleTasksNow()]);
 
   revalidateTag(`labels-${data.userId}`, 'max');
   revalidatePath("/", "layout");
@@ -207,8 +207,8 @@ async function updateLabelImpl(
 
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
-  await syncTodoistNow();
-  await syncGoogleTasksNow();
+  // ⚡ Bolt Opt: Parallelize syncs to reduce latency
+  await Promise.allSettled([syncTodoistNow(), syncGoogleTasksNow()]);
 
   revalidateTag(`labels-${userId}`, 'max');
   revalidatePath("/", "layout");
@@ -253,8 +253,8 @@ async function deleteLabelImpl(id: number, userId: string) {
 
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
-  await syncTodoistNow();
-  await syncGoogleTasksNow();
+  // ⚡ Bolt Opt: Parallelize syncs to reduce latency
+  await Promise.allSettled([syncTodoistNow(), syncGoogleTasksNow()]);
 
   revalidateTag(`labels-${userId}`, 'max');
   revalidatePath("/", "layout");

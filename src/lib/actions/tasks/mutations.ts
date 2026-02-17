@@ -176,8 +176,11 @@ async function createTaskImpl(data: typeof tasks.$inferInsert & { labelIds?: num
     try {
       const { syncTodoistNow } = await import("@/lib/actions/todoist");
       const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
-      await syncTodoistNow().catch((e) => console.error("Todoist sync failed:", e));
-      await syncGoogleTasksNow().catch((e) => console.error("Google Tasks sync failed:", e));
+      // ⚡ Bolt Opt: Parallelize syncs to reduce latency
+      await Promise.allSettled([
+        syncTodoistNow().catch((e) => console.error("Todoist sync failed:", e)),
+        syncGoogleTasksNow().catch((e) => console.error("Google Tasks sync failed:", e))
+      ]);
     } catch (error) {
       console.error("Sync dispatch failed:", error);
     }
@@ -413,8 +416,8 @@ async function updateTaskImpl(
 
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
-  await syncTodoistNow();
-  await syncGoogleTasksNow();
+  // ⚡ Bolt Opt: Parallelize syncs to reduce latency
+  await Promise.allSettled([syncTodoistNow(), syncGoogleTasksNow()]);
 
   revalidatePath("/", "layout");
 }
@@ -444,8 +447,8 @@ async function deleteTaskImpl(id: number, userId: string) {
   await db.delete(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
-  await syncTodoistNow();
-  await syncGoogleTasksNow();
+  // ⚡ Bolt Opt: Parallelize syncs to reduce latency
+  await Promise.allSettled([syncTodoistNow(), syncGoogleTasksNow()]);
   revalidatePath("/", "layout");
 }
 
