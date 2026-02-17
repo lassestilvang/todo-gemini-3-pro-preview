@@ -280,18 +280,48 @@ async function removeDeletedTasks(params: {
     const remoteTasks = (await client.getTasks()) as TodoistTask[];
     const remoteTaskIds = new Set(remoteTasks.map((task) => task.id));
 
+    const externalIdsToDelete: string[] = [];
+    const mappingIdsForExternalDelete: number[] = [];
+    const mappingIdsForOrphanDelete: number[] = [];
+
     for (const mapping of taskMappings) {
         if (mapping.localId && !localTaskMap.has(mapping.localId)) {
             if (mapping.externalId) {
-                await client.deleteTask(mapping.externalId);
+                externalIdsToDelete.push(mapping.externalId);
+                mappingIdsForExternalDelete.push(mapping.id);
+            } else {
+                mappingIdsForOrphanDelete.push(mapping.id);
             }
-            await db.delete(externalEntityMap).where(eq(externalEntityMap.id, mapping.id));
             continue;
         }
 
         if (!mapping.localId && mapping.externalId && !remoteTaskIds.has(mapping.externalId)) {
-            await db.delete(externalEntityMap).where(eq(externalEntityMap.id, mapping.id));
+            mappingIdsForOrphanDelete.push(mapping.id);
         }
+    }
+
+    // Always delete orphan mappings that don't require external API calls
+    if (mappingIdsForOrphanDelete.length > 0) {
+        await db.delete(externalEntityMap).where(inArray(externalEntityMap.id, mappingIdsForOrphanDelete));
+    }
+
+    if (externalIdsToDelete.length > 0) {
+        // Parallelize external deletions to avoid N+1 API calls.
+        // We handle 404 errors gracefully because if the task is already gone from Todoist,
+        // we should still proceed with deleting our local mapping.
+        await Promise.all(
+            externalIdsToDelete.map(async (id) => {
+                try {
+                    await client.deleteTask(id);
+                } catch (error) {
+                    if (error instanceof Error && error.message.includes("404")) {
+                        return;
+                    }
+                    throw error;
+                }
+            })
+        );
+        await db.delete(externalEntityMap).where(inArray(externalEntityMap.id, mappingIdsForExternalDelete));
     }
 }
 
