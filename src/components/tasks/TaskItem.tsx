@@ -391,17 +391,25 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
 
                 <div className="flex-1 min-w-0">
                     <div className={cn("font-medium truncate text-sm transition-all flex items-center gap-2", isCompleted && "text-muted-foreground")}>
-                        <div className="relative inline-flex items-center gap-2 max-w-full">
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (onEdit) onEdit(task);
+                            }}
+                            className="relative inline-flex items-center gap-2 max-w-full bg-transparent border-none p-0 hover:underline focus:underline focus:outline-none text-left appearance-none"
+                            disabled={!onEdit}
+                        >
                             {task.icon && (
                                 <ResolvedIcon icon={task.icon} className="h-4 w-4 text-muted-foreground" />
                             )}
                             <span className="truncate">{task.title}</span>
                             {isCompleted && (
                                 <div
-                                    className="absolute left-0 top-1/2 h-[1.5px] bg-muted-foreground/50 w-full"
+                                    className="absolute left-0 top-1/2 h-[1.5px] bg-muted-foreground/50 w-full pointer-events-none"
                                 />
                             )}
-                        </div>
+                        </button>
                         {isBlocked && !isCompleted && (
                             <Lock className="h-3 w-3 text-orange-500" />
                         )}
