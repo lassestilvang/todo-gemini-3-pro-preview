@@ -10,7 +10,7 @@ import {
     ValidationError,
 } from "./shared";
 import { requireUser } from "@/lib/auth";
-import { logActivity } from "./logs";
+import { logActivity } from "./activity-logger";
 import { cache } from "react";
 import { unstable_cache, revalidateTag } from "next/cache";
 

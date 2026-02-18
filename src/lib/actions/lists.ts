@@ -18,7 +18,7 @@ import {
   withErrorHandling,
   ValidationError,
 } from "./shared";
-import { logActivity } from "./logs";
+import { logActivity } from "./activity-logger";
 import { requireUser } from "@/lib/auth";
 
 /**
