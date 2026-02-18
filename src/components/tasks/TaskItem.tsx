@@ -397,7 +397,7 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                                 e.stopPropagation();
                                 if (onEdit) onEdit(task);
                             }}
-                            className="relative inline-flex items-center gap-2 max-w-full bg-transparent border-none p-0 font-medium hover:underline focus:underline focus:outline-none text-left appearance-none"
+                            className="relative inline-flex items-center gap-2 max-w-full bg-transparent border-none p-0 hover:underline focus:underline focus:outline-none text-left appearance-none"
                             disabled={!onEdit}
                         >
                             {task.icon && (
