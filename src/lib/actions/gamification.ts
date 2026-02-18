@@ -146,7 +146,7 @@ export async function updateUserProgress(userId: string, xpAmount: number) {
         .select({ count: sql<number>`count(*)` })
         .from(tasks)
         .where(baseCondition);
-      totalCompleted = result?.count || 0;
+      totalCompleted = Number(result?.count || 0);
     } else if (needDailyCount) {
       // Only need daily count (fastest, uses index range scan on completedAt)
       const [result] = await db
