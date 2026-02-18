@@ -19,7 +19,7 @@ import {
   ValidationError,
 } from "./shared";
 import { revalidateTag, unstable_cache } from "next/cache";
-import { logActivity } from "./logs";
+import { logActivity } from "./activity-logger";
 import { requireUser } from "@/lib/auth";
 
 /**
