@@ -102,23 +102,65 @@ export async function updateUserProgress(userId: string, xpAmount: number) {
   const todayStart = startOfDay(now);
   const todayEnd = endOfDay(now);
 
-  const [stats, allAchievements, [taskCounts], unlockedEntries] = await Promise.all([
+  const [stats, allAchievements, unlockedEntries] = await Promise.all([
     getUserStats(userId),
     getAchievements(),
-    db.select({
-      totalCompleted: sql<number>`count(*)`,
-      dailyCompleted: sql<number>`count(case when ${and(gte(tasks.completedAt, todayStart), lte(tasks.completedAt, todayEnd))} then 1 else null end)`
-    })
-      .from(tasks)
-      .where(and(eq(tasks.userId, userId), eq(tasks.isCompleted, true))),
     db.select({ id: userAchievements.achievementId })
       .from(userAchievements)
       .where(eq(userAchievements.userId, userId))
   ]);
 
-  const totalCompleted = taskCounts?.totalCompleted || 0;
-  const dailyCompleted = taskCounts?.dailyCompleted || 0;
   const alreadyUnlockedIds = new Set(unlockedEntries.map((u) => u.id));
+
+  // ⚡ Bolt Opt: Only query task counts if there are locked achievements that need them.
+  let needTotalCount = false;
+  let needDailyCount = false;
+
+  for (const achievement of allAchievements) {
+    if (alreadyUnlockedIds.has(achievement.id)) continue;
+    if (achievement.conditionType === "count_total") needTotalCount = true;
+    else if (achievement.conditionType === "count_daily") needDailyCount = true;
+  }
+
+  let totalCompleted = 0;
+  let dailyCompleted = 0;
+
+  if (needTotalCount || needDailyCount) {
+    const baseCondition = and(eq(tasks.userId, userId), eq(tasks.isCompleted, true));
+
+    if (needTotalCount && needDailyCount) {
+      // Need both, use the combined query (standard path)
+      const [counts] = await db
+        .select({
+          totalCompleted: sql<number>`count(*)`,
+          dailyCompleted: sql<number>`count(case when ${and(gte(tasks.completedAt, todayStart), lte(tasks.completedAt, todayEnd))} then 1 else null end)`,
+        })
+        .from(tasks)
+        .where(baseCondition);
+      totalCompleted = counts?.totalCompleted || 0;
+      dailyCompleted = counts?.dailyCompleted || 0;
+    } else if (needTotalCount) {
+      // Only need total count (faster, no case-when overhead)
+      const [result] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(tasks)
+        .where(baseCondition);
+      totalCompleted = result?.count || 0;
+    } else if (needDailyCount) {
+      // Only need daily count (fastest, uses index range scan on completedAt)
+      const [result] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(tasks)
+        .where(
+          and(
+            baseCondition,
+            gte(tasks.completedAt, todayStart),
+            lte(tasks.completedAt, todayEnd)
+          )
+        );
+      dailyCompleted = result?.count || 0;
+    }
+  }
 
   let currentXP = stats.xp;
   let currentStreak = stats.currentStreak;
