@@ -138,8 +138,8 @@ export async function updateUserProgress(userId: string, xpAmount: number) {
         })
         .from(tasks)
         .where(baseCondition);
-      totalCompleted = counts?.totalCompleted || 0;
-      dailyCompleted = counts?.dailyCompleted || 0;
+      totalCompleted = Number(counts?.totalCompleted || 0);
+      dailyCompleted = Number(counts?.dailyCompleted || 0);
     } else if (needTotalCount) {
       // Only need total count (faster, no case-when overhead)
       const [result] = await db
