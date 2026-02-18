@@ -120,6 +120,7 @@ export async function updateUserProgress(userId: string, xpAmount: number) {
     if (alreadyUnlockedIds.has(achievement.id)) continue;
     if (achievement.conditionType === "count_total") needTotalCount = true;
     else if (achievement.conditionType === "count_daily") needDailyCount = true;
+    if (needTotalCount && needDailyCount) break;
   }
 
   let totalCompleted = 0;
