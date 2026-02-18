@@ -13,12 +13,5 @@ export async function logActivity(params: {
   labelId?: number;
   details?: string;
 }) {
-  await db.insert(taskLogs).values({
-    userId: params.userId,
-    action: params.action,
-    taskId: params.taskId,
-    listId: params.listId,
-    labelId: params.labelId,
-    details: params.details,
-  });
+  await db.insert(taskLogs).values(params);
 }
