@@ -159,7 +159,7 @@ export async function updateUserProgress(userId: string, xpAmount: number) {
             lte(tasks.completedAt, todayEnd)
           )
         );
-      dailyCompleted = result?.count || 0;
+      dailyCompleted = Number(result?.count || 0);
     }
   }
 
