@@ -193,7 +193,7 @@ function TaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId
                         </Button>
                         <Popover open={deleteOpen} onOpenChange={setDeleteOpen}>
                             <PopoverTrigger asChild>
-                                <Button type="button" variant="destructive" disabled={isSaving || isDeleting}>
+                                <Button type="button" variant="destructive" disabled={isSaving}>
                                     Delete
                                 </Button>
                             </PopoverTrigger>
