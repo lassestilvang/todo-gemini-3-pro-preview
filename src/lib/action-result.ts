@@ -65,7 +65,7 @@ const SENSITIVE_PATTERNS = [
   /credential/gi,
   /connection[_-]?string/gi,
   /bearer\s+[a-zA-Z0-9._-]+/gi,
-  /[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi, // Email pattern
+  /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi, // Email pattern
 ];
 
 /**
@@ -213,7 +213,7 @@ export function withErrorHandling<T, Args extends unknown[]>(
       if (isConflict) {
         return failure({
           code: "CONFLICT",
-          message: err.message || "This task was modified by another device. Please review the changes.",
+          message: sanitizeError(err.message || "This task was modified by another device. Please review the changes."),
           details: err.serverData
             ? { serverData: typeof err.serverData === 'string' ? err.serverData : JSON.stringify(err.serverData) }
             : undefined,
@@ -239,7 +239,7 @@ export function withErrorHandling<T, Args extends unknown[]>(
       if (error instanceof ValidationError || err?.code === "VALIDATION_ERROR") {
         return failure({
           code: "VALIDATION_ERROR",
-          message: err.message || "Validation failed",
+          message: sanitizeError(err.message || "Validation failed"),
           details: err.fieldErrors || err.details,
         });
       }
@@ -263,7 +263,7 @@ export function withErrorHandling<T, Args extends unknown[]>(
       if (error instanceof NotFoundError || err?.code === "NOT_FOUND") {
         return failure({
           code: "NOT_FOUND",
-          message: err.message || "Resource not found",
+          message: sanitizeError(err.message || "Resource not found"),
         });
       }
 
@@ -282,6 +282,9 @@ export function withErrorHandling<T, Args extends unknown[]>(
       }
 
       // 5. Generic error for unexpected exceptions
+      // Log the original error for debugging purposes on the server
+      console.error("[ServerError] Unexpected error in Server Action:", error);
+
       return failure({
         code: "UNKNOWN_ERROR",
         message: "An unexpected error occurred. Please try again.",
