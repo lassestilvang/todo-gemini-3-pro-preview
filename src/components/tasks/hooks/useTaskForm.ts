@@ -178,19 +178,18 @@ export function useTaskForm({ task, defaultListId, defaultLabelIds, defaultDueDa
             router.push("/login?message=session_expired");
             return;
         }
-        if (confirm("Are you sure you want to delete this task?")) {
-            setIsDeleting(true);
-            try {
-                dispatch("deleteTask", task.id, userId);
 
-                toast.success("Task deleted");
-                onClose();
-            } catch (error) {
-                console.error("Failed to delete task:", error);
-                toast.error("Failed to delete task. Please try again.");
-            } finally {
-                setIsDeleting(false);
-            }
+        setIsDeleting(true);
+        try {
+            dispatch("deleteTask", task.id, userId);
+
+            toast.success("Task deleted");
+            onClose();
+        } catch (error) {
+            console.error("Failed to delete task:", error);
+            toast.error("Failed to delete task. Please try again.");
+        } finally {
+            setIsDeleting(false);
         }
     };
 
