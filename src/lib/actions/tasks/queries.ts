@@ -208,24 +208,36 @@ async function getTasksImpl(
     relationsPromise
   ]);
 
-  const blockedCountMap = new Map(
-    blockedCountsResult.map((r) => [r.taskId, Number(r.count)])
-  );
+  // ⚡ Bolt Opt: Avoid intermediate array allocation by populating Map directly.
+  // Original: blockedCountsResult.map(...) -> new Array -> new Map
+  const blockedCountMap = new Map<number, number>();
+  for (const r of blockedCountsResult) {
+    blockedCountMap.set(r.taskId, Number(r.count));
+  }
 
-  const labelsMap = new Map(allLabels.map((l) => [l.id, l]));
+  // ⚡ Bolt Opt: Deduplicate label objects to reduce GC pressure.
+  // Instead of creating N new label objects for N task-label links, we create M objects (where M is unique labels)
+  // and reuse references. For 1000 tasks with 2 labels each, this saves ~1980 object allocations.
+  const labelsMap = new Map<number, { id: number; name: string; color: string; icon: string | null }>();
+  for (const l of allLabels) {
+    labelsMap.set(l.id, {
+      id: l.id,
+      name: l.name,
+      color: l.color || "#000000",
+      icon: l.icon
+    });
+  }
 
   const labelsByTaskId = new Map<number, { id: number; name: string; color: string; icon: string | null }[]>();
   for (const labelLink of taskLabelsResult) {
     const label = labelsMap.get(labelLink.labelId);
     if (label) {
-      const list = labelsByTaskId.get(labelLink.taskId) ?? [];
-      list.push({
-        id: label.id,
-        name: label.name,
-        color: label.color || "#000000",
-        icon: label.icon,
-      });
-      labelsByTaskId.set(labelLink.taskId, list);
+      let list = labelsByTaskId.get(labelLink.taskId);
+      if (!list) {
+        list = [];
+        labelsByTaskId.set(labelLink.taskId, list);
+      }
+      list.push(label);
     }
   }
 
