@@ -1,3 +1,10 @@
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Todo Gemini | Id",
+  description: "Manage your tasks efficiently with Todo Gemini."
+};
+
 import { db, savedViews } from "@/db";
 import { eq, and } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";

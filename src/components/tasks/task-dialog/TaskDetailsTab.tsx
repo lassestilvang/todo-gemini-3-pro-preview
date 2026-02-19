@@ -231,7 +231,6 @@ export function TaskDetailsTab({
                             onChange={(e) => setTitle(e.target.value)}
                             placeholder="Task Title"
                             required
-                            autoFocus
                         />
                     </div>
                 </div>

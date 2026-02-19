@@ -353,6 +353,49 @@ const SortableTaskItem = memo(function SortableTaskItem({
     );
 });
 
+// State management for TaskListWithSettings via reducer
+type UIState = {
+    editingTask: Task | null;
+    isDialogOpen: boolean;
+    calendarSelectedDate: Date | undefined;
+    activeId: number | null;
+    overdueCollapsed: boolean;
+    periodCollapsed: Record<PeriodPrecision, boolean>;
+};
+
+type UIAction =
+    | { type: "SET_EDITING_TASK"; payload: Task | null }
+    | { type: "SET_DIALOG_OPEN"; payload: boolean }
+    | { type: "SET_CALENDAR_DATE"; payload: Date | undefined }
+    | { type: "SET_ACTIVE_ID"; payload: number | null }
+    | { type: "TOGGLE_OVERDUE" }
+    | { type: "TOGGLE_PERIOD"; payload: PeriodPrecision };
+
+function uiReducer(state: UIState, action: UIAction): UIState {
+    switch (action.type) {
+        case "SET_EDITING_TASK":
+            return { ...state, editingTask: action.payload };
+        case "SET_DIALOG_OPEN":
+            return { ...state, isDialogOpen: action.payload };
+        case "SET_CALENDAR_DATE":
+            return { ...state, calendarSelectedDate: action.payload };
+        case "SET_ACTIVE_ID":
+            return { ...state, activeId: action.payload };
+        case "TOGGLE_OVERDUE":
+            return { ...state, overdueCollapsed: !state.overdueCollapsed };
+        case "TOGGLE_PERIOD":
+            return {
+                ...state,
+                periodCollapsed: {
+                    ...state.periodCollapsed,
+                    [action.payload]: !state.periodCollapsed[action.payload]
+                }
+            };
+        default:
+            return state;
+    }
+}
+
 export function TaskListWithSettings({
     tasks,
     title,
@@ -364,9 +407,17 @@ export function TaskListWithSettings({
     initialSettings,
     filterType
 }: TaskListWithSettingsProps) {
-    const [editingTask, setEditingTask] = useState<Task | null>(null);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [calendarSelectedDate, setCalendarSelectedDate] = useState<Date | undefined>(undefined);
+    const [uiState, dispatchUI] = React.useReducer(uiReducer, {
+        editingTask: null,
+        isDialogOpen: false,
+        calendarSelectedDate: undefined,
+        activeId: null,
+        overdueCollapsed: false,
+        periodCollapsed: { week: false, month: false, year: false },
+    });
+
+    // Destructure for ease of use
+    const { editingTask, isDialogOpen, calendarSelectedDate, activeId, overdueCollapsed, periodCollapsed } = uiState;
 
     // Default to dueDate grouping for upcoming view if not set
     const effectiveInitialSettings = useMemo(() => {
@@ -378,16 +429,9 @@ export function TaskListWithSettings({
     }, [initialSettings, viewId]);
 
     const [settings, setSettings] = useState<ViewSettings>(effectiveInitialSettings);
-    const [activeId, setActiveId] = useState<number | null>(null);
-    const [overdueCollapsed, setOverdueCollapsed] = useState(false);
-    const [periodCollapsed, setPeriodCollapsed] = useState<Record<PeriodPrecision, boolean>>({
-        week: false,
-        month: false,
-        year: false,
-    });
 
     const togglePeriodSection = useCallback((precision: PeriodPrecision) => {
-        setPeriodCollapsed(prev => ({ ...prev, [precision]: !prev[precision] }));
+        dispatchUI({ type: "TOGGLE_PERIOD", payload: precision });
     }, []);
 
     const { dispatch } = useSync();
@@ -529,8 +573,8 @@ export function TaskListWithSettings({
     // allowing SortableTaskItem's React.memo to skip re-renders when only
     // unrelated parent state changes (e.g., settings, localTasks order).
     const handleEdit = useCallback((task: Task) => {
-        setEditingTask(task);
-        setIsDialogOpen(true);
+        dispatchUI({ type: "SET_EDITING_TASK", payload: task });
+        dispatchUI({ type: "SET_DIALOG_OPEN", payload: true });
     }, []);
 
     const processedTasks = useMemo(() => {
@@ -764,16 +808,16 @@ export function TaskListWithSettings({
     );
 
     const handleDragStart = (event: DragStartEvent) => {
-        setActiveId(event.active.id as number);
+        dispatchUI({ type: "SET_ACTIVE_ID", payload: event.active.id as number });
     };
 
     const handleDragCancel = () => {
-        setActiveId(null);
+        dispatchUI({ type: "SET_ACTIVE_ID", payload: null });
     };
 
     const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event;
-        setActiveId(null);
+        dispatchUI({ type: "SET_ACTIVE_ID", payload: null });
 
         if (over && active.id !== over.id) {
             const oldIndex = displayTasks.findIndex((t) => t.id === active.id);
@@ -1214,10 +1258,10 @@ export function TaskListWithSettings({
                     defaultDueDate={calendarSelectedDate || defaultDueDate}
                     open={isDialogOpen}
                     onOpenChange={(open) => {
-                        setIsDialogOpen(open);
+                        dispatchUI({ type: "SET_DIALOG_OPEN", payload: open });
                         if (!open) {
-                            setEditingTask(null);
-                            setCalendarSelectedDate(undefined);
+                            setTimeout(() => dispatchUI({ type: "SET_EDITING_TASK", payload: null }), 300); // Wait for transition
+                            dispatchUI({ type: "SET_CALENDAR_DATE", payload: undefined });
                         }
                     }}
                     userId={userId}

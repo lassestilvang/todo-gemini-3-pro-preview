@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo } from "react";
 import { EventCalendar } from "@/components/calendar4/event-calendar";
 import { CalendarSidebar } from "@/components/calendar2/CalendarSidebar";
 import { UnplannedColumn } from "./UnplannedColumn";
@@ -73,25 +73,61 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
         return storeLists.length > 0 ? storeLists : initialLists;
     }, [listMap, initialLists]);
 
-    // --- List Visibility ---
-    const [visibleListIds, setVisibleListIds] = useState<Set<number | null>>(
-        () => new Set([null, ...initialLists.map((list) => list.id)])
+    // --- UI State ---
+    type UIState = {
+        visibleListIds: Set<number | null>;
+        selectedListId: number | null;
+        quickCreateOpen: boolean;
+        quickCreateDate: Date | undefined;
+        editingTask: Task | null;
+    };
+
+    type UIAction =
+        | { type: "TOGGLE_LIST"; payload: number | null }
+        | { type: "SET_ALL_LISTS"; payload: number[] }
+        | { type: "CLEAR_ALL_LISTS" }
+        | { type: "SET_SELECTED_LIST"; payload: number | null }
+        | { type: "SET_QUICK_CREATE"; payload: { open: boolean, date?: Date } }
+        | { type: "SET_EDITING_TASK"; payload: Task | null };
+
+    const [uiState, dispatchUI] = React.useReducer(
+        (state: UIState, action: UIAction): UIState => {
+            switch (action.type) {
+                case "TOGGLE_LIST": {
+                    const next = new Set(state.visibleListIds);
+                    if (next.has(action.payload)) next.delete(action.payload);
+                    else next.add(action.payload);
+                    return { ...state, visibleListIds: next };
+                }
+                case "SET_ALL_LISTS":
+                    return { ...state, visibleListIds: new Set([null, ...action.payload]) };
+                case "CLEAR_ALL_LISTS":
+                    return { ...state, visibleListIds: new Set() };
+                case "SET_SELECTED_LIST": return { ...state, selectedListId: action.payload };
+                case "SET_QUICK_CREATE": return { ...state, quickCreateOpen: action.payload.open, quickCreateDate: action.payload.date !== undefined ? action.payload.date : state.quickCreateDate };
+                case "SET_EDITING_TASK": return { ...state, editingTask: action.payload };
+                default: return state;
+            }
+        },
+        {
+            visibleListIds: new Set([null, ...initialLists.map((list) => list.id)]),
+            selectedListId: null,
+            quickCreateOpen: false,
+            quickCreateDate: undefined,
+            editingTask: null,
+        }
     );
 
+    const { visibleListIds, selectedListId, quickCreateOpen, quickCreateDate, editingTask } = uiState;
+
     const toggleList = useCallback((listId: number | null) => {
-        setVisibleListIds((prev) => {
-            const next = new Set(prev);
-            if (next.has(listId)) next.delete(listId);
-            else next.add(listId);
-            return next;
-        });
+        dispatchUI({ type: "TOGGLE_LIST", payload: listId });
     }, []);
 
     const toggleAll = useCallback((checked: boolean) => {
-        setVisibleListIds(checked ? new Set([null, ...lists.map((l) => l.id)]) : new Set());
+        if (checked) dispatchUI({ type: "SET_ALL_LISTS", payload: lists.map((l) => l.id) });
+        else dispatchUI({ type: "CLEAR_ALL_LISTS" });
     }, [lists]);
-
-    const [selectedListId, setSelectedListId] = useState<number | null>(null);
 
     // --- Task Filtering ---
     const unplannedTasks = useMemo(() => {
@@ -203,21 +239,15 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
 
 
     // --- Quick Create ---
-    const [quickCreateOpen, setQuickCreateOpen] = useState(false);
-    const [quickCreateDate, setQuickCreateDate] = useState<Date | undefined>(undefined);
-
     const handleDateClick = useCallback((info: DateClickInfo) => {
-        setQuickCreateDate(info.date);
-        setQuickCreateOpen(true);
+        dispatchUI({ type: "SET_QUICK_CREATE", payload: { open: true, date: info.date } });
     }, []);
 
     // --- Edit Task ---
-    const [editingTask, setEditingTask] = useState<Task | null>(null);
-
     const handleEventClick = useCallback((info: { event: { extendedProps: Record<string, unknown> } }) => {
         const taskId = Number(info.event.extendedProps.taskId);
         const task = taskMap[taskId];
-        if (task) setEditingTask(task);
+        if (task) dispatchUI({ type: "SET_EDITING_TASK", payload: task });
     }, [taskMap]);
 
     const selectedListName = useMemo(() => {
@@ -234,7 +264,7 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
                 onToggleList={toggleList}
                 onToggleAll={toggleAll}
                 selectedListId={selectedListId}
-                onSelectList={setSelectedListId}
+                onSelectList={(id) => dispatchUI({ type: "SET_SELECTED_LIST", payload: id })}
             />
 
             {/* 3-Column Layout Container */}
@@ -244,7 +274,7 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
                     <UnplannedColumn
                         tasks={unplannedTasks}
                         listName={selectedListName}
-                        onEditTask={setEditingTask}
+                        onEditTask={(task) => dispatchUI({ type: "SET_EDITING_TASK", payload: task })}
                     />
                 </div>
 
@@ -253,7 +283,7 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
                     <TodayColumn
                         tasks={todayTasks}
                         doneTasks={todayDoneTasks}
-                        onEditTask={setEditingTask}
+                        onEditTask={(task) => dispatchUI({ type: "SET_EDITING_TASK", payload: task })}
                     />
                 </div>
 
@@ -284,7 +314,7 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
 
             <CalendarQuickCreateDialog
                 open={quickCreateOpen}
-                onOpenChange={setQuickCreateOpen}
+                onOpenChange={(open) => dispatchUI({ type: "SET_QUICK_CREATE", payload: { open } })}
                 defaultDueDate={quickCreateDate}
                 userId={userId}
             />
@@ -308,7 +338,9 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
                     labels: editingTask.labels,
                 } : undefined}
                 open={!!editingTask}
-                onOpenChange={(open) => !open && setEditingTask(null)}
+                onOpenChange={(open) => {
+                    if (!open) dispatchUI({ type: "SET_EDITING_TASK", payload: null });
+                }}
                 userId={userId}
             />
         </div>

@@ -1,13 +1,14 @@
 import { describe, it, expect, afterEach } from "bun:test";
 import { render, screen, cleanup } from "@testing-library/react";
 import React from "react";
+import Link from "next/link";
 
 // Create a simplified test component that mimics AppSidebar behavior
 // without the next/navigation dependencies
-function AppSidebarMock({ 
-    lists, 
-    labels 
-}: { 
+function AppSidebarMock({
+    lists,
+    labels
+}: {
     lists: Array<{ id: number; name: string; color: string | null; icon: string | null; slug: string }>;
     labels: Array<{ id: number; name: string; color: string | null; icon: string | null }>;
 }) {
@@ -20,12 +21,12 @@ function AppSidebarMock({
                     </h2>
                     <div data-testid="xp-bar">XP Bar</div>
                     <div data-testid="search-dialog">Search Dialog</div>
-                    
+
                     {/* Navigation */}
                     <nav>
-                        <a href="/inbox">Inbox</a>
-                        <a href="/today">Today</a>
-                        <a href="/upcoming">Upcoming</a>
+                        <Link href="/inbox">Inbox</Link>
+                        <Link href="/today">Today</Link>
+                        <Link href="/upcoming">Upcoming</Link>
                     </nav>
                 </div>
 

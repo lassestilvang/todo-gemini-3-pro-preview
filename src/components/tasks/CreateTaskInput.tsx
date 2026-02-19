@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useRef, useReducer } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Calendar, Flag, Zap, MapPin, Smile, X, Keyboard } from "lucide-react";
@@ -40,62 +40,143 @@ function BadgeRemoveButton({ onClick, label }: { onClick: () => void, label: str
     );
 }
 
+// --- Reducer definition ---
+type State = {
+    title: string;
+    dueDate: Date | undefined;
+    dueDatePrecision: "day" | "week" | "month" | "year";
+    dueDateSource: "default" | "nlp" | "manual" | "none";
+    priority: "none" | "low" | "medium" | "high";
+    energyLevel: "high" | "medium" | "low" | undefined;
+    context: "computer" | "phone" | "errands" | "meeting" | "home" | "anywhere" | undefined;
+    isExpanded: boolean;
+    isAiLoading: boolean;
+    isSubmitting: boolean;
+    isDialogOpen: boolean;
+    isCalendarOpen: boolean;
+    isPriorityOpen: boolean;
+    icon: string | undefined;
+};
+
+type Action =
+    | { type: "SET_TITLE"; payload: string; parsed?: ReturnType<typeof parseNaturalLanguage> }
+    | { type: "SET_DUE_DATE"; payload: { date?: Date; source: "default" | "nlp" | "manual" | "none"; precision?: "day" | "week" | "month" | "year" } }
+    | { type: "SET_PRIORITY"; payload: "none" | "low" | "medium" | "high" }
+    | { type: "SET_ENERGY_LEVEL"; payload: "high" | "medium" | "low" | undefined }
+    | { type: "SET_CONTEXT"; payload: "computer" | "phone" | "errands" | "meeting" | "home" | "anywhere" | undefined }
+    | { type: "SET_UI_STATE"; payload: Partial<Pick<State, "isExpanded" | "isAiLoading" | "isSubmitting" | "isDialogOpen" | "isCalendarOpen" | "isPriorityOpen">> }
+    | { type: "SET_ICON"; payload: string | undefined }
+    | { type: "RESET"; payload?: { defaultDueDate?: Date | string } };
+
+function reducer(state: State, action: Action): State {
+    switch (action.type) {
+        case "SET_TITLE": {
+            const updates: Partial<State> = { title: action.payload };
+            if (action.parsed && action.payload.trim()) {
+                const { priority, dueDate, dueDatePrecision, energyLevel, context } = action.parsed;
+                if (priority && state.priority === "none") updates.priority = priority;
+                if (dueDate && state.dueDateSource !== "manual") {
+                    updates.dueDate = dueDate;
+                    updates.dueDatePrecision = dueDatePrecision ?? "day";
+                    updates.dueDateSource = "nlp";
+                }
+                if (energyLevel && !state.energyLevel) updates.energyLevel = energyLevel;
+                if (context && !state.context) updates.context = context;
+            }
+            return { ...state, ...updates };
+        }
+        case "SET_DUE_DATE":
+            return {
+                ...state,
+                dueDate: action.payload.date,
+                dueDateSource: action.payload.source,
+                dueDatePrecision: action.payload.precision ?? state.dueDatePrecision,
+            };
+        case "SET_PRIORITY":
+            return { ...state, priority: action.payload };
+        case "SET_ENERGY_LEVEL":
+            return { ...state, energyLevel: action.payload };
+        case "SET_CONTEXT":
+            return { ...state, context: action.payload };
+        case "SET_UI_STATE":
+            return { ...state, ...action.payload };
+        case "SET_ICON":
+            return { ...state, icon: action.payload };
+        case "RESET": {
+            const defaultDueDate = action.payload?.defaultDueDate ? new Date(action.payload.defaultDueDate) : undefined;
+            return {
+                ...state,
+                title: "",
+                dueDate: defaultDueDate,
+                dueDateSource: defaultDueDate ? "default" : "none",
+                dueDatePrecision: "day",
+                priority: "none",
+                energyLevel: undefined,
+                context: undefined,
+                icon: undefined,
+                isExpanded: false,
+                isSubmitting: false,
+            };
+        }
+        default:
+            return state;
+    }
+}
+
 export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelIds }: { listId?: number, defaultDueDate?: Date | string, userId: string, defaultLabelIds?: number[] }) {
     const { dispatch } = useSync();
     const { weekStartsOnMonday } = useUser();
-    const [title, setTitle] = useState("");
-    const [dueDate, setDueDate] = useState<Date | undefined>(
-        defaultDueDate ? new Date(defaultDueDate) : undefined
-    );
-    const [dueDatePrecision, setDueDatePrecision] = useState<"day" | "week" | "month" | "year">("day");
-    const [dueDateSource, setDueDateSource] = useState<"default" | "nlp" | "manual" | "none">(
-        defaultDueDate ? "default" : "none"
-    );
-    const [priority, setPriority] = useState<"none" | "low" | "medium" | "high">("none");
-    const [energyLevel, setEnergyLevel] = useState<"high" | "medium" | "low" | undefined>(undefined);
-    const [context, setContext] = useState<"computer" | "phone" | "errands" | "meeting" | "home" | "anywhere" | undefined>(undefined);
-    const [isExpanded, setIsExpanded] = useState(false);
-    const [isAiLoading, setIsAiLoading] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-    const [isPriorityOpen, setIsPriorityOpen] = useState(false);
-    const [icon, setIcon] = useState<string | undefined>(undefined);
+
+    const [state, dispatchState] = useReducer(reducer, {
+        title: "",
+        dueDate: defaultDueDate ? new Date(defaultDueDate) : undefined,
+        dueDatePrecision: "day",
+        dueDateSource: defaultDueDate ? "default" : "none",
+        priority: "none",
+        energyLevel: undefined,
+        context: undefined,
+        isExpanded: false,
+        isAiLoading: false,
+        isSubmitting: false,
+        isDialogOpen: false,
+        isCalendarOpen: false,
+        isPriorityOpen: false,
+        icon: undefined,
+    });
+
+    // Destructure for ease of use in render
+    const {
+        title, dueDate, dueDatePrecision, priority, energyLevel,
+        context, isExpanded, isAiLoading, isSubmitting, isDialogOpen,
+        isCalendarOpen, isPriorityOpen, icon
+    } = state;
+
     const isClient = useIsClient();
     const inputRef = useRef<HTMLInputElement>(null);
 
     const updateTitle = (nextTitle: string) => {
-        setTitle(nextTitle);
-        if (!nextTitle.trim()) return;
-        const parsed = parseNaturalLanguage(nextTitle, { weekStartsOnMonday: weekStartsOnMonday ?? false });
-        if (parsed.priority && priority === "none") setPriority(parsed.priority);
-        if (parsed.dueDate && dueDateSource !== "manual") {
-            setDueDate(parsed.dueDate);
-            setDueDatePrecision(parsed.dueDatePrecision ?? "day");
-            setDueDateSource("nlp");
-        }
-        if (parsed.energyLevel && !energyLevel) setEnergyLevel(parsed.energyLevel);
-        if (parsed.context && !context) setContext(parsed.context);
+        const parsed = nextTitle.trim() ? parseNaturalLanguage(nextTitle, { weekStartsOnMonday: weekStartsOnMonday ?? false }) : undefined;
+        dispatchState({ type: "SET_TITLE", payload: nextTitle, parsed });
     };
 
     const handleAiEnhance = async () => {
         if (!title.trim()) return;
-        setIsAiLoading(true);
+        dispatchState({ type: "SET_UI_STATE", payload: { isAiLoading: true } });
         const result = await extractDeadline(title).catch(() => null);
         if (!result) {
             toast.error("Failed to extract deadline. Check API key.");
-            setIsAiLoading(false);
+            dispatchState({ type: "SET_UI_STATE", payload: { isAiLoading: false } });
             return;
         }
 
         if (result.date) {
-            setDueDate(result.date);
+            dispatchState({ type: "SET_DUE_DATE", payload: { date: result.date, source: "nlp" } });
             toast.success(`Deadline detected: ${format(result.date, "MMM d")}`);
         } else {
             toast.info("No deadline found in text.");
         }
 
-        setIsAiLoading(false);
+        dispatchState({ type: "SET_UI_STATE", payload: { isAiLoading: false } });
     };
 
     const handleSubmit = async (e?: React.FormEvent) => {
@@ -110,7 +191,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
             return;
         }
 
-        setIsSubmitting(true);
+        dispatchState({ type: "SET_UI_STATE", payload: { isSubmitting: true } });
         const createResult = await Promise.resolve()
             .then(() => dispatch('createTask', {
                 userId,
@@ -131,31 +212,19 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                     return false;
                 }
             );
-        setIsSubmitting(false);
 
         if (!createResult) {
             toast.error("Failed to create task");
+            dispatchState({ type: "SET_UI_STATE", payload: { isSubmitting: false } });
             return;
         }
 
-        setTitle("");
-        setDueDate(defaultDueDate ? new Date(defaultDueDate) : undefined);
-        setDueDateSource(defaultDueDate ? "default" : "none");
-        setDueDatePrecision("day");
-        setPriority("none");
-        setEnergyLevel(undefined);
-        setContext(undefined);
-        setIcon(undefined);
-        setIsExpanded(false);
-
-        // Optional: toast can be handled by the optimistic update logic if desired,
-        // but a reassuring message here is fine too.
+        dispatchState({ type: "RESET", payload: { defaultDueDate: defaultDueDate as Date | undefined } });
         toast.success("Task created");
     };
 
     const handleFullDetails = () => {
-        setIsDialogOpen(true);
-        // We don't clear the input here, we wait for the dialog to handle it or user to cancel
+        dispatchState({ type: "SET_UI_STATE", payload: { isDialogOpen: true } });
     };
 
     const handleClear = () => {
@@ -183,7 +252,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                             ref={inputRef}
                             value={title}
                             onChange={(e) => updateTitle(e.target.value)}
-                            onFocus={() => setIsExpanded(true)}
+                            onFocus={() => dispatchState({ type: "SET_UI_STATE", payload: { isExpanded: true } })}
                             onKeyDown={(e) => {
                                 if (isSubmitting) return;
 
@@ -218,7 +287,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                                 <Badge variant="outline" className="text-xs gap-1 pr-1.5">
                                     <Flag className="h-3 w-3" />
                                     {priority}
-                                    <BadgeRemoveButton onClick={() => { setPriority("none"); inputRef.current?.focus(); }} label="Remove priority" />
+                                    <BadgeRemoveButton onClick={() => { dispatchState({ type: "SET_PRIORITY", payload: "none" }); inputRef.current?.focus(); }} label="Remove priority" />
                                 </Badge>
                             )}
                             {dueDate && (
@@ -228,8 +297,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                                         ? format(dueDate, "MMM d")
                                         : formatDuePeriod({ dueDate, dueDatePrecision })}
                                     <BadgeRemoveButton onClick={() => {
-                                        setDueDate(undefined);
-                                        setDueDateSource("none");
+                                        dispatchState({ type: "SET_DUE_DATE", payload: { date: undefined, source: "none" } });
                                         inputRef.current?.focus();
                                     }} label="Remove due date" />
                                 </Badge>
@@ -238,14 +306,14 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                                 <Badge variant="outline" className="text-xs gap-1 pr-1.5">
                                     <Zap className="h-3 w-3" />
                                     {energyLevel}
-                                    <BadgeRemoveButton onClick={() => { setEnergyLevel(undefined); inputRef.current?.focus(); }} label="Remove energy level" />
+                                    <BadgeRemoveButton onClick={() => { dispatchState({ type: "SET_ENERGY_LEVEL", payload: undefined }); inputRef.current?.focus(); }} label="Remove energy level" />
                                 </Badge>
                             )}
                             {context && (
                                 <Badge variant="outline" className="text-xs gap-1 pr-1.5">
                                     <MapPin className="h-3 w-3" />
                                     {context}
-                                    <BadgeRemoveButton onClick={() => { setContext(undefined); inputRef.current?.focus(); }} label="Remove context" />
+                                    <BadgeRemoveButton onClick={() => { dispatchState({ type: "SET_CONTEXT", payload: undefined }); inputRef.current?.focus(); }} label="Remove context" />
                                 </Badge>
                             )}
                         </div>
@@ -254,7 +322,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                     {isExpanded && (
                         <div className="flex items-center justify-between p-2 border-t bg-muted/20 rounded-b-lg">
                             <div className="flex items-center gap-2">
-                                <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                                <Popover open={isCalendarOpen} onOpenChange={(open) => dispatchState({ type: "SET_UI_STATE", payload: { isCalendarOpen: open } })}>
                                     <PopoverTrigger asChild>
                                         <Button variant="ghost" size="sm" className={cn(dueDate && "text-primary")}>
                                             <Calendar className="mr-2 h-4 w-4" />
@@ -266,16 +334,15 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                                             mode="single"
                                             selected={dueDate}
                                             onSelect={(date) => {
-                                                setDueDate(date);
-                                                setDueDateSource("manual");
-                                                setIsCalendarOpen(false);
+                                                dispatchState({ type: "SET_DUE_DATE", payload: { date: date || undefined, source: "manual", precision: "day" } });
+                                                dispatchState({ type: "SET_UI_STATE", payload: { isCalendarOpen: false } });
                                             }}
                                             initialFocus
                                         />
                                     </PopoverContent>
                                 </Popover>
 
-                                <Popover open={isPriorityOpen} onOpenChange={setIsPriorityOpen}>
+                                <Popover open={isPriorityOpen} onOpenChange={(open) => dispatchState({ type: "SET_UI_STATE", payload: { isPriorityOpen: open } })}>
                                     <PopoverTrigger asChild>
                                         <Button variant="ghost" size="sm" className={cn(priority !== "none" && "text-primary")}>
                                             <Flag className="mr-2 h-4 w-4" />
@@ -291,8 +358,8 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                                                     size="sm"
                                                     className="justify-start"
                                                     onClick={() => {
-                                                        setPriority(p as "none" | "low" | "medium" | "high");
-                                                        setIsPriorityOpen(false);
+                                                        dispatchState({ type: "SET_PRIORITY", payload: p as Task["priority"] });
+                                                        dispatchState({ type: "SET_UI_STATE", payload: { isPriorityOpen: false } });
                                                     }}
                                                 >
                                                     {p.charAt(0).toUpperCase() + p.slice(1)}
@@ -306,7 +373,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                             <div className="flex items-center gap-2">
                                 <IconPicker
                                     value={icon}
-                                    onChange={setIcon}
+                                    onChange={(i) => dispatchState({ type: "SET_ICON", payload: i })}
                                     userId={userId}
                                     trigger={
                                         <Button
@@ -328,7 +395,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                                         variant="ghost"
                                         size="icon"
                                         className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                                        onClick={() => setIcon(undefined)}
+                                        onClick={() => dispatchState({ type: "SET_ICON", payload: undefined })}
                                         title="Remove icon"
                                     >
                                         <X className="h-4 w-4" />
@@ -364,7 +431,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                                 </Tooltip>
                                 <VoiceInput onTranscript={(text) => {
                                     updateTitle(title ? `${title} ${text}` : text);
-                                    setIsExpanded(true);
+                                    dispatchState({ type: "SET_UI_STATE", payload: { isExpanded: true } });
                                 }} />
                                 <Popover>
                                     <Tooltip>
@@ -438,7 +505,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                             </div>
 
                             <div className="flex items-center gap-2">
-                                <Button type="button" variant="ghost" size="sm" onClick={() => setIsExpanded(false)}>
+                                <Button type="button" variant="ghost" size="sm" onClick={() => dispatchState({ type: "SET_UI_STATE", payload: { isExpanded: false } })}>
                                     Cancel
                                 </Button>
                                 <Tooltip>
@@ -474,7 +541,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                 initialContext={context}
                 open={isDialogOpen}
                 onOpenChange={(open) => {
-                    setIsDialogOpen(open);
+                    dispatchState({ type: "SET_UI_STATE", payload: { isDialogOpen: open } });
                     if (!open) {
                         // Dialog closed
                     } else {

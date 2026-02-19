@@ -31,10 +31,22 @@ mock.module("@/components/ui/dialog", () => ({
   DialogTrigger: ({ children, asChild, onClick }: { children: React.ReactNode; asChild?: boolean; onClick?: () => void }) => {
     const { setOpen } = React.useContext(DialogContext);
     return (
-      <div data-testid="dialog-trigger" onClick={() => {
-        if (onClick) onClick();
-        setOpen(true);
-      }}>
+      <div
+        data-testid="dialog-trigger"
+        role="button"
+        tabIndex={0}
+        onClick={() => {
+          if (onClick) onClick();
+          setOpen(true);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            if (onClick) onClick();
+            setOpen(true);
+          }
+        }}
+      >
         {asChild ? children : <button>{children}</button>}
       </div>
     );
@@ -56,7 +68,19 @@ mock.module("@/components/ui/dialog", () => ({
 
 mock.module("@/components/ui/select", () => ({
   Select: ({ children, value, onValueChange }: { children: React.ReactNode; value?: string; onValueChange?: (val: string) => void }) => (
-    <div data-testid="select-root" data-value={value} onClick={() => onValueChange && onValueChange("mock-value")}>
+    <div
+      data-testid="select-root"
+      data-value={value}
+      role="button"
+      tabIndex={0}
+      onClick={() => { if (onValueChange) onValueChange(value === "none" ? "mock-value" : "none"); }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          if (onValueChange) onValueChange(value === "none" ? "mock-value" : "none");
+        }
+      }}
+    >
       {children}
     </div>
   ),
@@ -64,7 +88,17 @@ mock.module("@/components/ui/select", () => ({
   SelectValue: ({ children, placeholder }: { children?: React.ReactNode; placeholder?: string }) => <span>{children || placeholder}</span>,
   SelectContent: ({ children }: { children: React.ReactNode }) => <div data-testid="select-content">{children}</div>,
   SelectItem: ({ children, value }: { children: React.ReactNode; value: string }) => (
-    <div data-testid={`select-item-${value}`} role="option" aria-selected="false">
+    <div
+      data-testid={`select-item-${value}`}
+      role="option"
+      aria-selected="false"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+        }
+      }}
+    >
       {children}
     </div>
   ),

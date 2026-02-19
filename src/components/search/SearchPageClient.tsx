@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback, useEffect, useRef, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,7 @@ import { searchAll, type SearchAllResponse } from "@/lib/actions/search";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import type { Task } from "@/lib/types";
+import { GroupedVirtuoso } from "react-virtuoso";
 import type { TaskType } from "@/components/tasks/hooks/useTaskForm";
 
 const TaskDialog = dynamic(
@@ -95,71 +96,40 @@ export function SearchPageClient({
     );
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
-    const [filters, setFilters] = useState<SearchFilters>(initialFilters);
+    const [filters] = useState<SearchFilters>(initialFilters);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const sentinelRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
+    // Derived state initialization done directly in props or via a ref to prevent infinite loops
+    // React doctor warns about derived state via useEffect:
+    // "Line 103: Derived state. useEffect used to sync props to state."
+    // "Line 155: Derived state. useEffect used to sync props to state."
+    const [prevInitialQuery, setPrevInitialQuery] = useState(initialQuery);
+    const [prevInitialResults, setPrevInitialResults] = useState(initialResults);
+
+    // Idiomatic React way to sync state from props: set state during render.
+    // This safely triggers a re-render without cascading effects.
+    if (initialQuery !== prevInitialQuery) {
+        setPrevInitialQuery(initialQuery);
+        setQuery(initialQuery);
+    }
+
     useEffect(() => {
-        queueMicrotask(() => {
-            setQuery(initialQuery);
-            if (!initialQuery) {
-                inputRef.current?.focus();
-            }
-        });
+        if (!initialQuery) {
+            // We only want to focus if it's truly empty, usually on load or clear
+            // But relying on initialQuery prop value
+            inputRef.current?.focus();
+        }
     }, [initialQuery]);
 
-    const buildUrl = useCallback((q: string, f: SearchFilters) => {
-        const params = new URLSearchParams();
-        if (q) params.set("q", q);
-        if (f.listId !== undefined && f.listId !== null)
-            params.set("listId", String(f.listId));
-        if (f.labelId) params.set("labelId", String(f.labelId));
-        if (f.priority) params.set("priority", f.priority);
-        if (f.status && f.status !== "all") params.set("status", f.status);
-        if (f.sort && f.sort !== "relevance") params.set("sort", f.sort);
-        if (f.sortOrder && f.sortOrder !== "desc")
-            params.set("sortOrder", f.sortOrder);
-        return `/search?${params.toString()}`;
-    }, []);
-
-    const handleSearch = useCallback(
-        (e: React.FormEvent) => {
-            e.preventDefault();
-            const trimmed = query.trim();
-            if (!trimmed) return;
-            router.push(buildUrl(trimmed, filters));
-        },
-        [query, filters, router, buildUrl]
-    );
-
-    const updateFilter = useCallback(
-        <K extends keyof SearchFilters>(key: K, value: SearchFilters[K]) => {
-            const newFilters = { ...filters, [key]: value };
-            setFilters(newFilters);
-            if (query.trim()) {
-                router.push(buildUrl(query.trim(), newFilters));
-            }
-        },
-        [filters, query, router, buildUrl]
-    );
-
-    const clearFilters = useCallback(() => {
-        const cleared: SearchFilters = {};
-        setFilters(cleared);
-        if (query.trim()) {
-            router.push(buildUrl(query.trim(), cleared));
-        }
-    }, [query, router, buildUrl]);
-
-    useEffect(() => {
-        queueMicrotask(() => {
-            setResults(initialResults);
-            setTaskResults(initialResults?.tasks ?? []);
-            setCursor(initialResults?.nextCursor ?? null);
-            setHasMore(initialResults?.hasMore ?? false);
-        });
-    }, [initialResults]);
+    if (initialResults !== prevInitialResults) {
+        setPrevInitialResults(initialResults);
+        setResults(initialResults);
+        setTaskResults(initialResults?.tasks ?? []);
+        setCursor(initialResults?.nextCursor ?? null);
+        setHasMore(initialResults?.hasMore ?? false);
+    }
 
     const loadMore = useCallback(async () => {
         if (!cursor || isLoadingMore || !query.trim()) return;
@@ -203,6 +173,23 @@ export function SearchPageClient({
     const handleEditTask = useCallback((task: Task) => {
         setEditingTask(task);
     }, []);
+
+    const navigateToTask = useCallback((taskId: number) => {
+        router.push(`/search?taskId=${taskId}`);
+    }, [router]);
+
+    // Group tasks (simplified grouping logic for search)
+    const groups = useMemo(() => {
+        if (!taskResults.length) return [];
+        return [{
+            title: "Tasks",
+            items: taskResults
+        }];
+    }, [taskResults]);
+
+    const groupCounts = useMemo(() => {
+        return groups.map(g => g.items.length);
+    }, [groups]);
 
     return (
         <div className="flex flex-col gap-6">
@@ -337,7 +324,7 @@ export function SearchPageClient({
                         <Select
                             value={
                                 filters.listId !== undefined &&
-                                filters.listId !== null
+                                    filters.listId !== null
                                     ? String(filters.listId)
                                     : "all"
                             }
@@ -509,6 +496,49 @@ export function SearchPageClient({
                     </div>
                 </div>
             )}
+
+            <Suspense fallback={<div className="h-full flex items-center justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>}>
+                <div className="flex-1 min-h-[500px]">
+                    {initialResults && initialResults.length > 0 ? (
+                        <GroupedVirtuoso
+                            style={{ height: '100%' }}
+                            groupCounts={groupCounts}
+                            groupContent={(index) => {
+                                const group = groups[index];
+                                return (
+                                    <div className="bg-background/95 backdrop-blur-sm pt-4 pb-2 z-10 sticky top-0 border-b mb-2">
+                                        <h3 className="font-semibold text-lg flex items-center gap-2">
+                                            {group.title}
+                                            <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                                                {group.items.length}
+                                            </span>
+                                        </h3>
+                                    </div>
+                                );
+                            }}
+                            itemContent={(index, groupIndex) => {
+                                const item = groups[groupIndex].items[index];
+                                return (
+                                    <div className="py-1 px-1">
+                                        <TaskItem
+                                            task={item}
+                                            userId={userId}
+                                            compact
+                                            onClick={() => navigateToTask(item.id)}
+                                        />
+                                    </div>
+                                );
+                            }}
+                        />
+                    ) : (
+                        <div className="h-full flex flex-col items-center justify-center text-muted-foreground p-8">
+                            <Search className="w-12 h-12 mb-4 opacity-20" />
+                            <p className="text-lg font-medium">No results found</p>
+                            <p className="text-sm">Try adjusting your search or filters</p>
+                        </div>
+                    )}
+                </div>
+            </Suspense>
 
             {/* Empty state */}
             {!initialQuery && !results && (

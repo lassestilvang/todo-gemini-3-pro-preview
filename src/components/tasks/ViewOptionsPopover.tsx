@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import React, { useEffect, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -29,27 +29,58 @@ interface LabelOption {
 }
 
 export function ViewOptionsPopover({ viewId, userId, settings: propSettings, onSettingsChange }: ViewOptionsPopoverProps) {
-    const [open, setOpen] = useState(false);
-    // Use prop settings or default. Internal state is only needed if props update slower than UI?
-    // But onSettingsChange updates parent state.
-    // However, we need to handle "optimistic" updates here if parent is slow.
-    // Usually standard controlled patterns use props.
     const settings = propSettings || defaultViewSettings;
 
-    const [sortExpanded, setSortExpanded] = useState(true);
-    const [filterExpanded, setFilterExpanded] = useState(true);
-    const [labels, setLabels] = useState<LabelOption[]>([]);
+    type UIState = {
+        open: boolean;
+        sortExpanded: boolean;
+        filterExpanded: boolean;
+        labels: LabelOption[];
+        viewName: string;
+        isSaving: boolean;
+    };
+
+    type UIAction =
+        | { type: "SET_OPEN"; payload: boolean }
+        | { type: "TOGGLE_SORT_EXPANDED" }
+        | { type: "TOGGLE_FILTER_EXPANDED" }
+        | { type: "SET_LABELS"; payload: LabelOption[] }
+        | { type: "SET_VIEW_NAME"; payload: string }
+        | { type: "SET_IS_SAVING"; payload: boolean };
+
+    const [uiState, dispatchUI] = React.useReducer(
+        (state: UIState, action: UIAction): UIState => {
+            switch (action.type) {
+                case "SET_OPEN": return { ...state, open: action.payload };
+                case "TOGGLE_SORT_EXPANDED": return { ...state, sortExpanded: !state.sortExpanded };
+                case "TOGGLE_FILTER_EXPANDED": return { ...state, filterExpanded: !state.filterExpanded };
+                case "SET_LABELS": return { ...state, labels: action.payload };
+                case "SET_VIEW_NAME": return { ...state, viewName: action.payload };
+                case "SET_IS_SAVING": return { ...state, isSaving: action.payload };
+                default: return state;
+            }
+        },
+        {
+            open: false,
+            sortExpanded: true,
+            filterExpanded: true,
+            labels: [],
+            viewName: "",
+            isSaving: false,
+        }
+    );
+
+    const { open, sortExpanded, filterExpanded, labels, viewName, isSaving } = uiState;
+
     const [isPending, startTransition] = useTransition();
     const isClient = useIsClient();
-    const [viewName, setViewName] = useState("");
-    const [isSaving, setIsSaving] = useState(false);
 
     // Load labels on mount (removed settings fetch)
     useEffect(() => {
         async function loadData() {
             if (!userId) return;
             const allLabels = await getLabels(userId);
-            setLabels(allLabels);
+            dispatchUI({ type: "SET_LABELS", payload: allLabels });
         }
 
         loadData();
@@ -94,7 +125,7 @@ export function ViewOptionsPopover({ viewId, userId, settings: propSettings, onS
 
     const handleSaveAsView = async () => {
         if (!userId || !viewName.trim()) return;
-        setIsSaving(true);
+        dispatchUI({ type: "SET_IS_SAVING", payload: true });
         const result = await createSavedView({
             userId,
             name: viewName.trim(),
@@ -103,18 +134,18 @@ export function ViewOptionsPopover({ viewId, userId, settings: propSettings, onS
 
         if (!result) {
             toast.error("An error occurred while saving view");
-            setIsSaving(false);
+            dispatchUI({ type: "SET_IS_SAVING", payload: false });
             return;
         }
 
         if (result.success) {
             toast.success(`View "${viewName}" saved!`);
-            setViewName("");
-            setOpen(false);
+            dispatchUI({ type: "SET_VIEW_NAME", payload: "" });
+            dispatchUI({ type: "SET_OPEN", payload: false });
         } else {
             toast.error("Failed to save view");
         }
-        setIsSaving(false);
+        dispatchUI({ type: "SET_IS_SAVING", payload: false });
     };
 
     if (!isClient) {
@@ -127,7 +158,7 @@ export function ViewOptionsPopover({ viewId, userId, settings: propSettings, onS
     }
 
     return (
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover open={open} onOpenChange={(val) => dispatchUI({ type: "SET_OPEN", payload: val })}>
             <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2">
                     <Settings2 className="h-4 w-4" />
@@ -204,7 +235,7 @@ export function ViewOptionsPopover({ viewId, userId, settings: propSettings, onS
                     {/* Sort Section */}
                     <div>
                         <button
-                            onClick={() => setSortExpanded(!sortExpanded)}
+                            onClick={() => dispatchUI({ type: "TOGGLE_SORT_EXPANDED" })}
                             aria-expanded={sortExpanded}
                             aria-controls="sort-options"
                             className="flex items-center justify-between w-full text-sm font-medium"
@@ -268,7 +299,7 @@ export function ViewOptionsPopover({ viewId, userId, settings: propSettings, onS
                     {/* Filter Section */}
                     <div>
                         <button
-                            onClick={() => setFilterExpanded(!filterExpanded)}
+                            onClick={() => dispatchUI({ type: "TOGGLE_FILTER_EXPANDED" })}
                             aria-expanded={filterExpanded}
                             aria-controls="filter-options"
                             className="flex items-center justify-between w-full text-sm font-medium"
@@ -386,7 +417,7 @@ export function ViewOptionsPopover({ viewId, userId, settings: propSettings, onS
                                 type="text"
                                 placeholder="View name..."
                                 value={viewName}
-                                onChange={(e) => setViewName(e.target.value)}
+                                onChange={(e) => dispatchUI({ type: "SET_VIEW_NAME", payload: e.target.value })}
                                 aria-label="View name"
                                 className="flex-1 px-2 py-1 text-xs border rounded bg-background"
                             />

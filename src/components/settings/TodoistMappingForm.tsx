@@ -1,50 +1,119 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getTodoistMappingData, setTodoistLabelMappings, setTodoistProjectMappings } from "@/lib/actions/todoist";
 
 export function TodoistMappingForm() {
-    const [loading, setLoading] = useState(true);
-    const [status, setStatus] = useState<string | null>(null);
-    const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
-    const [labels, setLabels] = useState<{ id: string; name: string }[]>([]);
-    const [lists, setLists] = useState<{ id: number; name: string }[]>([]);
-    const [projectMappings, setProjectMappings] = useState<Record<string, number | null>>({});
-    const [labelMappings, setLabelMappings] = useState<Record<string, number | null>>({});
+    type UIState = {
+        loading: boolean;
+        status: string | null;
+        projects: { id: string; name: string }[];
+        labels: { id: string; name: string }[];
+        lists: { id: number; name: string }[];
+        projectMappings: Record<string, number | null>;
+        labelMappings: Record<string, number | null>;
+    };
+
+    type UIAction =
+        | { type: "FETCH_START" }
+        | { type: "FETCH_SUCCESS"; payload: { projects: { id: string; name: string }[]; labels: { id: string; name: string }[]; lists: { id: number; name: string }[]; projectMappings: Record<string, number | null>; labelMappings: Record<string, number | null> } }
+        | { type: "FETCH_ERROR"; payload: string }
+        | { type: "SET_STATUS"; payload: string | null }
+        | { type: "UPDATE_PROJECT_MAPPING"; payload: { projectId: string; listId: number | null } }
+        | { type: "UPDATE_LABEL_MAPPING"; payload: { labelId: string; listId: number | null } };
+
+    const [uiState, dispatchUI] = React.useReducer(
+        (state: UIState, action: UIAction): UIState => {
+            switch (action.type) {
+                case "FETCH_START":
+                    return { ...state, loading: true, status: null };
+                case "FETCH_SUCCESS":
+                    return {
+                        ...state,
+                        loading: false,
+                        projects: action.payload.projects,
+                        labels: action.payload.labels,
+                        lists: action.payload.lists,
+                        projectMappings: action.payload.projectMappings,
+                        labelMappings: action.payload.labelMappings,
+                    };
+                case "FETCH_ERROR":
+                    return { ...state, loading: false, status: action.payload };
+                case "SET_STATUS":
+                    return { ...state, status: action.payload };
+                case "UPDATE_PROJECT_MAPPING":
+                    return {
+                        ...state,
+                        projectMappings: {
+                            ...state.projectMappings,
+                            [action.payload.projectId]: action.payload.listId,
+                        },
+                    };
+                case "UPDATE_LABEL_MAPPING":
+                    return {
+                        ...state,
+                        labelMappings: {
+                            ...state.labelMappings,
+                            [action.payload.labelId]: action.payload.listId,
+                        },
+                    };
+                default:
+                    return state;
+            }
+        },
+        {
+            loading: true,
+            status: null,
+            projects: [],
+            labels: [],
+            lists: [],
+            projectMappings: {},
+            labelMappings: {},
+        }
+    );
+
+    const { loading, status, projects, labels, lists, projectMappings, labelMappings } = uiState;
 
     useEffect(() => {
+        let isMounted = true;
         const load = async () => {
+            dispatchUI({ type: "FETCH_START" });
             const result = await getTodoistMappingData();
+            if (!isMounted) return;
+
             if (!result.success) {
-                setStatus(result.error ?? "Failed to load Todoist mapping data.");
-                setLoading(false);
+                dispatchUI({ type: "FETCH_ERROR", payload: result.error ?? "Failed to load Todoist mapping data." });
                 return;
             }
-
-            setProjects(result.projects ?? []);
-            setLabels(result.labels ?? []);
-            setLists(result.lists ?? []);
 
             const projectMap: Record<string, number | null> = {};
             for (const project of result.projects ?? []) {
                 const match = result.projectMappings?.find((mapping) => mapping.projectId === project.id);
                 projectMap[project.id] = match?.listId ?? null;
             }
-            setProjectMappings(projectMap);
 
             const labelMap: Record<string, number | null> = {};
             for (const label of result.labels ?? []) {
                 const match = result.labelMappings?.find((mapping) => mapping.labelId === label.id);
                 labelMap[label.id] = match?.listId ?? null;
             }
-            setLabelMappings(labelMap);
 
-            setLoading(false);
+            dispatchUI({
+                type: "FETCH_SUCCESS",
+                payload: {
+                    projects: result.projects ?? [],
+                    labels: result.labels ?? [],
+                    lists: result.lists ?? [],
+                    projectMappings: projectMap,
+                    labelMappings: labelMap,
+                },
+            });
         };
 
         load();
+        return () => { isMounted = false; };
     }, []);
 
     const sortedLists = useMemo(() => {
@@ -52,7 +121,7 @@ export function TodoistMappingForm() {
     }, [lists]);
 
     const handleSave = async () => {
-        setStatus(null);
+        dispatchUI({ type: "SET_STATUS", payload: null });
         const projectPayload = projects.map((project) => ({
             projectId: project.id,
             listId: projectMappings[project.id] ?? null,
@@ -68,11 +137,11 @@ export function TodoistMappingForm() {
         ]);
 
         if (!projectResult.success || !labelResult.success) {
-            setStatus(projectResult.error ?? labelResult.error ?? "Failed to save mappings.");
+            dispatchUI({ type: "FETCH_ERROR", payload: projectResult.error ?? labelResult.error ?? "Failed to save mappings." });
             return;
         }
 
-        setStatus("Mappings saved.");
+        dispatchUI({ type: "SET_STATUS", payload: "Mappings saved." });
     };
 
     if (loading) {
@@ -93,10 +162,13 @@ export function TodoistMappingForm() {
                             <Select
                                 value={projectMappings[project.id] ? String(projectMappings[project.id]) : "none"}
                                 onValueChange={(value) => {
-                                    setProjectMappings((prev) => ({
-                                        ...prev,
-                                        [project.id]: value === "none" ? null : Number(value),
-                                    }));
+                                    dispatchUI({
+                                        type: "UPDATE_PROJECT_MAPPING",
+                                        payload: {
+                                            projectId: project.id,
+                                            listId: value === "none" ? null : Number(value),
+                                        },
+                                    });
                                 }}
                             >
                                 <SelectTrigger className="w-full md:w-60">
@@ -127,10 +199,13 @@ export function TodoistMappingForm() {
                             <Select
                                 value={labelMappings[label.id] ? String(labelMappings[label.id]) : "none"}
                                 onValueChange={(value) => {
-                                    setLabelMappings((prev) => ({
-                                        ...prev,
-                                        [label.id]: value === "none" ? null : Number(value),
-                                    }));
+                                    dispatchUI({
+                                        type: "UPDATE_LABEL_MAPPING",
+                                        payload: {
+                                            labelId: label.id,
+                                            listId: value === "none" ? null : Number(value),
+                                        },
+                                    });
                                 }}
                             >
                                 <SelectTrigger className="w-full md:w-60">

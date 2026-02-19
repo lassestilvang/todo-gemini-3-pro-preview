@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Inter, Quicksand, Space_Grotesk, Orbitron, Sora } from "next/font/google";
 import "./globals.css";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -74,7 +75,9 @@ export default function RootLayout({
       className={`${inter.variable} ${quicksand.variable} ${spaceGrotesk.variable} ${orbitron.variable} ${sora.variable}`}
     >
       <head>
-        <script
+        <Script
+          id="sidebar-script"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var d=document.documentElement;var m=localStorage.getItem('sidebar-mode');if(m==='slim'||m==='hidden'||m==='normal')d.dataset.sidebarMode=m;var w=localStorage.getItem('sidebar-width');if(w){var n=parseInt(w,10);if(n>=200&&n<=480)d.style.setProperty('--sidebar-width',n+'px')};}catch(e){}})();`,
           }}
@@ -87,23 +90,23 @@ export default function RootLayout({
               <ThemeProvider
                 attribute="class"
                 defaultTheme="system"
-              enableSystem
-              disableTransitionOnChange
-              themes={[...AVAILABLE_THEMES].filter(t => t !== "system")}
-            >
-              <ZenModeProvider>
-                <PerformanceProvider>
-                  <LazyMotionProvider>
-                    <OnboardingProvider>
-                      <PwaRegister />
-                      <WebVitals />
-                      <LevelUpWatcher />
-                      <MainLayout>{children}</MainLayout>
-                      <Toaster />
-                    </OnboardingProvider>
-                  </LazyMotionProvider>
-                </PerformanceProvider>
-              </ZenModeProvider>
+                enableSystem
+                disableTransitionOnChange
+                themes={[...AVAILABLE_THEMES].filter(t => t !== "system")}
+              >
+                <ZenModeProvider>
+                  <PerformanceProvider>
+                    <LazyMotionProvider>
+                      <OnboardingProvider>
+                        <PwaRegister />
+                        <WebVitals />
+                        <LevelUpWatcher />
+                        <MainLayout>{children}</MainLayout>
+                        <Toaster />
+                      </OnboardingProvider>
+                    </LazyMotionProvider>
+                  </PerformanceProvider>
+                </ZenModeProvider>
               </ThemeProvider>
             </TooltipProvider>
           </SyncProvider>

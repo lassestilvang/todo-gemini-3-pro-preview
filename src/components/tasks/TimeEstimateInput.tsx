@@ -86,8 +86,9 @@ export function TimeEstimateInput({ value, onChange, className }: TimeEstimateIn
                             {/* Hours and Minutes Input */}
                             <div className="flex items-center gap-2">
                                 <div className="flex-1">
-                                    <label className="text-xs text-muted-foreground mb-1 block">Hours</label>
+                                    <label htmlFor="time-estimate-hours" className="text-xs text-muted-foreground mb-1 block">Hours</label>
                                     <input
+                                        id="time-estimate-hours"
                                         type="number"
                                         min={0}
                                         max={8}
@@ -102,8 +103,9 @@ export function TimeEstimateInput({ value, onChange, className }: TimeEstimateIn
                                 </div>
                                 <span className="text-xl font-bold text-muted-foreground mt-5">:</span>
                                 <div className="flex-1">
-                                    <label className="text-xs text-muted-foreground mb-1 block">Minutes</label>
+                                    <label htmlFor="time-estimate-minutes" className="text-xs text-muted-foreground mb-1 block">Minutes</label>
                                     <input
+                                        id="time-estimate-minutes"
                                         type="number"
                                         min={0}
                                         max={55}

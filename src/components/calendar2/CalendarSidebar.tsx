@@ -40,8 +40,9 @@ export function CalendarSidebar({
       </div>
 
       <div className="p-2 space-y-px overflow-y-auto calendar2-column flex-1">
-        <label className="flex items-center gap-2.5 text-sm px-2 py-1.5 rounded-md hover:bg-muted/50 transition-colors cursor-pointer">
+        <label htmlFor="calendar-all-checked" className="flex items-center gap-2.5 text-sm px-2 py-1.5 rounded-md hover:bg-muted/50 transition-colors cursor-pointer">
           <Checkbox
+            id="calendar-all-checked"
             checked={allChecked}
             onCheckedChange={(checked) => onToggleAll(checked === true)}
             className="h-4 w-4"
@@ -50,15 +51,24 @@ export function CalendarSidebar({
         </label>
 
         <div
+          role="button"
+          tabIndex={0}
           className={cn(
             "flex items-center gap-2.5 text-sm px-2 py-1.5 rounded-md cursor-pointer transition-colors",
             selectedListId === null ? "bg-accent" : "hover:bg-muted/50"
           )}
           onClick={() => onSelectList(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onSelectList(null);
+            }
+          }}
         >
           <Checkbox
             checked={visibleListIds.has(null)}
             onCheckedChange={() => onToggleList(null)}
+            tabIndex={-1}
             onClick={(e) => e.stopPropagation()}
             className="h-4 w-4"
           />
@@ -69,15 +79,24 @@ export function CalendarSidebar({
         {lists.map((list) => (
           <div
             key={list.id}
+            role="button"
+            tabIndex={0}
             className={cn(
               "flex items-center gap-2.5 text-sm px-2 py-1.5 rounded-md cursor-pointer transition-colors",
               selectedListId === list.id ? "bg-accent" : "hover:bg-muted/50"
             )}
             onClick={() => onSelectList(list.id)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onSelectList(list.id);
+              }
+            }}
           >
             <Checkbox
               checked={visibleListIds.has(list.id)}
               onCheckedChange={() => onToggleList(list.id)}
+              tabIndex={-1}
               onClick={(e) => e.stopPropagation()}
               className="h-4 w-4"
             />

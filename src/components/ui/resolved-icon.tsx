@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, lazy, Suspense } from "react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { ListTodo } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -88,11 +89,11 @@ export function ResolvedIcon({ icon, color, className, fallback }: ResolvedIconP
     if (resolved.type === "image") {
         return (
             <div className={cn("relative overflow-hidden rounded-sm shrink-0", className)}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <Image
                     src={resolved.value}
                     alt="Icon"
-                    className="w-full h-full object-cover"
+                    fill
+                    className="object-cover"
                 />
             </div>
         );

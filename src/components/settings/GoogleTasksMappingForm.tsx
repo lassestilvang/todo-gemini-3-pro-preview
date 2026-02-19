@@ -1,39 +1,96 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getGoogleTasksMappingData, setGoogleTasksListMappings } from "@/lib/actions/google-tasks";
 
 export function GoogleTasksMappingForm() {
-    const [loading, setLoading] = useState(true);
-    const [status, setStatus] = useState<string | null>(null);
-    const [tasklists, setTasklists] = useState<{ id: string; title: string }[]>([]);
-    const [lists, setLists] = useState<{ id: number; name: string }[]>([]);
-    const [listMappings, setListMappings] = useState<Record<string, number | null>>({});
+    type UIState = {
+        loading: boolean;
+        status: string | null;
+        tasklists: { id: string; title: string }[];
+        lists: { id: number; name: string }[];
+        listMappings: Record<string, number | null>;
+    };
+
+    type UIAction =
+        | { type: "FETCH_START" }
+        | { type: "FETCH_SUCCESS"; payload: { tasklists: { id: string; title: string }[]; lists: { id: number; name: string }[]; listMappings: Record<string, number | null> } }
+        | { type: "FETCH_ERROR"; payload: string }
+        | { type: "SET_STATUS"; payload: string | null }
+        | { type: "UPDATE_MAPPING"; payload: { tasklistId: string; listId: number | null } };
+
+    const [uiState, dispatchUI] = React.useReducer(
+        (state: UIState, action: UIAction): UIState => {
+            switch (action.type) {
+                case "FETCH_START":
+                    return { ...state, loading: true, status: null };
+                case "FETCH_SUCCESS":
+                    return {
+                        ...state,
+                        loading: false,
+                        tasklists: action.payload.tasklists,
+                        lists: action.payload.lists,
+                        listMappings: action.payload.listMappings,
+                    };
+                case "FETCH_ERROR":
+                    return { ...state, loading: false, status: action.payload };
+                case "SET_STATUS":
+                    return { ...state, status: action.payload };
+                case "UPDATE_MAPPING":
+                    return {
+                        ...state,
+                        listMappings: {
+                            ...state.listMappings,
+                            [action.payload.tasklistId]: action.payload.listId,
+                        },
+                    };
+                default:
+                    return state;
+            }
+        },
+        {
+            loading: true,
+            status: null,
+            tasklists: [],
+            lists: [],
+            listMappings: {},
+        }
+    );
+
+    const { loading, status, tasklists, lists, listMappings } = uiState;
 
     useEffect(() => {
+        let isMounted = true;
         const load = async () => {
+            dispatchUI({ type: "FETCH_START" });
             const result = await getGoogleTasksMappingData();
+            if (!isMounted) return;
+
             if (!result.success) {
-                setStatus(result.error ?? "Failed to load Google Tasks mapping data.");
-                setLoading(false);
+                dispatchUI({ type: "FETCH_ERROR", payload: result.error ?? "Failed to load Google Tasks mapping data." });
                 return;
             }
-
-            setTasklists(result.tasklists ?? []);
-            setLists(result.lists ?? []);
 
             const mapping: Record<string, number | null> = {};
             for (const tasklist of result.tasklists ?? []) {
                 const match = result.listMappings?.find((item) => item.tasklistId === tasklist.id);
                 mapping[tasklist.id] = match?.listId ?? null;
             }
-            setListMappings(mapping);
-            setLoading(false);
+
+            dispatchUI({
+                type: "FETCH_SUCCESS",
+                payload: {
+                    tasklists: result.tasklists ?? [],
+                    lists: result.lists ?? [],
+                    listMappings: mapping,
+                },
+            });
         };
 
         load();
+        return () => { isMounted = false; };
     }, []);
 
     const sortedLists = useMemo(() => {
@@ -45,7 +102,7 @@ export function GoogleTasksMappingForm() {
     }, [tasklists]);
 
     const handleSave = async () => {
-        setStatus(null);
+        dispatchUI({ type: "SET_STATUS", payload: null });
         const payload = tasklists.map((tasklist) => ({
             tasklistId: tasklist.id,
             listId: listMappings[tasklist.id] ?? null,
@@ -53,11 +110,11 @@ export function GoogleTasksMappingForm() {
 
         const result = await setGoogleTasksListMappings(payload);
         if (!result.success) {
-            setStatus(result.error ?? "Failed to save mappings.");
+            dispatchUI({ type: "FETCH_ERROR", payload: result.error ?? "Failed to save mappings." });
             return;
         }
 
-        setStatus("Mappings saved.");
+        dispatchUI({ type: "SET_STATUS", payload: "Mappings saved." });
     };
 
     if (loading) {
@@ -83,10 +140,13 @@ export function GoogleTasksMappingForm() {
                         <Select
                             value={listMappings[tasklist.id] ? String(listMappings[tasklist.id]) : "none"}
                             onValueChange={(value) => {
-                                setListMappings((prev) => ({
-                                    ...prev,
-                                    [tasklist.id]: value === "none" ? null : Number(value),
-                                }));
+                                dispatchUI({
+                                    type: "UPDATE_MAPPING",
+                                    payload: {
+                                        tasklistId: tasklist.id,
+                                        listId: value === "none" ? null : Number(value),
+                                    },
+                                });
                             }}
                         >
                             <SelectTrigger className="w-full md:w-60">

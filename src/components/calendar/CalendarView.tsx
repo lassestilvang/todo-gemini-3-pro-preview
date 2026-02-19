@@ -248,7 +248,15 @@ export function CalendarView({ tasks }: CalendarViewProps) {
               return (
                 <div
                   key={day.toString()}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setSelectedDate(day)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedDate(day);
+                    }
+                  }}
                   className={cn(
                     "min-h-[100px] border-b border-r p-2 transition-colors hover:bg-muted/20 cursor-pointer flex flex-col gap-1",
                     !isCurrentMonth && "bg-muted/10 text-muted-foreground",

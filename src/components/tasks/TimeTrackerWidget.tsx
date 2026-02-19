@@ -171,6 +171,9 @@ export function TimeTrackerWidget({
                 isTracking && "border-primary/50 bg-primary/5",
                 className
             )}
+            role="group"
+            tabIndex={-1}
+            onKeyDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
         >
             <div className="flex items-center gap-3">

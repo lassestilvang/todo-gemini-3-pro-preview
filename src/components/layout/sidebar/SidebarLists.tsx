@@ -1,7 +1,7 @@
 "use client";
 
 
-import React, { useState, useEffect, memo, useMemo } from "react";
+import React, { useState, memo, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -129,7 +129,15 @@ const SortableListItem = memo(function SortableListItem({
     );
 });
 
-export function SidebarLists({ lists: ssrLists, userId }: SidebarListsProps) {
+export function SidebarLists(props: SidebarListsProps) {
+    return (
+        <Suspense fallback={<div className="px-3 py-2 text-muted-foreground">Loading lists...</div>}>
+            <SidebarListsInner {...props} />
+        </Suspense>
+    );
+}
+
+function SidebarListsInner({ lists: ssrLists, userId }: SidebarListsProps) {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const storeLists = useListStore(state => state.lists);
@@ -137,17 +145,20 @@ export function SidebarLists({ lists: ssrLists, userId }: SidebarListsProps) {
     const { listCounts } = useTaskCounts();
     const [isReordering, setIsReordering] = useState(false);
 
-    // Sync SSR props to store on mount/change (hydration)
-    useEffect(() => {
-        if (ssrLists.length > 0) {
-            setStoreLists(ssrLists);
-        }
-    }, [ssrLists, setStoreLists]);
-
-    // Derive sorted items from store
+    // Derive sorted items directly from store or fallback to props (fixes derived state anti-pattern)
     const items = useMemo(() => {
-        return Object.values(storeLists).sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-    }, [storeLists]);
+        const source = Object.keys(storeLists).length > 0 ? Object.values(storeLists) : ssrLists;
+        return source.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+    }, [storeLists, ssrLists]);
+
+    // Initialize store once on mount if empty (without creating derived state loops)
+    const initializedRef = React.useRef(false);
+    React.useEffect(() => {
+        if (!initializedRef.current && ssrLists.length > 0 && Object.keys(storeLists).length === 0) {
+            setStoreLists(ssrLists);
+            initializedRef.current = true;
+        }
+    }, [ssrLists, storeLists, setStoreLists]);
 
     const isCalendar3 = pathname?.startsWith("/calendar3");
     const calendar3Param = searchParams.get("listId");
@@ -239,14 +250,14 @@ export function SidebarLists({ lists: ssrLists, userId }: SidebarListsProps) {
                             const href = isCalendar3 ? `/calendar3?listId=${list.id}` : `/lists/${list.id}`;
                             const isActive = pathname === `/lists/${list.id}` || (isCalendar3 && calendar3SelectedListId === list.id);
                             return (
-                            <SortableListItem
-                                key={list.id}
-                                list={list}
-                                href={href}
-                                isActive={isActive}
-                                isReordering={isReordering}
-                                count={listCounts[list.id] || 0}
-                            />
+                                <SortableListItem
+                                    key={list.id}
+                                    list={list}
+                                    href={href}
+                                    isActive={isActive}
+                                    isReordering={isReordering}
+                                    count={listCounts[list.id] || 0}
+                                />
                             );
                         })}
                     </div>

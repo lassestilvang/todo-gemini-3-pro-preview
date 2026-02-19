@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from "react";
 import type {
   DateClickData,
   DateSelectData,
@@ -39,7 +39,15 @@ function partitionTasks(tasks: Task[]) {
   return { active, completed };
 }
 
-export function Calendar3Client({ initialTasks, initialLists }: Calendar3ClientProps) {
+export function Calendar3Client(props: Calendar3ClientProps) {
+  return (
+    <Suspense fallback={<div className="h-full flex items-center justify-center p-8">Loading calendar...</div>}>
+      <Calendar3ClientInner {...props} />
+    </Suspense>
+  )
+}
+
+function Calendar3ClientInner({ initialTasks, initialLists }: Calendar3ClientProps) {
   const { tasks: taskMap, setTasks } = useTaskStore();
   const { lists: listMap, setLists } = useListStore();
   const { dispatch } = useSync();
@@ -295,8 +303,9 @@ export function Calendar3Client({ initialTasks, initialLists }: Calendar3ClientP
         emptyState="No tasks in this list."
         dragContainerRef={listDragContainerRef}
         headerAction={(
-          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+          <label htmlFor="calendar3-unscheduled" className="flex items-center gap-2 text-xs text-muted-foreground">
             <Switch
+              id="calendar3-unscheduled"
               checked={unscheduledOnly}
               onCheckedChange={(checked) => setUnscheduledOnly(Boolean(checked))}
             />

@@ -1,3 +1,10 @@
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Todo Gemini | Achievements",
+  description: "Manage your tasks efficiently with Todo Gemini."
+};
+
 import { getAchievements, getUserAchievements, getUserStats, getCompletionHistory } from "@/lib/actions";
 import { getCurrentUser } from "@/lib/auth";
 import { Card, CardContent } from "@/components/ui/card";

@@ -1,3 +1,10 @@
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Todo Gemini | Calendar3",
+  description: "Manage your tasks efficiently with Todo Gemini."
+};
+
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Calendar3Loader } from "@/components/calendar3/Calendar3Loader";

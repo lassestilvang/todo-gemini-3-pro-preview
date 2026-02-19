@@ -1,3 +1,10 @@
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Todo Gemini | Habits",
+  description: "Manage your tasks efficiently with Todo Gemini."
+};
+
 import { getHabits } from "@/lib/habits";
 import { getCurrentUser } from "@/lib/auth";
 import { TaskItem } from "@/components/tasks/TaskItem";

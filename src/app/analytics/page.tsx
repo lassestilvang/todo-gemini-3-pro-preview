@@ -1,3 +1,10 @@
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Todo Gemini | Analytics",
+  description: "Manage your tasks efficiently with Todo Gemini."
+};
+
 import { getAnalytics } from "@/lib/analytics";
 import { getCurrentUser } from "@/lib/auth";
 import dynamic from "next/dynamic";

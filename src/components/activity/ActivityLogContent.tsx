@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
 import { format, isToday, isYesterday, subDays, startOfDay, endOfDay } from "date-fns";
 import {
     Search,
@@ -59,7 +59,19 @@ interface ActivityLogContentProps {
     use24h: boolean | null;
 }
 
-export function ActivityLogContent({ initialLogs, use24h }: ActivityLogContentProps) {
+export function ActivityLogContent(props: ActivityLogContentProps) {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center p-8 text-muted-foreground">
+                Loading activity log...
+            </div>
+        }>
+            <ActivityLogInner {...props} />
+        </Suspense>
+    );
+}
+
+function ActivityLogInner({ initialLogs, use24h }: ActivityLogContentProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [searchQuery, setSearchQuery] = useState(searchParams.get("query") || "");

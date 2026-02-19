@@ -1,3 +1,10 @@
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Todo Gemini | Calendar",
+  description: "Manage your tasks efficiently with Todo Gemini."
+};
+
 
 import { getCurrentUser } from "@/lib/auth";
 import dynamic from "next/dynamic";

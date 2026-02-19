@@ -39,8 +39,8 @@ export function TaskBoardCard({ task, onEdit }: TaskBoardCardProps) {
 
   const style = transform
     ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-      }
+      transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+    }
     : undefined;
 
   return (
@@ -49,6 +49,14 @@ export function TaskBoardCard({ task, onEdit }: TaskBoardCardProps) {
       style={style}
       {...listeners}
       {...attributes}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onEdit(task);
+        }
+      }}
       onClick={() => onEdit(task)}
       className={cn(
         "bg-background border border-l-2 rounded-lg p-3 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-shadow",
