@@ -64,10 +64,6 @@ const SubtaskRow = memo(function SubtaskRow({ subtask, isCompleted, onToggle }: 
                 "flex items-center gap-3 py-2 px-3 rounded-md hover:bg-muted/50 transition-colors",
                 isCompleted && "opacity-60"
             )}
-            onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-            }}
         >
             <Checkbox
                 checked={isCompleted || false}
@@ -283,16 +279,27 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                 data-testid="task-item"
                 data-task-id={task.id}
                 data-task-completed={isCompleted}
+                role="button"
+                tabIndex={0}
+                aria-label={onEdit ? `Edit task ${task.title}` : task.title}
                 onClick={(e) => {
                     // Prevent triggering if selecting text
                     if (window.getSelection()?.toString()) return;
 
                     // Prevent triggering if clicking interactive elements
                     if ((e.target as HTMLElement).closest('button, [role="checkbox"], a, input')) return;
+                    if ((e.target as HTMLElement).closest('[data-subtask-area="true"]')) return;
 
                     if (onEdit) {
                         onEdit(task);
                     }
+                }}
+                onKeyDown={(e) => {
+                    if (!onEdit) return;
+                    if (e.target !== e.currentTarget) return;
+                    if (e.key !== "Enter" && e.key !== " ") return;
+                    e.preventDefault();
+                    onEdit(task);
                 }}
             >
                 {/* Drag Handle */}
@@ -301,7 +308,7 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                         className="cursor-grab active:cursor-grabbing text-muted-foreground/30 hover:text-muted-foreground transition-colors -ml-2 -mr-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
                         {...dragHandleProps}
                         {...dragAttributes}
-                        onClick={(e) => {
+                        onPointerDown={(e) => {
                             e.stopPropagation();
                             e.preventDefault();
                         }}
@@ -568,7 +575,7 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
 
             {/* Subtasks Section */}
             {hasSubtasks && isExpanded && (
-                <div className="ml-8 mt-1 space-y-1 border-l-2 border-muted pl-4">
+                <div className="ml-8 mt-1 space-y-1 border-l-2 border-muted pl-4" data-subtask-area="true">
                     {(task.subtasks || []).map((subtask) => {
                         const isSubtaskCompleted = subtask.isCompleted;
                         return (

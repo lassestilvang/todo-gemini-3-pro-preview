@@ -23,8 +23,8 @@ import {
 import { rateLimit } from "@/lib/rate-limit";
 import { requireUser } from "@/lib/auth";
 import { transformNullableTimestamp } from "@/lib/migration-utils";
-import { getLists, getListInternal, getListsInternal } from "../lists";
-import { getLabels, getLabelsInternal } from "../labels";
+import { getListInternal, getListsInternal } from "../lists";
+import { getLabelsInternal } from "../labels";
 import { updateUserProgress } from "../gamification";
 import { createTaskSchema, updateTaskSchema } from "@/lib/validation/tasks";
 import { coerceDuePrecision, normalizeDueAnchor } from "@/lib/due-utils";

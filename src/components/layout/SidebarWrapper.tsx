@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { cn } from "@/lib/utils";
 import { useSidebarState, MIN_WIDTH, MAX_WIDTH } from "@/hooks/use-sidebar-state";
 import { SlimSidebar } from "./SlimSidebar";
@@ -99,6 +99,15 @@ export function SidebarWrapper({ children, className, lists, labels }: SidebarWr
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [cycleMode]);
 
+    const handleResizeKeyDown = useCallback((e: ReactKeyboardEvent<HTMLDivElement>) => {
+        if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+        e.preventDefault();
+        const delta = e.key === "ArrowRight" ? 16 : -16;
+        const nextWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, width + delta));
+        setWidth(nextWidth);
+        document.documentElement.style.setProperty("--sidebar-width", `${nextWidth}px`);
+    }, [setWidth, width]);
+
     const isNormal = mode === "normal";
     const responsiveClassName = className ?? "";
 
@@ -149,11 +158,16 @@ export function SidebarWrapper({ children, className, lists, labels }: SidebarWr
 
                 <div
                     onMouseDown={handleMouseDown}
+                    onKeyDown={handleResizeKeyDown}
                     className={cn(
                         "absolute top-0 right-0 w-1 h-full cursor-col-resize z-20 transition-all duration-150",
                         "hover:bg-primary/20 active:bg-primary/40",
                         isResizing ? "bg-primary/40 w-1" : "bg-transparent hover:w-1"
                     )}
+                    role="separator"
+                    aria-orientation="vertical"
+                    aria-label="Resize sidebar"
+                    tabIndex={0}
                 >
                     <div className={cn(
                         "absolute top-1/2 -translate-y-1/2 right-0 w-1 h-8 rounded-full transition-all duration-200",

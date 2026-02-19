@@ -91,7 +91,6 @@ export function FocusMode({ task, userId, onClose }: FocusModeProps) {
     return createPortal(
         <div
             className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-sm flex flex-col items-center justify-center p-4 animate-in fade-in duration-300"
-            onClick={(e) => e.stopPropagation()}
         >
             <Button
                 variant="ghost"

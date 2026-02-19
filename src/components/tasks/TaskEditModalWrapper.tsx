@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams, useRouter, usePathname, useParams } from "next/navigation";
+import { useRouter, usePathname, useParams } from "next/navigation";
 import { useMemo, useCallback } from "react";
 import { getTask } from "@/lib/actions";
 import { isSuccess } from "@/lib/action-result";
@@ -32,7 +32,8 @@ interface TaskEditModalWrapperProps {
 }
 
 function TaskEditModalWrapperContent({ userId }: TaskEditModalWrapperProps) {
-    const searchParams = useSearchParams();
+    const search = typeof window === "undefined" ? "" : window.location.search;
+    const searchParams = useMemo(() => new URLSearchParams(search), [search]);
     const taskIdParam = searchParams.get("taskId");
     const createParam = searchParams.get("create");
     const router = useRouter();

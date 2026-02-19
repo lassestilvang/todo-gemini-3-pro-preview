@@ -3,7 +3,6 @@ import { createTestUser, setupTestDb, resetTestDb } from "@/test/setup";
 import { setMockAuthUser, resetMockAuthUser } from "@/test/mocks";
 import { createList } from "./lists";
 import { setGoogleTasksListMappings } from "./google-tasks";
-import { db, lists, eq } from "./shared";
 
 describe("Google Tasks Security (IDOR)", () => {
   let ATTACKER_ID: string;

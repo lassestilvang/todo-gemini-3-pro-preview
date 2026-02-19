@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, beforeEach, beforeAll, mock } from "bun:test";
+import { describe, it, expect, afterEach, beforeEach, beforeAll } from "bun:test";
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import React from "react";
 import { sqliteConnection } from "@/db";

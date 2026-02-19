@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, createTestUser, resetTestDb } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
-import { createTask, updateTask, getTasks } from "@/lib/actions/tasks";
+import { createTask, updateTask } from "@/lib/actions/tasks";
 import { isFailure } from "@/lib/action-result";
 
 describe("Integration: Security Task Parent IDOR", () => {

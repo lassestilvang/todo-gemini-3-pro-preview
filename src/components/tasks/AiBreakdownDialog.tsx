@@ -22,6 +22,8 @@ interface AiBreakdownDialogProps {
     onConfirm: (subtasks: ParsedSubtask[]) => void;
 }
 
+const EMPTY_SUGGESTIONS: ParsedSubtask[] = [];
+
 function AiBreakdownDialogContent({ open, onOpenChange, taskTitle, onConfirm }: AiBreakdownDialogProps) {
     const [excluded, setExcluded] = useState<Set<number>>(new Set());
     const shouldLoad = open && !!taskTitle.trim();
@@ -33,7 +35,7 @@ function AiBreakdownDialogContent({ open, onOpenChange, taskTitle, onConfirm }: 
             return subtasks;
         },
     });
-    const suggestions = shouldLoad ? (suggestionsQuery.data ?? []) : [];
+    const suggestions = shouldLoad ? (suggestionsQuery.data ?? EMPTY_SUGGESTIONS) : EMPTY_SUGGESTIONS;
     const isLoading = shouldLoad && suggestionsQuery.isLoading;
     const selectedCount = useMemo(
         () => suggestions.reduce((count, _, i) => (excluded.has(i) ? count : count + 1), 0),

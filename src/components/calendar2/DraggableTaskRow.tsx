@@ -88,7 +88,18 @@ export const DraggableTaskRow = memo(function DraggableTaskRow({
       data-task-title={task.icon ? `${task.icon} ${task.title}` : task.title}
       data-duration={task.estimateMinutes || 30}
       data-list-color={task.listColor || ""}
-      onClick={() => onEdit?.(task)}
+      onClick={() => {
+        if (onEdit) onEdit(task);
+      }}
+      onKeyDown={(e) => {
+        if (!onEdit) return;
+        if (e.key !== "Enter" && e.key !== " ") return;
+        e.preventDefault();
+        onEdit(task);
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label={onEdit ? `Edit task ${task.title}` : task.title}
     >
       <div className="flex items-center gap-2 pt-0.5 shrink-0">
         <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />

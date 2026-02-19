@@ -116,6 +116,15 @@ export function OnboardingTour() {
                     )`
                 }}
                 onClick={endTour}
+                onKeyDown={(e) => {
+                    if (e.key === "Escape" || e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        endTour();
+                    }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label="Close onboarding tour"
             />
 
             {/* Tooltip */}

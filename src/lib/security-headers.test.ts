@@ -1,16 +1,19 @@
 import { describe, it, expect } from "bun:test";
 import nextConfig from "../../next.config";
 
+type HeaderEntry = { key: string; value: string };
+type HeaderConfig = { source: string; headers: HeaderEntry[] };
+
 describe("Security Headers", () => {
   it("should return basic security headers (non-prod)", async () => {
     // Check if headers function exists
     expect(typeof nextConfig.headers).toBe("function");
 
     // Invoke headers()
-    const headersConfig = await nextConfig.headers!();
+    const headersConfig = (await nextConfig.headers!()) as HeaderConfig[];
 
     // Find the headers for catch-all route (/:path*)
-    const catchAllHeaders = headersConfig.find((h: any) => h.source === "/:path*");
+    const catchAllHeaders = headersConfig.find((h) => h.source === "/:path*");
     expect(catchAllHeaders).toBeDefined();
 
     const headers = catchAllHeaders!.headers;
@@ -33,10 +36,10 @@ describe("Security Headers", () => {
     process.env.NODE_ENV = "production";
 
     try {
-        const headersConfig = await nextConfig.headers!();
-        const catchAllHeaders = headersConfig.find((h: any) => h.source === "/:path*");
+        const headersConfig = (await nextConfig.headers!()) as HeaderConfig[];
+        const catchAllHeaders = headersConfig.find((h) => h.source === "/:path*");
         const headers = catchAllHeaders!.headers;
-        const headerMap = new Map(headers.map((h: any) => [h.key, h.value]));
+        const headerMap = new Map(headers.map((h) => [h.key, h.value]));
 
         // HSTS should be present
         expect(headerMap.get("Strict-Transport-Security")).toBe(

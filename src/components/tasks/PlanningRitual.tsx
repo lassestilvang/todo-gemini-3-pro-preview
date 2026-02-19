@@ -23,6 +23,8 @@ interface PlanningRitualProps {
     userId?: string;
 }
 
+const EMPTY_TASKS: TaskType[] = [];
+
 function PlanningRitualContent({ open, onOpenChange, type, userId }: PlanningRitualProps) {
     const [priorities, setPriorities] = useState<string[]>(["", "", ""]);
     const [reflection, setReflection] = useState("");
@@ -41,7 +43,7 @@ function PlanningRitualContent({ open, onOpenChange, type, userId }: PlanningRit
             return tasksResult.data as TaskType[];
         },
     });
-    const todayTasks = todayTasksQuery.data ?? [];
+    const todayTasks = todayTasksQuery.data ?? EMPTY_TASKS;
 
     // PERF: Cache completed tasks to avoid repeated filtering in render.
     const completedTasks = useMemo(
