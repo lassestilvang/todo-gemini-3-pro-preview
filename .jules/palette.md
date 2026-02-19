@@ -31,3 +31,7 @@
 ## 2025-02-18 - Mobile Accessibility of Icon-Only Buttons
 **Learning:** Buttons containing only an icon and text wrapped in `hidden sm:inline` are inaccessible on mobile devices because screen readers ignore content with `display: none` (implied by `hidden`).
 **Action:** Always add `aria-label` to buttons that might be icon-only on smaller breakpoints, ensuring the label matches the hidden text.
+
+## 2025-02-19 - Destructive Confirmation UX
+**Learning:** Using native `window.confirm()` for destructive actions (like delete) creates a jarring experience and blocks the UI thread. It also fails to match the application's design language.
+**Action:** Replace `confirm()` with a lightweight `Popover` or `AlertDialog` component containing a confirmation message and a secondary confirm button, ensuring the destructive action is deliberate and visually integrated.

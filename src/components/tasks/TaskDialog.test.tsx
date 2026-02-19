@@ -122,6 +122,9 @@ describe("TaskDialog", () => {
         const deleteBtn = screen.getByText("Delete");
         fireEvent.click(deleteBtn);
 
+        const confirmBtn = await screen.findByText("Confirm Delete");
+        fireEvent.click(confirmBtn);
+
         await waitFor(() => {
             expect(dispatchSpy).toHaveBeenCalledWith("deleteTask", 1, "test_user_123");
         }, { timeout: 3000 });
