@@ -19,12 +19,16 @@ export function WeeklyReview() {
     // PERF: Stable callback reference for buttons to prevent unnecessary re-renders.
     const handleGenerate = useCallback(async () => {
         setLoading(true);
-        try {
-            const result = await generateWeeklyReport();
+        const result = await generateWeeklyReport().catch((error) => {
+            console.error("Failed to generate weekly report:", error);
+            return null;
+        });
+
+        if (result) {
             setReport(result);
-        } finally {
-            setLoading(false);
         }
+
+        setLoading(false);
     }, []);
 
     return (
@@ -71,8 +75,8 @@ export function WeeklyReview() {
                         <div className="space-y-2">
                             <h4 className="font-semibold text-sm">Key Insights</h4>
                             <ul className="space-y-2">
-                                {report.insights.map((insight, i) => (
-                                    <li key={i} className="flex items-start gap-2 text-sm">
+                                {report.insights.map((insight) => (
+                                    <li key={insight} className="flex items-start gap-2 text-sm">
                                         <span className="text-purple-500">•</span>
                                         <span className="text-muted-foreground">{insight}</span>
                                     </li>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useContext, useMemo, useState } from "react";
 import {
     Dialog,
     DialogContent,
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { generateSubtasks, ParsedSubtask } from "@/lib/smart-scheduler";
 import { Loader2, Sparkles } from "lucide-react";
+import { QueryClient, QueryClientContext, QueryClientProvider, useQuery } from "@tanstack/react-query";
 
 interface AiBreakdownDialogProps {
     open: boolean;
@@ -21,65 +22,48 @@ interface AiBreakdownDialogProps {
     onConfirm: (subtasks: ParsedSubtask[]) => void;
 }
 
-export function AiBreakdownDialog({ open, onOpenChange, taskTitle, onConfirm }: AiBreakdownDialogProps) {
-    const [suggestions, setSuggestions] = useState<ParsedSubtask[]>([]);
-    const [selected, setSelected] = useState<Set<number>>(new Set());
-    const [loadingState, setLoadingState] = useState<string>("");
-
-    // Track if we should be loading based on open state and taskTitle
-    const shouldLoad = open && taskTitle;
-    const loadingKey = shouldLoad ? taskTitle : "";
-    const isLoading = shouldLoad && loadingState !== loadingKey && suggestions.length === 0;
-
-    // Generate AI suggestions when dialog opens
-    useEffect(() => {
-        let isMounted = true;
-
-        if (shouldLoad && loadingState !== loadingKey) {
-            generateSubtasks(taskTitle)
-                .then(subs => {
-                    if (isMounted) {
-                        setSuggestions(subs);
-                        // Select all by default
-                        setSelected(new Set(subs.map((_, i) => i)));
-                        setLoadingState(loadingKey);
-                    }
-                })
-                .catch(err => {
-                    console.error("Failed to generate subtasks:", err);
-                    if (isMounted) {
-                        setLoadingState(loadingKey); // Mark as loaded even if failed
-                    }
-                });
-        }
-
-        // Clean up when dialog closes
-        if (!open) {
-            setSuggestions([]);
-        }
-
-        return () => {
-            isMounted = false;
-        };
-    }, [shouldLoad, loadingKey, loadingState, open, taskTitle]); // Added dependencies
+function AiBreakdownDialogContent({ open, onOpenChange, taskTitle, onConfirm }: AiBreakdownDialogProps) {
+    const [excluded, setExcluded] = useState<Set<number>>(new Set());
+    const shouldLoad = open && !!taskTitle.trim();
+    const suggestionsQuery = useQuery<ParsedSubtask[]>({
+        queryKey: ["ai-breakdown", taskTitle],
+        enabled: shouldLoad,
+        queryFn: async () => {
+            const subtasks = await generateSubtasks(taskTitle);
+            return subtasks;
+        },
+    });
+    const suggestions = shouldLoad ? (suggestionsQuery.data ?? []) : [];
+    const isLoading = shouldLoad && suggestionsQuery.isLoading;
+    const selectedCount = useMemo(
+        () => suggestions.reduce((count, _, i) => (excluded.has(i) ? count : count + 1), 0),
+        [excluded, suggestions]
+    );
 
     const handleToggle = (index: number) => {
-        const newSelected = new Set(selected);
-        if (newSelected.has(index)) {
-            newSelected.delete(index);
+        const newExcluded = new Set(excluded);
+        if (newExcluded.has(index)) {
+            newExcluded.delete(index);
         } else {
-            newSelected.add(index);
+            newExcluded.add(index);
         }
-        setSelected(newSelected);
+        setExcluded(newExcluded);
     };
 
     const handleConfirm = () => {
-        const selectedSubtasks = suggestions.filter((_, i) => selected.has(i));
+        const selectedSubtasks = suggestions.filter((_, i) => !excluded.has(i));
         onConfirm(selectedSubtasks);
     };
 
+    const handleDialogOpenChange = (nextOpen: boolean) => {
+        if (!nextOpen) {
+            setExcluded(new Set());
+        }
+        onOpenChange(nextOpen);
+    };
+
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={handleDialogOpenChange}>
             <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
@@ -106,7 +90,7 @@ export function AiBreakdownDialog({ open, onOpenChange, taskTitle, onConfirm }: 
                                         variant="link"
                                         size="sm"
                                         className="h-auto p-0 mr-4"
-                                        onClick={() => setSelected(new Set(suggestions.map((_, i) => i)))}
+                                        onClick={() => setExcluded(new Set())}
                                     >
                                         Select All
                                     </Button>
@@ -114,7 +98,7 @@ export function AiBreakdownDialog({ open, onOpenChange, taskTitle, onConfirm }: 
                                         variant="link"
                                         size="sm"
                                         className="h-auto p-0"
-                                        onClick={() => setSelected(new Set())}
+                                        onClick={() => setExcluded(new Set(suggestions.map((_, i) => i)))}
                                     >
                                         Deselect All
                                     </Button>
@@ -122,10 +106,10 @@ export function AiBreakdownDialog({ open, onOpenChange, taskTitle, onConfirm }: 
                             </div>
                             <div className="max-h-[300px] overflow-y-auto space-y-2 pr-2">
                                 {suggestions.map((sub, i) => (
-                                    <div key={i} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted/50 border border-transparent hover:border-border transition-colors">
+                                    <div key={`${sub.title}-${sub.estimateMinutes}`} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted/50 border border-transparent hover:border-border transition-colors">
                                         <Checkbox
                                             id={`sub-${i}`}
-                                            checked={selected.has(i)}
+                                            checked={!excluded.has(i)}
                                             onCheckedChange={() => handleToggle(i)}
                                             className="mt-1"
                                         />
@@ -157,13 +141,30 @@ export function AiBreakdownDialog({ open, onOpenChange, taskTitle, onConfirm }: 
                     </Button>
                     <Button
                         onClick={handleConfirm}
-                        disabled={selected.size === 0 || !!isLoading}
+                        disabled={selectedCount === 0 || !!isLoading}
                         className="bg-purple-600 hover:bg-purple-700"
                     >
-                        Add {selected.size} Subtasks
+                        Add {selectedCount} Subtasks
                     </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+    );
+}
+
+export function AiBreakdownDialog(props: AiBreakdownDialogProps) {
+    const existingQueryClient = useContext(QueryClientContext);
+    const [fallbackQueryClient] = useState(
+        () => new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    );
+
+    if (existingQueryClient) {
+        return <AiBreakdownDialogContent {...props} />;
+    }
+
+    return (
+        <QueryClientProvider client={fallbackQueryClient}>
+            <AiBreakdownDialogContent {...props} />
+        </QueryClientProvider>
     );
 }

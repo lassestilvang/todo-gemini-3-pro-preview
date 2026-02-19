@@ -1,46 +1,49 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { disconnectGoogleTasks, getGoogleTasksStatus, syncGoogleTasksNow } from "@/lib/actions/google-tasks";
 import { GoogleTasksConflicts } from "@/components/settings/GoogleTasksConflicts";
 import { GoogleTasksMappingForm } from "@/components/settings/GoogleTasksMappingForm";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function GoogleTasksSettings() {
     const [status, setStatus] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [isConnected, setIsConnected] = useState(false);
-
-    const loadStatus = async () => {
-        const result = await getGoogleTasksStatus();
-        if (!result.success) {
-            setStatus(result.error ?? "Failed to load Google Tasks status.");
-            return;
-        }
-        setIsConnected(result.connected ?? false);
-    };
-
-    useEffect(() => {
-        loadStatus();
-    }, []);
+    const [isActionLoading, setIsActionLoading] = useState(false);
+    const queryClient = useQueryClient();
+    const statusQuery = useQuery({
+        queryKey: ["googleTasksStatus"],
+        queryFn: async () => {
+            const result = await getGoogleTasksStatus();
+            if (!result.success) {
+                throw new Error(result.error ?? "Failed to load Google Tasks status.");
+            }
+            return result.connected ?? false;
+        },
+    });
+    const isConnected = statusQuery.data ?? false;
+    const isLoading = isActionLoading || statusQuery.isFetching;
+    const statusMessage =
+        status ??
+        (statusQuery.error instanceof Error ? statusQuery.error.message : null);
 
     const handleDisconnect = async () => {
-        setIsLoading(true);
+        setIsActionLoading(true);
         setStatus(null);
         const result = await disconnectGoogleTasks();
         if (result.success) {
-            setIsConnected(false);
+            queryClient.setQueryData(["googleTasksStatus"], false);
             setStatus("Google Tasks disconnected.");
         } else {
             setStatus(result.error ?? "Failed to disconnect.");
         }
-        setIsLoading(false);
+        setIsActionLoading(false);
     };
 
     const handleSync = async () => {
-        setIsLoading(true);
+        setIsActionLoading(true);
         setStatus(null);
         const result = await syncGoogleTasksNow();
         if (result.success) {
@@ -48,7 +51,7 @@ export function GoogleTasksSettings() {
         } else {
             setStatus(result.error ?? "Sync failed.");
         }
-        setIsLoading(false);
+        setIsActionLoading(false);
     };
 
     return (
@@ -73,7 +76,7 @@ export function GoogleTasksSettings() {
                 </div>
                 {isConnected ? <GoogleTasksMappingForm /> : null}
                 <GoogleTasksConflicts />
-                {status ? <p className="text-sm text-muted-foreground">{status}</p> : null}
+                {statusMessage ? <p className="text-sm text-muted-foreground">{statusMessage}</p> : null}
             </div>
         </Card>
     );

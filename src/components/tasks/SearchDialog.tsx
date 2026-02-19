@@ -17,9 +17,7 @@ import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import { useZenMode } from "@/components/providers/ZenModeProvider";
 import { AVAILABLE_THEMES, THEME_METADATA } from "@/lib/themes";
-// Fuse.js is dynamically imported only when dialog opens to reduce initial bundle size.
-// This removes ~15KB from the critical path for users who never use search.
-type Fuse<T> = import("fuse.js").default<T>;
+import Fuse from "fuse.js";
 
 type SearchResult = {
     id: number;
@@ -40,7 +38,7 @@ export function SearchDialog({ userId }: { userId?: string }) {
     const { setTheme } = useTheme();
     const { toggleZenMode } = useZenMode();
 
-    const searchPromiseRef = React.useRef<Promise<[typeof import("fuse.js"), Awaited<ReturnType<typeof getTasksForSearch>>]> | null>(null);
+    const searchPromiseRef = React.useRef<Promise<Awaited<ReturnType<typeof getTasksForSearch>>> | null>(null);
 
     // Reset cache when userId changes
     React.useEffect(() => {
@@ -52,47 +50,38 @@ export function SearchDialog({ userId }: { userId?: string }) {
         if (!userId) return null;
         if (searchPromiseRef.current) return searchPromiseRef.current;
 
-        searchPromiseRef.current = Promise.all([
-            import("fuse.js"),
-            getTasksForSearch(userId),
-        ]);
+        searchPromiseRef.current = getTasksForSearch(userId);
         return searchPromiseRef.current;
     }, [userId]);
 
-    // Initialize Fuse.js with data - dynamically imported to reduce initial bundle
+    // Initialize Fuse.js index when the dialog opens
     React.useEffect(() => {
         if (!userId) return;
 
-        const initSearch = async () => {
-            try {
-                // Dynamic import: Fuse.js (~15KB gzipped) loads only when search opens
-                const promise = loadSearchData();
-                if (!promise) return;
+        const promise = loadSearchData();
+        if (!promise || !open || fuse) return;
 
-                const [FuseModule, tasksResult] = await promise;
+        void promise
+            .then((tasksResult) => {
                 if (!tasksResult.success) {
                     console.error(tasksResult.error.message);
                     setFuse(null);
                     searchPromiseRef.current = null;
                     return;
                 }
-                const FuseClass = FuseModule.default;
-                const fuseInstance = new FuseClass(tasksResult.data, {
-                    keys: ['title', 'description'],
+
+                const fuseInstance = new Fuse(tasksResult.data, {
+                    keys: ["title", "description"],
                     threshold: 0.4,
                     shouldSort: true,
                 });
                 setFuse(fuseInstance);
-            } catch (error) {
+            })
+            .catch((error) => {
                 console.error("Failed to initialize search index:", error);
                 setFuse(null);
                 searchPromiseRef.current = null; // Retry on next attempt
-            }
-        };
-
-        if (open && !fuse) {
-            initSearch();
-        }
+            });
     }, [userId, open, fuse, loadSearchData]);
 
     // Prefetch Fuse.js and data when user hovers over the search button

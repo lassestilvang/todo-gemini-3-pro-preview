@@ -27,30 +27,37 @@ export function DataLoader({ userId }: { userId?: string }) {
         }
 
         isFetchingRef.current = true;
-        try {
-            const [tasksResult, lists, labels] = await Promise.all([
-                getTasks(userId, undefined, 'all', undefined, true),
-                getLists(userId),
-                getLabels(userId),
-            ]);
+        const freshData = await Promise.all([
+            getTasks(userId, undefined, 'all', undefined, true),
+            getLists(userId),
+            getLabels(userId),
+        ]).catch((e) => {
+            console.error("Failed to fetch fresh data", e);
+            return null;
+        });
 
-            if (!tasksResult.success) {
-                console.error(tasksResult.error.message);
-                setTasks([]);
-                setLists(lists);
-                setLabels(labels);
-                return;
-            }
+        if (!freshData) {
+            isFetchingRef.current = false;
+            return;
+        }
 
-            setTasks(tasksResult.data);
+        const [tasksResult, lists, labels] = freshData;
+        if (!tasksResult.success) {
+            console.error(tasksResult.error.message);
+            setTasks([]);
             setLists(lists);
             setLabels(labels);
-            await setAllLastFetched();
-        } catch (e) {
-            console.error("Failed to fetch fresh data", e);
-        } finally {
             isFetchingRef.current = false;
+            return;
         }
+
+        setTasks(tasksResult.data);
+        setLists(lists);
+        setLabels(labels);
+        await setAllLastFetched().catch((e) => {
+            console.error("Failed to update fetch timestamps", e);
+        });
+        isFetchingRef.current = false;
     }, [userId, setTasks, setLists, setLabels]);
 
     useEffect(() => {

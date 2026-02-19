@@ -56,17 +56,29 @@ export function VoiceInput({ onTranscript, className }: VoiceInputProps) {
         }
 
         if (isListening) {
-            recognitionRef.current?.stop();
+            const recognition = recognitionRef.current;
+            if (recognition) {
+                recognition.stop();
+            }
             setIsListening(false);
-        } else {
-            try {
-                recognitionRef.current?.start();
+            return;
+        }
+
+        const recognition = recognitionRef.current;
+        if (!recognition) {
+            toast.error("Voice input is not available.");
+            return;
+        }
+
+        Promise.resolve()
+            .then(() => {
+                recognition.start();
                 setIsListening(true);
                 toast.info("Listening...");
-            } catch (error) {
+            })
+            .catch((error) => {
                 console.error("Failed to start recognition", error);
-            }
-        }
+            });
     };
 
     if (!isSupported) return null;

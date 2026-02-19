@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -52,42 +52,53 @@ interface TemplateFormDialogProps {
   onSave: () => void;
 }
 
-export function TemplateFormDialog({
+type TemplateInitialState = {
+  formData: TemplateFormData;
+  jsonParseError: string | null;
+};
+
+function getInitialTemplateState(template?: Template | null): TemplateInitialState {
+  if (!template) {
+    return {
+      formData: createEmptyFormData(),
+      jsonParseError: null,
+    };
+  }
+
+  const parsed = deserializeJsonToForm(template.content);
+  if (parsed) {
+    return {
+      formData: { ...parsed, name: template.name },
+      jsonParseError: null,
+    };
+  }
+
+  return {
+    formData: { ...createEmptyFormData(), name: template.name },
+    jsonParseError:
+      "Could not parse template content. The template may have been created with an incompatible format.",
+  };
+}
+
+export function TemplateFormDialog(props: TemplateFormDialogProps) {
+  const dialogStateKey = `${props.open ? "open" : "closed"}-${props.template?.id ?? "new"}`;
+  return <TemplateFormDialogContent key={dialogStateKey} {...props} />;
+}
+
+function TemplateFormDialogContent({
   open,
   onOpenChange,
   template,
   userId,
   onSave,
 }: TemplateFormDialogProps) {
-  const [formData, setFormData] = useState<TemplateFormData>(createEmptyFormData());
+  const initialState = getInitialTemplateState(template);
+  const [formData, setFormData] = useState<TemplateFormData>(() => initialState.formData);
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [jsonParseError, setJsonParseError] = useState<string | null>(null);
+  const jsonParseError = initialState.jsonParseError;
 
   const isEditMode = !!template;
-
-  // Initialize form data when dialog opens or template changes
-  useEffect(() => {
-    if (open) {
-      if (template) {
-        // Edit mode: parse existing template content
-        const parsed = deserializeJsonToForm(template.content);
-        if (parsed) {
-          setFormData({ ...parsed, name: template.name });
-          setJsonParseError(null);
-        } else {
-          // Malformed JSON - show error and use empty form with name
-          setFormData({ ...createEmptyFormData(), name: template.name });
-          setJsonParseError("Could not parse template content. The template may have been created with an incompatible format.");
-        }
-      } else {
-        // Create mode: start with empty form
-        setFormData(createEmptyFormData());
-        setJsonParseError(null);
-      }
-      setErrors({});
-    }
-  }, [open, template]);
 
   const updateField = useCallback(<K extends keyof TemplateFormData>(
     field: K,
@@ -145,34 +156,37 @@ export function TemplateFormDialog({
     }
 
     setIsSubmitting(true);
-    try {
-      const content = serializeFormToJson(formData);
+    const content = serializeFormToJson(formData);
 
-      if (isEditMode && template) {
-        const result = await updateTemplate(template.id, userId, formData.name, content);
-        if (result.success) {
-          toast.success("Template updated");
-          onSave();
-          onOpenChange(false);
-        } else {
-          toast.error(result.error?.message || "Failed to update template");
-        }
-      } else {
-        const result = await createTemplate(userId, formData.name, content);
-        if (result.success) {
-          toast.success("Template created");
-          onSave();
-          onOpenChange(false);
-        } else {
-          toast.error(result.error?.message || "Failed to create template");
-        }
-      }
-    } catch (error) {
-      console.error("Failed to save template:", error);
+    const result = isEditMode && template
+      ? await updateTemplate(template.id, userId, formData.name, content).catch((error) => {
+        console.error("Failed to update template:", error);
+        return null;
+      })
+      : await createTemplate(userId, formData.name, content).catch((error) => {
+        console.error("Failed to create template:", error);
+        return null;
+      });
+
+    if (!result) {
       toast.error("Failed to save template");
-    } finally {
       setIsSubmitting(false);
+      return;
     }
+
+    if (result.success) {
+      if (isEditMode) {
+        toast.success("Template updated");
+      } else {
+        toast.success("Template created");
+      }
+      onSave();
+      onOpenChange(false);
+    } else {
+      toast.error(result.error?.message || `Failed to ${isEditMode ? "update" : "create"} template`);
+    }
+
+    setIsSubmitting(false);
   };
 
   return (

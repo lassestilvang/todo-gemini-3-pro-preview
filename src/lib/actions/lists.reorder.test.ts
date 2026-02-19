@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, beforeAll } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser, clearMockAuthUser } from "@/test/mocks";
-import { createList, getLists, reorderLists } from "./lists";
+import { createList, reorderLists } from "./lists";
+import { db, lists } from "@/db";
+import { eq } from "drizzle-orm";
 
 describe("Lists Reorder", () => {
   const USER_ID = "user_reorder_test";
@@ -41,7 +43,11 @@ describe("Lists Reorder", () => {
     const l3 = list3.data!;
 
     // Verify initial order
-    const initialLists = await getLists(USER_ID);
+    const initialLists = await db
+      .select()
+      .from(lists)
+      .where(eq(lists.userId, USER_ID))
+      .orderBy(lists.position, lists.createdAt);
     expect(initialLists).toHaveLength(3);
     expect(initialLists[0].id).toBe(l1.id);
     expect(initialLists[1].id).toBe(l2.id);
@@ -59,7 +65,11 @@ describe("Lists Reorder", () => {
     expect(result.success).toBe(true);
 
     // 3. Verify new order
-    const updatedLists = await getLists(USER_ID);
+    const updatedLists = await db
+      .select()
+      .from(lists)
+      .where(eq(lists.userId, USER_ID))
+      .orderBy(lists.position, lists.createdAt);
     expect(updatedLists).toHaveLength(3);
 
     // Sort by position to verify (getLists already sorts by position)

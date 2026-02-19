@@ -7,6 +7,7 @@ import { calculateProgress, calculateXPForNextLevel } from "@/lib/gamification";
 import { Trophy, Star, Flame, Snowflake } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import confetti from "canvas-confetti";
 
 
 export function XPBar({ userId }: { userId?: string }) {
@@ -28,12 +29,10 @@ export function XPBar({ userId }: { userId?: string }) {
         if (!stats) return;
         const prevLevel = prevLevelRef.current;
         if (prevLevel !== null && stats.level > prevLevel) {
-            import("canvas-confetti").then((confetti) => {
-                confetti.default({
-                    particleCount: 100,
-                    spread: 70,
-                    origin: { y: 0.6 }
-                });
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
             });
         }
         prevLevelRef.current = stats.level;

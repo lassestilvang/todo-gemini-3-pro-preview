@@ -16,30 +16,33 @@ export function DataExportImport() {
     const [isImporting, setIsImporting] = useState(false)
 
     const handleExport = async () => {
-        try {
-            setIsExporting(true)
-            const data = await exportUserData()
-
-            // Create a blob and trigger download
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
-            const url = URL.createObjectURL(blob)
-            const a = document.createElement("a")
-            a.href = url
-            a.rel = "noopener"
-            a.download = `todo-gemini-backup-${new Date().toISOString().split('T')[0]}.json`
-            a.setAttribute("data-testid", "export-backup-download")
-            document.body.appendChild(a)
-            a.click()
-            a.remove()
-            URL.revokeObjectURL(url)
-
-            toast.success("Data exported successfully")
-        } catch (error) {
+        setIsExporting(true)
+        const data = await exportUserData().catch((error) => {
             console.error(error)
             toast.error("Failed to export data")
-        } finally {
+            return null
+        })
+
+        if (!data) {
             setIsExporting(false)
+            return
         }
+
+        // Create a blob and trigger download
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.rel = "noopener"
+        a.download = `todo-gemini-backup-${new Date().toISOString().split('T')[0]}.json`
+        a.setAttribute("data-testid", "export-backup-download")
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        URL.revokeObjectURL(url)
+
+        toast.success("Data exported successfully")
+        setIsExporting(false)
     }
 
     const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,30 +54,46 @@ export function DataExportImport() {
             return
         }
 
-        try {
-            setIsImporting(true)
-            const text = await file.text()
-            const json = JSON.parse(text)
+        setIsImporting(true)
 
-            const result = await importUserData(json)
+        const json = await file
+            .text()
+            .then((text) => JSON.parse(text))
+            .catch((error) => {
+                console.error(error)
+                toast.error("Failed to import data. Invalid file format.")
+                return null
+            })
 
-            if (result.success) {
-                toast.success(`Import successful: ${result.counts?.tasks ?? 0} tasks, ${result.counts?.lists ?? 0} lists imported.`)
-                // Delay refresh slightly to ensure toast is visible and animation starts
-                setTimeout(() => {
-                    router.refresh()
-                }, 500)
-                e.target.value = "" // Reset input
-            } else {
-                toast.error(result.error || "Import failed")
-                console.error("Import failed:", result.error)
-            }
-        } catch (error) {
-            console.error(error)
-            toast.error("Failed to import data. Invalid file format.")
-        } finally {
+        if (!json) {
             setIsImporting(false)
+            return
         }
+
+        const result = await importUserData(json).catch((error) => {
+            console.error(error)
+            toast.error("Failed to import data.")
+            return null
+        })
+
+        if (!result) {
+            setIsImporting(false)
+            return
+        }
+
+        if (result.success) {
+            toast.success(`Import successful: ${result.counts?.tasks ?? 0} tasks, ${result.counts?.lists ?? 0} lists imported.`)
+            // Delay refresh slightly to ensure toast is visible and animation starts
+            setTimeout(() => {
+                router.refresh()
+            }, 500)
+            e.target.value = "" // Reset input
+        } else {
+            toast.error(result.error || "Import failed")
+            console.error("Import failed:", result.error)
+        }
+
+        setIsImporting(false)
     }
 
     return (

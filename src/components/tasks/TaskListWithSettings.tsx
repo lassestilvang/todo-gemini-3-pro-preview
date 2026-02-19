@@ -378,8 +378,6 @@ export function TaskListWithSettings({
     }, [initialSettings, viewId]);
 
     const [settings, setSettings] = useState<ViewSettings>(effectiveInitialSettings);
-    // Trust server-provided data/defaults; assume mounted to avoid skeleton flicker
-    const [mounted, setMounted] = useState(true);
     const [activeId, setActiveId] = useState<number | null>(null);
     const [overdueCollapsed, setOverdueCollapsed] = useState(false);
     const [periodCollapsed, setPeriodCollapsed] = useState<Record<PeriodPrecision, boolean>>({
@@ -504,11 +502,8 @@ export function TaskListWithSettings({
     // Load initial settings only if not provided
     useEffect(() => {
         if (initialSettings) {
-            setMounted(true);
             return;
         }
-
-        setMounted(true);
         async function loadSettings() {
             if (!userId) return;
             const savedSettings = await getViewSettings(userId, viewId);
@@ -860,7 +855,7 @@ export function TaskListWithSettings({
                 </div>
             </div>
 
-            {(!mounted || !isInitialized) ? (
+            {!isInitialized ? (
                 <TaskListSkeleton variant={settings.layout} compact />
             ) : showEmptyState ? (
                 <div

@@ -20,20 +20,22 @@ export function SmartScheduleDialog({ open, onOpenChange }: SmartScheduleDialogP
 
     const handleGenerate = async () => {
         setLoading(true);
-        try {
-            const results = await generateSmartSchedule();
-            if (results.length === 0) {
-                toast.info("No unscheduled tasks found to schedule!");
-                onOpenChange(false);
-            } else {
-                setSuggestions(results);
-                setStep("review");
-            }
-        } catch {
+        const results = await generateSmartSchedule().catch(() => null);
+        if (!results) {
             toast.error("Failed to generate schedule. Please check your API key.");
-        } finally {
             setLoading(false);
+            return;
         }
+
+        if (results.length === 0) {
+            toast.info("No unscheduled tasks found to schedule!");
+            onOpenChange(false);
+        } else {
+            setSuggestions(results);
+            setStep("review");
+        }
+
+        setLoading(false);
     };
 
     const handleApply = async (suggestion: ScheduleSuggestion) => {

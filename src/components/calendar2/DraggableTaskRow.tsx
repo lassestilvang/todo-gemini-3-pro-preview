@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, memo } from "react";
+import { useCallback, memo } from "react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -40,18 +40,13 @@ export const DraggableTaskRow = memo(function DraggableTaskRow({
   showTime = false,
   onEdit,
 }: DraggableTaskRowProps) {
-  const [isCompleted, setIsCompleted] = useState(task.isCompleted || false);
+  const isCompleted = task.isCompleted || false;
   const { dispatch } = useSync();
   const { userId, use24HourClock } = useUser();
-
-  useEffect(() => {
-    setIsCompleted(task.isCompleted || false);
-  }, [task.isCompleted]);
 
   const handleToggle = useCallback(
     async (checked: boolean) => {
       if (!userId) return;
-      setIsCompleted(checked);
 
       if (checked) {
         playSuccessSound();

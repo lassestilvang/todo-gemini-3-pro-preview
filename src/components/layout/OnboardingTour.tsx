@@ -4,44 +4,27 @@ import { m } from "framer-motion";
 import { useOnboarding } from "@/components/providers/OnboardingProvider";
 import { usePerformanceMode } from "@/components/providers/PerformanceContext";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import { useIsClient } from "@/hooks/use-is-client";
 
 export function OnboardingTour() {
     const { isTourOpen, currentStep, steps, nextStep, prevStep, endTour } = useOnboarding();
-    const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
-    const [mounted, setMounted] = useState(false);
+    const isClient = useIsClient();
     const isPerformanceMode = usePerformanceMode();
 
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+    const targetRect = useMemo(() => {
+        if (!isClient || !isTourOpen) return null;
 
-    useEffect(() => {
-        if (isTourOpen) {
-            const step = steps[currentStep];
-            const element = document.getElementById(step.targetId) || document.querySelector(`[data-testid="${step.targetId}"]`);
-            if (element) {
-                // Check if element is inside the sidebar (scrollable container)
-                const sidebar = element.closest('[data-sidebar="sidebar"]') || element.closest('.overflow-y-auto');
+        const step = steps[currentStep];
+        const element = document.getElementById(step.targetId) || document.querySelector(`[data-testid="${step.targetId}"]`);
+        if (!element) return null;
 
-                if (sidebar) {
-                    // For sidebar elements, just get the rect without scrolling
-                    // to prevent the sidebar from scrolling which breaks the highlight
-                    setTargetRect(element.getBoundingClientRect());
-                } else {
-                    // For other elements, scroll into view as normal
-                    element.scrollIntoView({ behavior: "smooth", block: "center" });
-                    setTargetRect(element.getBoundingClientRect());
-                }
-            } else {
-                setTargetRect(null);
-            }
-        }
-    }, [isTourOpen, currentStep, steps]);
+        return element.getBoundingClientRect();
+    }, [currentStep, isClient, isTourOpen, steps]);
 
-    if (!mounted || !isTourOpen || !targetRect) return null;
+    if (!isClient || !isTourOpen || !targetRect) return null;
 
     const step = steps[currentStep];
 

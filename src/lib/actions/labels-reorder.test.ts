@@ -1,9 +1,10 @@
 import { describe, expect, it, beforeAll, beforeEach, mock } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
-import { getLabels, reorderLabels } from "./labels";
+import { reorderLabels } from "./labels";
 import { isSuccess } from "../action-result";
 import { db, labels } from "@/db";
+import { asc, eq } from "drizzle-orm";
 
 // Explicitly mock next/cache to match other test files and ensure isolation
 mock.module("next/cache", () => ({
@@ -41,8 +42,11 @@ describe("reorderLabels", () => {
             { id: 102, userId: testUserId, name: "L3", position: 2 },
         ]);
 
-        // Verify initial state via getLabels (which queries DB)
-        const initial = await getLabels(testUserId);
+        const initial = await db
+            .select()
+            .from(labels)
+            .where(eq(labels.userId, testUserId))
+            .orderBy(asc(labels.position), asc(labels.id));
         expect(initial.length).toBe(3);
         const ids = initial.map(l => l.id).sort((a, b) => a - b);
         expect(ids).toEqual([100, 101, 102]);
@@ -58,8 +62,11 @@ describe("reorderLabels", () => {
             throw new Error(`reorderLabels failed: ${JSON.stringify(reorderResult)}`);
         }
 
-        const reorderedLabels = await getLabels(testUserId);
-        // getLabels sorts by position (asc) and then id (asc)
+        const reorderedLabels = await db
+            .select()
+            .from(labels)
+            .where(eq(labels.userId, testUserId))
+            .orderBy(asc(labels.position), asc(labels.id));
 
         expect(reorderedLabels[0].id).toBe(102);
         expect(reorderedLabels[0].position).toBe(0);

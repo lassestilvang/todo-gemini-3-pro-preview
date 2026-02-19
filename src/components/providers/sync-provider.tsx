@@ -55,23 +55,24 @@ function useSyncLock(isOnline: boolean, tabIdRef: React.MutableRefObject<string>
     const lockIntervalRef = useRef<number | null>(null);
 
     const readSyncLock = useCallback((): { owner: string; expiresAt: number } | null => {
-        try {
-            const raw = localStorage.getItem(SYNC_LOCK_KEY);
-            if (!raw) return null;
-            const parsed = JSON.parse(raw) as { owner?: string; expiresAt?: number } | null;
-            if (!parsed || !parsed.owner || typeof parsed.expiresAt !== "number") return null;
-            return { owner: parsed.owner, expiresAt: parsed.expiresAt };
-        } catch {
+        const raw = localStorage.getItem(SYNC_LOCK_KEY);
+        if (!raw || raw.startsWith("{")) {
+            // Legacy JSON format is ignored and replaced with the compact format.
             return null;
         }
+
+        const separator = raw.lastIndexOf(":");
+        if (separator <= 0) return null;
+
+        const owner = raw.slice(0, separator);
+        const expiresAt = Number(raw.slice(separator + 1));
+        if (!owner || !Number.isFinite(expiresAt)) return null;
+
+        return { owner, expiresAt };
     }, [SYNC_LOCK_KEY]);
 
     const writeSyncLock = useCallback((owner: string, expiresAt: number) => {
-        try {
-            localStorage.setItem(SYNC_LOCK_KEY, JSON.stringify({ owner, expiresAt }));
-        } catch {
-            return;
-        }
+        localStorage.setItem(SYNC_LOCK_KEY, `${owner}:${expiresAt}`);
     }, [SYNC_LOCK_KEY]);
 
     const ensureSyncLock = useCallback(() => {
@@ -317,7 +318,9 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     const queryClient = useQueryClient();
     const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
     const [status, setStatus] = useState<SyncStatus>('online');
-    const [isOnline, setIsOnline] = useState(true);
+    const [isOnline, setIsOnline] = useState(
+        typeof navigator === "undefined" ? true : navigator.onLine
+    );
     const [conflicts, setConflicts] = useState<ConflictInfo[]>([]);
     const MAX_PENDING_QUEUE = 100;
     const FLUSH_IDLE_TIMEOUT_MS = 200;
@@ -381,150 +384,156 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         const labelUpserts: any[] = [];
         const labelDeletes: number[] = [];
         const conflictUpdates: ConflictInfo[] = [];
-        try {
-            // Process sequentially
-            for (const action of queue) {
-                const fn = actionRegistry[action.type as ActionType];
-                if (!fn) {
-                    console.error(`Unknown action type: ${action.type}`);
-                    completedIds.push(action.id);
+        const handleActionError = (action: PendingAction, error: unknown): "continue" | "break" => {
+            console.error(`Failed to process action ${action.id}:`, error);
+
+            const err = error as any;
+            const isConflict = err?.code === 'CONFLICT' ||
+                (typeof err === 'object' && err?.error?.code === 'CONFLICT');
+
+            if (isConflict) {
+                const serverData = err?.details?.serverData || err?.serverData || err?.error?.details?.serverData;
+                const payload = action.payload as any[];
+                conflictUpdates.push({
+                    actionId: action.id,
+                    actionType: action.type,
+                    serverData: serverData ? (typeof serverData === 'string' ? JSON.parse(serverData) : serverData) : null,
+                    localData: payload[2], // For updateTask, payload is [id, userId, data]
+                    timestamp: Date.now(),
+                });
+                // Mark as conflict, don't block queue
+                statusUpdates.push({ id: action.id, status: 'failed', error: 'CONFLICT' });
+                return "continue";
+            }
+
+            const errorMessage = err?.message || String(error);
+            statusUpdates.push({ id: action.id, status: 'failed', error: errorMessage });
+            return "break";
+        };
+
+        // Process sequentially
+        for (const action of queue) {
+            const fn = actionRegistry[action.type as ActionType];
+            if (!fn) {
+                console.error(`Unknown action type: ${action.type}`);
+                completedIds.push(action.id);
+                continue;
+            }
+
+            // Perf: batch status updates to avoid per-action IDB writes.
+            statusUpdates.push({ id: action.id, status: 'processing' });
+
+            const execution = await (fn as (...args: any[]) => Promise<any>)(...(action.payload as any[]))
+                .then((actionResult) => ({ ok: true as const, actionResult }))
+                .catch((error: unknown) => ({ ok: false as const, error }));
+
+            if (!execution.ok) {
+                const outcome = handleActionError(action, execution.error);
+                if (outcome === "continue") {
                     continue;
                 }
+                break;
+            }
 
-                try {
-                    // Perf: batch status updates to avoid per-action IDB writes.
-                    statusUpdates.push({ id: action.id, status: 'processing' });
+            const actionResult = execution.actionResult;
 
-                    // Execute Server Action
-                    const actionResult = await (fn as (...args: any[]) => Promise<any>)(...(action.payload as any[]));
-
-                    // If it's an ActionResult (wrapped with withErrorHandling), handle success/failure
-                    let result: any;
-                    if (actionResult && typeof actionResult === 'object' && 'success' in actionResult) {
-                        if (!actionResult.success) {
-                            // Throw the error so it's caught by the catch block below
-                            throw actionResult.error;
-                        }
-                        result = actionResult.data;
-                    } else {
-                        // Support legacy raw actions if any are added back
-                        result = actionResult;
+            // If it's an ActionResult (wrapped with withErrorHandling), handle success/failure
+            let result: any;
+            if (actionResult && typeof actionResult === 'object' && 'success' in actionResult) {
+                if (!actionResult.success) {
+                    const outcome = handleActionError(action, actionResult.error);
+                    if (outcome === "continue") {
+                        continue;
                     }
-
-                    // If this action created a temp ID, we need to fix up future actions
-                    if (action.tempId && result && result.id) {
-                        await fixupQueueIds(action.tempId, result.id);
-
-                        // Fixup the store: Remove temp ID, Add real ID
-                        if (action.type === 'createTask') {
-                            taskDeletes.push(action.tempId);
-                            taskUpserts.push(result);
-                        } else if (action.type === 'createList') {
-                            listDeletes.push(action.tempId);
-                            listUpserts.push(result);
-                        } else if (action.type === 'createLabel') {
-                            labelDeletes.push(action.tempId);
-                            labelUpserts.push(result);
-                        }
-                    } else if (result) {
-                        // Generic update to store
-                        const payload = action.payload as any[];
-                        if (action.type === 'deleteTask') {
-                            taskDeletes.push(payload[0]);
-                        } else if (action.type === 'deleteList') {
-                            listDeletes.push(payload[0]);
-                        } else if (action.type === 'deleteLabel') {
-                            labelDeletes.push(payload[0]);
-                        } else if (action.type.includes('Task') && typeof result === 'object' && 'id' in result) {
-                            taskUpserts.push(result);
-                        } else if (action.type.includes('List') && typeof result === 'object' && 'id' in result) {
-                            listUpserts.push(result);
-                        } else if (action.type.includes('Label') && typeof result === 'object' && 'id' in result) {
-                            labelUpserts.push(result);
-                        }
-                    }
-
-                    // Invalidate user stats on completion toggle to update XP/Streak immediately
-                    if (action.type === 'toggleTaskCompletion') {
-                        const payload = action.payload as any[];
-                        const userId = payload[1];
-                        if (userId) {
-                            queryClient.invalidateQueries({ queryKey: ['userStats', userId] });
-                        }
-                    }
-
-                    completedIds.push(action.id);
-
-                } catch (error: unknown) {
-                    console.error(`Failed to process action ${action.id}:`, error);
-
-                    // Check if it's a conflict error (from ActionResult)
-                    const err = error as any;
-                    const isConflict = err?.code === 'CONFLICT' ||
-                        (typeof err === 'object' && err?.error?.code === 'CONFLICT');
-
-                    if (isConflict) {
-                        const serverData = err?.details?.serverData || err?.serverData || err?.error?.details?.serverData;
-                        const payload = action.payload as any[];
-                        conflictUpdates.push({
-                            actionId: action.id,
-                            actionType: action.type,
-                            serverData: serverData ? (typeof serverData === 'string' ? JSON.parse(serverData) : serverData) : null,
-                            localData: payload[2], // For updateTask, payload is [id, userId, data]
-                            timestamp: Date.now(),
-                        });
-                        // Mark as conflict, don't block queue
-                        statusUpdates.push({ id: action.id, status: 'failed', error: 'CONFLICT' });
-                        continue; // Skip to next action instead of breaking
-                    }
-
-                    // If network error, stop processing and retry later
-                    // If logical error (400/500), maybe remove or stash?
-                    const errorMessage = err?.message || String(error);
-                    statusUpdates.push({ id: action.id, status: 'failed', error: errorMessage });
-
-                    // Stop processing on error to preserve order if dependency exists
                     break;
                 }
+                result = actionResult.data;
+            } else {
+                // Support legacy raw actions if any are added back
+                result = actionResult;
             }
-        } finally {
-            if (taskUpserts.length > 0) {
-                // Perf: batch store updates to reduce React render churn during sync drains.
-                useTaskStore.getState().upsertTasks(taskUpserts);
+
+            // If this action created a temp ID, we need to fix up future actions
+            if (action.tempId && result && result.id) {
+                await fixupQueueIds(action.tempId, result.id);
+
+                // Fixup the store: Remove temp ID, Add real ID
+                if (action.type === 'createTask') {
+                    taskDeletes.push(action.tempId);
+                    taskUpserts.push(result);
+                } else if (action.type === 'createList') {
+                    listDeletes.push(action.tempId);
+                    listUpserts.push(result);
+                } else if (action.type === 'createLabel') {
+                    labelDeletes.push(action.tempId);
+                    labelUpserts.push(result);
+                }
+            } else if (result) {
+                // Generic update to store
+                const payload = action.payload as any[];
+                if (action.type === 'deleteTask') {
+                    taskDeletes.push(payload[0]);
+                } else if (action.type === 'deleteList') {
+                    listDeletes.push(payload[0]);
+                } else if (action.type === 'deleteLabel') {
+                    labelDeletes.push(payload[0]);
+                } else if (action.type.includes('Task') && typeof result === 'object' && 'id' in result) {
+                    taskUpserts.push(result);
+                } else if (action.type.includes('List') && typeof result === 'object' && 'id' in result) {
+                    listUpserts.push(result);
+                } else if (action.type.includes('Label') && typeof result === 'object' && 'id' in result) {
+                    labelUpserts.push(result);
+                }
             }
-            if (taskDeletes.length > 0) {
-                useTaskStore.getState().deleteTasks(taskDeletes);
+
+            // Invalidate user stats on completion toggle to update XP/Streak immediately
+            if (action.type === 'toggleTaskCompletion') {
+                const payload = action.payload as any[];
+                const userId = payload[1];
+                if (userId) {
+                    queryClient.invalidateQueries({ queryKey: ['userStats', userId] });
+                }
             }
-            if (listUpserts.length > 0) {
-                useListStore.getState().upsertLists(listUpserts);
-            }
-            if (listDeletes.length > 0) {
-                useListStore.getState().deleteLists(listDeletes);
-            }
-            if (labelUpserts.length > 0) {
-                useLabelStore.getState().upsertLabels(labelUpserts);
-            }
-            if (labelDeletes.length > 0) {
-                useLabelStore.getState().deleteLabels(labelDeletes);
-            }
-            if (conflictUpdates.length > 0) {
-                // Perf: batch conflict updates to avoid per-action dialog state churn.
-                setConflicts(prev => [...prev, ...conflictUpdates]);
-            }
-            if (completedIds.length > 0) {
-                // Perf: batch IDB deletes to reduce per-action transaction overhead when draining the queue.
-                await removeFromQueueBatch(completedIds);
-            }
-            if (statusUpdates.length > 0) {
-                await updateActionStatusBatch(statusUpdates);
-            }
-            if (completedIds.length > 0 || statusUpdates.length > 0) {
-                // Perf: refresh pendingActions once after batch updates to avoid per-action state churn.
-                setPendingActions(await getQueue());
-            }
-            processingRef.current = false;
-            setStatus('online');
+
+            completedIds.push(action.id);
         }
+
+        if (taskUpserts.length > 0) {
+            // Perf: batch store updates to reduce React render churn during sync drains.
+            useTaskStore.getState().upsertTasks(taskUpserts);
+        }
+        if (taskDeletes.length > 0) {
+            useTaskStore.getState().deleteTasks(taskDeletes);
+        }
+        if (listUpserts.length > 0) {
+            useListStore.getState().upsertLists(listUpserts);
+        }
+        if (listDeletes.length > 0) {
+            useListStore.getState().deleteLists(listDeletes);
+        }
+        if (labelUpserts.length > 0) {
+            useLabelStore.getState().upsertLabels(labelUpserts);
+        }
+        if (labelDeletes.length > 0) {
+            useLabelStore.getState().deleteLabels(labelDeletes);
+        }
+        if (conflictUpdates.length > 0) {
+            // Perf: batch conflict updates to avoid per-action dialog state churn.
+            setConflicts(prev => [...prev, ...conflictUpdates]);
+        }
+        if (completedIds.length > 0) {
+            // Perf: batch IDB deletes to reduce per-action transaction overhead when draining the queue.
+            await removeFromQueueBatch(completedIds);
+        }
+        if (statusUpdates.length > 0) {
+            await updateActionStatusBatch(statusUpdates);
+        }
+        if (completedIds.length > 0 || statusUpdates.length > 0) {
+            // Perf: refresh pendingActions once after batch updates to avoid per-action state churn.
+            setPendingActions(await getQueue());
+        }
+        processingRef.current = false;
+        setStatus('online');
     }, [ensureSyncLock, fixupQueueIds, queryClient]);
 
     // Initial load
@@ -536,13 +545,16 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         window.addEventListener('pagehide', handlePageExit);
         window.addEventListener('beforeunload', handlePageExit);
 
-        setIsOnline(navigator.onLine);
-
         const loadQueue = async () => {
             const queue = await getQueue();
             setPendingActions(queue);
         };
         loadQueue();
+        setTimeout(() => {
+            if (navigator.onLine) {
+                processQueueRef.current?.();
+            }
+        }, 0);
 
         const handleOnline = () => {
             setIsOnline(true);
@@ -568,15 +580,10 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         };
     }, [processQueue, releaseLock]);
 
-    // Also try to process queue on mount if online
-    useEffect(() => {
-        if (isOnline) {
-            processQueue();
-        }
-    }, [isOnline, processQueue]);
-
     // Keep ref updated with latest processQueue to avoid stale closures in event listeners
-    processQueueRef.current = processQueue;
+    useEffect(() => {
+        processQueueRef.current = processQueue;
+    }, [processQueue]);
 
     const resolveConflict = useCallback(async (
         actionId: string,
@@ -645,18 +652,22 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         scheduleFlush();
 
         // Optimistic Update to Global Store
-        try {
-            const payload = args as any;
-            if (type === 'updateTask') {
-                const [taskId, , data] = payload;
-                const existing = useTaskStore.getState().tasks[taskId];
-                if (existing?.updatedAt) {
-                    payload[2] = { ...data, expectedUpdatedAt: existing.updatedAt };
-                    action.payload = payload;
-                }
+        const payload = args as any;
+        if (type === 'updateTask') {
+            const [taskId, , data] = payload;
+            const existing = useTaskStore.getState().tasks[taskId];
+            if (existing && existing.updatedAt) {
+                payload[2] = { ...data, expectedUpdatedAt: existing.updatedAt };
+                action.payload = payload;
             }
-            applyOptimisticUpdate(type, payload, tempId);
-        } catch (e) { console.error("Optimistic store update failed", e); }
+        }
+        await Promise.resolve()
+            .then(() => {
+                applyOptimisticUpdate(type, payload, tempId);
+            })
+            .catch((error) => {
+                console.error("Optimistic store update failed", error);
+            });
 
         // Attempt Sync — flush pending writes to IndexedDB first so processQueue sees them
         if (navigator.onLine) {

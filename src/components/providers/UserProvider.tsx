@@ -55,15 +55,11 @@ export function UserProvider({
             }
             // Auto-detect from locale: check if locale uses Monday as start
             // Most of Europe, Asia, etc. use Monday; US, Canada, etc. use Sunday
-            try {
-                const locale = Intl.DateTimeFormat().resolvedOptions().locale;
-                // Common locales that use Monday as start of week
-                const mondayStartLocales = ['en-GB', 'de', 'fr', 'es', 'it', 'nl', 'pt', 'pl', 'ru', 'ja', 'zh', 'ko'];
-                const isMondayStart = mondayStartLocales.some(l => locale.startsWith(l));
-                return isMondayStart ? 1 : 0;
-            } catch {
-                return 0; // Default to Sunday
-            }
+            const locale = Intl.DateTimeFormat().resolvedOptions().locale ?? "";
+            // Common locales that use Monday as start of week
+            const mondayStartLocales = ['en-GB', 'de', 'fr', 'es', 'it', 'nl', 'pt', 'pl', 'ru', 'ja', 'zh', 'ko'];
+            const isMondayStart = mondayStartLocales.some(l => locale.startsWith(l));
+            return isMondayStart ? 1 : 0;
         };
         return {
             userId,

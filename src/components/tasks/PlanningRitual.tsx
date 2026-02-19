@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useContext, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sunrise, Sunset, CheckCircle2, Target, ArrowRight } from "lucide-react";
 import { getTasks } from "@/lib/actions";
+import { QueryClient, QueryClientContext, QueryClientProvider, useQuery } from "@tanstack/react-query";
 
 interface TaskType {
     id: number;
@@ -22,31 +23,25 @@ interface PlanningRitualProps {
     userId?: string;
 }
 
-export function PlanningRitual({ open, onOpenChange, type, userId }: PlanningRitualProps) {
-    const [todayTasks, setTodayTasks] = useState<TaskType[]>([]);
+function PlanningRitualContent({ open, onOpenChange, type, userId }: PlanningRitualProps) {
     const [priorities, setPriorities] = useState<string[]>(["", "", ""]);
     const [reflection, setReflection] = useState("");
     const [step, setStep] = useState(1);
-
-    useEffect(() => {
-        const loadTodayTasks = async () => {
-            if (!userId) return;
+    const prioritySlots = ["first", "second", "third"] as const;
+    const todayTasksQuery = useQuery<TaskType[]>({
+        queryKey: ["planningRitualTasks", userId],
+        enabled: open && !!userId,
+        queryFn: async () => {
+            if (!userId) return [];
             const tasksResult = await getTasks(userId, undefined, "today");
             if (!tasksResult.success) {
                 console.error(tasksResult.error.message);
-                setTodayTasks([]);
-                return;
+                return [];
             }
-            setTodayTasks(tasksResult.data as TaskType[]);
-        };
-
-        if (open) {
-            loadTodayTasks();
-            setStep(1);
-            setPriorities(["", "", ""]);
-            setReflection("");
-        }
-    }, [open, userId]);
+            return tasksResult.data as TaskType[];
+        },
+    });
+    const todayTasks = todayTasksQuery.data ?? [];
 
     // PERF: Cache completed tasks to avoid repeated filtering in render.
     const completedTasks = useMemo(
@@ -102,17 +97,17 @@ export function PlanningRitual({ open, onOpenChange, type, userId }: PlanningRit
                                         <Target className="h-5 w-5 text-blue-500" />
                                         <h3 className="font-medium">What are your top 3 priorities today?</h3>
                                     </div>
-                                    {[0, 1, 2].map(i => (
-                                        <div key={i} className="mb-3">
-                                            <label className="text-sm font-medium mb-1 block">Priority #{i + 1}</label>
+                                    {prioritySlots.map((slot, index) => (
+                                        <div key={slot} className="mb-3">
+                                            <label className="text-sm font-medium mb-1 block">Priority #{index + 1}</label>
                                             <Textarea
-                                                value={priorities[i]}
+                                                value={priorities[index]}
                                                 onChange={(e) => {
                                                     const newP = [...priorities];
-                                                    newP[i] = e.target.value;
+                                                    newP[index] = e.target.value;
                                                     setPriorities(newP);
                                                 }}
-                                                placeholder={`Your ${["first", "second", "third"][i]} priority...`}
+                                                placeholder={`Your ${slot} priority...`}
                                                 className="min-h-[60px]"
                                             />
                                         </div>
@@ -200,5 +195,22 @@ export function PlanningRitual({ open, onOpenChange, type, userId }: PlanningRit
                 </ScrollArea>
             </DialogContent>
         </Dialog>
+    );
+}
+
+export function PlanningRitual(props: PlanningRitualProps) {
+    const existingQueryClient = useContext(QueryClientContext);
+    const [fallbackQueryClient] = useState(
+        () => new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    );
+
+    if (existingQueryClient) {
+        return <PlanningRitualContent {...props} />;
+    }
+
+    return (
+        <QueryClientProvider client={fallbackQueryClient}>
+            <PlanningRitualContent {...props} />
+        </QueryClientProvider>
     );
 }

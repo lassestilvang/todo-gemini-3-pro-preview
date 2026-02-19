@@ -1,26 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { getTodoistConflicts, resolveTodoistConflict } from "@/lib/actions/todoist";
 import { formatTodoistConflictPayload } from "@/lib/todoist/conflict-ui";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function TodoistConflicts() {
-    const [conflicts, setConflicts] = useState<Array<{ id: number; localPayload: string | null; externalPayload: string | null }>>([]);
     const [status, setStatus] = useState<string | null>(null);
-
-    const load = async () => {
-        const result = await getTodoistConflicts();
-        if (!result.success) {
-            setStatus(result.error ?? "Failed to load conflicts.");
-            return;
-        }
-        setConflicts(result.conflicts ?? []);
-    };
-
-    useEffect(() => {
-        load();
-    }, []);
+    const queryClient = useQueryClient();
+    const conflictsQuery = useQuery({
+        queryKey: ["todoistConflicts"],
+        queryFn: async () => {
+            const result = await getTodoistConflicts();
+            if (!result.success) {
+                throw new Error(result.error ?? "Failed to load conflicts.");
+            }
+            return result.conflicts ?? [];
+        },
+    });
+    const conflicts = conflictsQuery.data ?? [];
+    const statusMessage = status ?? (conflictsQuery.error instanceof Error ? conflictsQuery.error.message : null);
 
     const handleResolve = async (conflictId: number, resolution: "local" | "remote") => {
         const result = await resolveTodoistConflict(conflictId, resolution);
@@ -29,11 +29,11 @@ export function TodoistConflicts() {
             return;
         }
         setStatus("Conflict resolved.");
-        await load();
+        await queryClient.invalidateQueries({ queryKey: ["todoistConflicts"] });
     };
 
     if (conflicts.length === 0) {
-        return null;
+        return statusMessage ? <p className="text-xs text-muted-foreground">{statusMessage}</p> : null;
     }
 
     return (
@@ -77,7 +77,7 @@ export function TodoistConflicts() {
                     </div>
                 )})}
             </div>
-            {status ? <p className="text-xs text-muted-foreground">{status}</p> : null}
+            {statusMessage ? <p className="text-xs text-muted-foreground">{statusMessage}</p> : null}
         </div>
     );
 }

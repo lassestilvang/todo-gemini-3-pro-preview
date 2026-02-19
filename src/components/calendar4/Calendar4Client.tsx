@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { EventCalendar } from "@/components/calendar4/event-calendar";
 import { CalendarSidebar } from "@/components/calendar2/CalendarSidebar";
 import { UnplannedColumn } from "./UnplannedColumn";
@@ -74,15 +74,9 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
     }, [listMap, initialLists]);
 
     // --- List Visibility ---
-    const [visibleListIds, setVisibleListIds] = useState<Set<number | null>>(new Set([null]));
-    const listVisibilityInitialized = useRef(false);
-
-    useEffect(() => {
-        if (listVisibilityInitialized.current) return;
-        if (lists.length === 0) return;
-        setVisibleListIds(new Set([null, ...lists.map((list) => list.id)]));
-        listVisibilityInitialized.current = true;
-    }, [lists]);
+    const [visibleListIds, setVisibleListIds] = useState<Set<number | null>>(
+        () => new Set([null, ...initialLists.map((list) => list.id)])
+    );
 
     const toggleList = useCallback((listId: number | null) => {
         setVisibleListIds((prev) => {

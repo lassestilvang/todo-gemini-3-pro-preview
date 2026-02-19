@@ -1,26 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { getGoogleTasksConflicts, resolveGoogleTasksConflict } from "@/lib/actions/google-tasks";
 import { formatGoogleTasksConflictPayload } from "@/lib/google-tasks/conflict-ui";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function GoogleTasksConflicts() {
-    const [conflicts, setConflicts] = useState<Array<{ id: number; localPayload: string | null; externalPayload: string | null }>>([]);
     const [status, setStatus] = useState<string | null>(null);
-
-    const load = async () => {
-        const result = await getGoogleTasksConflicts();
-        if (!result.success) {
-            setStatus(result.error ?? "Failed to load conflicts.");
-            return;
-        }
-        setConflicts(result.conflicts ?? []);
-    };
-
-    useEffect(() => {
-        load();
-    }, []);
+    const queryClient = useQueryClient();
+    const conflictsQuery = useQuery({
+        queryKey: ["googleTasksConflicts"],
+        queryFn: async () => {
+            const result = await getGoogleTasksConflicts();
+            if (!result.success) {
+                throw new Error(result.error ?? "Failed to load conflicts.");
+            }
+            return result.conflicts ?? [];
+        },
+    });
+    const conflicts = conflictsQuery.data ?? [];
+    const statusMessage = status ?? (conflictsQuery.error instanceof Error ? conflictsQuery.error.message : null);
 
     const handleResolve = async (conflictId: number, resolution: "local" | "remote") => {
         const result = await resolveGoogleTasksConflict(conflictId, resolution);
@@ -29,11 +29,11 @@ export function GoogleTasksConflicts() {
             return;
         }
         setStatus("Conflict resolved.");
-        await load();
+        await queryClient.invalidateQueries({ queryKey: ["googleTasksConflicts"] });
     };
 
     if (conflicts.length === 0) {
-        return null;
+        return statusMessage ? <p className="text-xs text-muted-foreground">{statusMessage}</p> : null;
     }
 
     return (
@@ -78,7 +78,7 @@ export function GoogleTasksConflicts() {
                     );
                 })}
             </div>
-            {status ? <p className="text-xs text-muted-foreground">{status}</p> : null}
+            {statusMessage ? <p className="text-xs text-muted-foreground">{statusMessage}</p> : null}
         </div>
     );
 }

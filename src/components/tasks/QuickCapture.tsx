@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Plus, Zap, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,18 +10,13 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { VoiceInput } from "./VoiceInput";
 import { usePerformanceMode } from "@/components/providers/PerformanceContext";
+import { useIsClient } from "@/hooks/use-is-client";
 
 export function QuickCapture({ userId }: { userId: string }) {
     const [isOpen, setIsOpen] = useState(false);
     const [title, setTitle] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
-
-    useEffect(() => {
-        if (isOpen) {
-            inputRef.current?.focus();
-        }
-    }, [isOpen]);
 
     const handleSubmit = async (e?: React.FormEvent) => {
         e?.preventDefault();
@@ -43,13 +38,21 @@ export function QuickCapture({ userId }: { userId: string }) {
         setIsSubmitting(false);
     };
 
-    const [mounted, setMounted] = useState(false);
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+    const handleToggleOpen = () => {
+        setIsOpen((prev) => {
+            const next = !prev;
+            if (next) {
+                queueMicrotask(() => {
+                    inputRef.current?.focus();
+                });
+            }
+            return next;
+        });
+    };
 
     const isPerformanceMode = usePerformanceMode();
-    const resolvedPerformanceMode = mounted && isPerformanceMode;
+    const isClient = useIsClient();
+    const resolvedPerformanceMode = isClient && isPerformanceMode;
 
     return (
         <div className="fixed bottom-6 right-6 z-40">
@@ -144,7 +147,7 @@ export function QuickCapture({ userId }: { userId: string }) {
                     isOpen ? "bg-indigo-600 rotate-45" : "bg-primary",
                     resolvedPerformanceMode && "transition-none hover:scale-100 active:scale-100 shadow-none border-2 border-primary rotate-0"
                 )}
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={handleToggleOpen}
                 aria-label="Quick Capture"
             >
                 <Plus className={cn("h-7 w-7 transition-transform", (isOpen && resolvedPerformanceMode) ? "rotate-45" : "rotate-0")} />

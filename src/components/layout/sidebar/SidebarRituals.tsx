@@ -12,6 +12,7 @@ import { RescheduleButton } from "@/components/tasks/RescheduleButton";
 export function SidebarRituals() {
     const { isZenMode, toggleZenMode } = useZenMode();
     const [planningRitualOpen, setPlanningRitualOpen] = useState(false);
+    const [planningRitualSession, setPlanningRitualSession] = useState(0);
     const [smartScheduleOpen, setSmartScheduleOpen] = useState(false);
     const [ritualType, setRitualType] = useState<"morning" | "evening">("morning");
 
@@ -23,6 +24,7 @@ export function SidebarRituals() {
                 className="w-full justify-start min-w-0"
                 onClick={() => {
                     setRitualType("morning");
+                    setPlanningRitualSession((prev) => prev + 1);
                     setPlanningRitualOpen(true);
                 }}
             >
@@ -35,6 +37,7 @@ export function SidebarRituals() {
                 className="w-full justify-start min-w-0"
                 onClick={() => {
                     setRitualType("evening");
+                    setPlanningRitualSession((prev) => prev + 1);
                     setPlanningRitualOpen(true);
                 }}
             >
@@ -64,6 +67,7 @@ export function SidebarRituals() {
 
             {/* Dialogs */}
             <PlanningRitual
+                key={`${ritualType}-${planningRitualSession}`}
                 open={planningRitualOpen}
                 onOpenChange={setPlanningRitualOpen}
                 type={ritualType}

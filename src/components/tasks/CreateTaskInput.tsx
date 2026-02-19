@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Calendar, Flag, Zap, MapPin, Smile, X, Keyboard } from "lucide-react";
@@ -22,6 +22,7 @@ import { formatFriendlyDate } from "@/lib/time-utils";
 import { useSync } from "@/components/providers/sync-provider";
 import { useUser } from "@/components/providers/UserProvider";
 import { formatDuePeriod } from "@/lib/due-utils";
+import { useIsClient } from "@/hooks/use-is-client";
 
 function BadgeRemoveButton({ onClick, label }: { onClick: () => void, label: string }) {
     return (
@@ -60,12 +61,8 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const [isPriorityOpen, setIsPriorityOpen] = useState(false);
     const [icon, setIcon] = useState<string | undefined>(undefined);
-    const [mounted, setMounted] = useState(false);
+    const isClient = useIsClient();
     const inputRef = useRef<HTMLInputElement>(null);
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
 
     const updateTitle = (nextTitle: string) => {
         setTitle(nextTitle);
@@ -84,19 +81,21 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
     const handleAiEnhance = async () => {
         if (!title.trim()) return;
         setIsAiLoading(true);
-        try {
-            const result = await extractDeadline(title);
-            if (result?.date) {
-                setDueDate(result.date);
-                toast.success(`Deadline detected: ${format(result.date, "MMM d")}`);
-            } else {
-                toast.info("No deadline found in text.");
-            }
-        } catch {
+        const result = await extractDeadline(title).catch(() => null);
+        if (!result) {
             toast.error("Failed to extract deadline. Check API key.");
-        } finally {
             setIsAiLoading(false);
+            return;
         }
+
+        if (result.date) {
+            setDueDate(result.date);
+            toast.success(`Deadline detected: ${format(result.date, "MMM d")}`);
+        } else {
+            toast.info("No deadline found in text.");
+        }
+
+        setIsAiLoading(false);
     };
 
     const handleSubmit = async (e?: React.FormEvent) => {
@@ -112,9 +111,8 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
         }
 
         setIsSubmitting(true);
-        try {
-            // Use SyncProvider dispatch instead of direct server action
-            await dispatch('createTask', {
+        const createResult = await Promise.resolve()
+            .then(() => dispatch('createTask', {
                 userId,
                 title: parsed.title || title,
                 listId: listId || null,
@@ -125,27 +123,34 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                 dueDatePrecision: dueDate ? dueDatePrecision : null,
                 labelIds: defaultLabelIds,
                 icon: icon || null,
-            });
+            }))
+            .then(
+                () => true,
+                (error) => {
+                    console.error("Failed to create task:", error);
+                    return false;
+                }
+            );
+        setIsSubmitting(false);
 
-            setTitle("");
-            setDueDate(defaultDueDate ? new Date(defaultDueDate) : undefined);
-            setDueDateSource(defaultDueDate ? "default" : "none");
-            setDueDatePrecision("day");
-            setPriority("none");
-            setEnergyLevel(undefined);
-            setContext(undefined);
-            setIcon(undefined);
-            setIsExpanded(false);
-
-            // Optional: toast can be handled by the optimistic update logic if desired,
-            // but a reassuring message here is fine too.
-            toast.success("Task created");
-        } catch (error) {
-            console.error("Failed to create task:", error);
+        if (!createResult) {
             toast.error("Failed to create task");
-        } finally {
-            setIsSubmitting(false);
+            return;
         }
+
+        setTitle("");
+        setDueDate(defaultDueDate ? new Date(defaultDueDate) : undefined);
+        setDueDateSource(defaultDueDate ? "default" : "none");
+        setDueDatePrecision("day");
+        setPriority("none");
+        setEnergyLevel(undefined);
+        setContext(undefined);
+        setIcon(undefined);
+        setIsExpanded(false);
+
+        // Optional: toast can be handled by the optimistic update logic if desired,
+        // but a reassuring message here is fine too.
+        toast.success("Task created");
     };
 
     const handleFullDetails = () => {
@@ -253,7 +258,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                                     <PopoverTrigger asChild>
                                         <Button variant="ghost" size="sm" className={cn(dueDate && "text-primary")}>
                                             <Calendar className="mr-2 h-4 w-4" />
-                                            {dueDate ? (mounted ? formatFriendlyDate(dueDate, "MMM d") : format(dueDate, "MMM d")) : "Due Date"}
+                                            {dueDate ? (isClient ? formatFriendlyDate(dueDate, "MMM d") : format(dueDate, "MMM d")) : "Due Date"}
                                         </Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0">

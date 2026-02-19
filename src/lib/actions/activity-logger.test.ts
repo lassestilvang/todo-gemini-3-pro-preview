@@ -2,12 +2,18 @@
 import { logActivity } from "./activity-logger";
 import { db, taskLogs, eq, and } from "./shared";
 import { expect, test, describe, beforeAll, afterAll } from "bun:test";
+import { createTestUser, setupTestDb, resetTestDb } from "@/test/setup";
 
 describe("logActivity internal helper", () => {
     const testUserId = "test-user-logger";
     const victimUserId = "victim-user-logger";
 
     beforeAll(async () => {
+        await setupTestDb();
+        await resetTestDb();
+        await createTestUser(testUserId, `${testUserId}@example.com`);
+        await createTestUser(victimUserId, `${victimUserId}@example.com`);
+
         // Clean up any existing logs for test users
         await db.delete(taskLogs).where(eq(taskLogs.userId, testUserId));
         await db.delete(taskLogs).where(eq(taskLogs.userId, victimUserId));

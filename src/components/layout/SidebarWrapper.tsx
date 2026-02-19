@@ -35,12 +35,8 @@ export function SidebarWrapper({ children, className, lists, labels }: SidebarWr
         e.preventDefault();
         setIsResizing(true);
         startXRef.current = e.clientX;
-        try {
-            const cssWidth = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--sidebar-width"), 10);
-            startWidthRef.current = !Number.isNaN(cssWidth) ? cssWidth : width;
-        } catch {
-            startWidthRef.current = width;
-        }
+        const cssWidth = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--sidebar-width"), 10);
+        startWidthRef.current = !Number.isNaN(cssWidth) ? cssWidth : width;
     }, [width, setIsResizing]);
 
     useEffect(() => {

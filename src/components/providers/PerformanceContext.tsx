@@ -1,7 +1,8 @@
 "use client";
 
-import { createContext, useContext, ReactNode, useState, useEffect } from "react";
+import { createContext, useContext, ReactNode } from "react";
 import { useTheme } from "next-themes";
+import { useIsClient } from "@/hooks/use-is-client";
 
 const PerformanceContext = createContext<boolean>(false);
 
@@ -11,14 +12,10 @@ export function usePerformanceMode() {
 
 export function PerformanceProvider({ children }: { children: ReactNode }) {
     const { theme } = useTheme();
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+    const isClient = useIsClient();
 
     // Always false during SSR and initial hydration to match server output
-    const isPerformanceMode = mounted ? (theme === "performance" || theme === "performance-dark") : false;
+    const isPerformanceMode = isClient ? (theme === "performance" || theme === "performance-dark") : false;
 
     return (
         <PerformanceContext.Provider value={isPerformanceMode}>

@@ -101,10 +101,12 @@ export function SearchPageClient({
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        setQuery(initialQuery);
-        if (!initialQuery) {
-            inputRef.current?.focus();
-        }
+        queueMicrotask(() => {
+            setQuery(initialQuery);
+            if (!initialQuery) {
+                inputRef.current?.focus();
+            }
+        });
     }, [initialQuery]);
 
     const buildUrl = useCallback((q: string, f: SearchFilters) => {
@@ -151,26 +153,32 @@ export function SearchPageClient({
     }, [query, router, buildUrl]);
 
     useEffect(() => {
-        setResults(initialResults);
-        setTaskResults(initialResults?.tasks ?? []);
-        setCursor(initialResults?.nextCursor ?? null);
-        setHasMore(initialResults?.hasMore ?? false);
+        queueMicrotask(() => {
+            setResults(initialResults);
+            setTaskResults(initialResults?.tasks ?? []);
+            setCursor(initialResults?.nextCursor ?? null);
+            setHasMore(initialResults?.hasMore ?? false);
+        });
     }, [initialResults]);
 
     const loadMore = useCallback(async () => {
         if (!cursor || isLoadingMore || !query.trim()) return;
         setIsLoadingMore(true);
-        try {
-            const more = await searchAll(userId, query.trim(), {
-                ...filters,
-                cursor,
-            });
+        const more = await searchAll(userId, query.trim(), {
+            ...filters,
+            cursor,
+        }).catch((error) => {
+            console.error("Failed to load more search results:", error);
+            return null;
+        });
+
+        if (more) {
             setTaskResults((prev) => [...prev, ...more.tasks]);
             setCursor(more.nextCursor);
             setHasMore(more.hasMore);
-        } finally {
-            setIsLoadingMore(false);
         }
+
+        setIsLoadingMore(false);
     }, [cursor, isLoadingMore, query, userId, filters]);
 
     useEffect(() => {
@@ -323,7 +331,7 @@ export function SearchPageClient({
             {showFilters && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 rounded-lg border bg-card">
                     <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-muted-foreground">
+                        <label htmlFor="search-filter-list" className="text-xs font-medium text-muted-foreground">
                             List
                         </label>
                         <Select
@@ -340,7 +348,7 @@ export function SearchPageClient({
                                 )
                             }
                         >
-                            <SelectTrigger className="h-8">
+                            <SelectTrigger id="search-filter-list" className="h-8">
                                 <SelectValue placeholder="All lists" />
                             </SelectTrigger>
                             <SelectContent>
@@ -357,7 +365,7 @@ export function SearchPageClient({
                         </Select>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-muted-foreground">
+                        <label htmlFor="search-filter-label" className="text-xs font-medium text-muted-foreground">
                             Label
                         </label>
                         <Select
@@ -373,7 +381,7 @@ export function SearchPageClient({
                                 )
                             }
                         >
-                            <SelectTrigger className="h-8">
+                            <SelectTrigger id="search-filter-label" className="h-8">
                                 <SelectValue placeholder="All labels" />
                             </SelectTrigger>
                             <SelectContent>
@@ -390,7 +398,7 @@ export function SearchPageClient({
                         </Select>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-muted-foreground">
+                        <label htmlFor="search-filter-priority" className="text-xs font-medium text-muted-foreground">
                             Priority
                         </label>
                         <Select
@@ -404,7 +412,7 @@ export function SearchPageClient({
                                 )
                             }
                         >
-                            <SelectTrigger className="h-8">
+                            <SelectTrigger id="search-filter-priority" className="h-8">
                                 <SelectValue placeholder="Any priority" />
                             </SelectTrigger>
                             <SelectContent>
@@ -419,7 +427,7 @@ export function SearchPageClient({
                         </Select>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-muted-foreground">
+                        <label htmlFor="search-filter-status" className="text-xs font-medium text-muted-foreground">
                             Status
                         </label>
                         <Select
@@ -431,7 +439,7 @@ export function SearchPageClient({
                                 )
                             }
                         >
-                            <SelectTrigger className="h-8">
+                            <SelectTrigger id="search-filter-status" className="h-8">
                                 <SelectValue placeholder="Any status" />
                             </SelectTrigger>
                             <SelectContent>
@@ -444,7 +452,7 @@ export function SearchPageClient({
                         </Select>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-muted-foreground">
+                        <label htmlFor="search-filter-sort" className="text-xs font-medium text-muted-foreground">
                             Sort by
                         </label>
                         <Select
@@ -456,7 +464,7 @@ export function SearchPageClient({
                                 )
                             }
                         >
-                            <SelectTrigger className="h-8">
+                            <SelectTrigger id="search-filter-sort" className="h-8">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -474,7 +482,7 @@ export function SearchPageClient({
                         </Select>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-muted-foreground">
+                        <label htmlFor="search-filter-order" className="text-xs font-medium text-muted-foreground">
                             Order
                         </label>
                         <Select
@@ -486,7 +494,7 @@ export function SearchPageClient({
                                 )
                             }
                         >
-                            <SelectTrigger className="h-8">
+                            <SelectTrigger id="search-filter-order" className="h-8">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>

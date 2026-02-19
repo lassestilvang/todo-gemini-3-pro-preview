@@ -30,36 +30,52 @@ export function RescheduleButton() {
 
     const handleCheck = async () => {
         setIsLoading(true);
-        try {
-            const result = await rescheduleOverdueTasks();
+        const result = await rescheduleOverdueTasks().catch((error) => {
+            console.error(error);
+            toast.error("Failed to check schedule.");
+            return null;
+        });
+
+        if (result) {
             if (result.length > 0) {
                 setSuggestions(result);
                 setIsOpen(true);
             } else {
                 toast.info("No overdue tasks found or AI couldn't help.");
             }
-        } catch (error) {
-            console.error(error);
-            toast.error("Failed to check schedule.");
-        } finally {
-            setIsLoading(false);
         }
+
+            setIsLoading(false);
     };
 
     const handleApply = async () => {
         setIsLoading(true);
-        try {
-            for (const s of suggestions) {
-                await applyScheduleSuggestion(s.taskId, new Date(s.suggestedDate), s.dueDatePrecision ?? null);
-            }
+        const applyResult = await suggestions.reduce<Promise<boolean>>(async (accPromise, suggestion) => {
+            const acc = await accPromise;
+            if (!acc) return false;
+
+            const ok = await applyScheduleSuggestion(
+                suggestion.taskId,
+                new Date(suggestion.suggestedDate),
+                suggestion.dueDatePrecision ?? null
+            )
+                .then(() => true)
+                .catch((error) => {
+                    console.error(error);
+                    return false;
+                });
+
+            return ok;
+        }, Promise.resolve(true));
+
+        if (applyResult) {
             toast.success(`Rescheduled ${suggestions.length} tasks!`);
             setIsOpen(false);
-        } catch (error) {
-            console.error(error);
+        } else {
             toast.error("Failed to apply changes.");
-        } finally {
-            setIsLoading(false);
         }
+
+        setIsLoading(false);
     };
 
     return (

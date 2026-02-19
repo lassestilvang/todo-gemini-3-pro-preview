@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { TaskListSkeleton } from "./TaskListSkeleton";
 
 const layoutValues = new Set(["list", "board", "calendar"] as const);
@@ -19,28 +19,32 @@ function normalizeLayout(value: string | null): TaskListSkeletonVariant | null {
     return null;
 }
 
-export function TaskListSkeletonFallback({ viewId, compact = false }: TaskListSkeletonFallbackProps) {
-    const storageKey = useMemo(() => `tg:view-layout:${viewId}`, [viewId]);
-    const [variant, setVariant] = useState<TaskListSkeletonVariant>(() => {
-        if (typeof window === "undefined") return "list";
-        try {
-            return normalizeLayout(window.localStorage.getItem(storageKey)) ?? "list";
-        } catch {
-            return "list";
-        }
-    });
+function readLayout(storageKey: string): TaskListSkeletonVariant {
+    if (typeof window === "undefined") return "list";
+    const stored = normalizeLayout(window.localStorage.getItem(storageKey));
+    return stored ?? "list";
+}
 
-    useEffect(() => {
-        if (typeof window === "undefined") return;
-        try {
-            const stored = normalizeLayout(window.localStorage.getItem(storageKey));
-            if (stored && stored !== variant) {
-                setVariant(stored);
+export function TaskListSkeletonFallback({ viewId, compact = false }: TaskListSkeletonFallbackProps) {
+    const storageKey = `tg:view-layout:${viewId}`;
+    const variant = useSyncExternalStore<TaskListSkeletonVariant>(
+        (onStoreChange) => {
+            if (typeof window === "undefined") {
+                return () => {};
             }
-        } catch {
-            // Ignore storage errors
-        }
-    }, [storageKey, variant]);
+
+            const handleStorage = (event: StorageEvent) => {
+                if (event.key === storageKey) {
+                    onStoreChange();
+                }
+            };
+
+            window.addEventListener("storage", handleStorage);
+            return () => window.removeEventListener("storage", handleStorage);
+        },
+        () => readLayout(storageKey),
+        () => "list"
+    );
 
     return <TaskListSkeleton variant={variant} compact={compact} />;
 }

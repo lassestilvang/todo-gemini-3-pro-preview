@@ -13,6 +13,7 @@ import { getLabels } from "@/lib/actions/labels";
 import { createSavedView } from "@/lib/actions/views";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useIsClient } from "@/hooks/use-is-client";
 
 interface ViewOptionsPopoverProps {
     viewId: string;
@@ -39,13 +40,12 @@ export function ViewOptionsPopover({ viewId, userId, settings: propSettings, onS
     const [filterExpanded, setFilterExpanded] = useState(true);
     const [labels, setLabels] = useState<LabelOption[]>([]);
     const [isPending, startTransition] = useTransition();
-    const [mounted, setMounted] = useState(false);
+    const isClient = useIsClient();
     const [viewName, setViewName] = useState("");
     const [isSaving, setIsSaving] = useState(false);
 
     // Load labels on mount (removed settings fetch)
     useEffect(() => {
-        setMounted(true);
         async function loadData() {
             if (!userId) return;
             const allLabels = await getLabels(userId);
@@ -74,17 +74,20 @@ export function ViewOptionsPopover({ viewId, userId, settings: propSettings, onS
         onSettingsChange?.(defaultViewSettings);
 
         startTransition(async () => {
-            if (userId) {
-                try {
-                    await resetViewSettings(userId, viewId);
-                    onSettingsChange?.(defaultViewSettings);
-                } catch {
-                    // Fail silently
-                    onSettingsChange?.(previousSettings);
-                    toast.error("Failed to reset view settings");
-                }
-            } else {
+            if (!userId) {
                 onSettingsChange?.(defaultViewSettings);
+                return;
+            }
+
+            const wasReset = await resetViewSettings(userId, viewId)
+                .then(() => true)
+                .catch(() => false);
+
+            if (wasReset) {
+                onSettingsChange?.(defaultViewSettings);
+            } else {
+                onSettingsChange?.(previousSettings);
+                toast.error("Failed to reset view settings");
             }
         });
     };
@@ -92,28 +95,29 @@ export function ViewOptionsPopover({ viewId, userId, settings: propSettings, onS
     const handleSaveAsView = async () => {
         if (!userId || !viewName.trim()) return;
         setIsSaving(true);
-        try {
-            const result = await createSavedView({
-                userId,
-                name: viewName.trim(),
-                settings: JSON.stringify(settings),
-            });
+        const result = await createSavedView({
+            userId,
+            name: viewName.trim(),
+            settings: JSON.stringify(settings),
+        }).catch(() => null);
 
-            if (result.success) {
-                toast.success(`View "${viewName}" saved!`);
-                setViewName("");
-                setOpen(false);
-            } else {
-                toast.error("Failed to save view");
-            }
-        } catch {
+        if (!result) {
             toast.error("An error occurred while saving view");
-        } finally {
             setIsSaving(false);
+            return;
         }
+
+        if (result.success) {
+            toast.success(`View "${viewName}" saved!`);
+            setViewName("");
+            setOpen(false);
+        } else {
+            toast.error("Failed to save view");
+        }
+        setIsSaving(false);
     };
 
-    if (!mounted) {
+    if (!isClient) {
         return (
             <Button variant="outline" size="sm" className="gap-2" disabled>
                 <Settings2 className="h-4 w-4" />

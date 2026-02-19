@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -22,6 +22,7 @@ import dynamic from "next/dynamic";
 import { getCustomIcons, createCustomIcon, deleteCustomIcon } from "@/lib/actions/custom-icons";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
+import Image from "next/image";
 
 // Dynamically import EmojiPicker to avoid SSR issues and reduce initial bundle load
 const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false });
@@ -57,6 +58,20 @@ type LibraryItem = {
     id?: number; // Only for custom
 };
 
+function readRecentIconsFromStorage() {
+    if (typeof window === "undefined") return [] as string[];
+    const saved = localStorage.getItem(RECENT_ICONS_KEY);
+    if (!saved || !saved.startsWith("[")) return [] as string[];
+
+    try {
+        const parsed = JSON.parse(saved);
+        return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : [];
+    } catch (error) {
+        console.error("Failed to parse recent icons", error);
+        return [] as string[];
+    }
+}
+
 export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps) {
     const [open, setOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -72,47 +87,37 @@ export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps
     const [isLoading, setIsLoading] = useState(false);
 
     // Recents
-    const [recentIcons, setRecentIcons] = useState<string[]>([]);
+    const [recentIcons, setRecentIcons] = useState<string[]>(() => readRecentIconsFromStorage());
 
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const popoverContentId = React.useId();
 
     const loadCustomIcons = React.useCallback(async () => {
         if (!userId) return;
         setIsLoading(true);
-        try {
-            const icons = await getCustomIcons(userId);
+        const icons = await getCustomIcons(userId).catch((error) => {
+            console.error("Failed to load custom icons", error);
+            return null;
+        });
+
+        if (icons) {
             setCustomIcons(icons.map(Icon => ({
                 type: "custom",
                 value: Icon.url,
                 name: Icon.name,
                 id: Icon.id
             })));
-        } catch (error) {
-            console.error("Failed to load custom icons", error);
-        } finally {
-            setIsLoading(false);
         }
+        setIsLoading(false);
     }, [userId]);
 
-    // Effects
-    useEffect(() => {
-        if (open && userId) {
-            loadCustomIcons();
+    const handlePopoverOpenChange = (nextOpen: boolean) => {
+        setOpen(nextOpen);
+        if (nextOpen && userId) {
+            void loadCustomIcons();
         }
-    }, [open, userId, loadCustomIcons]);
-
-    useEffect(() => {
-        // Load recents on mount
-        const saved = localStorage.getItem(RECENT_ICONS_KEY);
-        if (saved) {
-            try {
-                setRecentIcons(JSON.parse(saved));
-            } catch (e) {
-                console.error("Failed to parse recent icons", e);
-            }
-        }
-    }, []);
+    };
 
     const handleSelectIcon = (iconValue: string) => {
         let finalValue = iconValue;
@@ -194,40 +199,43 @@ export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps
         }
 
         setIsUploading(true);
-        try {
-            const result = await createCustomIcon({
-                userId,
-                name: uploadName,
-                url: uploadUrl,
-            });
-
-            if (result.success) {
-                // Optimistically update list
-                const newIcon = result.data;
-                setCustomIcons(prev => [...prev, {
-                    type: "custom",
-                    value: newIcon.url,
-                    name: newIcon.name,
-                    id: newIcon.id
-                }]);
-
-                toast.success("Icon saved!");
-                setUploadName("");
-                setUploadUrl("");
-                setActiveTab("library"); // Switch back to library to see it
-
-                // Refresh in background to ensure consistency
-                // loadCustomIcons(); // Removed to prevent stale data overwrite (optimistic update is sufficient)
-            } else {
-                toast.error(result.error?.message || "Failed to save icon");
-                console.error("Save failed:", result.error);
-            }
-        } catch (error) {
+        const result = await createCustomIcon({
+            userId,
+            name: uploadName,
+            url: uploadUrl,
+        }).catch((error) => {
             console.error(error);
+            return null;
+        });
+
+        if (!result) {
             toast.error("An unexpected error occurred");
-        } finally {
             setIsUploading(false);
+            return;
         }
+
+        if (result.success) {
+            // Optimistically update list
+            const newIcon = result.data;
+            setCustomIcons(prev => [...prev, {
+                type: "custom",
+                value: newIcon.url,
+                name: newIcon.name,
+                id: newIcon.id
+            }]);
+
+            toast.success("Icon saved!");
+            setUploadName("");
+            setUploadUrl("");
+            setActiveTab("library"); // Switch back to library to see it
+
+            // Refresh in background to ensure consistency
+            // loadCustomIcons(); // Removed to prevent stale data overwrite (optimistic update is sufficient)
+        } else {
+            toast.error(result.error?.message || "Failed to save icon");
+            console.error("Save failed:", result.error);
+        }
+        setIsUploading(false);
     };
 
     const handlePaste = (e: React.ClipboardEvent) => {
@@ -264,7 +272,7 @@ export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps
     // Let's show Recents at the top of the Library tab for sure.
 
     return (
-        <Popover open={open} onOpenChange={setOpen} modal={true}>
+        <Popover open={open} onOpenChange={handlePopoverOpenChange} modal={true}>
             <PopoverTrigger asChild>
                 {trigger ? (
                     trigger as React.ReactElement
@@ -273,6 +281,7 @@ export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps
                         variant="outline"
                         role="combobox"
                         aria-expanded={open}
+                        aria-controls={popoverContentId}
                         className="w-full justify-start h-10 px-3"
                     >
                         <ResolvedIcon icon={value} className="mr-2 h-5 w-5" />
@@ -286,7 +295,7 @@ export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps
                     </Button>
                 )}
             </PopoverTrigger>
-            <PopoverContent className="w-[380px] p-0" align="start">
+            <PopoverContent id={popoverContentId} className="w-[380px] p-0" align="start">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
                         <TabsList className="h-8">
@@ -324,9 +333,9 @@ export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps
                                 <div className="p-2 pb-0">
                                     <h4 className="text-[10px] font-medium text-muted-foreground px-1 mb-1 uppercase tracking-wider">Recently Used</h4>
                                     <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none snap-x">
-                                        {recentIcons.map((r, i) => (
+                                        {recentIcons.map((r) => (
                                             <button
-                                                key={i}
+                                                key={r}
                                                 onClick={() => handleSelectIcon(r)}
                                                 className="shrink-0 flex items-center justify-center w-8 h-8 rounded-md border border-transparent hover:bg-accent/50 hover:border-border transition-all snap-start bg-secondary/30"
                                             >
@@ -356,8 +365,14 @@ export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps
                                                     title={c.name}
                                                 >
                                                     <div className="w-5 h-5 rounded overflow-hidden">
-                                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                        <img src={c.value} alt={c.name} className="w-full h-full object-cover" />
+                                                        <Image
+                                                            src={c.value}
+                                                            alt={c.name}
+                                                            width={20}
+                                                            height={20}
+                                                            className="w-full h-full object-cover"
+                                                            unoptimized
+                                                        />
                                                     </div>
                                                 </button>
                                                 {userId && c.id && (
@@ -451,8 +466,9 @@ export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps
                     <TabsContent value="upload" className="m-0 border-none min-h-[300px]">
                         <div className="p-4 space-y-4" onPaste={handlePaste}>
                             <div className="space-y-2">
-                                <label className="text-xs font-medium">Icon Name</label>
+                                <label htmlFor="icon-picker-upload-name" className="text-xs font-medium">Icon Name</label>
                                 <Input
+                                    id="icon-picker-upload-name"
                                     value={uploadName}
                                     onChange={e => setUploadName(e.target.value)}
                                     placeholder="e.g. My Logo"
@@ -465,7 +481,16 @@ export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps
                                     isDragging ? "border-primary bg-primary/10" : "border-muted hover:bg-accent/30",
                                     uploadUrl ? "border-primary/50 bg-accent/10" : ""
                                 )}
+                                role="button"
+                                tabIndex={0}
+                                aria-label="Upload icon image"
                                 onClick={() => fileInputRef.current?.click()}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                        e.preventDefault();
+                                        fileInputRef.current?.click();
+                                    }
+                                }}
                                 onDragOver={(e) => {
                                     e.preventDefault();
                                     setIsDragging(true);
@@ -483,8 +508,14 @@ export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps
                             >
                                 {uploadUrl ? (
                                     <div className="relative w-24 h-24">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img src={uploadUrl} className="w-full h-full object-contain" alt="Preview" />
+                                        <Image
+                                            src={uploadUrl}
+                                            className="w-full h-full object-contain"
+                                            alt="Preview"
+                                            width={96}
+                                            height={96}
+                                            unoptimized
+                                        />
                                         <button
                                             onClick={(e) => { e.stopPropagation(); setUploadUrl(""); }}
                                             className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { DateClickData, DateSelectData, EventDropData, EventResizeDoneData } from "@fullcalendar/react";
 import { CalendarMain } from "@/components/calendar2/CalendarMain";
 import { CalendarSidebar } from "@/components/calendar2/CalendarSidebar";
@@ -44,9 +44,8 @@ export function Calendar2Client({ initialTasks, initialLists }: Calendar2ClientP
 
   // --- List visibility (for calendar filtering) ---
   const [visibleListIds, setVisibleListIds] = useState<Set<number | null>>(
-    () => new Set([null])
+    () => new Set([null, ...initialLists.map((list) => list.id)])
   );
-  const listVisibilityInitialized = useRef(false);
 
   useEffect(() => {
     if (Object.keys(taskMap).length === 0 && initialTasks.length > 0) {
@@ -59,13 +58,6 @@ export function Calendar2Client({ initialTasks, initialLists }: Calendar2ClientP
       setLists(initialLists);
     }
   }, [initialLists, listMap, setLists]);
-
-  useEffect(() => {
-    if (listVisibilityInitialized.current) return;
-    if (lists.length === 0) return;
-    setVisibleListIds(new Set([null, ...lists.map((list) => list.id)]));
-    listVisibilityInitialized.current = true;
-  }, [lists]);
 
   const toggleList = useCallback((listId: number | null) => {
     setVisibleListIds((prev) => {

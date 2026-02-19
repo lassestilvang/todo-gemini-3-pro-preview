@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Trophy, Sparkles } from "lucide-react";
+import confetti from "canvas-confetti";
 interface LevelUpModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -26,28 +27,26 @@ export function LevelUpModal({ open, onOpenChange, level }: LevelUpModalProps) {
 
             const colors = ["#7c3aed", "#a855f7", "#c084fc"];
 
-            import("canvas-confetti").then((confetti) => {
-                (function frame() {
-                    confetti.default({
-                        particleCount: 3,
-                        angle: 60,
-                        spread: 55,
-                        origin: { x: 0 },
-                        colors: colors,
-                    });
-                    confetti.default({
-                        particleCount: 3,
-                        angle: 120,
-                        spread: 55,
-                        origin: { x: 1 },
-                        colors: colors,
-                    });
+            (function frame() {
+                confetti({
+                    particleCount: 3,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0 },
+                    colors: colors,
+                });
+                confetti({
+                    particleCount: 3,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1 },
+                    colors: colors,
+                });
 
-                    if (Date.now() < end) {
-                        requestAnimationFrame(frame);
-                    }
-                })();
-            });
+                if (Date.now() < end) {
+                    requestAnimationFrame(frame);
+                }
+            })();
 
             setHasShownConfetti(true);
         }

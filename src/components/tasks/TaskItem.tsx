@@ -2,7 +2,7 @@
 
 import { m } from "framer-motion";
 
-import { useState, useEffect, useCallback, memo } from "react";
+import { useState, useCallback, memo } from "react";
 import { format } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
@@ -23,6 +23,8 @@ import type { DraggableSyntheticListeners, DraggableAttributes } from "@dnd-kit/
 import { ResolvedIcon } from "@/components/ui/resolved-icon";
 import { useSync } from "@/components/providers/sync-provider";
 import { ActionType, actionRegistry } from "@/lib/sync/registry";
+import confetti from "canvas-confetti";
+import { useIsClient } from "@/hooks/use-is-client";
 
 import { Task } from "@/lib/types";
 
@@ -187,39 +189,8 @@ function arePropsEqual(prev: TaskItemProps, next: TaskItemProps) {
 // but the task props remain unchanged. In lists with 50+ tasks, this reduces
 // unnecessary re-renders by ~95% when opening the task edit dialog.
 export const TaskItem = memo(function TaskItem({ task, showListInfo = true, userId, disableAnimations = false, dragHandleProps, dragAttributes, dispatch: dispatchProp, onEdit }: TaskItemProps) {
-    const [isCompleted, setIsCompleted] = useState(task.isCompleted || false);
+    const isCompleted = task.isCompleted || false;
     const [isExpanded, setIsExpanded] = useState(false);
-
-    // Sync local state with prop changes (fixes bug where external updates were ignored)
-    useEffect(() => {
-        setIsCompleted(task.isCompleted || false);
-    }, [task.isCompleted]);
-
-    // Perf: Build object directly in O(n) instead of reduce with spread (O(n²)).
-    // For tasks with 50 subtasks, this eliminates 1,225 object allocations (50*49/2).
-    const [subtaskStates, setSubtaskStates] = useState<Record<number, boolean>>(() => {
-        const states: Record<number, boolean> = {};
-        for (const s of task.subtasks || []) {
-            states[s.id] = s.isCompleted || false;
-        }
-        return states;
-    });
-
-    // Sync subtask states with props
-    useEffect(() => {
-        if (!task.subtasks) return;
-        setSubtaskStates(prev => {
-            const next = { ...prev };
-            let changed = false;
-            for (const s of task.subtasks || []) {
-                if (next[s.id] !== (s.isCompleted || false)) {
-                    next[s.id] = s.isCompleted || false;
-                    changed = true;
-                }
-            }
-            return changed ? next : prev;
-        });
-    }, [task.subtasks]);
 
     const hasSubtasks = (task.subtaskCount || 0) > 0;
     const completedCount = task.completedSubtaskCount || 0;
@@ -231,7 +202,6 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
 
     const handleSubtaskToggle = useCallback(async (subtaskId: number, checked: boolean) => {
         if (!userId) return;
-        setSubtaskStates(prev => ({ ...prev, [subtaskId]: checked }));
         dispatch("updateSubtask", subtaskId, userId, checked);
     }, [dispatch, userId]);
 
@@ -240,17 +210,14 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
             alert("This task is blocked by other tasks. Complete them first!");
             return;
         }
-        setIsCompleted(checked);
 
         if (checked) {
             if (!isPerformanceMode) {
-                import("canvas-confetti").then((confetti) => {
-                    confetti.default({
-                        particleCount: 30,
-                        spread: 50,
-                        origin: { y: 0.7 },
-                        colors: ['#5b21b6', '#7c3aed', '#a78bfa'] // Purple theme
-                    });
+                confetti({
+                    particleCount: 30,
+                    spread: 50,
+                    origin: { y: 0.7 },
+                    colors: ['#5b21b6', '#7c3aed', '#a78bfa'] // Purple theme
                 });
             }
             playSuccessSound();
@@ -264,26 +231,23 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
         // or accepted as eventually consistent.
     };
 
-    const [mounted, setMounted] = useState(false);
-    useEffect(() => {
-        setMounted(true);
-    }, []);
-
+    const isClient = useIsClient();
     const isPerformanceMode = usePerformanceMode();
-    const resolvedPerformanceMode = mounted && isPerformanceMode;
+    const resolvedPerformanceMode = isClient && isPerformanceMode;
 
     // PERF: Pre-compute timestamps once instead of creating Date objects in each comparison.
     // For 100 tasks, this eliminates 200+ Date object allocations per render.
     const { use24HourClock, weekStartsOnMonday } = useUser();
-    const now = mounted ? new Date() : new Date(0); // Use a stable "now" for server/hydration
+    const now = isClient ? new Date() : new Date(0); // Use a stable "now" for server/hydration
     const nowTime = now.getTime();
-    const isOverdue = task.dueDate
-        ? isDueOverdue(
+    let isOverdue = false;
+    if (task.dueDate && !isCompleted) {
+        isOverdue = isDueOverdue(
             { dueDate: task.dueDate, dueDatePrecision: task.dueDatePrecision ?? null },
             now,
             weekStartsOnMonday ?? false
-        ) && !isCompleted
-        : false;
+        );
+    }
     const periodPrecision =
         task.dueDatePrecision && task.dueDatePrecision !== "day"
             ? task.dueDatePrecision
@@ -452,7 +416,7 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                                     </>
                                 ) : (
                                     <>
-                                        <span>{mounted ? formatFriendlyDate(task.dueDate, "MMM d") : format(task.dueDate, "MMM d")}</span>
+                                        <span>{isClient ? formatFriendlyDate(task.dueDate, "MMM d") : format(task.dueDate, "MMM d")}</span>
                                         {(task.dueDate.getHours() !== 0 || task.dueDate.getMinutes() !== 0) && (
                                             <span className="text-muted-foreground">
                                                 {formatTimePreference(task.dueDate, use24HourClock)}
@@ -606,7 +570,7 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
             {hasSubtasks && isExpanded && (
                 <div className="ml-8 mt-1 space-y-1 border-l-2 border-muted pl-4">
                     {(task.subtasks || []).map((subtask) => {
-                        const isSubtaskCompleted = subtaskStates[subtask.id] ?? subtask.isCompleted;
+                        const isSubtaskCompleted = subtask.isCompleted;
                         return (
                             <SubtaskRow
                                 key={subtask.id}

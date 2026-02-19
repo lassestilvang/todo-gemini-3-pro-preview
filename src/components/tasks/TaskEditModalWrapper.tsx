@@ -1,12 +1,13 @@
 "use client";
 
 import { useSearchParams, useRouter, usePathname, useParams } from "next/navigation";
-import { useEffect, useState, useCallback } from "react";
+import { useMemo, useCallback } from "react";
 import { getTask } from "@/lib/actions";
 import { isSuccess } from "@/lib/action-result";
 import dynamic from "next/dynamic";
 const TaskDialog = dynamic(() => import("./TaskDialog").then(mod => mod.TaskDialog), { ssr: false });
 import { Suspense } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 type TaskType = {
     id: number;
@@ -30,16 +31,13 @@ interface TaskEditModalWrapperProps {
     userId: string;
 }
 
-export function TaskEditModalWrapper({ userId }: TaskEditModalWrapperProps) {
+function TaskEditModalWrapperContent({ userId }: TaskEditModalWrapperProps) {
     const searchParams = useSearchParams();
     const taskIdParam = searchParams.get("taskId");
     const createParam = searchParams.get("create");
     const router = useRouter();
     const pathname = usePathname();
     const params = useParams();
-
-    const [task, setTask] = useState<TaskType | null>(null);
-    const [isOpen, setIsOpen] = useState(false);
 
     // Determine default list/label from URL
     let defaultListId: number | undefined = undefined;
@@ -65,39 +63,45 @@ export function TaskEditModalWrapper({ userId }: TaskEditModalWrapperProps) {
         router.push(`${pathname}?${params.toString()}`);
     }, [searchParams, router, pathname]);
 
-    useEffect(() => {
-        if (taskIdParam) {
-            const taskId = parseInt(taskIdParam);
-            if (!isNaN(taskId)) {
-                getTask(taskId, userId).then((result) => {
-                    if (isSuccess(result) && result.data) {
-                        setTask(result.data as unknown as TaskType);
-                        setIsOpen(true);
-                    } else {
-                        handleClose();
-                    }
-                });
+    const taskId = useMemo(() => {
+        if (!taskIdParam) return null;
+        const parsed = Number.parseInt(taskIdParam, 10);
+        return Number.isNaN(parsed) ? null : parsed;
+    }, [taskIdParam]);
+
+    const { data: task, isLoading } = useQuery({
+        queryKey: ["task-dialog", userId, taskId],
+        enabled: taskId !== null,
+        queryFn: async () => {
+            if (taskId === null) return null;
+            const result = await getTask(taskId, userId);
+            if (isSuccess(result) && result.data) {
+                return result.data as unknown as TaskType;
             }
-        } else if (createParam === "true") {
-            setTask(null);
-            setIsOpen(true);
-        } else {
-            setTask(null);
-            setIsOpen(false);
-        }
-    }, [taskIdParam, createParam, handleClose, userId]);
+            return null;
+        },
+    });
+
+    const isOpen = createParam === "true" || taskId !== null;
 
     if (!isOpen) return null;
+    if (taskId !== null && !isLoading && !task) return null;
 
     return (
+        <TaskDialog
+            task={task || undefined}
+            open={isOpen}
+            onOpenChange={(open) => !open && handleClose()}
+            defaultListId={defaultListId}
+            defaultLabelIds={defaultLabelIds}
+        />
+    );
+}
+
+export function TaskEditModalWrapper(props: TaskEditModalWrapperProps) {
+    return (
         <Suspense fallback={null}>
-            <TaskDialog
-                task={task || undefined}
-                open={isOpen}
-                onOpenChange={(open) => !open && handleClose()}
-                defaultListId={defaultListId}
-                defaultLabelIds={defaultLabelIds}
-            />
+            <TaskEditModalWrapperContent {...props} />
         </Suspense>
     );
 }

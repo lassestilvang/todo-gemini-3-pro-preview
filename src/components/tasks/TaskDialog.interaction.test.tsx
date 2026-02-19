@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, mock, beforeEach, spyOn } from "bun:test";
-import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import { TaskDialog } from "./TaskDialog";
 import React from "react";
 import { setMockAuthUser } from "@/test/mocks";
@@ -84,15 +84,12 @@ mock.module("@/components/ui/icon-picker", () => ({
 }));
 
 describe("TaskDialog Interaction", () => {
-    let dispatchSpy: ReturnType<typeof mock>;
-
     beforeEach(() => {
         // Mock global confirm
         global.confirm = mock(() => true);
 
         // Spy on useSync hook
         const mockDispatch = mock(() => Promise.resolve({ success: true, data: { id: 1 } }));
-        dispatchSpy = mockDispatch;
 
         spyOn(syncProvider, "useSync").mockReturnValue({
             isOnline: true,

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, RotateCcw, Coffee, Brain, Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -23,34 +23,42 @@ export function PomodoroTimer() {
     const [timeLeft, setTimeLeft] = useState(MODES.pomodoro.duration);
     const [isActive, setIsActive] = useState(false);
 
-    const resetTimer = useCallback(() => {
+    useEffect(() => {
+        if (!isActive || timeLeft <= 0) {
+            return;
+        }
+
+        const interval = setInterval(() => {
+            setTimeLeft((prev) => {
+                if (prev <= 1) {
+                    setIsActive(false);
+                    if (typeof window !== "undefined") {
+                        const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
+                        audio.play().catch(() => { });
+                        toast.success(`${MODES[mode].label} complete!`);
+                    }
+                    return 0;
+                }
+
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => {
+            clearInterval(interval);
+        };
+    }, [isActive, mode, timeLeft]);
+
+    const resetTimer = () => {
         setIsActive(false);
         setTimeLeft(MODES[mode].duration);
-    }, [mode]);
+    };
 
-    useEffect(() => {
-        let interval: NodeJS.Timeout | null = null;
-        if (isActive && timeLeft > 0) {
-            interval = setInterval(() => {
-                setTimeLeft((prev) => prev - 1);
-            }, 1000);
-        } else if (timeLeft === 0 && isActive) {
-            setIsActive(false);
-            // Play sound or show notification
-            if (typeof window !== "undefined") {
-                const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
-                audio.play().catch(() => { });
-                toast.success(`${MODES[mode].label} complete!`);
-            }
-        }
-        return () => {
-            if (interval) clearInterval(interval);
-        };
-    }, [isActive, timeLeft, mode]);
-
-    useEffect(() => {
-        resetTimer();
-    }, [mode, resetTimer]);
+    const handleModeChange = (nextMode: TimerMode) => {
+        setMode(nextMode);
+        setIsActive(false);
+        setTimeLeft(MODES[nextMode].duration);
+    };
 
     const toggleTimer = () => setIsActive(!isActive);
 
@@ -72,7 +80,7 @@ export function PomodoroTimer() {
                 {(Object.keys(MODES) as TimerMode[]).map((m) => (
                     <button
                         key={m}
-                        onClick={() => setMode(m)}
+                        onClick={() => handleModeChange(m)}
                         className={cn(
                             "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all",
                             mode === m

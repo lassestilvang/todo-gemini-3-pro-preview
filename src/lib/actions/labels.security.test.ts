@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach } from "bun:test";
 import { createTestUser } from "@/test/setup";
 import { setMockAuthUser, resetMockAuthUser } from "@/test/mocks";
 import { getLabels, createLabel, updateLabel, deleteLabel, reorderLabels, getLabel } from "./labels";
+import { db, labels } from "@/db";
+import { eq } from "drizzle-orm";
 
 describe("Labels Security (IDOR)", () => {
   let ATTACKER_ID: string;
@@ -155,11 +157,14 @@ describe("Labels Security (IDOR)", () => {
         expect(result.data.name).toBe("My Label");
       }
 
-      setMockAuthUser(AUTHORIZED_USER);
       const labelsResult = await getLabels(AUTHORIZED_ID);
-      if (labelsResult.length > 0) {
-        expect(labelsResult.find((label) => label.name === "My Label")).toBeDefined();
+      const labelFromAction = labelsResult.find((label) => label.name === "My Label");
+      if (labelFromAction) {
+        expect(labelFromAction.userId).toBe(AUTHORIZED_ID);
       }
+
+      const labelsInDb = await db.select().from(labels).where(eq(labels.userId, AUTHORIZED_ID));
+      expect(labelsInDb.find((label) => label.name === "My Label")).toBeDefined();
     } finally {
       resetMockAuthUser();
     }

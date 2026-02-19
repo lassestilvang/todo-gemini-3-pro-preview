@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -44,11 +44,12 @@ export function TemplateManager({ userId }: TemplateManagerProps) {
         }
     }, [userId]);
 
-    useEffect(() => {
-        if (isOpen && userId) {
-            loadTemplates();
+    const handleDialogOpenChange = useCallback((nextOpen: boolean) => {
+        setIsOpen(nextOpen);
+        if (nextOpen && userId) {
+            void loadTemplates();
         }
-    }, [isOpen, userId, loadTemplates]);
+    }, [loadTemplates, userId]);
 
     const handleOpenCreateDialog = () => {
         setEditingTemplate(null);
@@ -92,7 +93,7 @@ export function TemplateManager({ userId }: TemplateManagerProps) {
 
     return (
         <>
-            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
                 <DialogTrigger asChild>
                     <Button variant="ghost" size="sm" className="w-full justify-start">
                         <FileText className="mr-2 h-4 w-4" />
