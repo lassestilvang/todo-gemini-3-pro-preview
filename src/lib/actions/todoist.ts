@@ -6,7 +6,6 @@ import { getCurrentUser } from "@/lib/auth";
 import { encryptToken } from "@/lib/todoist/crypto";
 import { syncTodoistForUser } from "@/lib/todoist/sync";
 import { createTodoistClient } from "@/lib/todoist/service";
-import type { TodoistLabel, TodoistProject } from "@/lib/todoist/types";
 import { mapLocalTaskToTodoist, mapTodoistTaskToLocal } from "@/lib/todoist/mapper";
 import { resolveTodoistTaskListId } from "@/lib/todoist/mapping";
 import { updateTask } from "@/lib/actions/tasks";
@@ -173,8 +172,8 @@ export async function getTodoistMappingData() {
 
     return {
         success: true,
-        projects: (projects as TodoistProject[]).slice(0, 5),
-        labels: labels as TodoistLabel[],
+        projects: projects.results?.slice(0, 5) ?? [],
+        labels: labels,
         lists: userLists,
         projectMappings: mappings
             .filter((mapping) => mapping.entityType === "list")
@@ -403,7 +402,7 @@ export async function resolveTodoistConflict(conflictId: number, resolution: "lo
         };
 
         const remoteTask = await client.getTasks().then((tasks) =>
-            (tasks as { id: string }[]).find((task) => task.id === conflict.externalId)
+            tasks.results.find((task) => task.id === conflict.externalId)
         );
         if (!remoteTask) {
             return { success: false, error: "Remote task not found." };
@@ -414,8 +413,8 @@ export async function resolveTodoistConflict(conflictId: number, resolution: "lo
         const labelIdMap = new Map(labelMappings.map((mapping) => [mapping.externalId, mapping.localId]));
         const labelIds = (remoteTask as { labels?: string[] }).labels
             ? (remoteTask as { labels?: string[] }).labels
-                  ?.map((labelId) => labelIdMap.get(labelId))
-                  .filter((id): id is number => Boolean(id))
+                ?.map((labelId) => labelIdMap.get(labelId))
+                .filter((id): id is number => Boolean(id))
             : [];
 
         await updateTask(

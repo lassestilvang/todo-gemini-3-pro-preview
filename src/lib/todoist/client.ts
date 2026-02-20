@@ -1,69 +1,42 @@
-const TODOIST_API_BASE = "https://api.todoist.com/rest/v2";
-
-type RequestOptions = {
-    method?: "GET" | "POST" | "PUT" | "DELETE";
-    body?: unknown;
-    token: string;
-};
+import { TodoistApi } from "@doist/todoist-api-typescript";
+import type { UpdateTaskArgs, AddTaskArgs } from "@doist/todoist-api-typescript";
 
 export class TodoistClient {
-    private token: string;
+    private api: TodoistApi;
 
     constructor(token: string) {
-        this.token = token;
-    }
-
-    private async request<T>(path: string, { method = "GET", body, token }: RequestOptions): Promise<T> {
-        const response = await fetch(`${TODOIST_API_BASE}${path}`, {
-            method,
-            headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-            },
-            body: body ? JSON.stringify(body) : undefined,
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Todoist API error (${response.status}): ${errorText}`);
-        }
-
-        if (response.status === 204) {
-            return null as T;
-        }
-
-        return (await response.json()) as T;
+        this.api = new TodoistApi(token);
     }
 
     getProjects() {
-        return this.request("/projects", { token: this.token });
+        return this.api.getProjects();
     }
 
     getLabels() {
-        return this.request("/labels", { token: this.token });
+        return this.api.getLabels();
     }
 
     getTasks() {
-        return this.request("/tasks", { token: this.token });
+        return this.api.getTasks();
     }
 
-    createTask(payload: unknown) {
-        return this.request("/tasks", { method: "POST", body: payload, token: this.token });
+    createTask(payload: AddTaskArgs) {
+        return this.api.addTask(payload);
     }
 
-    updateTask(taskId: string, payload: unknown) {
-        return this.request(`/tasks/${taskId}`, { method: "POST", body: payload, token: this.token });
+    updateTask(taskId: string, payload: UpdateTaskArgs) {
+        return this.api.updateTask(taskId, payload);
     }
 
     closeTask(taskId: string) {
-        return this.request(`/tasks/${taskId}/close`, { method: "POST", token: this.token });
+        return this.api.closeTask(taskId);
     }
 
     reopenTask(taskId: string) {
-        return this.request(`/tasks/${taskId}/reopen`, { method: "POST", token: this.token });
+        return this.api.reopenTask(taskId);
     }
 
     deleteTask(taskId: string) {
-        return this.request(`/tasks/${taskId}`, { method: "DELETE", token: this.token });
+        return this.api.deleteTask(taskId);
     }
 }

@@ -89,13 +89,13 @@ export function TodoistMappingForm() {
             }
 
             const projectMap: Record<string, number | null> = {};
-            for (const project of result.projects ?? []) {
+            for (const project of (result.projects as unknown as { id: string; name: string }[]) ?? []) {
                 const match = result.projectMappings?.find((mapping) => mapping.projectId === project.id);
                 projectMap[project.id] = match?.listId ?? null;
             }
 
             const labelMap: Record<string, number | null> = {};
-            for (const label of result.labels ?? []) {
+            for (const label of (result.labels as unknown as { id: string; name: string }[]) ?? []) {
                 const match = result.labelMappings?.find((mapping) => mapping.labelId === label.id);
                 labelMap[label.id] = match?.listId ?? null;
             }
@@ -103,8 +103,8 @@ export function TodoistMappingForm() {
             dispatchUI({
                 type: "FETCH_SUCCESS",
                 payload: {
-                    projects: result.projects ?? [],
-                    labels: result.labels ?? [],
+                    projects: (result.projects as unknown as { id: string; name: string }[]) ?? [],
+                    labels: (result.labels as unknown as { id: string; name: string }[]) ?? [],
                     lists: result.lists ?? [],
                     projectMappings: projectMap,
                     labelMappings: labelMap,

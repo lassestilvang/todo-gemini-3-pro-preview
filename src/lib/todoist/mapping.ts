@@ -1,4 +1,5 @@
-import type { TodoistProject, TodoistTask } from "./types";
+import type { PersonalProject, WorkspaceProject, Task } from "@doist/todoist-api-typescript";
+export type Project = PersonalProject | WorkspaceProject;
 
 export type TodoistProjectAssignment = {
     projectId: string;
@@ -16,7 +17,7 @@ export type TodoistMappingState = {
 };
 
 export function buildDefaultProjectAssignments(
-    projects: TodoistProject[],
+    projects: Project[],
     localLists: { id: number }[]
 ): TodoistProjectAssignment[] {
     return projects.slice(0, 5).map((project, index) => ({
@@ -26,10 +27,10 @@ export function buildDefaultProjectAssignments(
 }
 
 export function resolveTodoistTaskListId(
-    task: TodoistTask,
+    task: Task,
     mappings: TodoistMappingState
 ): number | null {
-    const projectMatch = mappings.projects.find((mapping) => mapping.projectId === task.project_id);
+    const projectMatch = mappings.projects.find((mapping) => mapping.projectId === task.projectId);
     if (projectMatch?.listId) {
         return projectMatch.listId;
     }

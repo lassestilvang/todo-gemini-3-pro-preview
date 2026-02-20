@@ -1,5 +1,6 @@
 import { TodoistClient } from "./client";
-import type { TodoistTask, TodoistProject, TodoistLabel } from "./types";
+import type { Task as TodoistTask, Label as TodoistLabel } from "@doist/todoist-api-typescript";
+import type { Project as TodoistProject } from "./mapping";
 
 export type TodoistProjectMapping = {
     projectId: string;
@@ -30,13 +31,13 @@ export async function fetchTodoistSnapshot(client: TodoistClient): Promise<Todoi
     const [projects, labels, tasks] = await Promise.all([
         client.getProjects(),
         client.getLabels(),
-        client.getTasks(),
+        client.getTasks().then(res => res.results),
     ]);
 
     return {
-        projects: projects as TodoistProject[],
-        labels: labels as TodoistLabel[],
-        tasks: tasks as TodoistTask[],
+        projects: projects.results ?? [],
+        labels: labels.results ?? [],
+        tasks: tasks,
     };
 }
 

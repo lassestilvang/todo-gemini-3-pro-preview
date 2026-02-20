@@ -1,7 +1,7 @@
 import type { tasks } from "@/db";
 import { applyListLabelMapping, resolveTodoistTaskListId } from "./mapping";
 import { toTodoistPriority } from "./service";
-import type { TodoistCreateTaskPayload, TodoistTask } from "./types";
+import type { Task, AddTaskArgs } from "@doist/todoist-api-typescript";
 import type { TodoistMappingState } from "./mapping";
 
 type LocalTask = typeof tasks.$inferSelect;
@@ -10,7 +10,7 @@ type LocalTaskWithLabels = LocalTask & {
     labelNames?: string[];
 };
 
-function parseTodoistDueDate(task: TodoistTask) {
+function parseTodoistDueDate(task: Task) {
     if (!task.due?.date) {
         return { dueDate: null as Date | null, dueDatePrecision: null as LocalTask["dueDatePrecision"] };
     }
@@ -25,7 +25,7 @@ function parseTodoistDueDate(task: TodoistTask) {
 }
 
 export function mapTodoistTaskToLocal(
-    task: TodoistTask,
+    task: Task,
     mappings: TodoistMappingState
 ): Partial<LocalTask> {
     const { dueDate, dueDatePrecision } = parseTodoistDueDate(task);
@@ -34,13 +34,13 @@ export function mapTodoistTaskToLocal(
     return {
         title: task.content,
         description: task.description ?? null,
-        isCompleted: task.is_completed ?? false,
-        completedAt: task.is_completed ? new Date() : null,
+        isCompleted: task.checked ?? false,
+        completedAt: task.checked ? new Date() : null,
         listId,
         dueDate,
         dueDatePrecision,
-        isRecurring: task.due?.is_recurring ?? false,
-        recurringRule: task.due?.is_recurring ? task.due.string ?? null : null,
+        isRecurring: task.due?.isRecurring ?? false,
+        recurringRule: task.due?.isRecurring ? task.due.string ?? null : null,
         parentId: null,
     };
 }
@@ -52,7 +52,7 @@ export function mapLocalTaskToTodoist(
         labelIds?: number[];
         labelIdToExternal?: Map<number, string>;
     }
-): TodoistCreateTaskPayload {
+): AddTaskArgs {
     const mapping = applyListLabelMapping(task.listId ?? null, mappings);
     const labelIds = options?.labelIds ?? [];
     const labelMap = options?.labelIdToExternal;
@@ -68,12 +68,12 @@ export function mapLocalTaskToTodoist(
     return {
         content: task.title,
         description: task.description ?? undefined,
-        project_id: mapping.projectId,
+        projectId: mapping.projectId,
         labels: mappedLabels ?? mapping.labelIds,
         priority: toTodoistPriority(task.priority ?? "none"),
-        due_date: hasTime ? undefined : dueDate,
-        due_datetime: hasTime ? iso ?? undefined : undefined,
-        due_string: task.isRecurring && task.recurringRule ? task.recurringRule : undefined,
-        parent_id: undefined,
+        dueDate: hasTime ? undefined : dueDate,
+        dueDatetime: hasTime ? iso ?? undefined : undefined,
+        dueString: task.isRecurring && task.recurringRule ? task.recurringRule : undefined,
+        parentId: undefined,
     };
 }

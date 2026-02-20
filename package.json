@@ -27,6 +27,7 @@
     "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@doist/todoist-api-typescript": "^6.5.1",
     "@ducanh2912/next-pwa": "^10.2.9",
     "@fullcalendar/react": "7.0.0-beta.7",
     "@google/generative-ai": "^0.24.1",

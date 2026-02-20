@@ -14,7 +14,7 @@
 - We will use Todoist “Tasks” API endpoints plus “Projects” and “Labels.”
 - We will use Todoist IDs as external IDs and keep an internal mapping table for every synced entity.
 - Todoist API tokens are stored encrypted at rest.
-- TODOIST_ENCRYPTION_KEY is configured in runtime environments.
+- Encryption requires at least one 256-bit key configured in the environment (e.g., `TODOIST_ENCRYPTION_KEY` as a 64-character hex string). The system supports key rotation (`TODOIST_ENCRYPTION_KEYS`, `TODOIST_ENCRYPTION_KEY_ID`) and AWS KMS envelope encryption (`TODOIST_ENCRYPTION_KEY_ENCRYPTED`, `TODOIST_ENCRYPTION_KEYS_ENCRYPTED`, `AWS_REGION`).
 
 ## Phased Implementation Plan
 

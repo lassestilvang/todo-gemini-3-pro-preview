@@ -13,7 +13,7 @@ import {
 import { decryptToken } from "./crypto";
 import { createTodoistClient, fetchTodoistSnapshot } from "./service";
 import { mapLocalTaskToTodoist, mapTodoistTaskToLocal } from "./mapper";
-import type { TodoistTask } from "./types";
+import type { Task } from "@doist/todoist-api-typescript";
 import { buildDefaultProjectAssignments } from "./mapping";
 
 type SyncResult = {
@@ -228,7 +228,7 @@ async function ensureProjectAssignments(params: {
     existingLists: { id: number; name: string; position: number }[];
 }) {
     const { userId, projects, existingLists } = params;
-    void buildDefaultProjectAssignments(projects, existingLists);
+    void buildDefaultProjectAssignments(projects as never, existingLists);
     const lowerCaseListMap = new Map(existingLists.map((list) => [list.name.toLowerCase(), list]));
     let maxPosition = Math.max(0, ...existingLists.map((list) => list.position ?? 0));
 
@@ -277,7 +277,7 @@ async function removeDeletedTasks(params: {
     localTaskMap: Map<number, typeof tasks.$inferSelect>;
 }) {
     const { client, taskMappings, localTaskMap } = params;
-    const remoteTasks = (await client.getTasks()) as TodoistTask[];
+    const remoteTasks = await client.getTasks().then(res => res.results ?? []);
     const remoteTaskIds = new Set(remoteTasks.map((task) => task.id));
 
     const externalIdsToDelete: string[] = [];
@@ -325,12 +325,12 @@ async function removeDeletedTasks(params: {
     }
 }
 
-function splitTasksByParent(tasks: TodoistTask[]) {
-    const rootTasks: TodoistTask[] = [];
-    const childTasks: TodoistTask[] = [];
+function splitTasksByParent(tasks: Task[]) {
+    const rootTasks: Task[] = [];
+    const childTasks: Task[] = [];
 
     for (const task of tasks) {
-        if (task.parent_id) {
+        if (task.parentId) {
             childTasks.push(task);
         } else {
             rootTasks.push(task);
@@ -342,7 +342,7 @@ function splitTasksByParent(tasks: TodoistTask[]) {
 
 async function createTodoistTasks(params: {
     userId: string;
-    tasks: TodoistTask[];
+    tasks: Task[];
     mappingState: { projects: { projectId: string; listId: number | null }[]; labels: { labelId: string; listId: number | null }[] };
     labelIdMap: Map<string, number>;
     taskMappings: Map<string, number | null>;
@@ -356,7 +356,7 @@ async function createTodoistTasks(params: {
 
         const payload = mapTodoistTaskToLocal(task, mappingState);
         const labelIds = (task.labels ?? []).map((labelId) => labelIdMap.get(labelId)).filter((id): id is number => Boolean(id));
-        const parentMapping = task.parent_id ? taskMappings.get(task.parent_id) : null;
+        const parentMapping = task.parentId ? taskMappings.get(task.parentId) : null;
 
         const [createdTask] = await db.insert(tasks).values({
             userId,
@@ -384,7 +384,7 @@ async function createTodoistTasks(params: {
             entityType: "task" as const,
             localId: createdTask.id,
             externalId: task.id,
-            externalParentId: task.parent_id ?? null,
+            externalParentId: task.parentId ?? null,
         });
 
         if (labelIds.length > 0) {
@@ -454,7 +454,7 @@ async function updateRemoteTasks(params: {
     localLabelToExternal: Map<number, string>;
 }) {
     const { userId, client, taskMappings, localTaskMap, mappingState, conflictKeys, localLabelToExternal } = params;
-    const remoteTasks = (await client.getTasks()) as TodoistTask[];
+    const remoteTasks = await client.getTasks().then(res => res.results ?? []);
     const taskMap = new Map(remoteTasks.map((task) => [task.id, task]));
 
     for (const mapping of taskMappings) {
@@ -554,7 +554,7 @@ function buildConflictKey(entityType: string, localId: number | null, externalId
 
 async function detectTaskConflicts(params: {
     userId: string;
-    todoistTasks: TodoistTask[];
+    todoistTasks: Task[];
     taskMappings: typeof externalEntityMap.$inferSelect[];
     localTaskMap: Map<number, typeof tasks.$inferSelect>;
     localTaskLabelMap: Map<number, number[]>;
@@ -630,14 +630,14 @@ function buildLocalTaskPayload(
     };
 }
 
-function buildRemoteTaskPayload(task: TodoistTask) {
+function buildRemoteTaskPayload(task: Task) {
     return {
         title: task.content,
         description: task.description ?? "",
-        isCompleted: task.is_completed ?? false,
+        isCompleted: task.checked ?? false,
         dueDate: task.due?.date ?? null,
-        projectId: task.project_id ?? null,
-        parentId: task.parent_id ?? null,
+        projectId: task.projectId ?? null,
+        parentId: task.parentId ?? null,
         labels: (task.labels ?? []).slice().sort(),
     };
 }
@@ -770,7 +770,7 @@ async function createLocalTasksInTodoist(params: {
             }
         }
 
-        const created = (await client.createTask(payload)) as TodoistTask;
+        const created = (await client.createTask(payload)) as Task;
         if (!created?.id) {
             continue;
         }
@@ -782,7 +782,7 @@ async function createLocalTasksInTodoist(params: {
             entityType: "task" as const,
             localId: task.id,
             externalId: created.id,
-            externalParentId: created.parent_id ?? null,
+            externalParentId: created.parentId ?? null,
         });
     }
 }

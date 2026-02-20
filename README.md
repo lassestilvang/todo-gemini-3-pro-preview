@@ -173,6 +173,30 @@ Security notes:
 - Only use this behind a trusted proxy/CDN that sets the real client IP.
 - Separate multiple IPs in `AUTH_BYPASS_IPS` with commas or whitespace.
 
+## 🔄 Todoist Sync Setup
+
+To enable the Todoist integration, you must configure at least one 256-bit encryption key to securely store user API tokens in your database.
+
+**Development Setup:**
+For local development, generate a single 64-character hex string:
+```bash
+# Generate a random 32-byte key in hex
+openssl rand -hex 32
+```
+Add it to your `.env.local`:
+```bash
+TODOIST_ENCRYPTION_KEY=your_generated_64_character_hex_string
+```
+
+**Advanced / Production Setup (`.env.local` / `.env.production`):**
+The system supports key rotation and AWS KMS envelope encryption for production environments. You only need to configure the variables that match your security requirements:
+
+*   `TODOIST_ENCRYPTION_KEYS`: For key rotation. A comma-separated list of keys in `keyId:hexKey` format (e.g., `key1:abc...,key2:def...`).
+*   `TODOIST_ENCRYPTION_KEY_ID`: The ID of the "active" key to use for encrypting *new* tokens (e.g., `key2`).
+*   `TODOIST_ENCRYPTION_KEY_ENCRYPTED`: A single key encrypted via AWS KMS (base64).
+*   `TODOIST_ENCRYPTION_KEYS_ENCRYPTED`: Multiple KMS-encrypted keys (format: `keyId:base64`).
+*   `AWS_REGION`: Required if using KMS encryption.
+
 ## 🗄️ Database Branching
 
 This project uses [Neon's database branching](https://neon.tech/docs/introduction/branching) for isolated development environments via the **Vercel + Neon integration**.

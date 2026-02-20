@@ -13,10 +13,10 @@ describe("todoist mapper", () => {
                 id: "t1",
                 content: "Hello",
                 description: "World",
-                project_id: "p1",
-                due: { date: "2026-02-11" },
-                is_completed: true,
-            },
+                projectId: "p1",
+                due: { date: "2026-02-11", isRecurring: false, string: "" },
+                checked: true,
+            } as never,
             mappings
         );
 
@@ -44,8 +44,8 @@ describe("todoist mapper", () => {
             mappings
         );
 
-        expect(payload.project_id).toBe("p1");
-        expect(payload.due_date).toBe("2026-02-11");
+        expect(payload.projectId).toBe("p1");
+        expect(payload.dueDate).toBe("2026-02-11");
         expect(payload.priority).toBe(4);
     });
 });

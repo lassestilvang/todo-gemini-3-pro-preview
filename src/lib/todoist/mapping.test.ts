@@ -25,12 +25,12 @@ describe("todoist mapping helpers", () => {
     });
 
     it("resolves task list by project", () => {
-        const listId = resolveTodoistTaskListId({ id: "t1", content: "Task", project_id: "p2" }, baseMappings);
+        const listId = resolveTodoistTaskListId({ id: "t1", content: "Task", projectId: "p2" } as never, baseMappings);
         expect(listId).toBe(11);
     });
 
     it("resolves task list by label", () => {
-        const listId = resolveTodoistTaskListId({ id: "t2", content: "Task", labels: ["l1"] }, baseMappings);
+        const listId = resolveTodoistTaskListId({ id: "t2", content: "Task", labels: ["l1"] } as never, baseMappings);
         expect(listId).toBe(20);
     });
 });
