@@ -22,6 +22,7 @@ import { Task } from "@/lib/types";
 import { ActionType, actionRegistry } from "@/lib/sync/registry";
 import { SubtaskRow } from "./SubtaskRow";
 import { areTaskPropsEqual, formatDuration, priorityColors } from "./task-item-utils";
+import { useOptionalSync } from "@/components/providers/sync-provider";
 
 export interface TaskItemProps {
     task: Task;
@@ -61,7 +62,8 @@ export const TaskItem = memo(function TaskItem({
     const completedCount = task.completedSubtaskCount || 0;
     const totalCount = task.subtaskCount || 0;
 
-    const dispatch = dispatchProp;
+    const sync = useOptionalSync();
+    const dispatch = dispatchProp ?? sync?.dispatch;
 
     const handleSubtaskToggle = useCallback(async (subtaskId: number, checked: boolean) => {
         if (!userId || !dispatch) return;
