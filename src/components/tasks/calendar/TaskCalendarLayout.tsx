@@ -75,8 +75,8 @@ export function TaskCalendarLayout({ tasks, onDateClick, onEdit }: TaskCalendarL
           weekdayHeaders={weekdayHeaders}
           daysWithMeta={daysWithMeta}
           tasksByDate={tasksByDate}
-          calendarDenseTooltipThreshold={calendarDenseTooltipThreshold}
-          calendarUseNativeTooltipsOnDenseDays={calendarUseNativeTooltipsOnDenseDays}
+          calendarDenseTooltipThreshold={calendarDenseTooltipThreshold ?? undefined}
+          calendarUseNativeTooltipsOnDenseDays={calendarUseNativeTooltipsOnDenseDays ?? undefined}
           onDateClick={onDateClick}
           onEdit={onEdit}
         />

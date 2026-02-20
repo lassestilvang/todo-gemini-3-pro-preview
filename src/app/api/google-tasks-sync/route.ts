@@ -3,7 +3,6 @@ import { headers } from "next/headers";
 import { db, externalIntegrations } from "@/db";
 import { syncGoogleTasksForUser } from "@/lib/google-tasks/sync";
 import { eq } from "drizzle-orm";
-import { getCurrentUser } from "@/lib/auth";
 import { constantTimeEqual } from "@/lib/auth-bypass";
 
 export async function GET() {
@@ -31,14 +30,8 @@ export async function GET() {
         return NextResponse.json({ success: true, results });
     }
 
-    const user = await getCurrentUser();
-    if (!user) {
-        return NextResponse.json(
-            { success: false, error: "Not authenticated" },
-            { status: 401 }
-        );
-    }
-
-    const result = await syncGoogleTasksForUser(user.id);
-    return NextResponse.json({ success: result.status === "ok", result });
+    return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+    );
 }

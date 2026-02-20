@@ -32,7 +32,7 @@ export function CalendarGrid({
                     const entry = tasksByDate.get(key);
                     const dayTasks = entry?.tasks ?? [];
                     const completedCount = entry?.completedCount ?? 0;
-                    const tooltipThreshold = getEffectiveCalendarDenseTooltipThreshold(calendarDenseTooltipThreshold, 6);
+                    const tooltipThreshold = getEffectiveCalendarDenseTooltipThreshold(calendarDenseTooltipThreshold ?? null, 6);
                     const useNativeTooltip = calendarUseNativeTooltipsOnDenseDays === false ? false : dayTasks.length > tooltipThreshold;
 
                     return (

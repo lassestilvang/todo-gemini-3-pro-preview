@@ -1,3 +1,18 @@
+"use client";
+
+import { useSync } from "@/components/providers/sync-provider";
+import { useUser } from "@/components/providers/UserProvider";
+import { useReducer, useRef } from "react";
+import { useIsClient } from "@/hooks/use-is-client";
+import { parseNaturalLanguage } from "@/lib/nlp-parser";
+import { extractDeadline } from "@/lib/smart-scheduler";
+import { format } from "date-fns";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
+import { TaskDialog } from "@/components/tasks/TaskDialog";
 import { reducer, State, Action } from "@/lib/tasks/create-task-reducer";
 import { CreateTaskFooter } from "./create-task/CreateTaskFooter";
 import { TaskBadges } from "./create-task/TaskBadges";

@@ -81,7 +81,6 @@ export function FloatingSearchInput({ sidebarMode }: { sidebarMode: SidebarMode 
         />
         <Input
           ref={(node) => {
-            // @ts-expect-error - Mutating ref is fine here
             inputRef.current = node;
             if (node) requestAnimationFrame(() => node.focus());
           }}
