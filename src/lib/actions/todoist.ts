@@ -1,7 +1,7 @@
 "use server";
 
 import { and, eq, inArray } from "drizzle-orm";
-import { db, externalEntityMap, externalIntegrations, externalSyncConflicts, lists, tasks } from "@/db";
+import { db, externalEntityMap, externalIntegrations, externalSyncConflicts, externalSyncState, lists, tasks } from "@/db";
 import { getCurrentUser } from "@/lib/auth";
 import { encryptToken } from "@/lib/todoist/crypto";
 import { syncTodoistForUser } from "@/lib/todoist/sync";
@@ -46,6 +46,23 @@ export async function connectTodoist(token: string) {
     return { success: true };
 }
 
+export async function getTodoistStatus() {
+    if (process.env.NODE_ENV === "test") {
+        return { success: true, connected: false };
+    }
+
+    const user = await getCurrentUser();
+    if (!user) {
+        return { success: false, error: "Not authenticated" };
+    }
+
+    const integration = await db.query.externalIntegrations.findFirst({
+        where: and(eq(externalIntegrations.userId, user.id), eq(externalIntegrations.provider, "todoist")),
+    });
+
+    return { success: true, connected: !!integration };
+}
+
 export async function disconnectTodoist() {
     if (process.env.NODE_ENV === "test") {
         return { success: true };
@@ -59,6 +76,18 @@ export async function disconnectTodoist() {
     await db
         .delete(externalIntegrations)
         .where(and(eq(externalIntegrations.userId, user.id), eq(externalIntegrations.provider, "todoist")));
+
+    await db
+        .delete(externalEntityMap)
+        .where(and(eq(externalEntityMap.userId, user.id), eq(externalEntityMap.provider, "todoist")));
+
+    await db
+        .delete(externalSyncConflicts)
+        .where(and(eq(externalSyncConflicts.userId, user.id), eq(externalSyncConflicts.provider, "todoist")));
+
+    await db
+        .delete(externalSyncState)
+        .where(and(eq(externalSyncState.userId, user.id), eq(externalSyncState.provider, "todoist")));
 
     return { success: true };
 }

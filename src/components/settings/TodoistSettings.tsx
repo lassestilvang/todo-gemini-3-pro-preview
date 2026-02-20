@@ -1,41 +1,64 @@
 "use client";
 
 import { useState } from "react";
-import { connectTodoist, disconnectTodoist, rotateTodoistTokens, syncTodoistNow } from "@/lib/actions/todoist";
+import { connectTodoist, disconnectTodoist, rotateTodoistTokens, syncTodoistNow, getTodoistStatus } from "@/lib/actions/todoist";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { TodoistMappingForm } from "@/components/settings/TodoistMappingForm";
 import { TodoistConflicts } from "@/components/settings/TodoistConflicts";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function TodoistSettings() {
     const [token, setToken] = useState("");
     const [status, setStatus] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isActionLoading, setIsActionLoading] = useState(false);
+    const queryClient = useQueryClient();
+    const statusQuery = useQuery({
+        queryKey: ["todoistStatus"],
+        queryFn: async () => {
+            const result = await getTodoistStatus();
+            if (!result.success) {
+                throw new Error(result.error ?? "Failed to load Todoist status.");
+            }
+            return result.connected ?? false;
+        },
+    });
+    const isConnected = statusQuery.data ?? false;
+    const isLoading = isActionLoading || statusQuery.isFetching;
+    const statusMessage =
+        status ??
+        (statusQuery.error instanceof Error ? statusQuery.error.message : null);
 
     const handleConnect = async () => {
-        setIsLoading(true);
+        setIsActionLoading(true);
         setStatus(null);
         const result = await connectTodoist(token);
         if (!result.success) {
             setStatus(result.error ?? "Failed to connect Todoist.");
         } else {
             setToken("");
+            queryClient.setQueryData(["todoistStatus"], true);
             setStatus("Todoist connected.");
         }
-        setIsLoading(false);
+        setIsActionLoading(false);
     };
 
     const handleDisconnect = async () => {
-        setIsLoading(true);
+        setIsActionLoading(true);
         setStatus(null);
         const result = await disconnectTodoist();
-        setStatus(result.success ? "Todoist disconnected." : result.error ?? "Failed to disconnect.");
-        setIsLoading(false);
+        if (result.success) {
+            queryClient.setQueryData(["todoistStatus"], false);
+            setStatus("Todoist disconnected.");
+        } else {
+            setStatus(result.error ?? "Failed to disconnect.");
+        }
+        setIsActionLoading(false);
     };
 
     const handleSync = async () => {
-        setIsLoading(true);
+        setIsActionLoading(true);
         setStatus(null);
         const result = await syncTodoistNow();
         if (result.success) {
@@ -43,11 +66,11 @@ export function TodoistSettings() {
         } else {
             setStatus(result.error ?? "Sync failed.");
         }
-        setIsLoading(false);
+        setIsActionLoading(false);
     };
 
     const handleRotate = async () => {
-        setIsLoading(true);
+        setIsActionLoading(true);
         setStatus(null);
         const result = await rotateTodoistTokens();
         if (result.success) {
@@ -55,7 +78,7 @@ export function TodoistSettings() {
         } else {
             setStatus(result.error ?? "Token rotation failed.");
         }
-        setIsLoading(false);
+        setIsActionLoading(false);
     };
 
     return (
@@ -67,18 +90,23 @@ export function TodoistSettings() {
                         Connect your Todoist account with a personal API token to enable two-way sync.
                     </p>
                 </div>
-                <div className="space-y-2">
-                    <Input
-                        type="password"
-                        placeholder="Paste your Todoist API token"
-                        value={token}
-                        onChange={(event) => setToken(event.target.value)}
-                        disabled={isLoading}
-                    />
+                {!isConnected ? (
+                    <div className="space-y-2">
+                        <Input
+                            type="password"
+                            placeholder="Paste your Todoist API token"
+                            value={token}
+                            onChange={(event) => setToken(event.target.value)}
+                            disabled={isLoading}
+                        />
+                        <div className="flex flex-wrap gap-2">
+                            <Button onClick={handleConnect} disabled={!token || isLoading}>
+                                Connect Todoist
+                            </Button>
+                        </div>
+                    </div>
+                ) : (
                     <div className="flex flex-wrap gap-2">
-                        <Button onClick={handleConnect} disabled={!token || isLoading}>
-                            Connect Todoist
-                        </Button>
                         <Button variant="secondary" onClick={handleSync} disabled={isLoading}>
                             Sync Now
                         </Button>
@@ -89,10 +117,10 @@ export function TodoistSettings() {
                             Disconnect
                         </Button>
                     </div>
-                </div>
-                <TodoistMappingForm />
-                <TodoistConflicts />
-                {status ? <p className="text-sm text-muted-foreground">{status}</p> : null}
+                )}
+                {isConnected ? <TodoistMappingForm /> : null}
+                {isConnected ? <TodoistConflicts /> : null}
+                {statusMessage ? <p className="text-sm text-muted-foreground">{statusMessage}</p> : null}
             </div>
         </Card>
     );
