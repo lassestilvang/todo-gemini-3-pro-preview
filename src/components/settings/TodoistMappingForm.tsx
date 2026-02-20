@@ -14,6 +14,7 @@ export function TodoistMappingForm() {
         lists: { id: number; name: string }[];
         projectMappings: Record<string, number | null>;
         labelMappings: Record<string, number | null>;
+        isSaving: boolean;
     };
 
     type UIAction =
@@ -22,7 +23,9 @@ export function TodoistMappingForm() {
         | { type: "FETCH_ERROR"; payload: string }
         | { type: "SET_STATUS"; payload: string | null }
         | { type: "UPDATE_PROJECT_MAPPING"; payload: { projectId: string; listId: number | null } }
-        | { type: "UPDATE_LABEL_MAPPING"; payload: { labelId: string; listId: number | null } };
+        | { type: "UPDATE_LABEL_MAPPING"; payload: { labelId: string; listId: number | null } }
+        | { type: "SAVE_START" }
+        | { type: "SAVE_END" };
 
     const [uiState, dispatchUI] = React.useReducer(
         (state: UIState, action: UIAction): UIState => {
@@ -59,6 +62,10 @@ export function TodoistMappingForm() {
                             [action.payload.labelId]: action.payload.listId,
                         },
                     };
+                case "SAVE_START":
+                    return { ...state, isSaving: true, status: "Saving mappings and syncing..." };
+                case "SAVE_END":
+                    return { ...state, isSaving: false };
                 default:
                     return state;
             }
@@ -71,10 +78,11 @@ export function TodoistMappingForm() {
             lists: [],
             projectMappings: {},
             labelMappings: {},
+            isSaving: false,
         }
     );
 
-    const { loading, status, projects, labels, lists, projectMappings, labelMappings } = uiState;
+    const { loading, status, projects, labels, lists, projectMappings, labelMappings, isSaving } = uiState;
 
     useEffect(() => {
         let isMounted = true;
@@ -121,7 +129,7 @@ export function TodoistMappingForm() {
     }, [lists]);
 
     const handleSave = async () => {
-        dispatchUI({ type: "SET_STATUS", payload: null });
+        dispatchUI({ type: "SAVE_START" });
         const projectPayload = projects.map((project) => ({
             projectId: project.id,
             listId: projectMappings[project.id] ?? null,
@@ -138,11 +146,15 @@ export function TodoistMappingForm() {
 
         if (!projectResult.success || !labelResult.success) {
             dispatchUI({ type: "FETCH_ERROR", payload: projectResult.error ?? labelResult.error ?? "Failed to save mappings." });
+            dispatchUI({ type: "SAVE_END" });
             return;
         }
 
-        await syncTodoistNow();
-        dispatchUI({ type: "SET_STATUS", payload: "Mappings saved." });
+        dispatchUI({ type: "SET_STATUS", payload: "Mappings saved. Background sync started..." });
+        dispatchUI({ type: "SAVE_END" });
+
+        // Run full sync in background without blocking the UI
+        syncTodoistNow().catch(console.error);
     };
 
     if (loading) {
@@ -226,7 +238,9 @@ export function TodoistMappingForm() {
                 </div>
             </div>
             <div className="flex items-center gap-3">
-                <Button onClick={handleSave}>Save Mappings</Button>
+                <Button onClick={handleSave} disabled={isSaving}>
+                    {isSaving ? "Saving..." : "Save Mappings"}
+                </Button>
                 {status ? <span className="text-sm text-muted-foreground">{status}</span> : null}
             </div>
         </div>

@@ -108,7 +108,7 @@ export function TodoistSettings() {
                 ) : (
                     <div className="flex flex-wrap gap-2">
                         <Button variant="secondary" onClick={handleSync} disabled={isLoading}>
-                            Sync Now
+                            {isActionLoading && !status && !statusQuery.isFetching ? "Syncing..." : "Sync Now"}
                         </Button>
                         <Button variant="secondary" onClick={handleRotate} disabled={isLoading}>
                             Rotate Tokens
