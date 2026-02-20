@@ -30,7 +30,7 @@ export interface TaskItemProps {
     disableAnimations?: boolean;
     dragHandleProps?: DraggableSyntheticListeners;
     dragAttributes?: DraggableAttributes;
-    dispatch?: (type: any, ...args: any[]) => Promise<{ success: boolean; data: unknown }>;
+    dispatch?: <T extends ActionType>(type: T, ...args: Parameters<typeof actionRegistry[T]>) => Promise<{ success: boolean; data: unknown }>;
     onEdit?: (task: Task) => void;
     // Perf: Pass these as props to avoid hooks and context consumption in every item
     now?: Date;
