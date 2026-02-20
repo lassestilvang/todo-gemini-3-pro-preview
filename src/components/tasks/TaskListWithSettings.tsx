@@ -115,7 +115,7 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
     const groupedVirtualSections = useMemo(() => settings.groupBy === "none" ? [] : groupedEntries.map(([groupName, gTasks]) => {
         const active: Task[] = [], completed: Task[] = [];
         gTasks.forEach(t => (t.isCompleted ? completed : active).push(t));
-        const items: any[] = active.map(t => ({ type: "task" as const, task: t }));
+        const items: ({ type: "task"; task: Task } | { type: "separator" })[] = active.map(t => ({ type: "task" as const, task: t }));
         if (active.length && completed.length) items.push({ type: "separator" });
         completed.forEach(t => items.push({ type: "task", task: t }));
         return { groupName, totalCount: gTasks.length, items };
