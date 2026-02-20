@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getTodoistMappingData, setTodoistLabelMappings, setTodoistProjectMappings } from "@/lib/actions/todoist";
+import { getTodoistMappingData, setTodoistLabelMappings, setTodoistProjectMappings, syncTodoistNow } from "@/lib/actions/todoist";
 
 export function TodoistMappingForm() {
     type UIState = {
@@ -141,6 +141,7 @@ export function TodoistMappingForm() {
             return;
         }
 
+        await syncTodoistNow();
         dispatchUI({ type: "SET_STATUS", payload: "Mappings saved." });
     };
 

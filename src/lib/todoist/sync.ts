@@ -144,6 +144,7 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
             localTaskLabelMap,
             localLabelToExternal,
             conflictKeys,
+            mappingState,
         });
 
         await createTodoistTasks({
@@ -560,6 +561,7 @@ async function detectTaskConflicts(params: {
     localTaskLabelMap: Map<number, number[]>;
     localLabelToExternal: Map<number, string>;
     conflictKeys: Set<string>;
+    mappingState: { projects: { projectId: string; listId: number | null }[]; labels: { labelId: string; listId: number | null }[] };
 }) {
     const {
         userId,
@@ -590,7 +592,7 @@ async function detectTaskConflicts(params: {
             continue;
         }
 
-        const localPayload = buildLocalTaskPayload(localTask, localTaskLabelMap, localLabelToExternal);
+        const localPayload = buildLocalTaskPayload(localTask, localTaskLabelMap, localLabelToExternal, params.mappingState);
         const remotePayload = buildRemoteTaskPayload(todoistTask);
 
         if (!tasksMatch(localPayload, remotePayload)) {
@@ -612,12 +614,20 @@ async function detectTaskConflicts(params: {
 function buildLocalTaskPayload(
     task: typeof tasks.$inferSelect,
     localTaskLabelMap: Map<number, number[]>,
-    localLabelToExternal: Map<number, string>
+    localLabelToExternal: Map<number, string>,
+    mappingState: { projects: { projectId: string; listId: number | null }[]; labels: { labelId: string; listId: number | null }[] }
 ) {
     const labelIds = localTaskLabelMap.get(task.id) ?? [];
     const externalLabels = labelIds
         .map((labelId) => localLabelToExternal.get(labelId) ?? null)
         .filter((labelId): labelId is string => Boolean(labelId));
+
+    if (task.listId) {
+        const listMappedLabel = mappingState.labels.find((l) => l.listId === task.listId)?.labelId;
+        if (listMappedLabel && !externalLabels.includes(listMappedLabel)) {
+            externalLabels.push(listMappedLabel);
+        }
+    }
 
     return {
         title: task.title,
