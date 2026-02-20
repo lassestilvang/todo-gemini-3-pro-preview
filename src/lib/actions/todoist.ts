@@ -173,7 +173,7 @@ export async function getTodoistMappingData() {
     return {
         success: true,
         projects: projects.results?.slice(0, 5) ?? [],
-        labels: labels,
+        labels: labels.results ?? [],
         lists: userLists,
         projectMappings: mappings
             .filter((mapping) => mapping.entityType === "list")
