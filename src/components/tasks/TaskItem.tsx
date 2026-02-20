@@ -61,7 +61,7 @@ export const TaskItem = memo(function TaskItem({
     const completedCount = task.completedSubtaskCount || 0;
     const totalCount = task.subtaskCount || 0;
 
-    const dispatch = dispatchProp!;
+    const dispatch = dispatchProp;
 
     const handleSubtaskToggle = useCallback(async (subtaskId: number, checked: boolean) => {
         if (!userId || !dispatch) return;
