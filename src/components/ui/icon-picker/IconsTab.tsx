@@ -24,20 +24,24 @@ export function IconPickerIconsTab({ state, dispatch, filteredStandardIcons, han
                             key={c}
                             onClick={() => dispatch({ type: 'SET_SELECTED_COLOR', payload: selectedColor === c ? null : c })}
                             className={cn(
-                                "w-5 h-5 rounded-full border border-transparent transition-transform hover:scale-110",
+                                "w-5 h-5 rounded-full border border-transparent transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none",
                                 selectedColor === c && "ring-2 ring-primary ring-offset-2 scale-110"
                             )}
                             style={{ backgroundColor: c }}
                             title={c}
+                            aria-label={`Select ${c} color`}
+                            aria-pressed={selectedColor === c}
                         />
                     ))}
                     <button
                         onClick={() => dispatch({ type: 'SET_SELECTED_COLOR', payload: null })}
                         className={cn(
-                            "w-5 h-5 rounded-full border border-muted bg-transparent flex items-center justify-center text-[10px]",
+                            "w-5 h-5 rounded-full border border-muted bg-transparent flex items-center justify-center text-[10px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none",
                             !selectedColor && "ring-2 ring-primary ring-offset-2"
                         )}
                         title="None"
+                        aria-label="Clear color selection"
+                        aria-pressed={!selectedColor}
                     >
                         <X className="h-3 w-3" />
                     </button>
@@ -49,8 +53,9 @@ export function IconPickerIconsTab({ state, dispatch, filteredStandardIcons, han
                             <button
                                 key={item.name}
                                 onClick={() => handleSelectIcon(item.name)}
-                                className="flex items-center justify-center w-full aspect-square rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+                                className="flex items-center justify-center w-full aspect-square rounded-md hover:bg-accent hover:text-accent-foreground transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none"
                                 title={item.name}
+                                aria-label={`Select ${item.name} icon`}
                             >
                                 <ResolvedIcon
                                     icon={item.name}
