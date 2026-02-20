@@ -11,6 +11,8 @@ import { getViewSettings } from "@/lib/actions/view-settings";
 import { useUser } from "@/components/providers/UserProvider";
 import { useTaskStore } from "@/lib/store/task-store";
 import { useSync } from "@/components/providers/sync-provider";
+import { useIsClient } from "@/hooks/use-is-client";
+import { usePerformanceMode } from "@/components/providers/PerformanceContext";
 import { TaskListSkeleton } from "./TaskListSkeleton";
 import { TaskItem } from "./TaskItem";
 import { SortableTaskItem } from "./list/SortableTaskItem";
@@ -64,9 +66,22 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
         activeId: null, overdueCollapsed: false, periodCollapsed: { week: false, month: false, year: false }
     });
     const { editingTask, isDialogOpen, calendarSelectedDate, activeId, overdueCollapsed, periodCollapsed } = uiState;
-    const { weekStartsOnMonday } = useUser();
+    const { weekStartsOnMonday, use24HourClock } = useUser();
     const { dispatch } = useSync();
     const { tasks: storeTasksFn, setTasks, initialize, isInitialized } = useTaskStore();
+
+    const isClient = useIsClient();
+    const isPerformanceMode = usePerformanceMode();
+    const [now, setNow] = useState(() => new Date());
+    useEffect(() => {
+        const interval = setInterval(() => setNow(new Date()), 60000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const userPreferences = useMemo(() => ({
+        use24HourClock,
+        weekStartsOnMonday
+    }), [use24HourClock, weekStartsOnMonday]);
 
     const [settings, setSettings] = useState<ViewSettings>(initialSettings ?? (viewId === "upcoming" ? { ...defaultViewSettings, groupBy: "dueDate" } : defaultViewSettings));
 
@@ -137,21 +152,21 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
             {settings.layout === "board" ? <TaskBoardView tasks={processedTasks} userId={userId || ""} onEdit={t => dispatchUI({ type: "SET_EDITING_TASK", payload: t })} /> :
                 settings.layout === "calendar" ? <TaskCalendarLayout tasks={processedTasks} onEdit={t => dispatchUI({ type: "SET_EDITING_TASK", payload: t })} onDateClick={d => dispatchUI({ type: "SET_CALENDAR_DATE", payload: d })} /> : (
                     <div className="space-y-6">
-                        <TaskListOverdueSection overdueTasks={overdueTasks} overdueCollapsed={overdueCollapsed} onToggle={() => dispatchUI({ type: "TOGGLE_OVERDUE" })} onEdit={t => dispatchUI({ type: "SET_EDITING_TASK", payload: t })} listId={listId} userId={userId} dispatch={dispatch} onReschedule={() => overdueTasks.forEach(t => dispatch("updateTask", t.id, userId || "", { dueDate: new Date(), dueDatePrecision: null }))} />
+                        <TaskListOverdueSection overdueTasks={overdueTasks} overdueCollapsed={overdueCollapsed} onToggle={() => dispatchUI({ type: "TOGGLE_OVERDUE" })} onEdit={t => dispatchUI({ type: "SET_EDITING_TASK", payload: t })} listId={listId} userId={userId} dispatch={dispatch} onReschedule={() => overdueTasks.forEach(t => dispatch("updateTask", t.id, userId || "", { dueDate: new Date(), dueDatePrecision: null }))} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} />
                         {settings.groupBy === "none" ? (
                             <>
                                 {activeTasks.length > 0 && (
                                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={e => dispatchUI({ type: "SET_ACTIVE_ID", payload: e.active.id })} onDragEnd={handleDragEnd} onDragCancel={() => dispatchUI({ type: "SET_ACTIVE_ID", payload: null })} modifiers={[restrictToVerticalAxis]}>
                                         <SortableContext items={activeTasks.map(t => t.id)} strategy={verticalListSortingStrategy} disabled={!isDragEnabled}>
-                                            <div className="space-y-2">{activeTasks.map(t => <SortableTaskItem key={t.id} task={t} handleEdit={t => dispatchUI({ type: "SET_EDITING_TASK", payload: t })} listId={listId} userId={userId} isDragEnabled={isDragEnabled} dispatch={dispatch} />)}</div>
+                                            <div className="space-y-2">{activeTasks.map(t => <SortableTaskItem key={t.id} task={t} handleEdit={t => dispatchUI({ type: "SET_EDITING_TASK", payload: t })} listId={listId} userId={userId} isDragEnabled={isDragEnabled} dispatch={dispatch} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} />)}</div>
                                         </SortableContext>
-                                        <DragOverlay>{activeId ? <div className="opacity-90 rotate-2 scale-105 cursor-grabbing"><TaskItem task={derivedTasks.find(t => t.id === activeId)!} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={t => dispatchUI({ type: "SET_EDITING_TASK", payload: t })} /></div> : null}</DragOverlay>
+                                        <DragOverlay>{activeId ? <div className="opacity-90 rotate-2 scale-105 cursor-grabbing"><TaskItem task={derivedTasks.find(t => t.id === activeId)!} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={t => dispatchUI({ type: "SET_EDITING_TASK", payload: t })} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} /></div> : null}</DragOverlay>
                                     </DndContext>
                                 )}
-                                <CompletedTasksSection tasks={completedTasks} listId={listId} userId={userId} onEdit={t => dispatchUI({ type: "SET_EDITING_TASK", payload: t })} dispatch={dispatch} />
+                                <CompletedTasksSection tasks={completedTasks} listId={listId} userId={userId} onEdit={t => dispatchUI({ type: "SET_EDITING_TASK", payload: t })} dispatch={dispatch} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} />
                             </>
-                        ) : <GroupedListView groupedEntries={groupedEntries} groupedVirtualSections={groupedVirtualSections} formattedGroupNames={formattedGroupNames} listId={listId} userId={userId} onEdit={t => dispatchUI({ type: "SET_EDITING_TASK", payload: t })} dispatch={dispatch} />}
-                        {periodSections.length > 0 && <div className="space-y-3 pt-2">{listTasks.length === 0 && <div className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">No tasks specifically for today.</div>}{periodSections.map(s => <TaskListPeriodSection key={s.precision} precision={s.precision} label={s.label} tasks={s.tasks} collapsed={periodCollapsed[s.precision]} onToggle={() => dispatchUI({ type: "TOGGLE_PERIOD", payload: s.precision })} listId={listId} userId={userId} onEdit={t => dispatchUI({ type: "SET_EDITING_TASK", payload: t })} dispatch={dispatch} />)}</div>}
+                        ) : <GroupedListView groupedEntries={groupedEntries} groupedVirtualSections={groupedVirtualSections} formattedGroupNames={formattedGroupNames} listId={listId} userId={userId} onEdit={t => dispatchUI({ type: "SET_EDITING_TASK", payload: t })} dispatch={dispatch} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} />}
+                        {periodSections.length > 0 && <div className="space-y-3 pt-2">{listTasks.length === 0 && <div className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">No tasks specifically for today.</div>}{periodSections.map(s => <TaskListPeriodSection key={s.precision} precision={s.precision} label={s.label} tasks={s.tasks} collapsed={periodCollapsed[s.precision]} onToggle={() => dispatchUI({ type: "TOGGLE_PERIOD", payload: s.precision })} listId={listId} userId={userId} onEdit={t => dispatchUI({ type: "SET_EDITING_TASK", payload: t })} dispatch={dispatch} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} />)}</div>}
                     </div>
                 )}
             <Suspense fallback={null}>

@@ -20,6 +20,7 @@ const mockTask: Task = {
 
 describe("TaskItem Interaction", () => {
     const originalGetSelection = window.getSelection;
+    const mockDispatch = mock(() => Promise.resolve());
 
     beforeEach(() => {
         // Reset selection before each test
@@ -51,7 +52,7 @@ describe("TaskItem Interaction", () => {
 
     it("calls onEdit when the row is clicked", () => {
         const handleEdit = mock(() => {});
-        render(<TaskItem task={mockTask} onEdit={handleEdit} />);
+        render(<TaskItem task={mockTask} onEdit={handleEdit} dispatch={mockDispatch} />);
 
         const row = screen.getByTestId("task-item");
 
@@ -64,7 +65,7 @@ describe("TaskItem Interaction", () => {
 
     it("does not trigger onEdit when clicking checkbox", () => {
         const handleEdit = mock(() => {});
-        render(<TaskItem task={mockTask} onEdit={handleEdit} />);
+        render(<TaskItem task={mockTask} onEdit={handleEdit} dispatch={mockDispatch} />);
 
         const checkbox = screen.getByRole("checkbox"); // This finds the button/input with role checkbox
 
@@ -75,7 +76,7 @@ describe("TaskItem Interaction", () => {
 
     it("does not trigger onEdit when text is selected", () => {
         const handleEdit = mock(() => {});
-        render(<TaskItem task={mockTask} onEdit={handleEdit} />);
+        render(<TaskItem task={mockTask} onEdit={handleEdit} dispatch={mockDispatch} />);
 
         const row = screen.getByTestId("task-item");
 
@@ -107,7 +108,7 @@ describe("TaskItem Interaction", () => {
     });
 
     it("does not have cursor-pointer if onEdit is not provided", () => {
-        render(<TaskItem task={mockTask} />);
+        render(<TaskItem task={mockTask} dispatch={mockDispatch} />);
         const row = screen.getByTestId("task-item");
         expect(row.className).not.toContain("cursor-pointer");
         expect(row.className).toContain("cursor-default");

@@ -16,6 +16,10 @@ import type { TaskType } from "@/components/tasks/hooks/useTaskForm";
 import { SearchFilters, SearchFiltersPanel } from "./SearchFiltersPanel";
 import { SearchResultLists, SearchResultLabels } from "./SearchResultSections";
 import { SearchAction, searchReducer } from "@/lib/search/search-reducer";
+import { useIsClient } from "@/hooks/use-is-client";
+import { useUser } from "@/components/providers/UserProvider";
+import { usePerformanceMode } from "@/components/providers/PerformanceContext";
+import { useSync } from "@/components/providers/sync-provider";
 
 const TaskDialog = dynamic(
     () => import("@/components/tasks/TaskDialog").then((mod) => mod.TaskDialog),
@@ -58,6 +62,22 @@ export function SearchPageClient({
     const { query, results, taskResults, cursor, hasMore, isLoadingMore, showFilters, filters, editingTask } = state;
     const sentinelRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+
+    const isClient = useIsClient();
+    const { use24HourClock, weekStartsOnMonday } = useUser();
+    const isPerformanceMode = usePerformanceMode();
+    const { dispatch: syncDispatch } = useSync();
+
+    const [now, setNow] = React.useState(() => new Date());
+    useEffect(() => {
+        const interval = setInterval(() => setNow(new Date()), 60000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const userPreferences = useMemo(() => ({
+        use24HourClock,
+        weekStartsOnMonday
+    }), [use24HourClock, weekStartsOnMonday]);
 
     useEffect(() => {
         if (!initialQuery) inputRef.current?.focus();
@@ -177,6 +197,11 @@ export function SearchPageClient({
                                         showListInfo
                                         userId={userId}
                                         onEdit={(t) => dispatch({ type: 'SET_EDITING_TASK', payload: t })}
+                                        now={now}
+                                        isClient={isClient}
+                                        performanceMode={isPerformanceMode}
+                                        userPreferences={userPreferences}
+                                        dispatch={syncDispatch}
                                     />
                                 ))}
                             </div>

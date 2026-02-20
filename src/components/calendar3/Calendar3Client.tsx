@@ -18,6 +18,8 @@ import { useTaskStore } from "@/lib/store/task-store";
 import { useListStore } from "@/lib/store/list-store";
 import { useSync } from "@/components/providers/sync-provider";
 import { useUser } from "@/components/providers/UserProvider";
+import { useIsClient } from "@/hooks/use-is-client";
+import { usePerformanceMode } from "@/components/providers/PerformanceContext";
 import type { Task } from "@/lib/types";
 import { getTaskDueDate } from "@/components/calendar2/utils/task-to-event";
 import { Switch } from "@/components/ui/switch";
@@ -51,8 +53,21 @@ function Calendar3ClientActual({ initialTasks, initialLists }: Calendar3ClientPr
   const { tasks: taskMap, setTasks } = useTaskStore();
   const { lists: listMap, setLists } = useListStore();
   const { dispatch } = useSync();
-  const { userId } = useUser();
+  const { userId, use24HourClock, weekStartsOnMonday } = useUser();
   const searchParams = useNextSearchParams();
+
+  const isClient = useIsClient();
+  const isPerformanceMode = usePerformanceMode();
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const userPreferences = useMemo(() => ({
+    use24HourClock,
+    weekStartsOnMonday
+  }), [use24HourClock, weekStartsOnMonday]);
 
   const tasks = useMemo(() => {
     const storeTasks = Object.values(taskMap) as Task[];
@@ -312,6 +327,11 @@ function Calendar3ClientActual({ initialTasks, initialLists }: Calendar3ClientPr
             Unscheduled
           </label>
         )}
+        now={now}
+        isClient={isClient}
+        performanceMode={isPerformanceMode}
+        userPreferences={userPreferences}
+        dispatch={dispatch}
       />
 
       <Calendar3TaskColumn
@@ -324,6 +344,11 @@ function Calendar3ClientActual({ initialTasks, initialLists }: Calendar3ClientPr
         showListInfo
         emptyState="No tasks due today."
         dragContainerRef={todayDragContainerRef}
+        now={now}
+        isClient={isClient}
+        performanceMode={isPerformanceMode}
+        userPreferences={userPreferences}
+        dispatch={dispatch}
       />
 
       <div className="flex-1 min-h-0 p-4">

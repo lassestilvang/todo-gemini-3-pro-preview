@@ -8,6 +8,7 @@ import { CreateTaskInput } from "@/components/tasks/CreateTaskInput";
 import { ResolvedIcon } from "@/components/ui/resolved-icon";
 import { cn } from "@/lib/utils";
 import { ChevronDown } from "lucide-react";
+import { ActionType, actionRegistry } from "@/lib/sync/registry";
 
 type Calendar3List = {
   id: number;
@@ -29,6 +30,11 @@ interface Calendar3TaskColumnProps {
   headerAction?: ReactNode;
   emptyState?: string;
   dragContainerRef?: Ref<HTMLDivElement>;
+  now?: Date;
+  isClient?: boolean;
+  performanceMode?: boolean;
+  userPreferences?: { use24HourClock: boolean, weekStartsOnMonday: boolean };
+  dispatch?: <T extends ActionType>(type: T, ...args: Parameters<typeof actionRegistry[T]>) => Promise<{ success: boolean; data: unknown }>;
 }
 
 export function Calendar3TaskColumn({
@@ -44,6 +50,11 @@ export function Calendar3TaskColumn({
   headerAction,
   emptyState = "No tasks yet.",
   dragContainerRef,
+  now,
+  isClient,
+  performanceMode,
+  userPreferences,
+  dispatch
 }: Calendar3TaskColumnProps) {
   const [showCompleted, setShowCompleted] = useState(false);
 
@@ -94,6 +105,11 @@ export function Calendar3TaskColumn({
                 userId={userId}
                 showListInfo={showListInfo}
                 draggable={!task.isCompleted}
+                now={now}
+                isClient={isClient}
+                performanceMode={performanceMode}
+                userPreferences={userPreferences}
+                dispatch={dispatch}
               />
             ))
           )}
@@ -124,6 +140,11 @@ export function Calendar3TaskColumn({
                     userId={userId}
                     showListInfo={showListInfo}
                     draggable={false}
+                    now={now}
+                    isClient={isClient}
+                    performanceMode={performanceMode}
+                    userPreferences={userPreferences}
+                    dispatch={dispatch}
                   />
                 ))}
               </div>

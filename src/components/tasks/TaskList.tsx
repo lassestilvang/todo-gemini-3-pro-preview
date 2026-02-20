@@ -3,9 +3,13 @@
 import { TaskItem } from "./TaskItem";
 import { Task } from "@/lib/types";
 import { TaskDialog } from "./TaskDialog";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { useIsClient } from "@/hooks/use-is-client";
+import { useUser } from "@/components/providers/UserProvider";
+import { usePerformanceMode } from "@/components/providers/PerformanceContext";
+import { useSync } from "@/components/providers/sync-provider";
 
 interface TaskListProps {
     tasks: Task[];
@@ -19,6 +23,29 @@ interface TaskListProps {
 export function TaskList({ tasks, title, listId, labelId, defaultDueDate, userId }: TaskListProps) {
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+    const isClient = useIsClient();
+    const { use24HourClock, weekStartsOnMonday } = useUser();
+    const isPerformanceMode = usePerformanceMode();
+    const { dispatch } = useSync();
+
+    // Optimize "now" to be stable and update once per minute
+    // This prevents re-renders of all TaskItems every second/millisecond
+    const [now, setNow] = useState(() => new Date());
+
+    useEffect(() => {
+        // Update now every minute to keep relative times reasonably accurate
+        const interval = setInterval(() => {
+            setNow(new Date());
+        }, 60000);
+        return () => clearInterval(interval);
+    }, []);
+
+    // Memoize user preferences object to keep prop stable
+    const userPreferences = useMemo(() => ({
+        use24HourClock,
+        weekStartsOnMonday
+    }), [use24HourClock, weekStartsOnMonday]);
 
     // Perf: useCallback provides a stable function reference that receives the task,
     // allowing TaskItem's React.memo to skip re-renders when other state changes.
@@ -60,6 +87,11 @@ export function TaskList({ tasks, title, listId, labelId, defaultDueDate, userId
                             showListInfo={!listId}
                             onEdit={handleEdit}
                             userId={userId}
+                            now={now}
+                            isClient={isClient}
+                            performanceMode={isPerformanceMode}
+                            userPreferences={userPreferences}
+                            dispatch={dispatch}
                         />
                     ))}
                 </div>

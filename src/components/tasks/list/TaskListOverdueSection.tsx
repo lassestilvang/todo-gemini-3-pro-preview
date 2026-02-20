@@ -15,6 +15,10 @@ interface TaskListOverdueSectionProps {
     userId?: string;
     onEdit: (task: Task) => void;
     dispatch: <T extends ActionType>(type: T, ...args: Parameters<typeof actionRegistry[T]>) => Promise<{ success: boolean; data: unknown }>;
+    now?: Date;
+    isClient?: boolean;
+    performanceMode?: boolean;
+    userPreferences?: { use24HourClock: boolean, weekStartsOnMonday: boolean };
 }
 
 export function TaskListOverdueSection({
@@ -25,7 +29,11 @@ export function TaskListOverdueSection({
     listId,
     userId,
     onEdit,
-    dispatch
+    dispatch,
+    now,
+    isClient,
+    performanceMode,
+    userPreferences
 }: TaskListOverdueSectionProps) {
     if (overdueTasks.length === 0) return null;
 
@@ -79,6 +87,10 @@ export function TaskListOverdueSection({
                             disableAnimations={true}
                             dispatch={dispatch}
                             onEdit={onEdit}
+                            now={now}
+                            isClient={isClient}
+                            performanceMode={performanceMode}
+                            userPreferences={userPreferences}
                         />
                     ))}
                 </div>

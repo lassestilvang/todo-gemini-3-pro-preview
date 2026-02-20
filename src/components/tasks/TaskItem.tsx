@@ -12,16 +12,12 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { FocusMode } from "./FocusMode";
 import { playSuccessSound } from "@/lib/audio";
-import { useUser } from "@/components/providers/UserProvider";
 import { formatTimePreference, formatFriendlyDate } from "@/lib/time-utils";
 import { formatDuePeriod, isDueOverdue, type DuePrecision } from "@/lib/due-utils";
-import { usePerformanceMode } from "@/components/providers/PerformanceContext";
 import { getLabelStyle } from "@/lib/style-utils";
 import type { DraggableSyntheticListeners, DraggableAttributes } from "@dnd-kit/core";
 import { ResolvedIcon } from "@/components/ui/resolved-icon";
-import { useSync } from "@/components/providers/sync-provider";
 import confetti from "canvas-confetti";
-import { useIsClient } from "@/hooks/use-is-client";
 import { Task } from "@/lib/types";
 import { SubtaskRow } from "./SubtaskRow";
 import { areTaskPropsEqual, formatDuration, priorityColors } from "./task-item-utils";
@@ -35,6 +31,11 @@ export interface TaskItemProps {
     dragAttributes?: DraggableAttributes;
     dispatch?: (type: any, ...args: any[]) => Promise<{ success: boolean; data: unknown }>;
     onEdit?: (task: Task) => void;
+    // Perf: Pass these as props to avoid hooks and context consumption in every item
+    now?: Date;
+    isClient?: boolean;
+    performanceMode?: boolean;
+    userPreferences?: { use24HourClock: boolean, weekStartsOnMonday: boolean };
 }
 
 export const TaskItem = memo(function TaskItem({
@@ -45,7 +46,11 @@ export const TaskItem = memo(function TaskItem({
     dragHandleProps,
     dragAttributes,
     dispatch: dispatchProp,
-    onEdit
+    onEdit,
+    now: propNow,
+    isClient: propIsClient,
+    performanceMode: propPerformanceMode,
+    userPreferences
 }: TaskItemProps) {
     const isCompleted = task.isCompleted || false;
     const [isExpanded, setIsExpanded] = useState(false);
@@ -55,13 +60,19 @@ export const TaskItem = memo(function TaskItem({
     const completedCount = task.completedSubtaskCount || 0;
     const totalCount = task.subtaskCount || 0;
 
-    const { dispatch: dispatchFromContext } = useSync();
-    const dispatch = dispatchProp ?? dispatchFromContext;
+    const dispatch = dispatchProp!;
 
     const handleSubtaskToggle = useCallback(async (subtaskId: number, checked: boolean) => {
-        if (!userId) return;
+        if (!userId || !dispatch) return;
         dispatch("updateSubtask", subtaskId, userId, checked);
     }, [dispatch, userId]);
+
+    const isClient = propIsClient ?? false;
+    const isPerformanceMode = propPerformanceMode ?? false;
+    const resolvedPerformanceMode = isClient && isPerformanceMode;
+
+    const { use24HourClock, weekStartsOnMonday } = userPreferences ?? { use24HourClock: false, weekStartsOnMonday: false };
+    const now = propNow ?? (isClient ? new Date() : new Date(0));
 
     const handleToggle = async (checked: boolean) => {
         if (task.blockedByCount && task.blockedByCount > 0 && checked) {
@@ -81,16 +92,9 @@ export const TaskItem = memo(function TaskItem({
             playSuccessSound();
         }
 
-        if (!userId) return;
+        if (!userId || !dispatch) return;
         dispatch("toggleTaskCompletion", task.id, userId, checked);
     };
-
-    const isClient = useIsClient();
-    const isPerformanceMode = usePerformanceMode();
-    const resolvedPerformanceMode = isClient && isPerformanceMode;
-
-    const { use24HourClock, weekStartsOnMonday } = useUser();
-    const now = isClient ? new Date() : new Date(0);
     const nowTime = now.getTime();
 
     let isOverdue = false;
@@ -128,6 +132,7 @@ export const TaskItem = memo(function TaskItem({
                     disableAnimations && "cursor-default"
                 )}
                 role="button"
+                data-testid="task-item"
                 tabIndex={0}
                 aria-label={onEdit ? `Edit task ${task.title}` : task.title}
                 onClick={(e) => {
@@ -249,7 +254,7 @@ export const TaskItem = memo(function TaskItem({
                     {onEdit && (
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); onEdit(task); }} type="button" aria-label="Edit task">
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); onEdit(task); }} type="button" aria-label="Edit task" data-testid="edit-task-button">
                                     <Pencil className="h-4 w-4 text-muted-foreground hover:text-primary" />
                                 </Button>
                             </TooltipTrigger>
@@ -258,7 +263,7 @@ export const TaskItem = memo(function TaskItem({
                     )}
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowFocusMode(true); }} type="button" aria-label="Start focus mode">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowFocusMode(true); }} type="button" aria-label="Start focus mode" data-testid="start-focus-button">
                                 <Target className="h-4 w-4 text-muted-foreground hover:text-primary" />
                             </Button>
                         </TooltipTrigger>

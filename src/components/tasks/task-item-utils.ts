@@ -30,6 +30,18 @@ export function areTaskPropsEqual(prev: any, next: any) {
     if (prev.dispatch !== next.dispatch) return false;
     if (prev.dragHandleProps !== next.dragHandleProps) return false;
 
+    // Compare new props
+    if (prev.isClient !== next.isClient) return false;
+    if (prev.performanceMode !== next.performanceMode) return false;
+    if ((prev.now ? prev.now.getTime() : 0) !== (next.now ? next.now.getTime() : 0)) return false;
+
+    // Compare userPreferences (shallow)
+    if (prev.userPreferences !== next.userPreferences) {
+        if (!prev.userPreferences || !next.userPreferences) return false;
+        if (prev.userPreferences.use24HourClock !== next.userPreferences.use24HourClock) return false;
+        if (prev.userPreferences.weekStartsOnMonday !== next.userPreferences.weekStartsOnMonday) return false;
+    }
+
     const p = prev.task;
     const n = next.task;
 
