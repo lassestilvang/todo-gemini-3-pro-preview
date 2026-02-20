@@ -3,23 +3,24 @@
 import { useMemo } from "react";
 import dynamic from "next/dynamic";
 
-const BarChart = dynamic(() => import("recharts").then(m => m.BarChart as any), { ssr: false }) as any;
-const Bar = dynamic(() => import("recharts").then(m => m.Bar as any), { ssr: false }) as any;
-const LineChart = dynamic(() => import("recharts").then(m => m.LineChart as any), { ssr: false }) as any;
-const Line = dynamic(() => import("recharts").then(m => m.Line as any), { ssr: false }) as any;
-const PieChart = dynamic(() => import("recharts").then(m => m.PieChart as any), { ssr: false }) as any;
-const Pie = dynamic(() => import("recharts").then(m => m.Pie as any), { ssr: false }) as any;
-const Cell = dynamic(() => import("recharts").then(m => m.Cell as any), { ssr: false }) as any;
-const XAxis = dynamic(() => import("recharts").then(m => m.XAxis as any), { ssr: false }) as any;
-const YAxis = dynamic(() => import("recharts").then(m => m.YAxis as any), { ssr: false }) as any;
-const Tooltip = dynamic(() => import("recharts").then(m => m.Tooltip as any), { ssr: false }) as any;
-const Legend = dynamic(() => import("recharts").then(m => m.Legend as any), { ssr: false }) as any;
-const ResponsiveContainer = dynamic(() => import("recharts").then(m => m.ResponsiveContainer as any), { ssr: false }) as any;
-const Radar = dynamic(() => import("recharts").then(m => m.Radar as any), { ssr: false }) as any;
-const RadarChart = dynamic(() => import("recharts").then(m => m.RadarChart as any), { ssr: false }) as any;
-const PolarGrid = dynamic(() => import("recharts").then(m => m.PolarGrid as any), { ssr: false }) as any;
-const PolarAngleAxis = dynamic(() => import("recharts").then(m => m.PolarAngleAxis as any), { ssr: false }) as any;
-const PolarRadiusAxis = dynamic(() => import("recharts").then(m => m.PolarRadiusAxis as any), { ssr: false }) as any;
+// HACK: Cast to any to work around typing issues with recharts and Next.js dynamic import.
+const BarChart = dynamic(() => import("recharts").then(m => m.BarChart), { ssr: false }) as any;
+const Bar = dynamic(() => import("recharts").then(m => m.Bar), { ssr: false }) as any;
+const LineChart = dynamic(() => import("recharts").then(m => m.LineChart), { ssr: false }) as any;
+const Line = dynamic(() => import("recharts").then(m => m.Line), { ssr: false }) as any;
+const PieChart = dynamic(() => import("recharts").then(m => m.PieChart), { ssr: false }) as any;
+const Pie = dynamic(() => import("recharts").then(m => m.Pie), { ssr: false }) as any;
+const Cell = dynamic(() => import("recharts").then(m => m.Cell), { ssr: false }) as any;
+const XAxis = dynamic(() => import("recharts").then(m => m.XAxis), { ssr: false }) as any;
+const YAxis = dynamic(() => import("recharts").then(m => m.YAxis), { ssr: false }) as any;
+const Tooltip = dynamic(() => import("recharts").then(m => m.Tooltip), { ssr: false }) as any;
+const Legend = dynamic(() => import("recharts").then(m => m.Legend), { ssr: false }) as any;
+const ResponsiveContainer = dynamic(() => import("recharts").then(m => m.ResponsiveContainer), { ssr: false }) as any;
+const Radar = dynamic(() => import("recharts").then(m => m.Radar), { ssr: false }) as any;
+const RadarChart = dynamic(() => import("recharts").then(m => m.RadarChart), { ssr: false }) as any;
+const PolarGrid = dynamic(() => import("recharts").then(m => m.PolarGrid), { ssr: false }) as any;
+const PolarAngleAxis = dynamic(() => import("recharts").then(m => m.PolarAngleAxis), { ssr: false }) as any;
+const PolarRadiusAxis = dynamic(() => import("recharts").then(m => m.PolarRadiusAxis), { ssr: false }) as any;
 import { cn } from "@/lib/utils";
 import React from "react";
 
