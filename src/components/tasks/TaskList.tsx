@@ -31,7 +31,7 @@ export function TaskList({ tasks, title, listId, labelId, defaultDueDate, userId
 
     // Optimize "now" to be stable and update once per minute
     // This prevents re-renders of all TaskItems every second/millisecond
-    const [now, setNow] = useState<Date | null>(null);
+    const [now, setNow] = useState<Date | undefined>(undefined);
 
     useEffect(() => {
         setNow(new Date());
@@ -41,18 +41,10 @@ export function TaskList({ tasks, title, listId, labelId, defaultDueDate, userId
         return () => clearInterval(interval);
     }, []);
 
-    useEffect(() => {
-        // Update now every minute to keep relative times reasonably accurate
-        const interval = setInterval(() => {
-            setNow(new Date());
-        }, 60000);
-        return () => clearInterval(interval);
-    }, []);
-
     // Memoize user preferences object to keep prop stable
     const userPreferences = useMemo(() => ({
-        use24HourClock,
-        weekStartsOnMonday
+        use24HourClock: use24HourClock ?? false,
+        weekStartsOnMonday: weekStartsOnMonday ?? true
     }), [use24HourClock, weekStartsOnMonday]);
 
     // Perf: useCallback provides a stable function reference that receives the task,

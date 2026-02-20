@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useSync } from "@/components/providers/sync-provider";
 import { cn } from "@/lib/utils";
 import { Cloud, CloudOff, Loader2, AlertCircle, RotateCcw, X, RefreshCw, Trash2 } from "lucide-react";
@@ -97,6 +97,12 @@ function ActionItem({ action, onRetry, onDismiss }: {
 export function SyncStatus() {
     const { status, isOnline, pendingActions, retryAction, dismissAction, retryAllFailed, dismissAllFailed, syncNow } = useSync();
     const [open, setOpen] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    // Prevent hydration mismatch by holding off render until mounted on client
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const { pendingCount, failedCount } = useMemo(() => {
         let pending = 0;
@@ -154,6 +160,10 @@ export function SyncStatus() {
             className: "text-green-500",
         };
     }, [isOnline, failedCount, status, pendingCount]);
+
+    if (!mounted) {
+        return null;
+    }
 
     const { icon: Icon, label, className } = statusInfo;
 

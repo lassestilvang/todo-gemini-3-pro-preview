@@ -79,8 +79,8 @@ export function SearchPageClient({
     }, []);
 
     const userPreferences = useMemo(() => ({
-        use24HourClock,
-        weekStartsOnMonday
+        use24HourClock: use24HourClock ?? false,
+        weekStartsOnMonday: weekStartsOnMonday ?? true
     }), [use24HourClock, weekStartsOnMonday]);
 
     useEffect(() => {

@@ -65,8 +65,8 @@ function Calendar3ClientActual({ initialTasks, initialLists }: Calendar3ClientPr
   }, []);
 
   const userPreferences = useMemo(() => ({
-    use24HourClock,
-    weekStartsOnMonday
+    use24HourClock: use24HourClock ?? false,
+    weekStartsOnMonday: weekStartsOnMonday ?? true
   }), [use24HourClock, weekStartsOnMonday]);
 
   const tasks = useMemo(() => {
