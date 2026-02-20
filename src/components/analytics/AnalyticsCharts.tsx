@@ -188,7 +188,7 @@ export const AnalyticsCharts = React.memo(function AnalyticsCharts({ data }: { d
                                 cx="50%"
                                 cy="50%"
                                 labelLine={false}
-                                label={(entry: any) => `${entry.name}: ${entry.value}`}
+                                label={(entry: { name: string; value: number }) => `${entry.name}: ${entry.value}`}
                                 outerRadius={80}
                                 fill="#8884d8"
                                 dataKey="value"
