@@ -33,7 +33,7 @@ export function areTaskPropsEqual(prev: any, next: any) {
     // Compare new props
     if (prev.isClient !== next.isClient) return false;
     if (prev.performanceMode !== next.performanceMode) return false;
-    if ((prev.now ? prev.now.getTime() : 0) !== (next.now ? next.now.getTime() : 0)) return false;
+    if (prev.now?.getTime() !== next.now?.getTime()) return false;
 
     // Compare userPreferences (shallow)
     if (prev.userPreferences !== next.userPreferences) {
