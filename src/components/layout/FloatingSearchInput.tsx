@@ -57,12 +57,6 @@ export function FloatingSearchInput({ sidebarMode }: { sidebarMode: SidebarMode 
   }, [sidebarMode, open, close]);
 
   useEffect(() => {
-    if (open) {
-      requestAnimationFrame(() => inputRef.current?.focus());
-    }
-  }, [open]);
-
-  useEffect(() => {
     if (!open) return;
     function handleClick(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -86,7 +80,11 @@ export function FloatingSearchInput({ sidebarMode }: { sidebarMode: SidebarMode 
           aria-hidden="true"
         />
         <Input
-          ref={inputRef}
+          ref={(node) => {
+            // @ts-expect-error - Mutating ref is fine here
+            inputRef.current = node;
+            if (node) requestAnimationFrame(() => node.focus());
+          }}
           type="text"
           placeholder="Search tasks..."
           aria-label="Search tasks"

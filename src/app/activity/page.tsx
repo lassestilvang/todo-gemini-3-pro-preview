@@ -3,6 +3,12 @@ import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { ActivityLogContent, type LogType } from "@/components/activity/ActivityLogContent";
 import { startOfDay, endOfDay, parseISO } from "date-fns";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+    title: "Activity Log | Todo Gemini",
+    description: "View your recent activity and tracked time.",
+};
 
 interface PageProps {
     searchParams: Promise<{

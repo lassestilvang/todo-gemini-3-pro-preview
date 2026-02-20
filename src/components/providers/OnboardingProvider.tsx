@@ -64,7 +64,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
 
     const nextStep = () => {
         if (currentStep < steps.length - 1) {
-            setCurrentStep(currentStep + 1);
+            setCurrentStep(prev => prev + 1);
         } else {
             endTour();
         }
@@ -72,7 +72,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
 
     const prevStep = () => {
         if (currentStep > 0) {
-            setCurrentStep(currentStep - 1);
+            setCurrentStep(prev => prev - 1);
         }
     };
 

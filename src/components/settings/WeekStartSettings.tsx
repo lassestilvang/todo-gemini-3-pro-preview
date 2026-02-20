@@ -15,7 +15,7 @@ interface WeekStartSettingsProps {
 }
 
 export function WeekStartSettings({ userId, initialWeekStartsOnMonday }: WeekStartSettingsProps) {
-    const [weekStartsOnMonday, setWeekStartsOnMonday] = useState<boolean | null>(initialWeekStartsOnMonday);
+    const [weekStartsOnMonday, setWeekStartsOnMonday] = useState<boolean | null>(() => initialWeekStartsOnMonday);
     const { execute, isLoading } = useActionResult<void>();
 
     // Auto-detection logic for display purposes if null

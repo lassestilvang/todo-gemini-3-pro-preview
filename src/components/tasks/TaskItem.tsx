@@ -1,17 +1,16 @@
+
 "use client";
 
 import { m } from "framer-motion";
-
-import { useState, useCallback, memo } from "react";
+import React, { useState, useCallback, memo } from "react";
 import { format } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { Calendar, Flag, Clock, Repeat, AlertCircle, Lock, ChevronDown, GitBranch, GripVertical, Pencil } from "lucide-react";
+import { Calendar, Flag, Clock, Repeat, AlertCircle, Lock, ChevronDown, GitBranch, GripVertical, Pencil, Target } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { FocusMode } from "./FocusMode";
-import { Target } from "lucide-react";
 import { playSuccessSound } from "@/lib/audio";
 import { useUser } from "@/components/providers/UserProvider";
 import { formatTimePreference, formatFriendlyDate } from "@/lib/time-utils";
@@ -19,180 +18,43 @@ import { formatDuePeriod, isDueOverdue, type DuePrecision } from "@/lib/due-util
 import { usePerformanceMode } from "@/components/providers/PerformanceContext";
 import { getLabelStyle } from "@/lib/style-utils";
 import type { DraggableSyntheticListeners, DraggableAttributes } from "@dnd-kit/core";
-
 import { ResolvedIcon } from "@/components/ui/resolved-icon";
 import { useSync } from "@/components/providers/sync-provider";
-import { ActionType, actionRegistry } from "@/lib/sync/registry";
 import confetti from "canvas-confetti";
 import { useIsClient } from "@/hooks/use-is-client";
-
 import { Task } from "@/lib/types";
+import { SubtaskRow } from "./SubtaskRow";
+import { areTaskPropsEqual, formatDuration, priorityColors } from "./task-item-utils";
 
-interface TaskItemProps {
+export interface TaskItemProps {
     task: Task;
     showListInfo?: boolean;
     userId?: string;
     disableAnimations?: boolean;
-    // Typed for @dnd-kit stability - ensures memo works correctly with drag-and-drop
     dragHandleProps?: DraggableSyntheticListeners;
     dragAttributes?: DraggableAttributes;
-    // Optional: if not provided, will use useSync() internally
-    dispatch?: <T extends ActionType>(type: T, ...args: Parameters<typeof actionRegistry[T]>) => Promise<{ success: boolean; data: unknown }>;
-    // Perf: Receives task as argument to allow parent to use a stable useCallback reference
-    // instead of creating a new arrow function per task, enabling React.memo to work effectively
+    dispatch?: (type: any, ...args: any[]) => Promise<{ success: boolean; data: unknown }>;
     onEdit?: (task: Task) => void;
 }
 
-interface SubtaskRowProps {
-    subtask: {
-        id: number;
-        title: string;
-        estimateMinutes?: number | null;
-        isCompleted?: boolean | null;
-    };
-    isCompleted: boolean;
-    onToggle: (subtaskId: number, checked: boolean) => void;
-}
-
-// PERF: Memoize subtask rows so parent state changes (like main task toggles)
-// do not re-render every subtask row. In tasks with many subtasks, this
-// reduces UI updates to only the rows whose completion state changed.
-const SubtaskRow = memo(function SubtaskRow({ subtask, isCompleted, onToggle }: SubtaskRowProps) {
-    return (
-        <div
-            className={cn(
-                "flex items-center gap-3 py-2 px-3 rounded-md hover:bg-muted/50 transition-colors",
-                isCompleted && "opacity-60"
-            )}
-        >
-            <Checkbox
-                checked={isCompleted || false}
-                onCheckedChange={(checked) => onToggle(subtask.id, checked as boolean)}
-                className="rounded-full h-4 w-4"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                }}
-                aria-label={isCompleted ? "Mark subtask as incomplete" : "Mark subtask as complete"}
-            />
-            <span
-                className={cn(
-                    "text-sm",
-                    isCompleted && "line-through text-muted-foreground"
-                )}
-            >
-                {subtask.title}
-            </span>
-            {subtask.estimateMinutes && (
-                <span className="text-xs text-muted-foreground ml-auto">
-                    {subtask.estimateMinutes}m
-                </span>
-            )}
-        </div>
-    );
-});
-
-
-// Format minutes to human-readable duration
-function formatDuration(minutes: number): string {
-    if (minutes < 60) {
-        return `${minutes}m`;
-    }
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
-}
-
-const priorityColors = {
-    high: "text-red-500",
-    medium: "text-orange-500",
-    low: "text-blue-500",
-    none: "text-gray-400",
-};
-
-// Helper to compare task props for React.memo to avoid re-renders when object references change
-// but data is effectively the same (common with RSC payloads).
-function arePropsEqual(prev: TaskItemProps, next: TaskItemProps) {
-    if (prev.userId !== next.userId) return false;
-    if (prev.showListInfo !== next.showListInfo) return false;
-    if (prev.disableAnimations !== next.disableAnimations) return false;
-    if (prev.onEdit !== next.onEdit) return false;
-    if (prev.dispatch !== next.dispatch) return false;
-    if (prev.dragHandleProps !== next.dragHandleProps) return false;
-
-    const p = prev.task;
-    const n = next.task;
-
-    if (p === n) return true;
-
-    if (p.id !== n.id) return false;
-    if (p.title !== n.title) return false;
-    if (p.isCompleted !== n.isCompleted) return false;
-
-    const pUpdated = p.updatedAt instanceof Date ? p.updatedAt.getTime() : new Date(p.updatedAt || 0).getTime();
-    const nUpdated = n.updatedAt instanceof Date ? n.updatedAt.getTime() : new Date(n.updatedAt || 0).getTime();
-    if (pUpdated !== nUpdated) return false;
-
-    // Subtasks & Blockers
-    if (p.subtaskCount !== n.subtaskCount) return false;
-    if (p.completedSubtaskCount !== n.completedSubtaskCount) return false;
-    if (p.blockedByCount !== n.blockedByCount) return false;
-
-    // List Metadata
-    if (p.listName !== n.listName) return false;
-    if (p.listColor !== n.listColor) return false;
-    if (p.listIcon !== n.listIcon) return false;
-
-    // Properties affecting render
-    if (p.priority !== n.priority) return false;
-    if (p.icon !== n.icon) return false;
-    if (p.estimateMinutes !== n.estimateMinutes) return false;
-    if (p.actualMinutes !== n.actualMinutes) return false;
-    if (p.isRecurring !== n.isRecurring) return false;
-
-    // Dates
-    const pDue = p.dueDate instanceof Date ? p.dueDate.getTime() : (p.dueDate ? new Date(p.dueDate).getTime() : null);
-    const nDue = n.dueDate instanceof Date ? n.dueDate.getTime() : (n.dueDate ? new Date(n.dueDate).getTime() : null);
-    if (pDue !== nDue) return false;
-    if ((p.dueDatePrecision ?? "day") !== (n.dueDatePrecision ?? "day")) return false;
-
-    // Labels
-    const pLabels = p.labels || [];
-    const nLabels = n.labels || [];
-    if (pLabels.length !== nLabels.length) return false;
-    for (let i = 0; i < pLabels.length; i++) {
-        if (pLabels[i].id !== nLabels[i].id) return false;
-        if (pLabels[i].name !== nLabels[i].name) return false;
-        if (pLabels[i].color !== nLabels[i].color) return false;
-        if (pLabels[i].icon !== nLabels[i].icon) return false;
-    }
-
-    // Subtasks - check content as parent updatedAt might not change on subtask update
-    const pSubtasks = p.subtasks || [];
-    const nSubtasks = n.subtasks || [];
-    if (pSubtasks.length !== nSubtasks.length) return false;
-    for (let i = 0; i < pSubtasks.length; i++) {
-        if (pSubtasks[i].id !== nSubtasks[i].id) return false;
-        if (pSubtasks[i].title !== nSubtasks[i].title) return false;
-        if (pSubtasks[i].isCompleted !== nSubtasks[i].isCompleted) return false;
-        if (pSubtasks[i].estimateMinutes !== nSubtasks[i].estimateMinutes) return false;
-    }
-
-    return true;
-}
-
-// React.memo prevents re-renders when parent state changes (e.g., dialog open/close)
-// but the task props remain unchanged. In lists with 50+ tasks, this reduces
-// unnecessary re-renders by ~95% when opening the task edit dialog.
-export const TaskItem = memo(function TaskItem({ task, showListInfo = true, userId, disableAnimations = false, dragHandleProps, dragAttributes, dispatch: dispatchProp, onEdit }: TaskItemProps) {
+export const TaskItem = memo(function TaskItem({
+    task,
+    showListInfo = true,
+    userId,
+    disableAnimations = false,
+    dragHandleProps,
+    dragAttributes,
+    dispatch: dispatchProp,
+    onEdit
+}: TaskItemProps) {
     const isCompleted = task.isCompleted || false;
     const [isExpanded, setIsExpanded] = useState(false);
+    const [showFocusMode, setShowFocusMode] = useState(false);
 
     const hasSubtasks = (task.subtaskCount || 0) > 0;
     const completedCount = task.completedSubtaskCount || 0;
     const totalCount = task.subtaskCount || 0;
 
-    // Use prop if provided, otherwise fall back to context
     const { dispatch: dispatchFromContext } = useSync();
     const dispatch = dispatchProp ?? dispatchFromContext;
 
@@ -213,7 +75,7 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                     particleCount: 30,
                     spread: 50,
                     origin: { y: 0.7 },
-                    colors: ['#5b21b6', '#7c3aed', '#a78bfa'] // Purple theme
+                    colors: ['#5b21b6', '#7c3aed', '#a78bfa']
                 });
             }
             playSuccessSound();
@@ -221,21 +83,16 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
 
         if (!userId) return;
         dispatch("toggleTaskCompletion", task.id, userId, checked);
-
-        // Optimistic UI means we don't wait for the result here.
-        // Gamification effects (level up) will need to be handled via a different mechanism
-        // or accepted as eventually consistent.
     };
 
     const isClient = useIsClient();
     const isPerformanceMode = usePerformanceMode();
     const resolvedPerformanceMode = isClient && isPerformanceMode;
 
-    // PERF: Pre-compute timestamps once instead of creating Date objects in each comparison.
-    // For 100 tasks, this eliminates 200+ Date object allocations per render.
     const { use24HourClock, weekStartsOnMonday } = useUser();
-    const now = isClient ? new Date() : new Date(0); // Use a stable "now" for server/hydration
+    const now = isClient ? new Date() : new Date(0);
     const nowTime = now.getTime();
+
     let isOverdue = false;
     if (task.dueDate && !isCompleted) {
         isOverdue = isDueOverdue(
@@ -244,20 +101,14 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
             weekStartsOnMonday ?? false
         );
     }
-    const periodPrecision =
-        task.dueDatePrecision && task.dueDatePrecision !== "day"
-            ? task.dueDatePrecision
-            : null;
-    const periodLabel = task.dueDate && periodPrecision
-        ? formatDuePeriod({ dueDate: task.dueDate, dueDatePrecision: periodPrecision as DuePrecision })
-        : null;
+
+    const periodPrecision = task.dueDatePrecision && task.dueDatePrecision !== "day" ? task.dueDatePrecision : null;
+    const periodLabel = task.dueDate && periodPrecision ? formatDuePeriod({ dueDate: task.dueDate, dueDatePrecision: periodPrecision as DuePrecision }) : null;
     const periodBadge = periodPrecision ? periodPrecision[0] : null;
     const dueAriaLabel = periodLabel ? `Due ${periodLabel}` : undefined;
     const isDeadlineExceeded = task.deadline && task.deadline.getTime() < nowTime && !isCompleted;
     const isBlocked = (task.blockedByCount || 0) > 0;
-    const [showFocusMode, setShowFocusMode] = useState(false);
 
-    // Force animations disabled if performance mode is on
     const effectiveDisableAnimations = disableAnimations || resolvedPerformanceMode;
 
     return (
@@ -266,7 +117,7 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
             initial={!effectiveDisableAnimations ? { opacity: 0, y: 10 } : { opacity: 1, y: 0 }}
             animate={!effectiveDisableAnimations ? { opacity: 1, y: 0 } : { opacity: 1, y: 0 }}
             exit={!effectiveDisableAnimations ? { opacity: 0, height: 0 } : undefined}
-            className="mb-2" // Add margin bottom here to separate items when animating
+            className="mb-2"
         >
             <div
                 className={cn(
@@ -274,89 +125,51 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                     onEdit ? "cursor-pointer" : "cursor-default",
                     isCompleted && "opacity-60 bg-muted/30",
                     isBlocked && !isCompleted && "bg-orange-50/50 border-orange-100",
-                    disableAnimations && "cursor-default" // Change cursor if dragging via handle
+                    disableAnimations && "cursor-default"
                 )}
-                data-testid="task-item"
-                data-task-id={task.id}
-                data-task-completed={isCompleted}
                 role="button"
                 tabIndex={0}
                 aria-label={onEdit ? `Edit task ${task.title}` : task.title}
                 onClick={(e) => {
-                    // Prevent triggering if selecting text
                     if (window.getSelection()?.toString()) return;
-
-                    // Prevent triggering if clicking interactive elements
                     if ((e.target as HTMLElement).closest('button, [role="checkbox"], a, input')) return;
                     if ((e.target as HTMLElement).closest('[data-subtask-area="true"]')) return;
-
-                    if (onEdit) {
-                        onEdit(task);
-                    }
+                    if (onEdit) onEdit(task);
                 }}
                 onKeyDown={(e) => {
-                    if (!onEdit) return;
-                    if (e.target !== e.currentTarget) return;
-                    if (e.key !== "Enter" && e.key !== " ") return;
-                    e.preventDefault();
-                    onEdit(task);
+                    if (e.key === "Enter" || e.key === " ") {
+                        if ((e.target as HTMLElement).closest('button, [role="checkbox"], a, input')) return;
+                        if ((e.target as HTMLElement).closest('[data-subtask-area="true"]')) return;
+                        e.preventDefault();
+                        if (onEdit) onEdit(task);
+                    }
                 }}
             >
-                {/* Drag Handle */}
                 {disableAnimations && (
-                    <div
-                        className="cursor-grab active:cursor-grabbing text-muted-foreground/30 hover:text-muted-foreground transition-colors -ml-2 -mr-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
-                        {...dragHandleProps}
-                        {...dragAttributes}
-                        onPointerDown={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                        }}
-                    >
+                    <div className="cursor-grab active:cursor-grabbing text-muted-foreground/30 hover:text-muted-foreground transition-colors -ml-2 -mr-1 rounded" {...dragHandleProps} {...dragAttributes}>
                         <GripVertical className="h-4 w-4" />
                     </div>
                 )}
-                {/* Expand/Collapse Button */}
+
                 {hasSubtasks ? (
                     <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            setIsExpanded(!isExpanded);
-                        }}
-                        className="flex items-center justify-center w-5 h-5 -ml-1 rounded hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        aria-label={isExpanded ? "Collapse subtasks" : "Expand subtasks"}
+                        onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
+                        className="flex items-center justify-center w-5 h-5 -ml-1 rounded hover:bg-muted transition-colors"
                         aria-expanded={isExpanded}
                     >
-                        <ChevronDown
-                            className={cn(
-                                "h-4 w-4 text-muted-foreground transition-transform duration-200",
-                                !isExpanded && "-rotate-90"
-                            )}
-                        />
+                        <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform duration-200", !isExpanded && "-rotate-90")} />
                     </button>
                 ) : (
-                    <div className="w-5 h-5 -ml-1" /> // Spacer for alignment
+                    <div className="w-5 h-5 -ml-1" />
                 )}
 
-                <m.div
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                >
+                <m.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                     <Checkbox
                         checked={isCompleted}
                         onCheckedChange={handleToggle}
                         disabled={isBlocked && !isCompleted}
-                        className={cn(
-                            "rounded-full h-5 w-5 transition-all border-2",
-                            isCompleted ? "data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" : "border-muted-foreground/30",
-                            isBlocked && !isCompleted ? "opacity-30 cursor-not-allowed" : ""
-                        )}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                        }}
-                        data-testid="task-checkbox"
-                        aria-label={isCompleted ? "Mark task as incomplete" : "Mark task as complete"}
+                        className={cn("rounded-full h-5 w-5 transition-all border-2", isCompleted ? "data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" : "border-muted-foreground/30")}
+                        onClick={(e) => e.stopPropagation()}
                     />
                 </m.div>
 
@@ -364,26 +177,15 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                     <div className={cn("font-medium truncate text-sm transition-all flex items-center gap-2", isCompleted && "text-muted-foreground")}>
                         <button
                             type="button"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (onEdit) onEdit(task);
-                            }}
+                            onClick={(e) => { e.stopPropagation(); if (onEdit) onEdit(task); }}
                             className="relative inline-flex items-center gap-2 max-w-full bg-transparent border-none p-0 hover:underline focus:underline focus:outline-none text-left appearance-none"
                             disabled={!onEdit}
                         >
-                            {task.icon && (
-                                <ResolvedIcon icon={task.icon} className="h-4 w-4 text-muted-foreground" />
-                            )}
+                            {task.icon && <ResolvedIcon icon={task.icon} className="h-4 w-4 text-muted-foreground" />}
                             <span className="truncate">{task.title}</span>
-                            {isCompleted && (
-                                <div
-                                    className="absolute left-0 top-1/2 h-[1.5px] bg-muted-foreground/50 w-full pointer-events-none"
-                                />
-                            )}
+                            {isCompleted && <div className="absolute left-0 top-1/2 h-[1.5px] bg-muted-foreground/50 w-full pointer-events-none" />}
                         </button>
-                        {isBlocked && !isCompleted && (
-                            <Lock className="h-3 w-3 text-orange-500" />
-                        )}
+                        {isBlocked && !isCompleted && <Lock className="h-3 w-3 text-orange-500" />}
                         {showListInfo && task.listName && (
                             <div className="flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full ml-auto">
                                 <ResolvedIcon icon={task.listIcon || null} className="w-3 h-3" color={task.listColor} />
@@ -391,56 +193,22 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                             </div>
                         )}
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1.5">
+
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1.5 flex-wrap">
                         {hasSubtasks && (
-                            <div className="flex items-center gap-1 text-muted-foreground">
+                            <div className="flex items-center gap-1">
                                 <GitBranch className="h-3 w-3" />
                                 <span>{completedCount}/{totalCount}</span>
                             </div>
                         )}
-                        {isBlocked && !isCompleted && (
-                            <div className="flex items-center gap-1 text-orange-500 font-medium">
-                                <Lock className="h-3 w-3" />
-                                Blocked
-                            </div>
-                        )}
                         {task.dueDate && (
-                            <div
-                                className={cn("flex items-center gap-1", isOverdue ? "text-red-500 font-medium" : "")}
-                                title={dueAriaLabel}
-                                aria-label={dueAriaLabel}
-                            >
+                            <div className={cn("flex items-center gap-1", isOverdue ? "text-red-500 font-medium" : "")} title={dueAriaLabel}>
                                 <Calendar className="h-3 w-3" />
                                 {periodLabel ? (
-                                    <>
-                                        <span>{periodLabel}</span>
-                                        <Badge
-                                            variant="secondary"
-                                            className="text-[10px] px-1 py-0 h-4 uppercase tracking-wide"
-                                        >
-                                            {periodBadge}
-                                        </Badge>
-                                    </>
+                                    <><span>{periodLabel}</span><Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 uppercase tracking-wide">{periodBadge}</Badge></>
                                 ) : (
-                                    <>
-                                        <span>{isClient ? formatFriendlyDate(task.dueDate, "MMM d") : format(task.dueDate, "MMM d")}</span>
-                                        {(task.dueDate.getHours() !== 0 || task.dueDate.getMinutes() !== 0) && (
-                                            <span className="text-muted-foreground">
-                                                {formatTimePreference(task.dueDate, use24HourClock)}
-                                            </span>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                        )}
-                        {task.deadline && (
-                            <div className={cn("flex items-center gap-1", isDeadlineExceeded ? "text-red-600 font-bold" : "text-orange-500")}>
-                                <AlertCircle className="h-3 w-3" />
-                                {format(task.deadline, "MMM d")}
-                                {(task.deadline.getHours() !== 0 || task.deadline.getMinutes() !== 0) && (
-                                    <span>
-                                        {formatTimePreference(task.deadline, use24HourClock)}
-                                    </span>
+                                    <><span>{isClient ? formatFriendlyDate(task.dueDate, "MMM d") : format(task.dueDate, "MMM d")}</span>
+                                        {(task.dueDate.getHours() !== 0 || task.dueDate.getMinutes() !== 0) && <span>{formatTimePreference(task.dueDate, use24HourClock)}</span>}</>
                                 )}
                             </div>
                         )}
@@ -451,71 +219,24 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                             </div>
                         )}
                         {(task.estimateMinutes || task.actualMinutes) && (
-                            <div className={cn(
-                                "flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-all",
-                                task.actualMinutes && task.estimateMinutes && task.actualMinutes > task.estimateMinutes
-                                    ? "bg-gradient-to-r from-red-500/10 to-orange-500/10 text-red-600 dark:text-red-400 ring-1 ring-red-200 dark:ring-red-800/50"
-                                    : task.actualMinutes && task.estimateMinutes
-                                        ? "bg-gradient-to-r from-emerald-500/10 to-teal-500/10 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-200 dark:ring-emerald-800/50"
-                                        : "bg-muted/80 text-muted-foreground ring-1 ring-border/50"
-                            )}>
+                            <div className={cn("flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-all bg-muted/80 text-muted-foreground ring-1 ring-border/50")}>
                                 <Clock className="h-3.5 w-3.5" />
                                 {task.actualMinutes ? (
-                                    <div className="flex items-center gap-1">
-                                        <span className="font-semibold">{formatDuration(task.actualMinutes)}</span>
-                                        {task.estimateMinutes && (
-                                            <>
-                                                <span className="text-muted-foreground/60">/</span>
-                                                <span className="opacity-70">{formatDuration(task.estimateMinutes)}</span>
-                                            </>
-                                        )}
-                                    </div>
+                                    <div className="flex items-center gap-1"><span className="font-semibold">{formatDuration(task.actualMinutes)}</span>{task.estimateMinutes && <><span className="text-muted-foreground/60">/</span><span className="opacity-70">{formatDuration(task.estimateMinutes)}</span></>}</div>
                                 ) : (
                                     <span className="font-semibold">{formatDuration(task.estimateMinutes!)}</span>
                                 )}
                             </div>
                         )}
-                        {task.isRecurring && (
-                            <div className="flex items-center gap-1 text-blue-500">
-                                <Repeat className="h-3 w-3" />
-                                <span>Recurring</span>
-                            </div>
-                        )}
-                        {task.energyLevel && (
-                            <div className="flex items-center gap-1">
-                                {task.energyLevel === "high" && "🔋"}
-                                {task.energyLevel === "medium" && "🔌"}
-                                {task.energyLevel === "low" && "🪫"}
-                            </div>
-                        )}
-                        {task.context && (
-                            <div className="flex items-center gap-1">
-                                {task.context === "computer" && "💻"}
-                                {task.context === "phone" && "📱"}
-                                {task.context === "errands" && "🏃"}
-                                {task.context === "meeting" && "👥"}
-                                {task.context === "home" && "🏠"}
-                                {task.context === "anywhere" && "🌍"}
-                            </div>
-                        )}
+                        {task.isRecurring && <div className="flex items-center gap-1 text-blue-500"><Repeat className="h-3 w-3" /><span>Recurring</span></div>}
+                        {task.energyLevel && <div>{task.energyLevel === "high" ? "🔋" : task.energyLevel === "medium" ? "🔌" : "🪫"}</div>}
+                        {task.context && <div>{task.context === "computer" ? "💻" : task.context === "phone" ? "📱" : task.context === "errands" ? "🏃" : task.context === "meeting" ? "👥" : task.context === "home" ? "🏠" : "🌍"}</div>}
                     </div>
+
                     {task.labels && task.labels.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
                             {task.labels.map(label => (
-                                <Badge
-                                    key={label.id}
-                                    variant="outline"
-                                    style={getLabelStyle(label.color)}
-                                    className="text-[10px] px-1.5 py-0 h-5 font-normal border flex items-center gap-1"
-                                >
-                                    {/* <ResolvedIcon> handles fallback internally if needed, or we can just pass null.
-                                        But wait, ResolvedIcon renders `ListTodo` fallback if null.
-                                        For labels without icons, we might prefer *no* icon?
-                                        The old code called `getLabelIcon(label.icon)` which returned a Lucide icon (Tag default).
-                                        ResolvedIcon defaults to ListTodo. Let's provide a fallback of Tag explicitly if needed,
-                                        or let ResolvedIcon handle it. Since `label.icon` is nullable string.
-                                        Let's assume standard behavior: if icon is present, show it.
-                                    */}
+                                <Badge key={label.id} variant="outline" style={getLabelStyle(label.color)} className="text-[10px] px-1.5 py-0 h-5 font-normal border flex items-center gap-1">
                                     <ResolvedIcon icon={label.icon} className="h-3 w-3" color={label.color} />
                                     {label.name}
                                 </Badge>
@@ -528,75 +249,33 @@ export const TaskItem = memo(function TaskItem({ task, showListInfo = true, user
                     {onEdit && (
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        e.preventDefault();
-                                        onEdit(task);
-                                    }}
-                                    type="button"
-                                    aria-label="Edit task"
-                                >
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); onEdit(task); }} type="button" aria-label="Edit task">
                                     <Pencil className="h-4 w-4 text-muted-foreground hover:text-primary" />
                                 </Button>
                             </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Edit task</p>
-                            </TooltipContent>
+                            <TooltipContent><p>Edit task</p></TooltipContent>
                         </Tooltip>
                     )}
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    e.preventDefault();
-                                    e.nativeEvent.stopImmediatePropagation();
-                                    setShowFocusMode(true);
-                                }}
-                                type="button"
-                                aria-label="Start focus mode"
-                            >
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowFocusMode(true); }} type="button" aria-label="Start focus mode">
                                 <Target className="h-4 w-4 text-muted-foreground hover:text-primary" />
                             </Button>
                         </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Start focus mode</p>
-                        </TooltipContent>
+                        <TooltipContent><p>Start focus mode</p></TooltipContent>
                     </Tooltip>
                 </div>
             </div>
 
-            {/* Subtasks Section */}
             {hasSubtasks && isExpanded && (
                 <div className="ml-8 mt-1 space-y-1 border-l-2 border-muted pl-4" data-subtask-area="true">
-                    {(task.subtasks || []).map((subtask) => {
-                        const isSubtaskCompleted = subtask.isCompleted;
-                        return (
-                            <SubtaskRow
-                                key={subtask.id}
-                                subtask={subtask}
-                                isCompleted={isSubtaskCompleted || false}
-                                onToggle={handleSubtaskToggle}
-                            />
-                        );
-                    })}
+                    {(task.subtasks || []).map((subtask) => (
+                        <SubtaskRow key={subtask.id} subtask={subtask} isCompleted={subtask.isCompleted || false} onToggle={handleSubtaskToggle} />
+                    ))}
                 </div>
             )}
 
-            {showFocusMode && (
-                <FocusMode
-                    task={task}
-                    userId={userId}
-                    onClose={() => setShowFocusMode(false)}
-                />
-            )}
+            {showFocusMode && <FocusMode task={task} userId={userId} onClose={() => setShowFocusMode(false)} />}
         </m.div>
     );
-}, arePropsEqual);
+}, areTaskPropsEqual);

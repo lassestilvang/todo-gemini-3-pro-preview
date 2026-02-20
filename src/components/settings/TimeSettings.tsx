@@ -15,7 +15,7 @@ interface TimeSettingsProps {
 }
 
 export function TimeSettings({ userId, initialUse24HourClock }: TimeSettingsProps) {
-    const [use24h, setUse24h] = useState<boolean | null>(initialUse24HourClock);
+    const [use24h, setUse24h] = useState<boolean | null>(() => initialUse24HourClock);
     const { execute, isLoading } = useActionResult<void>();
 
     // Auto-detection logic for display purposes if null

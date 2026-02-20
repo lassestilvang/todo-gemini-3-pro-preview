@@ -1,10 +1,8 @@
+
 "use client";
 
-import React, { useCallback, useEffect, useMemo } from "react";
-import { EventCalendar } from "@/components/calendar4/event-calendar";
+import React, { useCallback, useEffect, useMemo, useReducer } from "react";
 import { CalendarSidebar } from "@/components/calendar2/CalendarSidebar";
-import { UnplannedColumn } from "./UnplannedColumn";
-import { TodayColumn } from "./TodayColumn";
 import { CalendarQuickCreateDialog } from "@/components/calendar2/CalendarQuickCreateDialog";
 import { TaskDialog } from "@/components/tasks/TaskDialog";
 import { useTaskStore } from "@/lib/store/task-store";
@@ -13,30 +11,11 @@ import { useSync } from "@/components/providers/sync-provider";
 import { useUser } from "@/components/providers/UserProvider";
 import { addMinutes, isSameDay } from "date-fns";
 import type { Task } from "@/lib/types";
+import { CalendarLayout } from "./layout/CalendarLayout";
 
 interface Calendar4ClientProps {
     initialTasks: Task[];
     initialLists: Array<{ id: number; name: string; color: string | null; icon: string | null; slug: string }>;
-}
-
-interface CalendarEventInfo {
-    event: {
-        id: string;
-        start: Date | null;
-        end: Date | null;
-        extendedProps: Record<string, unknown>;
-        allDay?: boolean;
-    };
-    revert: () => void;
-}
-
-interface DateClickInfo {
-    date: Date;
-    dateStr: string;
-    allDay: boolean;
-    dayEl: HTMLElement;
-    jsEvent: MouseEvent;
-    view: unknown;
 }
 
 function normalizeDate(d: Date | string | null): Date | null {
@@ -50,297 +29,106 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
     const { dispatch } = useSync();
     const { userId } = useUser();
 
-    // --- Initial Data Sync ---
     useEffect(() => {
-        if (Object.keys(taskMap).length === 0 && initialTasks.length > 0) {
-            setTasks(initialTasks);
-        }
+        if (Object.keys(taskMap).length === 0 && initialTasks.length > 0) setTasks(initialTasks);
     }, [initialTasks, setTasks, taskMap]);
 
     useEffect(() => {
-        if (Object.keys(listMap).length === 0 && initialLists.length > 0) {
-            setLists(initialLists);
-        }
+        if (Object.keys(listMap).length === 0 && initialLists.length > 0) setLists(initialLists);
     }, [initialLists, listMap, setLists]);
 
-    const tasks = useMemo(() => {
-        const storeTasks = Object.values(taskMap) as Task[];
-        return storeTasks.length > 0 ? storeTasks : initialTasks;
-    }, [taskMap, initialTasks]);
+    const tasks = useMemo(() => Object.values(taskMap).length > 0 ? Object.values(taskMap) as Task[] : initialTasks, [taskMap, initialTasks]);
+    const lists = useMemo(() => Object.values(listMap).length > 0 ? Object.values(listMap) : initialLists, [listMap, initialLists]);
 
-    const lists = useMemo(() => {
-        const storeLists = Object.values(listMap);
-        return storeLists.length > 0 ? storeLists : initialLists;
-    }, [listMap, initialLists]);
-
-    // --- UI State ---
-    type UIState = {
-        visibleListIds: Set<number | null>;
-        selectedListId: number | null;
-        quickCreateOpen: boolean;
-        quickCreateDate: Date | undefined;
-        editingTask: Task | null;
-    };
-
-    type UIAction =
-        | { type: "TOGGLE_LIST"; payload: number | null }
-        | { type: "SET_ALL_LISTS"; payload: number[] }
-        | { type: "CLEAR_ALL_LISTS" }
-        | { type: "SET_SELECTED_LIST"; payload: number | null }
-        | { type: "SET_QUICK_CREATE"; payload: { open: boolean, date?: Date } }
-        | { type: "SET_EDITING_TASK"; payload: Task | null };
-
-    const [uiState, dispatchUI] = React.useReducer(
-        (state: UIState, action: UIAction): UIState => {
-            switch (action.type) {
-                case "TOGGLE_LIST": {
-                    const next = new Set(state.visibleListIds);
-                    if (next.has(action.payload)) next.delete(action.payload);
-                    else next.add(action.payload);
-                    return { ...state, visibleListIds: next };
-                }
-                case "SET_ALL_LISTS":
-                    return { ...state, visibleListIds: new Set([null, ...action.payload]) };
-                case "CLEAR_ALL_LISTS":
-                    return { ...state, visibleListIds: new Set() };
-                case "SET_SELECTED_LIST": return { ...state, selectedListId: action.payload };
-                case "SET_QUICK_CREATE": return { ...state, quickCreateOpen: action.payload.open, quickCreateDate: action.payload.date !== undefined ? action.payload.date : state.quickCreateDate };
-                case "SET_EDITING_TASK": return { ...state, editingTask: action.payload };
-                default: return state;
+    const [uiState, dispatchUI] = useReducer((state: any, action: any) => {
+        switch (action.type) {
+            case "TOGGLE_LIST": {
+                const next = new Set(state.visibleListIds);
+                if (next.has(action.payload)) next.delete(action.payload);
+                else next.add(action.payload);
+                return { ...state, visibleListIds: next };
             }
-        },
-        {
-            visibleListIds: new Set([null, ...initialLists.map((list) => list.id)]),
-            selectedListId: null,
-            quickCreateOpen: false,
-            quickCreateDate: undefined,
-            editingTask: null,
+            case "SET_ALL_LISTS": return { ...state, visibleListIds: new Set([null, ...action.payload]) };
+            case "CLEAR_ALL_LISTS": return { ...state, visibleListIds: new Set() };
+            case "SET_SELECTED_LIST": return { ...state, selectedListId: action.payload };
+            case "SET_QUICK_CREATE": return { ...state, quickCreateOpen: action.payload.open, quickCreateDate: action.payload.date !== undefined ? action.payload.date : state.quickCreateDate };
+            case "SET_EDITING_TASK": return { ...state, editingTask: action.payload };
+            default: return state;
         }
-    );
+    }, {
+        visibleListIds: new Set([null, ...initialLists.map((list) => list.id)]),
+        selectedListId: null,
+        quickCreateOpen: false,
+        quickCreateDate: undefined,
+        editingTask: null,
+    });
 
     const { visibleListIds, selectedListId, quickCreateOpen, quickCreateDate, editingTask } = uiState;
 
-    const toggleList = useCallback((listId: number | null) => {
-        dispatchUI({ type: "TOGGLE_LIST", payload: listId });
-    }, []);
-
-    const toggleAll = useCallback((checked: boolean) => {
-        if (checked) dispatchUI({ type: "SET_ALL_LISTS", payload: lists.map((l) => l.id) });
-        else dispatchUI({ type: "CLEAR_ALL_LISTS" });
-    }, [lists]);
-
-    // --- Task Filtering ---
-    const unplannedTasks = useMemo(() => {
-        return tasks.filter(t => !t.isCompleted && !t.dueDate && (selectedListId === null || t.listId === selectedListId));
-    }, [tasks, selectedListId]);
-
+    const unplannedTasks = useMemo(() => tasks.filter(t => !t.isCompleted && !t.dueDate && (selectedListId === null || t.listId === selectedListId)), [tasks, selectedListId]);
     const todayTasks = useMemo(() => {
         const now = new Date();
-        return tasks.filter(t => {
-            const d = normalizeDate(t.dueDate);
-            return !t.isCompleted && d && isSameDay(d, now);
-        });
+        return tasks.filter(t => !t.isCompleted && t.dueDate && isSameDay(normalizeDate(t.dueDate)!, now));
     }, [tasks]);
-
     const todayDoneTasks = useMemo(() => {
         const now = new Date();
-        return tasks.filter(t => {
-            const d = normalizeDate(t.dueDate);
-            return t.isCompleted && d && isSameDay(d, now);
-        });
+        return tasks.filter(t => t.isCompleted && t.dueDate && isSameDay(normalizeDate(t.dueDate)!, now));
     }, [tasks]);
 
-    // --- Event Mapping ---
-    const events = useMemo(() => {
-        return tasks
-            .filter((t) => !t.isCompleted && visibleListIds.has(t.listId ?? null) && t.dueDate)
-            .map((t) => {
-                const start = normalizeDate(t.dueDate)!;
-                let end = start;
-                if (t.estimateMinutes) {
-                    end = addMinutes(start, t.estimateMinutes);
-                }
+    const events = useMemo(() => tasks.filter(t => !t.isCompleted && visibleListIds.has(t.listId ?? null) && t.dueDate).map(t => {
+        const start = normalizeDate(t.dueDate)!;
+        const color = lists.find(l => l.id === t.listId)?.color ?? "#71717a";
+        return {
+            id: String(t.id),
+            title: t.title,
+            start: start.toISOString(),
+            end: t.estimateMinutes ? addMinutes(start, t.estimateMinutes).toISOString() : undefined,
+            backgroundColor: color,
+            borderColor: color,
+            extendedProps: { taskId: t.id },
+            allDay: !t.estimateMinutes,
+        };
+    }), [tasks, visibleListIds, lists]);
 
-                const list = lists.find((l) => l.id === t.listId);
-                const color = list?.color ?? "#71717a"; // Default gray
-
-                return {
-                    id: String(t.id),
-                    title: t.title,
-                    start: start.toISOString(),
-                    end: t.estimateMinutes ? end.toISOString() : undefined,
-                    backgroundColor: color,
-                    borderColor: color,
-                    extendedProps: { taskId: t.id },
-                    allDay: !t.estimateMinutes,
-                };
-            });
-    }, [tasks, visibleListIds, lists]);
-
-    // --- Handlers ---
-    const handleEventDrop = useCallback((info: CalendarEventInfo) => {
-        const taskId = Number(info.event.extendedProps.taskId);
-        if (!taskId || !userId) return;
-
-        const existing = taskMap[taskId];
-        if (!existing) return;
-
-        const newDueDate = info.event.start;
-        if (!newDueDate) return;
-
-        upsertTask({ ...existing, dueDate: newDueDate });
-        dispatch("updateTask", taskId, userId, { dueDate: newDueDate, expectedUpdatedAt: existing.updatedAt ?? null });
+    const handleEventAction = useCallback((id: number, updates: any) => {
+        const existing = taskMap[id];
+        if (!existing || !userId) return;
+        upsertTask({ ...existing, ...updates });
+        dispatch("updateTask", id, userId, { ...updates, expectedUpdatedAt: existing.updatedAt ?? null });
     }, [dispatch, taskMap, userId, upsertTask]);
 
-    const handleEventResize = useCallback((info: CalendarEventInfo) => {
-        const taskId = Number(info.event.extendedProps.taskId);
-        if (!taskId || !userId) return;
+    const handleEventDrop = useCallback((info: any) => handleEventAction(Number(info.event.extendedProps.taskId), { dueDate: info.event.start }), [handleEventAction]);
+    const handleEventResize = useCallback((info: any) => {
+        const mins = Math.max(1, Math.round((info.event.end.getTime() - info.event.start.getTime()) / 60000));
+        handleEventAction(Number(info.event.extendedProps.taskId), { estimateMinutes: mins });
+    }, [handleEventAction]);
 
-        const existing = taskMap[taskId];
-        if (!existing) return;
-
-        const start = info.event.start;
-        const end = info.event.end;
-        if (!start || !end) return;
-
-        const estimateMinutes = Math.max(1, Math.round((end.getTime() - start.getTime()) / 60000));
-
-        upsertTask({ ...existing, estimateMinutes });
-        dispatch("updateTask", taskId, userId, { estimateMinutes, expectedUpdatedAt: existing.updatedAt ?? null });
-    }, [dispatch, taskMap, userId, upsertTask]);
-
-    const handleEventReceive = useCallback((info: CalendarEventInfo) => {
-        const taskId = Number(info.event.extendedProps.taskId);
-        if (!taskId || !userId) return;
-
-        const existing = taskMap[taskId];
-        // If task is internal drag (shouldn't happen with droppable=true + external, but good to check)
-        // Actually eventReceive is for external events.
-
-        // We need to remove the temporary element fullcalendar creates? 
-        // No, FullCalendar handles the DOM. We just update state.
-        // But wait, if we update state, the event will come back via `events` prop.
-        // We should ensure we remove the event that FullCalendar added locally?
-        // info.revert() removes the element if we want to manage it purely via state. 
-        // Usually with React + FullCalendar managed events, we revert and let state update rendering.
-        info.revert();
-
-        if (!existing) return;
-
-        const newDueDate = info.event.start;
-        if (!newDueDate) return;
-
-        // If dropped on all-day slot, it might not have time.
-        // Check info.view.type or info.event.allDay
-
-        upsertTask({ ...existing, dueDate: newDueDate });
-        dispatch("updateTask", taskId, userId, { dueDate: newDueDate, expectedUpdatedAt: existing.updatedAt ?? null });
-    }, [dispatch, taskMap, userId, upsertTask]);
-
-
-    // --- Quick Create ---
-    const handleDateClick = useCallback((info: DateClickInfo) => {
-        dispatchUI({ type: "SET_QUICK_CREATE", payload: { open: true, date: info.date } });
-    }, []);
-
-    // --- Edit Task ---
-    const handleEventClick = useCallback((info: { event: { extendedProps: Record<string, unknown> } }) => {
-        const taskId = Number(info.event.extendedProps.taskId);
-        const task = taskMap[taskId];
-        if (task) dispatchUI({ type: "SET_EDITING_TASK", payload: task });
-    }, [taskMap]);
-
-    const selectedListName = useMemo(() => {
-        if (!selectedListId) return "Unplanned";
-        const list = lists.find(l => l.id === selectedListId);
-        return list ? list.name : "Unplanned";
-    }, [selectedListId, lists]);
+    const selectedListName = useMemo(() => selectedListId === null ? "Unplanned" : lists.find(l => l.id === selectedListId)?.name || "Unplanned", [selectedListId, lists]);
 
     return (
         <div className="flex h-screen bg-background overflow-hidden relative">
             <CalendarSidebar
-                lists={lists}
-                visibleListIds={visibleListIds}
-                onToggleList={toggleList}
-                onToggleAll={toggleAll}
-                selectedListId={selectedListId}
-                onSelectList={(id) => dispatchUI({ type: "SET_SELECTED_LIST", payload: id })}
+                lists={lists} visibleListIds={visibleListIds}
+                onToggleList={id => dispatchUI({ type: "TOGGLE_LIST", payload: id })}
+                onToggleAll={chk => dispatchUI({ type: chk ? "SET_ALL_LISTS" : "CLEAR_ALL_LISTS", payload: lists.map(l => l.id) })}
+                selectedListId={selectedListId} onSelectList={id => dispatchUI({ type: "SET_SELECTED_LIST", payload: id })}
             />
-
-            {/* 3-Column Layout Container */}
-            <div className="flex-1 flex min-w-0">
-                {/* Column 1: Unplanned */}
-                <div className="w-[300px] shrink-0 border-r flex flex-col min-h-0 bg-background/50">
-                    <UnplannedColumn
-                        tasks={unplannedTasks}
-                        listName={selectedListName}
-                        onEditTask={(task) => dispatchUI({ type: "SET_EDITING_TASK", payload: task })}
-                    />
-                </div>
-
-                {/* Column 2: Today */}
-                <div className="w-[300px] shrink-0 border-r flex flex-col min-h-0 bg-background/50">
-                    <TodayColumn
-                        tasks={todayTasks}
-                        doneTasks={todayDoneTasks}
-                        onEditTask={(task) => dispatchUI({ type: "SET_EDITING_TASK", payload: task })}
-                    />
-                </div>
-
-                {/* Column 3: Calendar */}
-                <div className="flex-1 min-w-0 flex flex-col bg-background">
-                    <EventCalendar
-                        height="100%"
-                        initialView="timeGridWeek" // Default to week view as per screenshot usually? Or Month. Let's keep Month or switch to timeGridWeek as it fits drag-drop better for time assignment.
-                        // Screenshot showed "Jan 2024 3W" -> looks like a week view.
-                        headerToolbar={{
-                            left: 'prev,next today',
-                            center: 'title',
-                            right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
-                        }}
-                        events={events}
-                        editable={true}
-                        droppable={true}
-                        selectable={true}
-                        dateClick={handleDateClick}
-                        eventClick={handleEventClick}
-                        eventDrop={handleEventDrop}
-                        eventResize={handleEventResize}
-                        eventReceive={handleEventReceive}
-                        availableViews={['dayGridMonth', 'timeGridWeek', 'timeGridDay', 'listWeek']}
-                    />
-                </div>
-            </div>
-
+            <CalendarLayout
+                unplannedTasks={unplannedTasks} todayTasks={todayTasks} todayDoneTasks={todayDoneTasks}
+                events={events} selectedListName={selectedListName}
+                onEditTask={t => dispatchUI({ type: "SET_EDITING_TASK", payload: t })}
+                onDateClick={info => dispatchUI({ type: "SET_QUICK_CREATE", payload: { open: true, date: info.date } })}
+                onEventClick={info => dispatchUI({ type: "SET_EDITING_TASK", payload: taskMap[Number(info.event.extendedProps.taskId)] })}
+                onEventDrop={handleEventDrop} onEventResize={handleEventResize}
+                onEventReceive={info => { info.revert(); handleEventAction(Number(info.event.extendedProps.taskId), { dueDate: info.event.start }); }}
+            />
             <CalendarQuickCreateDialog
-                open={quickCreateOpen}
-                onOpenChange={(open) => dispatchUI({ type: "SET_QUICK_CREATE", payload: { open } })}
-                defaultDueDate={quickCreateDate}
-                userId={userId}
+                open={quickCreateOpen} onOpenChange={o => dispatchUI({ type: "SET_QUICK_CREATE", payload: { open: o } })}
+                defaultDueDate={quickCreateDate} userId={userId}
             />
-
             <TaskDialog
-                task={editingTask ? {
-                    id: editingTask.id,
-                    title: editingTask.title,
-                    description: editingTask.description,
-                    icon: editingTask.icon ?? null,
-                    priority: editingTask.priority,
-                    listId: editingTask.listId,
-                    dueDate: normalizeDate(editingTask.dueDate),
-                    deadline: normalizeDate(editingTask.deadline),
-                    isRecurring: editingTask.isRecurring,
-                    recurringRule: editingTask.recurringRule,
-                    energyLevel: editingTask.energyLevel,
-                    context: editingTask.context,
-                    isHabit: editingTask.isHabit,
-                    estimateMinutes: editingTask.estimateMinutes,
-                    labels: editingTask.labels,
-                } : undefined}
-                open={!!editingTask}
-                onOpenChange={(open) => {
-                    if (!open) dispatchUI({ type: "SET_EDITING_TASK", payload: null });
-                }}
+                task={editingTask ? { ...editingTask, dueDate: normalizeDate(editingTask.dueDate), deadline: normalizeDate(editingTask.deadline) } : undefined}
+                open={!!editingTask} onOpenChange={o => !o && dispatchUI({ type: "SET_EDITING_TASK", payload: null })}
                 userId={userId}
             />
         </div>

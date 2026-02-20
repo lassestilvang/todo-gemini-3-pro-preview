@@ -1,74 +1,33 @@
+
 "use client";
 
-import React, { useState, useCallback, useEffect, useRef, Suspense } from "react";
+import React, { useCallback, useEffect, useRef, Suspense, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import {
-    Search,
-    X,
-    ListTodo,
-    Tag,
-    Loader2,
-    FolderOpen,
-    SlidersHorizontal,
-    CheckCircle,
-    Circle,
-    AlertCircle,
-    ChevronDown,
-    ChevronUp,
-} from "lucide-react";
+import { Search, X, ListTodo, Loader2 } from "lucide-react";
 import { TaskItem } from "@/components/tasks/TaskItem";
 import { cn } from "@/lib/utils";
 import { searchAll, type SearchAllResponse } from "@/lib/actions/search";
-import Link from "next/link";
 import dynamic from "next/dynamic";
 import type { Task } from "@/lib/types";
 import { GroupedVirtuoso } from "react-virtuoso";
 import type { TaskType } from "@/components/tasks/hooks/useTaskForm";
+import { SearchFilters, SearchFiltersPanel } from "./SearchFiltersPanel";
+import { SearchResultLists, SearchResultLabels } from "./SearchResultSections";
+import { SearchAction, searchReducer } from "@/lib/search/search-reducer";
 
 const TaskDialog = dynamic(
-    () =>
-        import("@/components/tasks/TaskDialog").then((mod) => mod.TaskDialog),
-    {
-        ssr: false,
-    }
+    () => import("@/components/tasks/TaskDialog").then((mod) => mod.TaskDialog),
+    { ssr: false }
 );
-
-interface SearchFilters {
-    listId?: number | null;
-    labelId?: number;
-    priority?: "none" | "low" | "medium" | "high";
-    status?: "all" | "completed" | "active";
-    sort?: "relevance" | "created" | "due" | "priority";
-    sortOrder?: "asc" | "desc";
-}
 
 interface SearchPageClientProps {
     userId: string;
     initialQuery: string;
     initialResults: SearchAllResponse | null;
-    allLists: Array<{
-        id: number;
-        name: string;
-        color: string | null;
-        icon: string | null;
-        slug: string;
-    }>;
-    allLabels: Array<{
-        id: number;
-        name: string;
-        color: string | null;
-        icon: string | null;
-    }>;
+    allLists: Array<{ id: number; name: string; color: string | null; icon: string | null; slug: string }>;
+    allLabels: Array<{ id: number; name: string; color: string | null; icon: string | null }>;
     initialFilters: SearchFilters;
 }
 
@@ -81,127 +40,79 @@ export function SearchPageClient({
     initialFilters,
 }: SearchPageClientProps) {
     const router = useRouter();
-    const [query, setQuery] = useState(initialQuery);
-    const [results, setResults] = useState<SearchAllResponse | null>(
-        initialResults
-    );
-    const [taskResults, setTaskResults] = useState<
-        SearchAllResponse["tasks"]
-    >(initialResults?.tasks ?? []);
-    const [cursor, setCursor] = useState<number | null>(
-        initialResults?.nextCursor ?? null
-    );
-    const [hasMore, setHasMore] = useState(
-        initialResults?.hasMore ?? false
-    );
-    const [isLoadingMore, setIsLoadingMore] = useState(false);
-    const [showFilters, setShowFilters] = useState(false);
-    const [filters] = useState<SearchFilters>(initialFilters);
-    const [editingTask, setEditingTask] = useState<Task | null>(null);
+
+    const [state, dispatch] = React.useReducer(searchReducer, {
+        query: initialQuery,
+        results: initialResults,
+        taskResults: initialResults?.tasks ?? [],
+        cursor: initialResults?.nextCursor ?? null,
+        hasMore: initialResults?.hasMore ?? false,
+        isLoadingMore: false,
+        showFilters: false,
+        filters: initialFilters,
+        editingTask: null,
+        prevInitialQuery: initialQuery,
+        prevInitialResults: initialResults,
+    });
+
+    const { query, results, taskResults, cursor, hasMore, isLoadingMore, showFilters, filters, editingTask } = state;
     const sentinelRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    // Derived state initialization done directly in props or via a ref to prevent infinite loops
-    // React doctor warns about derived state via useEffect:
-    // "Line 103: Derived state. useEffect used to sync props to state."
-    // "Line 155: Derived state. useEffect used to sync props to state."
-    const [prevInitialQuery, setPrevInitialQuery] = useState(initialQuery);
-    const [prevInitialResults, setPrevInitialResults] = useState(initialResults);
-
-    // Idiomatic React way to sync state from props: set state during render.
-    // This safely triggers a re-render without cascading effects.
-    if (initialQuery !== prevInitialQuery) {
-        setPrevInitialQuery(initialQuery);
-        setQuery(initialQuery);
-    }
-
     useEffect(() => {
-        if (!initialQuery) {
-            // We only want to focus if it's truly empty, usually on load or clear
-            // But relying on initialQuery prop value
-            inputRef.current?.focus();
-        }
+        if (!initialQuery) inputRef.current?.focus();
     }, [initialQuery]);
 
-    if (initialResults !== prevInitialResults) {
-        setPrevInitialResults(initialResults);
-        setResults(initialResults);
-        setTaskResults(initialResults?.tasks ?? []);
-        setCursor(initialResults?.nextCursor ?? null);
-        setHasMore(initialResults?.hasMore ?? false);
+    if (initialQuery !== state.prevInitialQuery || initialResults !== state.prevInitialResults) {
+        dispatch({ type: 'SYNC_PROPS', query: initialQuery, results: initialResults });
     }
 
     const loadMore = useCallback(async () => {
         if (!cursor || isLoadingMore || !query.trim()) return;
-        setIsLoadingMore(true);
-        const more = await searchAll(userId, query.trim(), {
-            ...filters,
-            cursor,
-        }).catch((error) => {
-            console.error("Failed to load more search results:", error);
-            return null;
-        });
-
+        dispatch({ type: 'LOAD_MORE_START' });
+        const more = await searchAll(userId, query.trim(), { ...filters, cursor }).catch(() => null);
         if (more) {
-            setTaskResults((prev) => [...prev, ...more.tasks]);
-            setCursor(more.nextCursor);
-            setHasMore(more.hasMore);
+            dispatch({ type: 'LOAD_MORE_SUCCESS', payload: { tasks: more.tasks, nextCursor: more.nextCursor, hasMore: more.hasMore } });
+        } else {
+            dispatch({ type: 'LOAD_MORE_ERROR' });
         }
-
-        setIsLoadingMore(false);
     }, [cursor, isLoadingMore, query, userId, filters]);
 
     useEffect(() => {
         if (!sentinelRef.current || !hasMore) return;
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (entries[0].isIntersecting) loadMore();
-            },
-            { rootMargin: "200px" }
-        );
+        const observer = new IntersectionObserver((entries) => { if (entries[0].isIntersecting) loadMore(); }, { rootMargin: "200px" });
         observer.observe(sentinelRef.current);
         return () => observer.disconnect();
     }, [hasMore, loadMore]);
 
-    const hasActiveFilters =
-        filters.listId !== undefined ||
-        filters.labelId !== undefined ||
-        filters.priority !== undefined ||
-        (filters.status && filters.status !== "all") ||
-        (filters.sort && filters.sort !== "relevance");
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        const params = new URLSearchParams(window.location.search);
+        if (query.trim()) params.set("q", query.trim()); else params.delete("q");
+        router.push(`/search?${params.toString()}`);
+    };
 
-    const handleEditTask = useCallback((task: Task) => {
-        setEditingTask(task);
-    }, []);
+    const updateFilter = (key: keyof SearchFilters, value: any) => {
+        const params = new URLSearchParams(window.location.search);
+        if (value === undefined || value === null || value === "all" || value === "") params.delete(key); else params.set(key, String(value));
+        router.push(`/search?${params.toString()}`);
+    };
 
-    const navigateToTask = useCallback((taskId: number) => {
-        router.push(`/search?taskId=${taskId}`);
-    }, [router]);
+    const clearFilters = () => {
+        const params = new URLSearchParams(window.location.search);
+        ["listId", "labelId", "priority", "status", "sort", "sortOrder"].forEach(k => params.delete(k));
+        router.push(`/search?${params.toString()}`);
+    };
 
-    // Group tasks (simplified grouping logic for search)
-    const groups = useMemo(() => {
-        if (!taskResults.length) return [];
-        return [{
-            title: "Tasks",
-            items: taskResults
-        }];
-    }, [taskResults]);
-
-    const groupCounts = useMemo(() => {
-        return groups.map(g => g.items.length);
-    }, [groups]);
+    const navigateToTask = (taskId: number) => router.push(`/search?taskId=${taskId}`);
 
     return (
         <div className="flex flex-col gap-6">
-            {/* Header */}
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">Search</h1>
-                <p className="text-muted-foreground">
-                    Search across tasks, lists, and labels.
-                </p>
+                <p className="text-muted-foreground">Search across tasks, lists, and labels.</p>
             </div>
 
-            {/* Search bar */}
             <form onSubmit={handleSearch} className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -209,357 +120,34 @@ export function SearchPageClient({
                     type="text"
                     placeholder="Search tasks, lists, labels..."
                     value={query}
-                    onChange={(e) => setQuery(e.target.value)}
+                    onChange={(e) => dispatch({ type: 'SET_QUERY', payload: e.target.value })}
                     className="h-11 pl-9 pr-10 text-base"
                 />
                 {query && (
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
-                        onClick={() => {
-                            setQuery("");
-                            inputRef.current?.focus();
-                        }}
-                    >
+                    <Button type="button" variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0" onClick={() => { dispatch({ type: 'SET_QUERY', payload: "" }); inputRef.current?.focus(); }}>
                         <X className="h-4 w-4" />
                     </Button>
                 )}
             </form>
 
-            {/* Filter toggle + active filter badges */}
-            <div className="flex items-center gap-2 flex-wrap">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowFilters(!showFilters)}
-                    className={cn(
-                        hasActiveFilters && "border-primary text-primary"
-                    )}
-                >
-                    <SlidersHorizontal className="mr-2 h-3.5 w-3.5" />
-                    Filters
-                    {showFilters ? (
-                        <ChevronUp className="ml-1 h-3.5 w-3.5" />
-                    ) : (
-                        <ChevronDown className="ml-1 h-3.5 w-3.5" />
-                    )}
-                </Button>
-                {hasActiveFilters && (
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={clearFilters}
-                        className="text-muted-foreground"
-                    >
-                        Clear all
-                    </Button>
-                )}
-                {filters.listId !== undefined && filters.listId !== null && (
-                    <Badge variant="secondary" className="gap-1">
-                        <FolderOpen className="h-3 w-3" />
-                        {allLists.find((l) => l.id === filters.listId)?.name ??
-                            "List"}
-                        <button
-                            onClick={() => updateFilter("listId", undefined)}
-                            className="ml-1 hover:text-foreground"
-                        >
-                            <X className="h-3 w-3" />
-                        </button>
-                    </Badge>
-                )}
-                {filters.labelId && (
-                    <Badge variant="secondary" className="gap-1">
-                        <Tag className="h-3 w-3" />
-                        {allLabels.find((l) => l.id === filters.labelId)
-                            ?.name ?? "Label"}
-                        <button
-                            onClick={() => updateFilter("labelId", undefined)}
-                            className="ml-1 hover:text-foreground"
-                        >
-                            <X className="h-3 w-3" />
-                        </button>
-                    </Badge>
-                )}
-                {filters.priority && (
-                    <Badge variant="secondary" className="gap-1">
-                        <AlertCircle className="h-3 w-3" />
-                        {filters.priority}
-                        <button
-                            onClick={() =>
-                                updateFilter("priority", undefined)
-                            }
-                            className="ml-1 hover:text-foreground"
-                        >
-                            <X className="h-3 w-3" />
-                        </button>
-                    </Badge>
-                )}
-                {filters.status && filters.status !== "all" && (
-                    <Badge variant="secondary" className="gap-1">
-                        {filters.status === "completed" ? (
-                            <CheckCircle className="h-3 w-3" />
-                        ) : (
-                            <Circle className="h-3 w-3" />
-                        )}
-                        {filters.status}
-                        <button
-                            onClick={() => updateFilter("status", undefined)}
-                            className="ml-1 hover:text-foreground"
-                        >
-                            <X className="h-3 w-3" />
-                        </button>
-                    </Badge>
-                )}
-            </div>
+            <SearchFiltersPanel
+                filters={filters}
+                showFilters={showFilters}
+                onToggleFilters={() => dispatch({ type: 'TOGGLE_FILTERS' })}
+                onUpdateFilter={updateFilter}
+                onClearFilters={clearFilters}
+                allLists={allLists}
+                allLabels={allLabels}
+            />
 
-            {/* Filters panel */}
-            {showFilters && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 rounded-lg border bg-card">
-                    <div className="space-y-1.5">
-                        <label htmlFor="search-filter-list" className="text-xs font-medium text-muted-foreground">
-                            List
-                        </label>
-                        <Select
-                            value={
-                                filters.listId !== undefined &&
-                                    filters.listId !== null
-                                    ? String(filters.listId)
-                                    : "all"
-                            }
-                            onValueChange={(v) =>
-                                updateFilter(
-                                    "listId",
-                                    v === "all" ? undefined : Number(v)
-                                )
-                            }
-                        >
-                            <SelectTrigger id="search-filter-list" className="h-8">
-                                <SelectValue placeholder="All lists" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All lists</SelectItem>
-                                {allLists.map((l) => (
-                                    <SelectItem
-                                        key={l.id}
-                                        value={String(l.id)}
-                                    >
-                                        {l.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                        <label htmlFor="search-filter-label" className="text-xs font-medium text-muted-foreground">
-                            Label
-                        </label>
-                        <Select
-                            value={
-                                filters.labelId
-                                    ? String(filters.labelId)
-                                    : "all"
-                            }
-                            onValueChange={(v) =>
-                                updateFilter(
-                                    "labelId",
-                                    v === "all" ? undefined : Number(v)
-                                )
-                            }
-                        >
-                            <SelectTrigger id="search-filter-label" className="h-8">
-                                <SelectValue placeholder="All labels" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All labels</SelectItem>
-                                {allLabels.map((l) => (
-                                    <SelectItem
-                                        key={l.id}
-                                        value={String(l.id)}
-                                    >
-                                        {l.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                        <label htmlFor="search-filter-priority" className="text-xs font-medium text-muted-foreground">
-                            Priority
-                        </label>
-                        <Select
-                            value={filters.priority ?? "all"}
-                            onValueChange={(v) =>
-                                updateFilter(
-                                    "priority",
-                                    v === "all"
-                                        ? undefined
-                                        : (v as SearchFilters["priority"])
-                                )
-                            }
-                        >
-                            <SelectTrigger id="search-filter-priority" className="h-8">
-                                <SelectValue placeholder="Any priority" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">
-                                    Any priority
-                                </SelectItem>
-                                <SelectItem value="high">High</SelectItem>
-                                <SelectItem value="medium">Medium</SelectItem>
-                                <SelectItem value="low">Low</SelectItem>
-                                <SelectItem value="none">None</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                        <label htmlFor="search-filter-status" className="text-xs font-medium text-muted-foreground">
-                            Status
-                        </label>
-                        <Select
-                            value={filters.status ?? "all"}
-                            onValueChange={(v) =>
-                                updateFilter(
-                                    "status",
-                                    v as SearchFilters["status"]
-                                )
-                            }
-                        >
-                            <SelectTrigger id="search-filter-status" className="h-8">
-                                <SelectValue placeholder="Any status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All</SelectItem>
-                                <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="completed">
-                                    Completed
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                        <label htmlFor="search-filter-sort" className="text-xs font-medium text-muted-foreground">
-                            Sort by
-                        </label>
-                        <Select
-                            value={filters.sort ?? "relevance"}
-                            onValueChange={(v) =>
-                                updateFilter(
-                                    "sort",
-                                    v as SearchFilters["sort"]
-                                )
-                            }
-                        >
-                            <SelectTrigger id="search-filter-sort" className="h-8">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="relevance">
-                                    Relevance
-                                </SelectItem>
-                                <SelectItem value="created">
-                                    Created date
-                                </SelectItem>
-                                <SelectItem value="due">Due date</SelectItem>
-                                <SelectItem value="priority">
-                                    Priority
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                        <label htmlFor="search-filter-order" className="text-xs font-medium text-muted-foreground">
-                            Order
-                        </label>
-                        <Select
-                            value={filters.sortOrder ?? "desc"}
-                            onValueChange={(v) =>
-                                updateFilter(
-                                    "sortOrder",
-                                    v as SearchFilters["sortOrder"]
-                                )
-                            }
-                        >
-                            <SelectTrigger id="search-filter-order" className="h-8">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="desc">
-                                    Newest first
-                                </SelectItem>
-                                <SelectItem value="asc">
-                                    Oldest first
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-            )}
-
-            <Suspense fallback={<div className="h-full flex items-center justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>}>
-                <div className="flex-1 min-h-[500px]">
-                    {initialResults && initialResults.length > 0 ? (
-                        <GroupedVirtuoso
-                            style={{ height: '100%' }}
-                            groupCounts={groupCounts}
-                            groupContent={(index) => {
-                                const group = groups[index];
-                                return (
-                                    <div className="bg-background/95 backdrop-blur-sm pt-4 pb-2 z-10 sticky top-0 border-b mb-2">
-                                        <h3 className="font-semibold text-lg flex items-center gap-2">
-                                            {group.title}
-                                            <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                                                {group.items.length}
-                                            </span>
-                                        </h3>
-                                    </div>
-                                );
-                            }}
-                            itemContent={(index, groupIndex) => {
-                                const item = groups[groupIndex].items[index];
-                                return (
-                                    <div className="py-1 px-1">
-                                        <TaskItem
-                                            task={item}
-                                            userId={userId}
-                                            compact
-                                            onClick={() => navigateToTask(item.id)}
-                                        />
-                                    </div>
-                                );
-                            }}
-                        />
-                    ) : (
-                        <div className="h-full flex flex-col items-center justify-center text-muted-foreground p-8">
-                            <Search className="w-12 h-12 mb-4 opacity-20" />
-                            <p className="text-lg font-medium">No results found</p>
-                            <p className="text-sm">Try adjusting your search or filters</p>
-                        </div>
-                    )}
-                </div>
-            </Suspense>
-
-            {/* Empty state */}
-            {!initialQuery && !results && (
+            {!initialQuery && !results ? (
                 <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                     <Search className="h-12 w-12 mb-4 opacity-20" />
                     <p className="text-lg font-medium">Search your tasks</p>
-                    <p className="text-sm">
-                        Find tasks, lists, and labels by name or description.
-                    </p>
-                    <p className="text-xs mt-2">
-                        Tip: Use{" "}
-                        <kbd className="px-1.5 py-0.5 rounded border bg-muted text-[10px] font-mono">
-                            ⌘K
-                        </kbd>{" "}
-                        for quick command palette
-                    </p>
+                    <p className="text-sm">Find tasks, lists, and labels by name or description.</p>
+                    <p className="text-xs mt-2">Tip: Use <kbd className="px-1.5 py-0.5 rounded border bg-muted text-[10px] font-mono">⌘K</kbd> for quick command palette</p>
                 </div>
-            )}
-
-            {/* Results */}
-            {results && initialQuery && (
+            ) : results && initialQuery ? (
                 <div className="flex flex-col gap-8">
                     <div>
                         <h2 className="text-xl font-semibold tracking-tight">
@@ -572,72 +160,9 @@ export function SearchPageClient({
                         </p>
                     </div>
 
-                    {/* Lists section */}
-                    {results.lists.length > 0 && (
-                        <section>
-                            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                                <FolderOpen className="h-4 w-4" />
-                                Lists ({results.lists.length})
-                            </h2>
-                            <div className="grid gap-2">
-                                {results.lists.map((list) => (
-                                    <Link
-                                        key={list.id}
-                                        href={`/lists/${list.id}`}
-                                        className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent transition-colors"
-                                    >
-                                        <div
-                                            className="h-3 w-3 rounded-full shrink-0"
-                                            style={{
-                                                backgroundColor:
-                                                    list.color ?? "#000",
-                                            }}
-                                        />
-                                        <div className="min-w-0">
-                                            <p className="font-medium truncate">
-                                                {list.name}
-                                            </p>
-                                            {list.description && (
-                                                <p className="text-xs text-muted-foreground truncate">
-                                                    {list.description}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </Link>
-                                ))}
-                            </div>
-                        </section>
-                    )}
+                    <SearchResultLists lists={results.lists} />
+                    <SearchResultLabels labels={results.labels} />
 
-                    {/* Labels section */}
-                    {results.labels.length > 0 && (
-                        <section>
-                            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                                <Tag className="h-4 w-4" />
-                                Labels ({results.labels.length})
-                            </h2>
-                            <div className="flex flex-wrap gap-2">
-                                {results.labels.map((label) => (
-                                    <Link
-                                        key={label.id}
-                                        href={`/labels/${label.id}`}
-                                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-card hover:bg-accent transition-colors text-sm"
-                                    >
-                                        <div
-                                            className="h-2.5 w-2.5 rounded-full shrink-0"
-                                            style={{
-                                                backgroundColor:
-                                                    label.color ?? "#000",
-                                            }}
-                                        />
-                                        {label.name}
-                                    </Link>
-                                ))}
-                            </div>
-                        </section>
-                    )}
-
-                    {/* Tasks section */}
                     <section>
                         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
                             <ListTodo className="h-4 w-4" />
@@ -651,57 +176,31 @@ export function SearchPageClient({
                                         task={task as Task}
                                         showListInfo
                                         userId={userId}
-                                        onEdit={handleEditTask}
+                                        onEdit={(t) => dispatch({ type: 'SET_EDITING_TASK', payload: t })}
                                     />
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-sm text-muted-foreground py-4">
-                                No tasks found.
-                            </p>
+                            <p className="text-sm text-muted-foreground py-4">No tasks found.</p>
                         )}
 
-                        {hasMore && (
-                            <div
-                                ref={sentinelRef}
-                                className="flex justify-center py-4"
-                            >
-                                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                            </div>
-                        )}
-                        {isLoadingMore && (
-                            <div className="flex justify-center py-2">
-                                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                            </div>
-                        )}
+                        {hasMore && <div ref={sentinelRef} className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>}
+                        {isLoadingMore && <div className="flex justify-center py-2"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>}
                     </section>
-
-                    {/* No results at all */}
-                    {results.totalTasks === 0 &&
-                        results.lists.length === 0 &&
-                        results.labels.length === 0 && (
-                            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                                <Search className="h-10 w-10 mb-3 opacity-20" />
-                                <p className="text-base font-medium">
-                                    No results found
-                                </p>
-                                <p className="text-sm">
-                                    Try a different search term or adjust your
-                                    filters.
-                                </p>
-                            </div>
-                        )}
+                </div>
+            ) : (
+                <div className="h-full flex flex-col items-center justify-center text-muted-foreground p-8">
+                    <Search className="w-12 h-12 mb-4 opacity-20" />
+                    <p className="text-lg font-medium">No results found</p>
+                    <p className="text-sm">Try adjusting your search or filters</p>
                 </div>
             )}
 
-            {/* Task edit dialog */}
             {editingTask && (
                 <TaskDialog
                     task={{ ...editingTask, icon: editingTask.icon ?? null } as TaskType}
                     open={!!editingTask}
-                    onOpenChange={(open) => {
-                        if (!open) setEditingTask(null);
-                    }}
+                    onOpenChange={(open) => { if (!open) dispatch({ type: 'SET_EDITING_TASK', payload: null }); }}
                     userId={userId}
                 />
             )}

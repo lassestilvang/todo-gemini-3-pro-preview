@@ -1,25 +1,25 @@
 "use client";
 
 import { useMemo } from "react";
-import {
-    BarChart,
-    Bar,
-    LineChart,
-    Line,
-    PieChart,
-    Pie,
-    Cell,
-    XAxis,
-    YAxis,
-    Tooltip,
-    Legend,
-    ResponsiveContainer,
-    Radar,
-    RadarChart,
-    PolarGrid,
-    PolarAngleAxis,
-    PolarRadiusAxis
-} from "recharts";
+import dynamic from "next/dynamic";
+
+const BarChart = dynamic(() => import("recharts").then(m => m.BarChart as any), { ssr: false });
+const Bar = dynamic(() => import("recharts").then(m => m.Bar as any), { ssr: false });
+const LineChart = dynamic(() => import("recharts").then(m => m.LineChart as any), { ssr: false });
+const Line = dynamic(() => import("recharts").then(m => m.Line as any), { ssr: false });
+const PieChart = dynamic(() => import("recharts").then(m => m.PieChart as any), { ssr: false });
+const Pie = dynamic(() => import("recharts").then(m => m.Pie as any), { ssr: false });
+const Cell = dynamic(() => import("recharts").then(m => m.Cell as any), { ssr: false });
+const XAxis = dynamic(() => import("recharts").then(m => m.XAxis as any), { ssr: false });
+const YAxis = dynamic(() => import("recharts").then(m => m.YAxis as any), { ssr: false });
+const Tooltip = dynamic(() => import("recharts").then(m => m.Tooltip as any), { ssr: false });
+const Legend = dynamic(() => import("recharts").then(m => m.Legend as any), { ssr: false });
+const ResponsiveContainer = dynamic(() => import("recharts").then(m => m.ResponsiveContainer as any), { ssr: false });
+const Radar = dynamic(() => import("recharts").then(m => m.Radar as any), { ssr: false });
+const RadarChart = dynamic(() => import("recharts").then(m => m.RadarChart as any), { ssr: false });
+const PolarGrid = dynamic(() => import("recharts").then(m => m.PolarGrid as any), { ssr: false });
+const PolarAngleAxis = dynamic(() => import("recharts").then(m => m.PolarAngleAxis as any), { ssr: false });
+const PolarRadiusAxis = dynamic(() => import("recharts").then(m => m.PolarRadiusAxis as any), { ssr: false });
 import { cn } from "@/lib/utils";
 import React from "react";
 
@@ -133,9 +133,9 @@ export const AnalyticsCharts = React.memo(function AnalyticsCharts({ data }: { d
             <div className="border rounded-lg p-6 bg-card shadow-sm">
                 <h3 className="text-lg font-semibold mb-4">Productivity Heatmap (Last 90 Days)</h3>
                 <div className="flex flex-wrap gap-1">
-                    {data.heatmapData.map((d, i) => (
+                    {data.heatmapData.map((d) => (
                         <div
-                            key={i}
+                            key={d.date}
                             className={cn(
                                 "w-3 h-3 rounded-[2px] transition-colors",
                                 d.level === 0 && "bg-muted/30",
@@ -192,8 +192,8 @@ export const AnalyticsCharts = React.memo(function AnalyticsCharts({ data }: { d
                                 fill="#8884d8"
                                 dataKey="value"
                             >
-                                {priorityData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                {priorityData.map((entry) => (
+                                    <Cell key={entry.name} fill={entry.color} />
                                 ))}
                             </Pie>
                             <Tooltip contentStyle={{ borderRadius: '12px' }} />

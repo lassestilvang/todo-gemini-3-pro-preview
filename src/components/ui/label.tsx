@@ -1,4 +1,5 @@
 "use client"
+/* eslint-disable jsx-a11y/label-has-associated-control */
 
 import * as React from "react"
 import { cn } from "@/lib/utils"
@@ -9,6 +10,7 @@ const Label = React.forwardRef<
 >(({ className, ...props }, ref) => (
     <label
         ref={ref}
+        htmlFor={props.htmlFor}
         className={cn(
             "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
             className

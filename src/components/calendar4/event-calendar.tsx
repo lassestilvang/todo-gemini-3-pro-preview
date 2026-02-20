@@ -36,6 +36,8 @@ export interface EventCalendarProps extends Omit<CalendarOptions, 'class'> {
   }
 }
 
+const EMPTY_PLUGINS: any[] = []
+
 export function EventCalendar({
   availableViews = defaultAvailableViews,
   addButton,
@@ -43,7 +45,7 @@ export function EventCalendar({
   height,
   contentHeight,
   direction,
-  plugins: userPlugins = [],
+  plugins: userPlugins = EMPTY_PLUGINS,
   ...restOptions
 }: EventCalendarProps) {
   const controller = useCalendarController()

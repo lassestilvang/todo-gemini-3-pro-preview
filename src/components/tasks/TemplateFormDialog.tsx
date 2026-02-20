@@ -37,6 +37,9 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Info } from "lucide-react";
 
+import { TemplateBasicInfo } from "./template-form/TemplateBasicInfo";
+import { TemplateTaskProperties } from "./template-form/TemplateTaskProperties";
+
 type Template = {
   id: number;
   name: string;
@@ -210,190 +213,16 @@ function TemplateFormDialogContent({
         )}
 
         <div className="grid gap-6 py-4">
-          {/* Template Name */}
-          <div className="space-y-2">
-            <Label htmlFor="template-name">Template Name</Label>
-            <Input
-              id="template-name"
-              value={formData.name}
-              onChange={(e) => updateField("name", e.target.value)}
-              placeholder="e.g., Weekly Report"
-              className={cn(errors.name && "border-destructive")}
-              data-testid="template-name-input"
-            />
-            {errors.name && (
-              <p className="text-sm text-destructive" data-testid="name-error">
-                {errors.name}
-              </p>
-            )}
-          </div>
+          <TemplateBasicInfo
+            formData={formData}
+            errors={errors}
+            updateField={updateField}
+          />
 
-          {/* Task Title */}
-          <div className="space-y-2">
-            <Label htmlFor="task-title">Task Title</Label>
-            <Input
-              id="task-title"
-              value={formData.title}
-              onChange={(e) => updateField("title", e.target.value)}
-              placeholder="e.g., Complete {date} report"
-              className={cn(errors.title && "border-destructive")}
-              data-testid="task-title-input"
-            />
-            {errors.title && (
-              <p className="text-sm text-destructive" data-testid="title-error">
-                {errors.title}
-              </p>
-            )}
-            <VariableHelperText />
-          </div>
-
-          {/* Task Description */}
-          <div className="space-y-2">
-            <Label htmlFor="task-description">Description (optional)</Label>
-            <Textarea
-              id="task-description"
-              value={formData.description}
-              onChange={(e) => updateField("description", e.target.value)}
-              placeholder="Add a description..."
-              className="min-h-[80px]"
-              data-testid="task-description-input"
-            />
-            <VariableHelperText />
-          </div>
-
-          {/* Dropdowns Row */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* Priority */}
-            <div className="space-y-2">
-              <Label>Priority</Label>
-              <Select
-                value={formData.priority}
-                onValueChange={(value) =>
-                  updateField("priority", value as TemplateFormData["priority"])
-                }
-              >
-                <SelectTrigger data-testid="priority-select">
-                  <SelectValue placeholder="Select priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Due Date Type */}
-            <div className="space-y-2">
-              <Label>Due Date</Label>
-              <Select
-                value={formData.dueDateType}
-                onValueChange={(value) =>
-                  updateField("dueDateType", value as TemplateFormData["dueDateType"])
-                }
-              >
-                <SelectTrigger data-testid="due-date-select">
-                  <SelectValue placeholder="Select due date" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  <SelectItem value="today">Today</SelectItem>
-                  <SelectItem value="tomorrow">Tomorrow</SelectItem>
-                  <SelectItem value="next_week">Next Week</SelectItem>
-                  <SelectItem value="custom">Custom (days)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Custom Days Input (shown when dueDateType is "custom") */}
-          {formData.dueDateType === "custom" && (
-            <div className="space-y-2">
-              <Label htmlFor="due-date-days">Days from now</Label>
-              <Input
-                id="due-date-days"
-                type="number"
-                min="1"
-                value={formData.dueDateDays || ""}
-                onChange={(e) =>
-                  updateField(
-                    "dueDateDays",
-                    e.target.value ? parseInt(e.target.value, 10) : undefined
-                  )
-                }
-                placeholder="e.g., 3"
-                data-testid="due-date-days-input"
-              />
-            </div>
-          )}
-
-          {/* Second Row of Dropdowns */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* Energy Level */}
-            <div className="space-y-2">
-              <Label>Energy Level</Label>
-              <Select
-                value={formData.energyLevel}
-                onValueChange={(value) =>
-                  updateField("energyLevel", value as TemplateFormData["energyLevel"])
-                }
-              >
-                <SelectTrigger data-testid="energy-select">
-                  <SelectValue placeholder="Select energy" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  <SelectItem value="low">Low 🪫</SelectItem>
-                  <SelectItem value="medium">Medium 🔌</SelectItem>
-                  <SelectItem value="high">High 🔋</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Context */}
-            <div className="space-y-2">
-              <Label>Context</Label>
-              <Select
-                value={formData.context}
-                onValueChange={(value) =>
-                  updateField("context", value as TemplateFormData["context"])
-                }
-              >
-                <SelectTrigger data-testid="context-select">
-                  <SelectValue placeholder="Select context" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  <SelectItem value="computer">Computer 💻</SelectItem>
-                  <SelectItem value="phone">Phone 📱</SelectItem>
-                  <SelectItem value="errands">Errands 🏃</SelectItem>
-                  <SelectItem value="meeting">Meeting 👥</SelectItem>
-                  <SelectItem value="home">Home 🏠</SelectItem>
-                  <SelectItem value="anywhere">Anywhere 🌍</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Estimate */}
-          <div className="space-y-2">
-            <Label htmlFor="estimate">Time Estimate (minutes)</Label>
-            <Input
-              id="estimate"
-              type="number"
-              min="0"
-              value={formData.estimateMinutes || ""}
-              onChange={(e) =>
-                updateField(
-                  "estimateMinutes",
-                  e.target.value ? parseInt(e.target.value, 10) : undefined
-                )
-              }
-              placeholder="e.g., 30"
-              data-testid="estimate-input"
-            />
-          </div>
+          <TemplateTaskProperties
+            formData={formData}
+            updateField={updateField}
+          />
 
           {/* Subtasks */}
           <SubtaskForm
@@ -422,27 +251,11 @@ function TemplateFormDialogContent({
             {isSubmitting
               ? "Saving..."
               : isEditMode
-              ? "Save Changes"
-              : "Create Template"}
+                ? "Save Changes"
+                : "Create Template"}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-}
-
-/**
- * Helper text showing available variables for text fields
- */
-function VariableHelperText() {
-  return (
-    <p className="flex items-center gap-1 text-xs text-muted-foreground">
-      <Info className="h-3 w-3" />
-      <span>
-        Available variables: <code className="bg-muted px-1 rounded">{"{date}"}</code>,{" "}
-        <code className="bg-muted px-1 rounded">{"{tomorrow}"}</code>,{" "}
-        <code className="bg-muted px-1 rounded">{"{next_week}"}</code>
-      </span>
-    </p>
   );
 }

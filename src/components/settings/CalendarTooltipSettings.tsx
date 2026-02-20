@@ -25,9 +25,9 @@ export function CalendarTooltipSettings({
     initialDenseTooltipThreshold,
 }: CalendarTooltipSettingsProps) {
     const [useNativeTooltips, setUseNativeTooltips] = useState<boolean | null>(
-        initialUseNativeTooltipsOnDenseDays
+        () => initialUseNativeTooltipsOnDenseDays
     );
-    const [threshold, setThreshold] = useState<number | null>(initialDenseTooltipThreshold);
+    const [threshold, setThreshold] = useState<number | null>(() => initialDenseTooltipThreshold);
     const { execute, isLoading } = useActionResult<void>();
 
     const clampedThreshold = getEffectiveCalendarDenseTooltipThreshold(threshold, DEFAULT_THRESHOLD);

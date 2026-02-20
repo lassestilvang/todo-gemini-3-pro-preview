@@ -9,9 +9,9 @@ import type {
   EventReceiveData,
 } from "@fullcalendar/react";
 import { Draggable } from "@fullcalendar/react/interaction";
-import { useSearchParams } from "next/navigation";
 import { endOfDay, startOfDay } from "date-fns";
 import { Calendar3Main } from "@/components/calendar3/Calendar3Main";
+import { useSearchParams as useNextSearchParams } from "next/navigation";
 import { Calendar3TaskColumn } from "@/components/calendar3/Calendar3TaskColumn";
 import { CalendarQuickCreateDialog } from "@/components/calendar2/CalendarQuickCreateDialog";
 import { useTaskStore } from "@/lib/store/task-store";
@@ -39,20 +39,20 @@ function partitionTasks(tasks: Task[]) {
   return { active, completed };
 }
 
-export function Calendar3Client(props: Calendar3ClientProps) {
+export default function Calendar3Client(props: Calendar3ClientProps) {
   return (
     <Suspense fallback={<div className="h-full flex items-center justify-center p-8">Loading calendar...</div>}>
-      <Calendar3ClientInner {...props} />
+      <Calendar3ClientActual {...props} />
     </Suspense>
   )
 }
 
-function Calendar3ClientInner({ initialTasks, initialLists }: Calendar3ClientProps) {
+function Calendar3ClientActual({ initialTasks, initialLists }: Calendar3ClientProps) {
   const { tasks: taskMap, setTasks } = useTaskStore();
   const { lists: listMap, setLists } = useListStore();
   const { dispatch } = useSync();
   const { userId } = useUser();
-  const searchParams = useSearchParams();
+  const searchParams = useNextSearchParams();
 
   const tasks = useMemo(() => {
     const storeTasks = Object.values(taskMap) as Task[];

@@ -30,24 +30,26 @@ export function PomodoroTimer() {
 
         const interval = setInterval(() => {
             setTimeLeft((prev) => {
-                if (prev <= 1) {
-                    setIsActive(false);
-                    if (typeof window !== "undefined") {
-                        const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
-                        audio.play().catch(() => { });
-                        toast.success(`${MODES[mode].label} complete!`);
-                    }
-                    return 0;
-                }
-
-                return prev - 1;
+                const next = prev - 1;
+                return next < 0 ? 0 : next;
             });
         }, 1000);
 
         return () => {
             clearInterval(interval);
         };
-    }, [isActive, mode, timeLeft]);
+    }, [isActive, timeLeft]);
+
+    useEffect(() => {
+        if (isActive && timeLeft === 0) {
+            setTimeout(() => setIsActive(false), 0);
+            if (typeof window !== "undefined") {
+                const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
+                audio.play().catch(() => { });
+                toast.success(`${MODES[mode].label} complete!`);
+            }
+        }
+    }, [isActive, timeLeft, mode]);
 
     const resetTimer = () => {
         setIsActive(false);

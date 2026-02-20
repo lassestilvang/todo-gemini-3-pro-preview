@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
     Dialog,
@@ -15,6 +15,10 @@ export function KeyboardShortcuts() {
     const router = useRouter();
     const [showHelp, setShowHelp] = useState(false);
 
+    const handleCreate = useCallback(() => {
+        router.push("?create=true");
+    }, [router]);
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             const target = e.target as HTMLElement;
@@ -22,9 +26,11 @@ export function KeyboardShortcuts() {
                 return;
             }
 
-            if (e.key === "C") {
-                e.preventDefault();
-                router.push("?create=true");
+            if (e.key === "C" || e.key === "c") {
+                if (e.shiftKey) {
+                    e.preventDefault();
+                    handleCreate();
+                }
             }
 
             if (e.key === "?" || (e.key === "h" && e.shiftKey)) {

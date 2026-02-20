@@ -1,8 +1,8 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Todo Gemini | Achievements",
-  description: "Manage your tasks efficiently with Todo Gemini."
+    title: "Todo Gemini | Achievements",
+    description: "Manage your tasks efficiently with Todo Gemini."
 };
 
 import { getAchievements, getUserAchievements, getUserStats, getCompletionHistory } from "@/lib/actions";
@@ -21,10 +21,12 @@ export default async function AchievementsPage() {
         redirect("/login");
     }
 
-    const stats = await getUserStats(user.id);
-    const allAchievements = await getAchievements();
-    const userAchievements = await getUserAchievements(user.id);
-    const completionHistory = await getCompletionHistory(user.id);
+    const [stats, allAchievements, userAchievements, completionHistory] = await Promise.all([
+        getUserStats(user.id),
+        getAchievements(),
+        getUserAchievements(user.id),
+        getCompletionHistory(user.id)
+    ]);
 
     const unlockedIds = new Set(userAchievements.map(u => u.achievementId));
 

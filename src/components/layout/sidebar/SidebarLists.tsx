@@ -3,7 +3,7 @@
 
 import React, { useState, memo, useMemo, Suspense } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams as useNextSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Plus, GripVertical, ArrowUpDown } from "lucide-react";
@@ -139,7 +139,7 @@ export function SidebarLists(props: SidebarListsProps) {
 
 function SidebarListsInner({ lists: ssrLists, userId }: SidebarListsProps) {
     const pathname = usePathname();
-    const searchParams = useSearchParams();
+    const searchParams = useNextSearchParams();
     const storeLists = useListStore(state => state.lists);
     const setStoreLists = useListStore(state => state.setLists);
     const { listCounts } = useTaskCounts();
