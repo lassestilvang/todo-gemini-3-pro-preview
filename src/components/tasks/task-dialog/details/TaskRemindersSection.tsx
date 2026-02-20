@@ -26,6 +26,7 @@ export function TaskRemindersSection({
 }: TaskRemindersSectionProps) {
     const reminderRange = useMemo(() => {
         if (!dueDate || dueDatePrecision === "day") return null;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return getDueRange(dueDate, dueDatePrecision as any, weekStartsOnMonday ?? false);
     }, [dueDate, dueDatePrecision, weekStartsOnMonday]);
 

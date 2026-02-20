@@ -36,6 +36,7 @@ export interface EventCalendarProps extends Omit<CalendarOptions, 'class'> {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const EMPTY_PLUGINS: any[] = []
 
 export function EventCalendar({

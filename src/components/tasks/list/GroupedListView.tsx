@@ -6,11 +6,13 @@ import { Task } from "@/lib/types";
 
 interface GroupedListViewProps {
     groupedEntries: Array<[string, Task[]]>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     groupedVirtualSections: any[];
     formattedGroupNames: Map<string, string>;
     listId?: number | null;
     userId?: string;
     onEdit: (task: Task) => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     dispatch: any;
     now?: Date;
     isClient?: boolean;

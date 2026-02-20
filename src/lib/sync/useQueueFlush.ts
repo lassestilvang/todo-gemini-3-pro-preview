@@ -11,7 +11,9 @@ export function useQueueFlush(params: {
 }) {
     const { setPendingActions, flushActionsRef, maxPendingQueue, flushIdleTimeoutMs } = params;
     const pendingQueueRef = useRef<PendingAction[]>([]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const flushTimerRef = useRef<any>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const flushIdleRef = useRef<any>(null);
 
     const flushQueuedActions = useCallback(async () => {
@@ -24,6 +26,7 @@ export function useQueueFlush(params: {
             flushTimerRef.current = null;
         }
         if (flushIdleRef.current !== null && 'cancelIdleCallback' in window) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (window as any).cancelIdleCallback(flushIdleRef.current);
             flushIdleRef.current = null;
         }
@@ -45,6 +48,7 @@ export function useQueueFlush(params: {
         if (flushTimerRef.current !== null || flushIdleRef.current !== null) return;
 
         if ('requestIdleCallback' in window) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             flushIdleRef.current = (window as any).requestIdleCallback(() => {
                 flushIdleRef.current = null;
                 void flushQueuedActions();

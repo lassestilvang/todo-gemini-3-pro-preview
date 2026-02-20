@@ -4,22 +4,39 @@ import { useMemo } from "react";
 import dynamic from "next/dynamic";
 
 // HACK: Cast to any to work around typing issues with recharts and Next.js dynamic import.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const BarChart = dynamic(() => import("recharts").then(m => m.BarChart), { ssr: false }) as any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Bar = dynamic(() => import("recharts").then(m => m.Bar), { ssr: false }) as any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const LineChart = dynamic(() => import("recharts").then(m => m.LineChart), { ssr: false }) as any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Line = dynamic(() => import("recharts").then(m => m.Line), { ssr: false }) as any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const PieChart = dynamic(() => import("recharts").then(m => m.PieChart), { ssr: false }) as any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Pie = dynamic(() => import("recharts").then(m => m.Pie), { ssr: false }) as any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Cell = dynamic(() => import("recharts").then(m => m.Cell), { ssr: false }) as any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const XAxis = dynamic(() => import("recharts").then(m => m.XAxis), { ssr: false }) as any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const YAxis = dynamic(() => import("recharts").then(m => m.YAxis), { ssr: false }) as any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Tooltip = dynamic(() => import("recharts").then(m => m.Tooltip), { ssr: false }) as any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Legend = dynamic(() => import("recharts").then(m => m.Legend), { ssr: false }) as any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ResponsiveContainer = dynamic(() => import("recharts").then(m => m.ResponsiveContainer), { ssr: false }) as any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Radar = dynamic(() => import("recharts").then(m => m.Radar), { ssr: false }) as any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const RadarChart = dynamic(() => import("recharts").then(m => m.RadarChart), { ssr: false }) as any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const PolarGrid = dynamic(() => import("recharts").then(m => m.PolarGrid), { ssr: false }) as any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const PolarAngleAxis = dynamic(() => import("recharts").then(m => m.PolarAngleAxis), { ssr: false }) as any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const PolarRadiusAxis = dynamic(() => import("recharts").then(m => m.PolarRadiusAxis), { ssr: false }) as any;
 import { cn } from "@/lib/utils";
 import React from "react";
@@ -291,6 +308,7 @@ export const AnalyticsCharts = React.memo(function AnalyticsCharts({ data }: { d
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={data.timeTracking.dailyTracked}>
                                 <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                 <YAxis tick={{ fontSize: 12 }} tickFormatter={(v: any) => `${Math.floor(v / 60)}h`} />
                                 <Tooltip
                                     formatter={(value: number | undefined) => [

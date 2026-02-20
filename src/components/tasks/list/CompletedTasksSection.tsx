@@ -9,6 +9,7 @@ interface CompletedTasksSectionProps {
     listId?: number | null;
     userId?: string;
     onEdit: (task: Task) => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     dispatch: any;
     now?: Date;
     isClient?: boolean;

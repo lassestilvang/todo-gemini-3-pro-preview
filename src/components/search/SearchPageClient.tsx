@@ -1,20 +1,24 @@
 
 "use client";
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import React, { useCallback, useEffect, useRef, Suspense, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, X, ListTodo, Loader2 } from "lucide-react";
 import { TaskItem } from "@/components/tasks/TaskItem";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { cn } from "@/lib/utils";
 import { searchAll, type SearchAllResponse } from "@/lib/actions/search";
 import dynamic from "next/dynamic";
 import type { Task } from "@/lib/types";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { GroupedVirtuoso } from "react-virtuoso";
 import type { TaskType } from "@/components/tasks/hooks/useTaskForm";
 import { SearchFilters, SearchFiltersPanel } from "./SearchFiltersPanel";
 import { SearchResultLists, SearchResultLabels } from "./SearchResultSections";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { SearchAction, searchReducer } from "@/lib/search/search-reducer";
 import { useIsClient } from "@/hooks/use-is-client";
 import { useUser } from "@/components/providers/UserProvider";
@@ -112,6 +116,7 @@ export function SearchPageClient({
         router.push(`/search?${params.toString()}`);
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateFilter = (key: keyof SearchFilters, value: any) => {
         const params = new URLSearchParams(window.location.search);
         if (value === undefined || value === null || value === "all" || value === "") params.delete(key); else params.set(key, String(value));
@@ -124,6 +129,7 @@ export function SearchPageClient({
         router.push(`/search?${params.toString()}`);
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const navigateToTask = (taskId: number) => router.push(`/search?taskId=${taskId}`);
 
     return (

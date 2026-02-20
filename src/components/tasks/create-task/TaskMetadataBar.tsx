@@ -62,6 +62,7 @@ export function TaskMetadataBar({ state, dispatchState, userId, isClient }: Task
                                     size="sm"
                                     className="justify-start"
                                     onClick={() => {
+                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                         dispatchState({ type: "SET_PRIORITY", payload: p as any });
                                         dispatchState({ type: "SET_UI_STATE", payload: { isPriorityOpen: false } });
                                     }}

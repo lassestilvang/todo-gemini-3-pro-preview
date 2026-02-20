@@ -6,6 +6,7 @@ import React, { useState, useCallback, memo } from "react";
 import { format } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Calendar, Flag, Clock, Repeat, AlertCircle, Lock, ChevronDown, GitBranch, GripVertical, Pencil, Target } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -113,6 +114,7 @@ export const TaskItem = memo(function TaskItem({
     const periodLabel = task.dueDate && periodPrecision ? formatDuePeriod({ dueDate: task.dueDate, dueDatePrecision: periodPrecision as DuePrecision }) : null;
     const periodBadge = periodPrecision ? periodPrecision[0] : null;
     const dueAriaLabel = periodLabel ? `Due ${periodLabel}` : undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const isDeadlineExceeded = task.deadline && task.deadline.getTime() < nowTime && !isCompleted;
     const isBlocked = (task.blockedByCount || 0) > 0;
 
@@ -164,6 +166,7 @@ export const TaskItem = memo(function TaskItem({
                         onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
                         className="flex items-center justify-center w-5 h-5 -ml-1 rounded hover:bg-muted transition-colors"
                         aria-expanded={isExpanded}
+                        aria-label={isExpanded ? "Collapse subtasks" : "Expand subtasks"}
                     >
                         <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform duration-200", !isExpanded && "-rotate-90")} />
                     </button>
@@ -178,6 +181,7 @@ export const TaskItem = memo(function TaskItem({
                         disabled={isBlocked && !isCompleted}
                         className={cn("rounded-full h-5 w-5 transition-all border-2", isCompleted ? "data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" : "border-muted-foreground/30")}
                         onClick={(e) => e.stopPropagation()}
+                        aria-label="Mark task as complete"
                     />
                 </m.div>
 

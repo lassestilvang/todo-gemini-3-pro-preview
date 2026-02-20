@@ -57,6 +57,7 @@ export function TaskSubtasksSection({
                         onChange={(e) => setNewSubtask(e.target.value)}
                         placeholder="Add a subtask..."
                         className="h-8 text-sm"
+                        aria-label="New subtask title"
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                                 e.preventDefault();

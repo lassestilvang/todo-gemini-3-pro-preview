@@ -25,6 +25,7 @@ interface SearchFiltersPanelProps {
     filters: SearchFilters;
     showFilters: boolean;
     onToggleFilters: () => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onUpdateFilter: (key: keyof SearchFilters, value: any) => void;
     onClearFilters: () => void;
     allLists: Array<{ id: number; name: string }>;

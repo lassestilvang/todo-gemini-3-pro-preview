@@ -1,39 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
-import { format, isToday, isYesterday, subDays, startOfDay, endOfDay } from "date-fns";
-import {
-    Search,
-    CheckCircle2,
-    Plus,
-    Pencil,
-    Trash2,
-    List,
-    Tag,
-    Clock,
-    ArrowUpRight,
-    History,
-    Calendar as CalendarIcon
-} from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Calendar } from "@/components/ui/calendar";
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover";
-import Link from "next/link";
+import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import { useRouter, useSearchParams as useNextSearchParams } from "next/navigation";
-import { formatTimePreference } from "@/lib/time-utils";
 import { GroupedVirtuoso } from "react-virtuoso";
 
 

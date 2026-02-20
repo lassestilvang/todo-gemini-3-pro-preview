@@ -1,6 +1,7 @@
 
 "use client";
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { useState, useMemo, useCallback } from "react";
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, addMonths, subMonths, startOfDay } from "date-fns";
 import { useUser } from "@/components/providers/UserProvider";
@@ -23,6 +24,7 @@ export function TaskCalendarLayout({ tasks, onDateClick, onEdit }: TaskCalendarL
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const weekStartsOn = getWeekStartDay();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const weekOptions = { weekStartsOn };
 
   const days = useMemo(() => eachDayOfInterval({

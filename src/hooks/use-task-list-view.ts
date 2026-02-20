@@ -177,7 +177,7 @@ export function useTaskListView({
         if (settings.groupBy === "none") return [];
         const groups = groupTasks(nonOverdueTasks, settings.groupBy);
 
-        let entries = Array.from(groups.entries());
+        const entries = Array.from(groups.entries());
         if (settings.groupBy === "dueDate") {
             entries.sort((a, b) => {
                 if (a[0] === "No Date") return 1;

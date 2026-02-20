@@ -12,6 +12,7 @@ export function applyOptimisticUpdate(
     const taskStore = useTaskStore.getState();
     const listStore = useListStore.getState();
     const labelStore = useLabelStore.getState();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = args as any;
 
     if (type === 'createTask') {
@@ -29,6 +30,7 @@ export function applyOptimisticUpdate(
             labels: [],
             priority: data.priority || "none",
             title: data.title
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any);
         return;
     }

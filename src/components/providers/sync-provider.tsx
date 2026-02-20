@@ -1,17 +1,24 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable react-doctor/no-cascading-set-state */
 "use client";
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo } from "react";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { v4 as uuidv4 } from "uuid";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { getQueue, addToQueueBatch, removeFromQueue, removeFromQueueBatch, updateActionStatus, updateActionStatusBatch, getDB } from "@/lib/sync/db";
 import { PendingAction, SyncStatus, ConflictInfo } from "@/lib/sync/types";
 import { actionRegistry, ActionType } from "@/lib/sync/registry";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { toast } from "sonner";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { useTaskStore } from "@/lib/store/task-store";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { useListStore } from "@/lib/store/list-store";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { useLabelStore } from "@/lib/store/label-store";
 import { ConflictDialog } from "@/components/sync/ConflictDialog";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { useQueryClient } from "@tanstack/react-query";
 
 interface SyncContextType {

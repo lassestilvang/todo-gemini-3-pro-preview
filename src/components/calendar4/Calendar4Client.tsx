@@ -40,6 +40,7 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
     const tasks = useMemo(() => Object.values(taskMap).length > 0 ? Object.values(taskMap) as Task[] : initialTasks, [taskMap, initialTasks]);
     const lists = useMemo(() => Object.values(listMap).length > 0 ? Object.values(listMap) : initialLists, [listMap, initialLists]);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [uiState, dispatchUI] = useReducer((state: any, action: any) => {
         switch (action.type) {
             case "TOGGLE_LIST": {
@@ -90,6 +91,7 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
         };
     }), [tasks, visibleListIds, lists]);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleEventAction = useCallback((id: number, updates: any) => {
         const existing = taskMap[id];
         if (!existing || !userId) return;
@@ -97,7 +99,9 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
         dispatch("updateTask", id, userId, { ...updates, expectedUpdatedAt: existing.updatedAt ?? null });
     }, [dispatch, taskMap, userId, upsertTask]);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleEventDrop = useCallback((info: any) => handleEventAction(Number(info.event.extendedProps.taskId), { dueDate: info.event.start }), [handleEventAction]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleEventResize = useCallback((info: any) => {
         const mins = Math.max(1, Math.round((info.event.end.getTime() - info.event.start.getTime()) / 60000));
         handleEventAction(Number(info.event.extendedProps.taskId), { estimateMinutes: mins });

@@ -58,6 +58,7 @@ export function FilterSection({
                         <span className="text-sm text-muted-foreground">Priority</span>
                         <Select
                             value={settings.filterPriority || "all"}
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             onValueChange={(value) => onUpdate("filterPriority", value === "all" ? null : value as any)}
                         >
                             <SelectTrigger className="w-[140px]" size="sm">
@@ -95,6 +96,7 @@ export function FilterSection({
                         <span className="text-sm text-muted-foreground">Energy</span>
                         <Select
                             value={settings.filterEnergyLevel || "all"}
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             onValueChange={(value) => onUpdate("filterEnergyLevel", value === "all" ? null : value as any)}
                         >
                             <SelectTrigger className="w-[140px]" size="sm">
@@ -112,6 +114,7 @@ export function FilterSection({
                         <span className="text-sm text-muted-foreground">Context</span>
                         <Select
                             value={settings.filterContext || "all"}
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             onValueChange={(value) => onUpdate("filterContext", value === "all" ? null : value as any)}
                         >
                             <SelectTrigger className="w-[140px]" size="sm">

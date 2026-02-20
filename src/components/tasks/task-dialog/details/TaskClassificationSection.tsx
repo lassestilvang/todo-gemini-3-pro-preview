@@ -86,6 +86,7 @@ export function TaskClassificationSection({
 
                 <div className="space-y-2">
                     <Label>Priority</Label>
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     <Select value={priority} onValueChange={(value) => setPriority(value as any)}>
                         <SelectTrigger>
                             <SelectValue placeholder="Select Priority" />
@@ -103,6 +104,7 @@ export function TaskClassificationSection({
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label>Energy Level</Label>
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     <Select value={energyLevel} onValueChange={(value) => setEnergyLevel(value as any)}>
                         <SelectTrigger>
                             <SelectValue placeholder="Select Energy" />
@@ -118,6 +120,7 @@ export function TaskClassificationSection({
 
                 <div className="space-y-2">
                     <Label>Context</Label>
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     <Select value={context} onValueChange={(value) => setContext(value as any)}>
                         <SelectTrigger>
                             <SelectValue placeholder="Select Context" />

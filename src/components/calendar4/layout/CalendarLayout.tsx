@@ -9,13 +9,19 @@ interface CalendarLayoutProps {
     unplannedTasks: Task[];
     todayTasks: Task[];
     todayDoneTasks: Task[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     events: any[];
     selectedListName: string;
     onEditTask: (task: Task) => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onDateClick: (info: any) => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onEventClick: (info: any) => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onEventDrop: (info: any) => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onEventResize: (info: any) => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onEventReceive: (info: any) => void;
 }
 

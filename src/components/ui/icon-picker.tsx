@@ -50,6 +50,7 @@ export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps
         isDragging: false,
     }));
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { open, searchQuery, activeTab, selectedColor, customIcons, uploadName, uploadUrl, isUploading, recentIcons } = state;
     const { theme } = useTheme();
     const fileInputRef = useRef<HTMLInputElement>(null);

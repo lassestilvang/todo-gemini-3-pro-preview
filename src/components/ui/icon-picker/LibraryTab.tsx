@@ -51,6 +51,7 @@ export function IconPickerLibraryTab({ state, theme, userId, handleSelectIcon, l
                     <div className="p-2">
                         <h4 className="text-[10px] font-medium text-muted-foreground px-1 mb-1 uppercase tracking-wider">My Icons</h4>
                         <div className="grid grid-cols-8 gap-1">
+                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                             {customIcons.map((c: any) => (
                                 <div key={c.id} className="relative group">
                                     <button
@@ -94,6 +95,7 @@ export function IconPickerLibraryTab({ state, theme, userId, handleSelectIcon, l
                 <EmojiPicker
                     onEmojiClick={(e) => handleSelectIcon(e.emoji)}
                     autoFocusSearch={false}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     theme={theme === 'dark' ? 'dark' as any : 'light' as any}
                     lazyLoadEmojis={true}
                     skinTonesDisabled={false}

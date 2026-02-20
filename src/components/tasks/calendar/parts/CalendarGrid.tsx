@@ -8,6 +8,7 @@ import { getEffectiveCalendarDenseTooltipThreshold } from "@/components/provider
 
 interface CalendarGridProps {
     weekdayHeaders: string[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     daysWithMeta: any[];
     tasksByDate: Map<number, { tasks: Task[]; completedCount: number }>;
     calendarDenseTooltipThreshold?: number | null;

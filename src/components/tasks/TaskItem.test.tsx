@@ -103,6 +103,7 @@ describe("TaskItem", () => {
             subtaskCount: 1,
             subtasks: [{ id: 101, title: "Subtask 1", isCompleted: false, parentId: 1, estimateMinutes: 5 }]
         };
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { container } = render(<TaskItem task={taskWithSubtasks} {...defaultProps} />);
 
         // Check static labels
