@@ -31,7 +31,15 @@ export function TaskList({ tasks, title, listId, labelId, defaultDueDate, userId
 
     // Optimize "now" to be stable and update once per minute
     // This prevents re-renders of all TaskItems every second/millisecond
-    const [now, setNow] = useState(() => new Date());
+    const [now, setNow] = useState<Date | null>(null);
+
+    useEffect(() => {
+        setNow(new Date());
+        const interval = setInterval(() => {
+            setNow(new Date());
+        }, 60000);
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         // Update now every minute to keep relative times reasonably accurate
