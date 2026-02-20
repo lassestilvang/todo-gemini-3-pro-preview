@@ -73,12 +73,12 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
     useEffect(() => { initialize(); if (tasks?.length) setTasks(tasks); }, [tasks, setTasks, initialize]);
 
     const { processedTasks, listTasks, periodSections, overdueTasks, activeTasks, completedTasks, groupedEntries, nonOverdueTasks, derivedTasks } = useTaskListView({
-        allStoreTasks: Object.values(storeTasksFn), listId, labelId, filterType, tasksFromProps: tasks, weekStartsOnMonday, settings
+        allStoreTasks: Object.values(storeTasksFn), listId, labelId, filterType, tasksFromProps: tasks, weekStartsOnMonday: weekStartsOnMonday ?? undefined, settings
     });
 
     useEffect(() => {
         if (initialSettings || !userId) return;
-        getViewSettings(userId, viewId).then(s => s && setSettings(prev => ({ ...prev, ...s })));
+        getViewSettings(userId, viewId).then(s => s && setSettings(prev => ({ ...prev, ...(s as any) })));
     }, [viewId, userId, initialSettings]);
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
@@ -106,7 +106,8 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
                 return map.set(groupName, isToday(d) ? "Today" : isTomorrow(d) ? "Tomorrow" : format(d, isThisYear(d) ? "EEEE, MMM do" : "EEEE, MMM do, yyyy"));
             }
             const [p, iso] = groupName.split(":");
-            map.set(groupName, format(new Date(iso), { month: "LLLL yyyy", year: "yyyy", week: "'Week of' MMM d" }[p as any] || "MMM d"));
+            const formatStr = ({ month: "LLLL yyyy", year: "yyyy", week: "'Week of' MMM d" } as any)[p] || "MMM d";
+            map.set(groupName, format(new Date(iso), formatStr));
         });
         return map;
     }, [groupedEntries, settings.groupBy]);
@@ -114,7 +115,7 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
     const groupedVirtualSections = useMemo(() => settings.groupBy === "none" ? [] : groupedEntries.map(([groupName, gTasks]) => {
         const active: Task[] = [], completed: Task[] = [];
         gTasks.forEach(t => (t.isCompleted ? completed : active).push(t));
-        const items = active.map(t => ({ type: "task" as const, task: t }));
+        const items: any[] = active.map(t => ({ type: "task" as const, task: t }));
         if (active.length && completed.length) items.push({ type: "separator" });
         completed.forEach(t => items.push({ type: "task", task: t }));
         return { groupName, totalCount: gTasks.length, items };

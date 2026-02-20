@@ -125,7 +125,7 @@ export function TaskDetailsTab({
                     dueDate={dueDate} setDueDate={setDueDate}
                     dueDatePrecision={dueDatePrecision} setDueDatePrecision={setDueDatePrecision}
                     deadline={deadline} setDeadline={setDeadline}
-                    weekStartsOnMonday={weekStartsOnMonday}
+                    weekStartsOnMonday={weekStartsOnMonday ?? undefined}
                 />
 
                 <TaskRecurringSection
@@ -160,7 +160,7 @@ export function TaskDetailsTab({
                 <TaskRemindersSection
                     isEdit={isEdit}
                     dueDate={dueDate} dueDatePrecision={dueDatePrecision}
-                    weekStartsOnMonday={weekStartsOnMonday}
+                    weekStartsOnMonday={weekStartsOnMonday ?? undefined}
                     reminders={reminders}
                     newReminderDate={newReminderDate} setNewReminderDate={setNewReminderDate}
                     handleAddReminder={handleAddReminder} handleDeleteReminder={handleDeleteReminder}

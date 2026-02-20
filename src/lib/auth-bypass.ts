@@ -90,11 +90,18 @@ export async function signAuthBypassPayload(
 }
 
 export function constantTimeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
+  const aLen = a.length;
+  const bLen = b.length;
+  const len = Math.max(aLen, bLen);
   let result = 0;
-  for (let i = 0; i < a.length; i++) {
-    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+
+  for (let i = 0; i < len; i++) {
+    const charA = i < aLen ? a.charCodeAt(i) : 0;
+    const charB = i < bLen ? b.charCodeAt(i) : 0;
+    result |= charA ^ charB;
   }
+
+  result |= aLen ^ bLen;
   return result === 0;
 }
 

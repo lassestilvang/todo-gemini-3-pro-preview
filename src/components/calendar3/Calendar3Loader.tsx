@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 
 const Calendar3Client = dynamic(
-  () => import("@/components/calendar3/Calendar3Client").then((mod) => mod.Calendar3Client),
+   () => import("@/components/calendar3/Calendar3Client").then((mod) => mod.default),
   {
     ssr: false,
     loading: () => (
