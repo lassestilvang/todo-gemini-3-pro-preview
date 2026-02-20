@@ -36,6 +36,8 @@ export const useSync = () => {
     return context;
 };
 
+export const useOptionalSync = () => useContext(SyncContext);
+
 import { useSyncManager } from "@/lib/sync/useSyncManager";
 
 export function SyncProvider({ children }: { children: React.ReactNode }) {

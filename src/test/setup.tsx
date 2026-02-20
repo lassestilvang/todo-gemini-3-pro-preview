@@ -287,6 +287,9 @@ mock.module("@/components/providers/sync-provider", () => ({
         conflicts: [],
         resolveConflict: mock(() => Promise.resolve()),
     }),
+    useOptionalSync: () => ({
+        dispatch: mock(() => Promise.resolve({ success: true, data: null })),
+    }),
 }));
 
 // Traditional auth mock for broad support across all test types
