@@ -3,6 +3,7 @@
 import { TaskItem } from "@/components/tasks/TaskItem";
 import type { Task } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { ActionType, actionRegistry } from "@/lib/sync/registry";
 
 interface Calendar3TaskRowProps {
   task: Task;
@@ -10,6 +11,11 @@ interface Calendar3TaskRowProps {
   showListInfo?: boolean;
   draggable?: boolean;
   defaultDurationMinutes?: number;
+  now?: Date;
+  isClient?: boolean;
+  performanceMode?: boolean;
+  userPreferences?: { use24HourClock: boolean, weekStartsOnMonday: boolean };
+  dispatch?: <T extends ActionType>(type: T, ...args: Parameters<typeof actionRegistry[T]>) => Promise<{ success: boolean; data: unknown }>;
 }
 
 export function Calendar3TaskRow({
@@ -18,6 +24,11 @@ export function Calendar3TaskRow({
   showListInfo = true,
   draggable = true,
   defaultDurationMinutes = 30,
+  now,
+  isClient,
+  performanceMode,
+  userPreferences,
+  dispatch
 }: Calendar3TaskRowProps) {
   const durationMinutes =
     typeof task.estimateMinutes === "number" && task.estimateMinutes > 0
@@ -42,6 +53,11 @@ export function Calendar3TaskRow({
         showListInfo={showListInfo}
         userId={userId}
         disableAnimations
+        now={now}
+        isClient={isClient}
+        performanceMode={performanceMode}
+        userPreferences={userPreferences}
+        dispatch={dispatch}
       />
     </div>
   );

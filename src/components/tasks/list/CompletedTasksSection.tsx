@@ -10,10 +10,14 @@ interface CompletedTasksSectionProps {
     userId?: string;
     onEdit: (task: Task) => void;
     dispatch: any;
+    now?: Date;
+    isClient?: boolean;
+    performanceMode?: boolean;
+    userPreferences?: { use24HourClock: boolean, weekStartsOnMonday: boolean };
 }
 
 export function CompletedTasksSection({
-    tasks, listId, userId, onEdit, dispatch
+    tasks, listId, userId, onEdit, dispatch, now, isClient, performanceMode, userPreferences
 }: CompletedTasksSectionProps) {
     if (tasks.length === 0) return null;
 
@@ -29,7 +33,7 @@ export function CompletedTasksSection({
                     data={tasks}
                     itemContent={(_, task) => (
                         <div className="rounded-lg transition-all">
-                            <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={onEdit} />
+                            <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={onEdit} now={now} isClient={isClient} performanceMode={performanceMode} userPreferences={userPreferences} />
                         </div>
                     )}
                 />
@@ -37,7 +41,7 @@ export function CompletedTasksSection({
                 <div className="space-y-2">
                     {tasks.map((task) => (
                         <div key={task.id} className="rounded-lg transition-all">
-                            <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={onEdit} />
+                            <TaskItem task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={onEdit} now={now} isClient={isClient} performanceMode={performanceMode} userPreferences={userPreferences} />
                         </div>
                     ))}
                 </div>

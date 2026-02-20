@@ -12,10 +12,14 @@ interface GroupedListViewProps {
     userId?: string;
     onEdit: (task: Task) => void;
     dispatch: any;
+    now?: Date;
+    isClient?: boolean;
+    performanceMode?: boolean;
+    userPreferences?: { use24HourClock: boolean, weekStartsOnMonday: boolean };
 }
 
 export function GroupedListView({
-    groupedEntries, groupedVirtualSections, formattedGroupNames, listId, userId, onEdit, dispatch
+    groupedEntries, groupedVirtualSections, formattedGroupNames, listId, userId, onEdit, dispatch, now, isClient, performanceMode, userPreferences
 }: GroupedListViewProps) {
     const totalGroupTasks = groupedEntries.reduce((acc, [_, tasks]) => acc + tasks.length, 0);
 
@@ -40,7 +44,7 @@ export function GroupedListView({
                     if (item.type === "separator") return <div className="ml-4 h-px bg-border/50 my-2" />;
                     return (
                         <div className="rounded-lg transition-all">
-                            <TaskItem task={item.task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={onEdit} />
+                            <TaskItem task={item.task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={onEdit} now={now} isClient={isClient} performanceMode={performanceMode} userPreferences={userPreferences} />
                         </div>
                     );
                 }}
@@ -60,11 +64,11 @@ export function GroupedListView({
                             <span>{formattedGroupNames.get(groupName) ?? groupName}</span>
                             <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{groupTasks.length}</span>
                         </h3>
-                        {groupActive.map(task => <TaskItem key={task.id} task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={onEdit} />)}
+                        {groupActive.map(task => <TaskItem key={task.id} task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={onEdit} now={now} isClient={isClient} performanceMode={performanceMode} userPreferences={userPreferences} />)}
                         {groupCompleted.length > 0 && (
                             <>
                                 {groupActive.length > 0 && <div className="ml-4 h-px bg-border/50 my-2" />}
-                                {groupCompleted.map(task => <TaskItem key={task.id} task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={onEdit} />)}
+                                {groupCompleted.map(task => <TaskItem key={task.id} task={task} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={onEdit} now={now} isClient={isClient} performanceMode={performanceMode} userPreferences={userPreferences} />)}
                             </>
                         )}
                     </div>

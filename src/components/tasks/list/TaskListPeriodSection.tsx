@@ -16,6 +16,10 @@ interface TaskListPeriodSectionProps {
     userId?: string;
     onEdit: (task: Task) => void;
     dispatch: <T extends ActionType>(type: T, ...args: Parameters<typeof actionRegistry[T]>) => Promise<{ success: boolean; data: unknown }>;
+    now?: Date;
+    isClient?: boolean;
+    performanceMode?: boolean;
+    userPreferences?: { use24HourClock: boolean, weekStartsOnMonday: boolean };
 }
 
 export function TaskListPeriodSection({
@@ -27,7 +31,11 @@ export function TaskListPeriodSection({
     listId,
     userId,
     onEdit,
-    dispatch
+    dispatch,
+    now,
+    isClient,
+    performanceMode,
+    userPreferences
 }: TaskListPeriodSectionProps) {
     const sectionId = `period-${precision}-tasks`;
 
@@ -64,6 +72,10 @@ export function TaskListPeriodSection({
                             disableAnimations={true}
                             dispatch={dispatch}
                             onEdit={onEdit}
+                            now={now}
+                            isClient={isClient}
+                            performanceMode={performanceMode}
+                            userPreferences={userPreferences}
                         />
                     ))}
                 </div>

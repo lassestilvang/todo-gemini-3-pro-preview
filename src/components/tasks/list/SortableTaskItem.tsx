@@ -14,6 +14,10 @@ interface SortableTaskItemProps {
     userId?: string;
     isDragEnabled: boolean;
     dispatch: <T extends ActionType>(type: T, ...args: Parameters<typeof actionRegistry[T]>) => Promise<{ success: boolean; data: unknown }>;
+    now?: Date;
+    isClient?: boolean;
+    performanceMode?: boolean;
+    userPreferences?: { use24HourClock: boolean, weekStartsOnMonday: boolean };
 }
 
 export const SortableTaskItem = memo(function SortableTaskItem({
@@ -22,7 +26,11 @@ export const SortableTaskItem = memo(function SortableTaskItem({
     listId,
     userId,
     isDragEnabled,
-    dispatch
+    dispatch,
+    now,
+    isClient,
+    performanceMode,
+    userPreferences
 }: SortableTaskItemProps) {
     const {
         attributes,
@@ -61,6 +69,10 @@ export const SortableTaskItem = memo(function SortableTaskItem({
                 dragAttributes={isDragEnabled ? attributes : undefined}
                 dispatch={dispatch}
                 onEdit={handleEdit}
+                now={now}
+                isClient={isClient}
+                performanceMode={performanceMode}
+                userPreferences={userPreferences}
             />
         </div>
     );
