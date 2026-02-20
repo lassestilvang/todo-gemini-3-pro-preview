@@ -20,8 +20,8 @@ describe("IconPickerIconsTab", () => {
         cleanup();
     });
 
-    const mockDispatch = () => {};
-    const mockHandleSelectIcon = () => {};
+    const mockDispatch = mock(() => {});
+    const mockHandleSelectIcon = mock(() => {});
     const mockState = {
         selectedColor: null,
         open: true,
