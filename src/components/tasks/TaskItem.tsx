@@ -19,6 +19,7 @@ import type { DraggableSyntheticListeners, DraggableAttributes } from "@dnd-kit/
 import { ResolvedIcon } from "@/components/ui/resolved-icon";
 import confetti from "canvas-confetti";
 import { Task } from "@/lib/types";
+import { ActionType, actionRegistry } from "@/lib/sync/registry";
 import { SubtaskRow } from "./SubtaskRow";
 import { areTaskPropsEqual, formatDuration, priorityColors } from "./task-item-utils";
 
