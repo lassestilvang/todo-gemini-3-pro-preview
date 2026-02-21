@@ -40,7 +40,7 @@ export const updateTaskSchema = z.object({
     isCompleted: z.boolean().optional(),
     completedAt: z.coerce.date().optional().nullable(),
     energyLevel: z.enum(["low", "medium", "high"]).optional().nullable(),
-    context: z.string().max(255).optional().nullable(),
+    context: z.enum(["computer", "phone", "errands", "meeting", "home", "anywhere"]).optional().nullable(),
     isHabit: z.boolean().optional(),
     icon: z.string().max(255, "Icon must be at most 255 characters").optional().nullable(),
     expectedUpdatedAt: z.coerce.date().optional().nullable(),
