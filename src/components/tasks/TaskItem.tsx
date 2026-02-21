@@ -114,6 +114,15 @@ export const TaskItem = memo(function TaskItem({
     const periodLabel = task.dueDate && periodPrecision ? formatDuePeriod({ dueDate: task.dueDate, dueDatePrecision: periodPrecision as DuePrecision }) : null;
     const periodBadge = periodPrecision ? periodPrecision[0] : null;
     const dueAriaLabel = periodLabel ? `Due ${periodLabel}` : undefined;
+
+    const tooltipDate = task.dueDate ? format(task.dueDate, "PPPP") : "";
+    const tooltipTime = task.dueDate && (task.dueDate.getHours() !== 0 || task.dueDate.getMinutes() !== 0)
+        ? ` at ${formatTimePreference(task.dueDate, use24HourClock)}`
+        : "";
+    const tooltipContent = periodLabel
+        ? `Due: ${periodLabel}`
+        : `Due: ${tooltipDate}${tooltipTime}`;
+
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const isDeadlineExceeded = task.deadline && task.deadline.getTime() < nowTime && !isCompleted;
     const isBlocked = (task.blockedByCount || 0) > 0;
@@ -214,15 +223,26 @@ export const TaskItem = memo(function TaskItem({
                             </div>
                         )}
                         {task.dueDate && (
-                            <div className={cn("flex items-center gap-1", isOverdue ? "text-red-500 font-medium" : "")} title={dueAriaLabel}>
-                                <Calendar className="h-3 w-3" />
-                                {periodLabel ? (
-                                    <><span>{periodLabel}</span><Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 uppercase tracking-wide">{periodBadge}</Badge></>
-                                ) : (
-                                    <><span>{isClient ? formatFriendlyDate(task.dueDate, "MMM d") : format(task.dueDate, "MMM d")}</span>
-                                        {(task.dueDate.getHours() !== 0 || task.dueDate.getMinutes() !== 0) && <span>{formatTimePreference(task.dueDate, use24HourClock)}</span>}</>
-                                )}
-                            </div>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div
+                                        className={cn("flex items-center gap-1", isOverdue ? "text-red-500 font-medium" : "")}
+                                        aria-label={dueAriaLabel}
+                                        tabIndex={0}
+                                    >
+                                        <Calendar className="h-3 w-3" />
+                                        {periodLabel ? (
+                                            <><span>{periodLabel}</span><Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 uppercase tracking-wide">{periodBadge}</Badge></>
+                                        ) : (
+                                            <><span>{isClient ? formatFriendlyDate(task.dueDate, "MMM d") : format(task.dueDate, "MMM d")}</span>
+                                                {(task.dueDate.getHours() !== 0 || task.dueDate.getMinutes() !== 0) && <span>{formatTimePreference(task.dueDate, use24HourClock)}</span>}</>
+                                        )}
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>{tooltipContent}</p>
+                                </TooltipContent>
+                            </Tooltip>
                         )}
                         {task.priority && task.priority !== "none" && (
                             <div className={cn("flex items-center gap-1", priorityColors[task.priority])}>

@@ -150,4 +150,20 @@ describe("TaskItem", () => {
         rerender(<TaskItem task={completedTask} {...defaultProps} />);
         expect(checkbox).toBeChecked();
     });
+
+    it("should render tooltip with full date for due date", async () => {
+        const taskWithDue = { ...sampleTask, dueDate: new Date("2023-10-24T17:00:00") };
+        render(<TaskItem task={taskWithDue} {...defaultProps} />);
+
+        const dateText = screen.getByText("Oct 24");
+        const dateContainer = dateText.closest('div[tabindex="0"]');
+        expect(dateContainer).toBeInTheDocument();
+
+        fireEvent.mouseEnter(dateContainer!);
+        fireEvent.focus(dateContainer!);
+
+        const expectedText = /Due: Tuesday, October 24th, 2023 at 5:00 PM/;
+        const tooltip = await screen.findByRole('tooltip', { hidden: true });
+        expect(tooltip).toHaveTextContent(expectedText);
+    });
 });
