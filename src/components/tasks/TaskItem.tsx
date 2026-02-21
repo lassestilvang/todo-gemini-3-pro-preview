@@ -227,7 +227,7 @@ export const TaskItem = memo(function TaskItem({
                                 <TooltipTrigger asChild>
                                     <div
                                         className={cn("flex items-center gap-1", isOverdue ? "text-red-500 font-medium" : "")}
-                                        aria-label={dueAriaLabel}
+                                        aria-label={tooltipContent}
                                         tabIndex={0}
                                     >
                                         <Calendar className="h-3 w-3" />
