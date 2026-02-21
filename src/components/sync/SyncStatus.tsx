@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState, useEffect } from "react";
 import { useSync } from "@/components/providers/sync-provider";
 import { cn } from "@/lib/utils";
-import { Cloud, CloudOff, Loader2, AlertCircle, RotateCcw, X, RefreshCw, Trash2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Cloud, CloudOff, Loader2, RefreshCw, RotateCcw, Trash2, X } from "lucide-react";
 import {
     Popover,
     PopoverContent,
@@ -12,6 +13,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PendingAction } from "@/lib/sync/types";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { getTodoistSyncInfo, syncTodoistNow } from "@/lib/actions/todoist";
 
 const ACTION_LABELS: Record<string, string> = {
     createTask: "Create task",
@@ -41,6 +44,37 @@ function formatTimestamp(timestamp: number): string {
     if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
     if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
     return `${Math.floor(diff / 86_400_000)}d ago`;
+}
+
+function parseDateValue(value: Date | string | null | undefined) {
+    if (!value) return null;
+    const parsed = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(parsed.valueOf())) return null;
+    return parsed;
+}
+
+function formatRelativeDate(value: Date | string | null | undefined): string {
+    const parsed = parseDateValue(value);
+    if (!parsed) return "Never";
+
+    const diff = Date.now() - parsed.getTime();
+    if (diff < 60_000) return "just now";
+    if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+    if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+    return `${Math.floor(diff / 86_400_000)}d ago`;
+}
+
+function formatAbsoluteDate(value: Date | string | null | undefined): string {
+    const parsed = parseDateValue(value);
+    if (!parsed) return "Never";
+
+    return new Intl.DateTimeFormat(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    }).format(parsed);
 }
 
 function ActionItem({ action, onRetry, onDismiss }: {
@@ -95,7 +129,8 @@ function ActionItem({ action, onRetry, onDismiss }: {
 }
 
 export function SyncStatus() {
-    const { status, isOnline, pendingActions, retryAction, dismissAction, retryAllFailed, dismissAllFailed, syncNow } = useSync();
+    const { status, isOnline, pendingActions, retryAction, dismissAction, retryAllFailed, dismissAllFailed, syncNow: syncLocalNow } = useSync();
+    const queryClient = useQueryClient();
     const [open, setOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
 
@@ -104,17 +139,19 @@ export function SyncStatus() {
         setMounted(true);
     }, []);
 
-    const { pendingCount, failedCount } = useMemo(() => {
+    const { pendingCount, failedCount, processingCount } = useMemo(() => {
         let pending = 0;
         let failed = 0;
+        let processing = 0;
         for (const action of pendingActions) {
             if (action.status === 'pending') pending++;
             else if (action.status === 'failed') failed++;
+            else if (action.status === 'processing') processing++;
         }
-        return { pendingCount: pending, failedCount: failed };
+        return { pendingCount: pending, failedCount: failed, processingCount: processing };
     }, [pendingActions]);
 
-    const statusInfo = useMemo(() => {
+    const localStatusInfo = useMemo(() => {
         if (!isOnline) {
             return {
                 icon: CloudOff,
@@ -139,7 +176,7 @@ export function SyncStatus() {
             return {
                 icon: Loader2,
                 label: "Syncing",
-                description: `Syncing ${pendingCount} change${pendingCount !== 1 ? 's' : ''}...`,
+                description: `Syncing ${pendingCount + processingCount} change${pendingCount + processingCount !== 1 ? 's' : ''}...`,
                 className: "text-blue-500 animate-spin",
             };
         }
@@ -159,20 +196,112 @@ export function SyncStatus() {
             description: "All changes saved",
             className: "text-green-500",
         };
-    }, [isOnline, failedCount, status, pendingCount]);
+    }, [isOnline, failedCount, status, pendingCount, processingCount]);
+
+    const todoistQuery = useQuery({
+        queryKey: ["todoistSyncInfo"],
+        queryFn: async () => {
+            const result = await getTodoistSyncInfo();
+            if (!result.success) {
+                throw new Error(result.error ?? "Failed to load Todoist sync status.");
+            }
+            return result;
+        },
+        refetchInterval: (query) => {
+            const data = query.state.data;
+            if (!data?.connected) return 60_000;
+            if (data.syncStatus === "syncing") return 4_000;
+            return 20_000;
+        },
+        refetchOnWindowFocus: true,
+    });
+
+    const todoistSyncMutation = useMutation({
+        mutationFn: async () => {
+            const result = await syncTodoistNow();
+            if (!result.success) {
+                throw new Error(result.error ?? "Todoist sync failed.");
+            }
+            return result;
+        },
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: ["todoistSyncInfo"] });
+        },
+    });
+
+    const todoistConnected = todoistQuery.data?.connected ?? false;
+    const todoistConflictCount = todoistQuery.data?.conflictCount ?? 0;
+    const todoistSyncStatus = todoistQuery.data?.syncStatus ?? "idle";
+    const todoistSyncError = todoistQuery.data?.error ?? null;
+    const todoistIsSyncing = todoistConnected && (todoistSyncStatus === "syncing" || todoistSyncMutation.isPending);
+    const todoistHasIssues = todoistQuery.isError ||
+        (todoistConnected && (todoistSyncStatus === "error" || Boolean(todoistSyncError) || todoistConflictCount > 0));
+
+    const overallStatusInfo = useMemo(() => {
+        if (status === "syncing" || todoistIsSyncing) {
+            return {
+                icon: Loader2,
+                label: "Syncing",
+                className: "text-blue-500 animate-spin",
+            };
+        }
+
+        if (!isOnline || failedCount > 0 || todoistHasIssues) {
+            return {
+                icon: AlertCircle,
+                label: "Sync issues",
+                className: "text-amber-500",
+            };
+        }
+
+        if (pendingCount > 0 || processingCount > 0) {
+            return {
+                icon: Cloud,
+                label: "Pending",
+                className: "text-muted-foreground",
+            };
+        }
+
+        return {
+            icon: CheckCircle2,
+            label: "Synced",
+            className: "text-green-500",
+        };
+    }, [status, todoistIsSyncing, isOnline, failedCount, todoistHasIssues, pendingCount, processingCount]);
 
     if (!mounted) {
         return null;
     }
 
-    const { icon: Icon, label, className } = statusInfo;
+    const { icon: Icon, label, className } = overallStatusInfo;
 
-    if (isOnline && status === 'online' && pendingCount === 0 && failedCount === 0) {
+    // Keep hidden only when local sync is fully clean and Todoist is not connected.
+    if (
+        !todoistConnected &&
+        !todoistQuery.isError &&
+        isOnline &&
+        status === 'online' &&
+        pendingCount === 0 &&
+        failedCount === 0 &&
+        processingCount === 0
+    ) {
         return null;
     }
 
     const failedActions = pendingActions.filter(a => a.status === 'failed');
     const pendingActionsList = pendingActions.filter(a => a.status === 'pending' || a.status === 'processing');
+    const todoistQueryError = todoistQuery.error instanceof Error ? todoistQuery.error.message : null;
+    const todoistMutationError = todoistSyncMutation.error instanceof Error ? todoistSyncMutation.error.message : null;
+    const todoistStatusLabel = todoistQuery.isError
+        ? "Unavailable"
+        : !todoistConnected
+            ? "Not connected"
+            : todoistIsSyncing
+                ? "Syncing"
+                : todoistHasIssues
+                    ? "Issues detected"
+                    : "Synced";
+    const todoistLastSynced = todoistQuery.data?.lastSyncedAt ?? null;
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -188,9 +317,9 @@ export function SyncStatus() {
                 >
                     <Icon className={cn("h-3.5 w-3.5", className)} />
                     <span className="hidden sm:inline">{label}</span>
-                    {(pendingCount > 0 || failedCount > 0) && (
+                    {(pendingCount > 0 || failedCount > 0 || todoistConflictCount > 0) && (
                         <span className="text-muted-foreground">
-                            ({failedCount > 0 ? failedCount : pendingCount})
+                            ({failedCount + todoistConflictCount > 0 ? failedCount + todoistConflictCount : pendingCount})
                         </span>
                     )}
                 </button>
@@ -199,11 +328,19 @@ export function SyncStatus() {
                 <div className="px-3 py-2 border-b">
                     <div className="flex items-center gap-2">
                         <Icon className={cn("h-4 w-4", className)} />
-                        <span className="font-semibold text-sm">{label}</span>
+                        <span className="font-semibold text-sm">Sync Center: {label}</span>
                     </div>
                 </div>
-                <ScrollArea className="max-h-64">
-                    <div className="p-1.5 space-y-0.5">
+                <ScrollArea className="max-h-96">
+                    <div className="p-3 space-y-4">
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold">App Sync</span>
+                                <span className="text-xs text-muted-foreground">{localStatusInfo.label}</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground">{localStatusInfo.description}</p>
+                        </div>
+
                         {failedActions.length > 0 && (
                             <>
                                 <div className="flex items-center justify-between px-2 pt-1 pb-0.5">
@@ -252,7 +389,7 @@ export function SyncStatus() {
                                             variant="ghost"
                                             size="sm"
                                             className="h-6 px-1.5 text-xs"
-                                            onClick={() => syncNow()}
+                                            onClick={() => syncLocalNow()}
                                         >
                                             <RefreshCw className="h-3 w-3 mr-1" />
                                             Sync now
@@ -271,9 +408,81 @@ export function SyncStatus() {
                         )}
                         {failedActions.length === 0 && pendingActionsList.length === 0 && (
                             <div className="px-2 py-3 text-center text-xs text-muted-foreground">
-                                {!isOnline ? "You are offline. Changes will sync when back online." : "No pending actions"}
+                                {!isOnline ? "You are offline. Changes will sync when back online." : "No pending local actions"}
                             </div>
                         )}
+
+                        <div className="border-t pt-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold">Todoist Sync</span>
+                                <span className="text-xs text-muted-foreground">{todoistStatusLabel}</span>
+                            </div>
+                            {todoistConnected ? (
+                                <>
+                                    <div className="text-xs text-muted-foreground">
+                                        Last synced: {formatRelativeDate(todoistLastSynced)}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                        {formatAbsoluteDate(todoistLastSynced)}
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="text-xs text-muted-foreground">
+                                    Connect Todoist in Settings to enable external sync.
+                                </div>
+                            )}
+
+                            {todoistQueryError ? (
+                                <div className="rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
+                                    {todoistQueryError}
+                                </div>
+                            ) : null}
+
+                            {!todoistQueryError && todoistSyncError ? (
+                                <div className="rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
+                                    {todoistSyncError}
+                                </div>
+                            ) : null}
+
+                            {todoistMutationError ? (
+                                <div className="rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
+                                    {todoistMutationError}
+                                </div>
+                            ) : null}
+
+                            {todoistConflictCount > 0 ? (
+                                <div className="rounded-md border border-amber-300/40 bg-amber-50/60 p-2 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+                                    {todoistConflictCount} pending conflict{todoistConflictCount === 1 ? "" : "s"}.
+                                </div>
+                            ) : null}
+
+                            <div className="flex items-center gap-1.5">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 px-1.5 text-xs"
+                                    onClick={() => todoistQuery.refetch()}
+                                >
+                                    <RefreshCw className="h-3 w-3 mr-1" />
+                                    Refresh
+                                </Button>
+                                {todoistConnected ? (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 px-1.5 text-xs"
+                                        onClick={() => todoistSyncMutation.mutate()}
+                                        disabled={todoistIsSyncing}
+                                    >
+                                        <RefreshCw className="h-3 w-3 mr-1" />
+                                        {todoistIsSyncing ? "Syncing..." : "Sync now"}
+                                    </Button>
+                                ) : null}
+                                <Button variant="ghost" size="sm" className="ml-auto h-6 px-1.5 text-xs" asChild>
+                                    <Link href="/settings">Settings</Link>
+                                </Button>
+                            </div>
+                        </div>
                     </div>
                 </ScrollArea>
             </PopoverContent>
