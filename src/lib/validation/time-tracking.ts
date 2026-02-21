@@ -5,12 +5,12 @@ export const createManualTimeEntrySchema = z.object({
     userId: z.string().min(1, "User ID is required"),
     durationMinutes: z.number().min(1, "Duration must be at least 1 minute"),
     date: z.coerce.date().optional(),
-    notes: z.string().optional(),
+    notes: z.string().max(5000, "Notes must be at most 5000 characters").optional(),
 });
 
 export const updateTimeEntrySchema = z.object({
     durationMinutes: z.number().min(1).optional(),
-    notes: z.string().optional(),
+    notes: z.string().max(5000, "Notes must be at most 5000 characters").optional(),
     startedAt: z.coerce.date().optional(),
     endedAt: z.coerce.date().optional(),
 });
