@@ -8,6 +8,7 @@ import { OnboardingTour } from "@/components/layout/OnboardingTour";
 import { SidebarDataLoader } from "./SidebarDataLoader";
 import { getCurrentUser } from "@/lib/auth";
 import { SyncStatus } from "@/components/sync/SyncStatus";
+import { TodoistSyncStatus } from "@/components/sync/TodoistSyncStatus";
 
 const SidebarFallback = () => (
     <div className="hidden md:flex flex-col h-full border-r bg-card/50 backdrop-blur-xl shrink-0" style={{ width: 256 }}>
@@ -60,11 +61,15 @@ export async function MainLayout({ children }: { children: React.ReactNode }) {
                             </Suspense>
                         </MobileNav>
                         <div className="ml-4 font-semibold text-lg flex-1">Todo Gemini</div>
-                        <SyncStatus />
+                        <div className="flex items-center gap-2">
+                            <TodoistSyncStatus />
+                            <SyncStatus />
+                        </div>
                     </header>
 
                     {/* Desktop Sync Status - Fixed position */}
-                    <div className="hidden md:block fixed top-4 right-4 z-50">
+                    <div className="hidden md:flex fixed top-4 right-4 z-50 flex-col items-end gap-2">
+                        <TodoistSyncStatus />
                         <SyncStatus />
                     </div>
 

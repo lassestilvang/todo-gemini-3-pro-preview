@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db, externalEntityMap, externalIntegrations, externalSyncConflicts, externalSyncState, lists, taskLabels, tasks } from "@/db";
 import { getCurrentUser } from "@/lib/auth";
 import { encryptToken } from "@/lib/todoist/crypto";
@@ -162,6 +162,67 @@ export async function getTodoistStatus() {
     });
 
     return { success: true, connected: !!integration };
+}
+
+export async function getTodoistSyncInfo() {
+    if (process.env.NODE_ENV === "test") {
+        return {
+            success: true,
+            connected: false,
+            syncStatus: "idle" as const,
+            lastSyncedAt: null as Date | null,
+            updatedAt: null as Date | null,
+            error: null as string | null,
+            conflictCount: 0,
+        };
+    }
+
+    const user = await getCurrentUser();
+    if (!user) {
+        return { success: false, error: "Not authenticated" };
+    }
+
+    const integration = await db.query.externalIntegrations.findFirst({
+        where: and(eq(externalIntegrations.userId, user.id), eq(externalIntegrations.provider, "todoist")),
+    });
+
+    if (!integration) {
+        return {
+            success: true,
+            connected: false,
+            syncStatus: "idle" as const,
+            lastSyncedAt: null as Date | null,
+            updatedAt: null as Date | null,
+            error: null as string | null,
+            conflictCount: 0,
+        };
+    }
+
+    const [syncState, conflictCountResult] = await Promise.all([
+        db.query.externalSyncState.findFirst({
+            where: and(eq(externalSyncState.userId, user.id), eq(externalSyncState.provider, "todoist")),
+        }),
+        db
+            .select({ count: sql<number>`count(*)` })
+            .from(externalSyncConflicts)
+            .where(
+                and(
+                    eq(externalSyncConflicts.userId, user.id),
+                    eq(externalSyncConflicts.provider, "todoist"),
+                    eq(externalSyncConflicts.status, "pending")
+                )
+            ),
+    ]);
+
+    return {
+        success: true,
+        connected: true,
+        syncStatus: syncState?.status ?? "idle",
+        lastSyncedAt: syncState?.lastSyncedAt ?? null,
+        updatedAt: syncState?.updatedAt ?? null,
+        error: syncState?.error ?? null,
+        conflictCount: Number(conflictCountResult[0]?.count ?? 0),
+    };
 }
 
 export async function disconnectTodoist() {

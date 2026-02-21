@@ -1,9 +1,14 @@
 import { beforeAll, beforeEach, describe, expect, it } from "bun:test";
 import { and, eq } from "drizzle-orm";
-import { db, externalEntityMap, lists } from "@/db";
+import { db, externalEntityMap, externalIntegrations, externalSyncConflicts, externalSyncState, lists } from "@/db";
 import { createTestUser, resetTestDb, setupTestDb } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
-import { createTodoistMappingList, setTodoistLabelMappings, setTodoistProjectMappings } from "./todoist";
+import {
+    createTodoistMappingList,
+    getTodoistSyncInfo,
+    setTodoistLabelMappings,
+    setTodoistProjectMappings,
+} from "./todoist";
 
 describe("Todoist mapping actions", () => {
     beforeAll(async () => {
@@ -234,6 +239,62 @@ describe("Todoist mapping actions", () => {
             if (!result.success) {
                 expect(result.error).toContain("List name is required.");
             }
+        } finally {
+            process.env.NODE_ENV = previousNodeEnv;
+        }
+    });
+
+    it("returns connected Todoist sync info including last sync and conflicts", async () => {
+        const previousNodeEnv = process.env.NODE_ENV;
+        process.env.NODE_ENV = "development";
+
+        try {
+            const user = await createTestUser("todoist_sync_info_user", "todoist_sync_info@example.com");
+            setMockAuthUser({
+                id: user.id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                profilePictureUrl: null,
+            });
+
+            const lastSyncedAt = new Date("2026-02-21T08:30:00.000Z");
+            await db.insert(externalIntegrations).values({
+                userId: user.id,
+                provider: "todoist",
+                accessTokenEncrypted: "encrypted",
+                accessTokenIv: "iv",
+                accessTokenTag: "tag",
+                accessTokenKeyId: "default",
+            });
+            await db.insert(externalSyncState).values({
+                userId: user.id,
+                provider: "todoist",
+                status: "error",
+                lastSyncedAt,
+                error: "Rate limit hit",
+            });
+            await db.insert(externalSyncConflicts).values({
+                userId: user.id,
+                provider: "todoist",
+                entityType: "task",
+                localId: 1,
+                externalId: "remote_1",
+                conflictType: "task_mismatch",
+                status: "pending",
+            });
+
+            const result = await getTodoistSyncInfo();
+            expect(result.success).toBe(true);
+            if (!result.success) {
+                return;
+            }
+
+            expect(result.connected).toBe(true);
+            expect(result.syncStatus).toBe("error");
+            expect(result.error).toBe("Rate limit hit");
+            expect(result.lastSyncedAt).toEqual(lastSyncedAt);
+            expect(result.conflictCount).toBe(1);
         } finally {
             process.env.NODE_ENV = previousNodeEnv;
         }

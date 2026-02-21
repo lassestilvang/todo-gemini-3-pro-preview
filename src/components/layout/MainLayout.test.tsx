@@ -35,6 +35,10 @@ mock.module("@/components/sync/SyncStatus", () => ({
     SyncStatus: () => <div data-testid="sync-status">Sync Status</div>
 }));
 
+mock.module("@/components/sync/TodoistSyncStatus", () => ({
+    TodoistSyncStatus: () => <div data-testid="todoist-sync-status">Todoist Sync Status</div>
+}));
+
 // Mock AppSidebar to avoid next/navigation dependency
 mock.module("./AppSidebar", () => ({
     AppSidebar: ({ lists, labels }: { lists: unknown[]; labels: unknown[] }) => (
