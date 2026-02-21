@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSync } from "@/components/providers/sync-provider";
 import { cn } from "@/lib/utils";
 import { AlertCircle, CheckCircle2, Cloud, CloudOff, Loader2, RefreshCw, RotateCcw, Trash2, X } from "lucide-react";
@@ -15,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { PendingAction } from "@/lib/sync/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getTodoistSyncInfo, syncTodoistNow } from "@/lib/actions/todoist";
+import { requestDataRefresh } from "@/lib/sync/events";
 
 const ACTION_LABELS: Record<string, string> = {
     createTask: "Create task",
@@ -131,6 +132,7 @@ function ActionItem({ action, onRetry, onDismiss }: {
 export function SyncStatus() {
     const { status, isOnline, pendingActions, retryAction, dismissAction, retryAllFailed, dismissAllFailed, syncNow: syncLocalNow } = useSync();
     const queryClient = useQueryClient();
+    const lastTodoistSyncedAtRef = useRef<number | null>(null);
     const [open, setOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
 
@@ -226,6 +228,7 @@ export function SyncStatus() {
         },
         onSuccess: async () => {
             await queryClient.invalidateQueries({ queryKey: ["todoistSyncInfo"] });
+            requestDataRefresh();
         },
     });
 
@@ -233,9 +236,30 @@ export function SyncStatus() {
     const todoistConflictCount = todoistQuery.data?.conflictCount ?? 0;
     const todoistSyncStatus = todoistQuery.data?.syncStatus ?? "idle";
     const todoistSyncError = todoistQuery.data?.error ?? null;
+    const todoistLastSyncedTimestamp = parseDateValue(todoistQuery.data?.lastSyncedAt ?? null)?.getTime() ?? null;
     const todoistIsSyncing = todoistConnected && (todoistSyncStatus === "syncing" || todoistSyncMutation.isPending);
     const todoistHasIssues = todoistQuery.isError ||
         (todoistConnected && (todoistSyncStatus === "error" || Boolean(todoistSyncError) || todoistConflictCount > 0));
+
+    useEffect(() => {
+        if (!todoistConnected) {
+            lastTodoistSyncedAtRef.current = null;
+            return;
+        }
+        if (!todoistLastSyncedTimestamp) {
+            return;
+        }
+
+        if (lastTodoistSyncedAtRef.current === null) {
+            lastTodoistSyncedAtRef.current = todoistLastSyncedTimestamp;
+            return;
+        }
+
+        if (lastTodoistSyncedAtRef.current !== todoistLastSyncedTimestamp) {
+            lastTodoistSyncedAtRef.current = todoistLastSyncedTimestamp;
+            requestDataRefresh();
+        }
+    }, [todoistConnected, todoistLastSyncedTimestamp]);
 
     const overallStatusInfo = useMemo(() => {
         if (status === "syncing" || todoistIsSyncing) {

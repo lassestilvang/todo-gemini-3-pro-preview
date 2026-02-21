@@ -80,6 +80,26 @@ export async function saveTasksToCache(tasks: any[]) {
     ]);
 }
 
+export async function replaceTasksInCache(tasks: any[]) {
+    const db = await getDB();
+    const tx = db.transaction('tasks', 'readwrite');
+    if (typeof (tx.store as { clear?: () => Promise<void> }).clear === "function") {
+        await (tx.store as { clear: () => Promise<void> }).clear();
+    } else {
+        const existing = await tx.store.getAll();
+        await Promise.all(
+            existing
+                .map((entry) => (entry as { id?: number }).id)
+                .filter((id): id is number => typeof id === "number")
+                .map((id) => tx.store.delete(id))
+        );
+    }
+    await Promise.all([
+        ...tasks.map((task) => tx.store.put(task)),
+        tx.done,
+    ]);
+}
+
 export async function saveTaskToCache(task: any) {
     const db = await getDB();
     await db.put('tasks', task);
@@ -173,6 +193,26 @@ export async function saveListsToCache(items: any[]) {
     ]);
 }
 
+export async function replaceListsInCache(items: any[]) {
+    const db = await getDB();
+    const tx = db.transaction('lists', 'readwrite');
+    if (typeof (tx.store as { clear?: () => Promise<void> }).clear === "function") {
+        await (tx.store as { clear: () => Promise<void> }).clear();
+    } else {
+        const existing = await tx.store.getAll();
+        await Promise.all(
+            existing
+                .map((entry) => (entry as { id?: number }).id)
+                .filter((id): id is number => typeof id === "number")
+                .map((id) => tx.store.delete(id))
+        );
+    }
+    await Promise.all([
+        ...items.map((item) => tx.store.put(item)),
+        tx.done,
+    ]);
+}
+
 export async function saveListToCache(item: any) {
     const db = await getDB();
     await db.put('lists', item);
@@ -195,6 +235,26 @@ export async function saveLabelsToCache(items: any[]) {
     await Promise.all([
         ...items.map(item => tx.store.put(item)),
         tx.done
+    ]);
+}
+
+export async function replaceLabelsInCache(items: any[]) {
+    const db = await getDB();
+    const tx = db.transaction('labels', 'readwrite');
+    if (typeof (tx.store as { clear?: () => Promise<void> }).clear === "function") {
+        await (tx.store as { clear: () => Promise<void> }).clear();
+    } else {
+        const existing = await tx.store.getAll();
+        await Promise.all(
+            existing
+                .map((entry) => (entry as { id?: number }).id)
+                .filter((id): id is number => typeof id === "number")
+                .map((id) => tx.store.delete(id))
+        );
+    }
+    await Promise.all([
+        ...items.map((item) => tx.store.put(item)),
+        tx.done,
     ]);
 }
 

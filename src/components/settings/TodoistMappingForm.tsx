@@ -10,6 +10,7 @@ import {
     setTodoistProjectMappings,
     syncTodoistNow,
 } from "@/lib/actions/todoist";
+import { requestDataRefresh } from "@/lib/sync/events";
 
 export function TodoistMappingForm() {
     type MappingSelection = number | null | "new";
@@ -249,6 +250,9 @@ export function TodoistMappingForm() {
                 ? `${createdPrefix}Mappings saved and synced.`
                 : `${createdPrefix}Mappings saved, but sync failed: ${syncResult.error ?? "Unknown sync error."}`,
         });
+        if (syncResult.success) {
+            requestDataRefresh();
+        }
 
         const refreshed = await loadMappings();
         if (refreshed.success) {

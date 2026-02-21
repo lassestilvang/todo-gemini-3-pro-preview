@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Task } from '@/lib/types';
-import { getCachedTasks, saveTaskToCache, saveTasksToCache, deleteTaskFromCache } from '@/lib/sync/db';
+import { deleteTaskFromCache, getCachedTasks, replaceTasksInCache, saveTaskToCache, saveTasksToCache } from '@/lib/sync/db';
 
 interface TaskState {
     tasks: Record<number, Task>;
@@ -10,6 +10,7 @@ interface TaskState {
     isInitialized: boolean;
     initialize: () => Promise<void>;
     setTasks: (tasks: Task[]) => void;
+    replaceTasks: (tasks: Task[]) => void;
     upsertTasks: (tasks: Task[]) => void;
     upsertTask: (task: Task) => void;
     deleteTasks: (ids: number[]) => void;
@@ -78,6 +79,18 @@ export const useTaskStore = create<TaskState>((set, get) => ({
 
         // Persist to IDB in background (upsert individual tasks or batch)
         saveTasksToCache(newTasks).catch(console.error);
+    },
+
+    replaceTasks: (newTasks: Task[]) => {
+        const replacement: Record<number, Task> = {};
+        newTasks.forEach((task) => {
+            replacement[task.id] = task;
+        });
+        set({
+            tasks: replacement,
+            subtaskIndex: buildSubtaskIndex(replacement),
+        });
+        replaceTasksInCache(newTasks).catch(console.error);
     },
 
     upsertTasks: (tasks: Task[]) => {

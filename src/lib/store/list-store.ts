@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getCachedLists, saveListToCache, saveListsToCache, deleteListFromCache } from '@/lib/sync/db';
+import { deleteListFromCache, getCachedLists, replaceListsInCache, saveListToCache, saveListsToCache } from '@/lib/sync/db';
 
 type List = {
     id: number;
@@ -15,6 +15,7 @@ interface ListState {
     isInitialized: boolean;
     initialize: () => Promise<void>;
     setLists: (lists: List[]) => void;
+    replaceLists: (lists: List[]) => void;
     upsertLists: (lists: List[]) => void;
     upsertList: (list: List) => void;
     deleteLists: (ids: number[]) => void;
@@ -55,6 +56,15 @@ export const useListStore = create<ListState>((set, get) => ({
         });
 
         saveListsToCache(newLists).catch(console.error);
+    },
+
+    replaceLists: (newLists: List[]) => {
+        const replacement: Record<number, List> = {};
+        newLists.forEach((list) => {
+            replacement[list.id] = list;
+        });
+        set({ lists: replacement });
+        replaceListsInCache(newLists).catch(console.error);
     },
 
     upsertLists: (lists: List[]) => {

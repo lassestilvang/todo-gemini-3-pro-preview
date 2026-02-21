@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { getTodoistConflicts, resolveTodoistConflict } from "@/lib/actions/todoist";
 import { formatTodoistConflictPayload } from "@/lib/todoist/conflict-ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { requestDataRefresh } from "@/lib/sync/events";
 
 export function TodoistConflicts() {
     const [status, setStatus] = useState<string | null>(null);
@@ -29,6 +30,7 @@ export function TodoistConflicts() {
             return;
         }
         setStatus("Conflict resolved.");
+        requestDataRefresh();
         await queryClient.invalidateQueries({ queryKey: ["todoistConflicts"] });
     };
 

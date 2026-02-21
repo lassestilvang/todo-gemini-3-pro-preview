@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getCachedLabels, saveLabelToCache, saveLabelsToCache, deleteLabelFromCache } from '@/lib/sync/db';
+import { deleteLabelFromCache, getCachedLabels, replaceLabelsInCache, saveLabelToCache, saveLabelsToCache } from '@/lib/sync/db';
 
 type Label = {
     id: number;
@@ -14,6 +14,7 @@ interface LabelState {
     isInitialized: boolean;
     initialize: () => Promise<void>;
     setLabels: (labels: Label[]) => void;
+    replaceLabels: (labels: Label[]) => void;
     upsertLabels: (labels: Label[]) => void;
     upsertLabel: (label: Label) => void;
     deleteLabels: (ids: number[]) => void;
@@ -54,6 +55,15 @@ export const useLabelStore = create<LabelState>((set, get) => ({
         });
 
         saveLabelsToCache(newLabels).catch(console.error);
+    },
+
+    replaceLabels: (newLabels: Label[]) => {
+        const replacement: Record<number, Label> = {};
+        newLabels.forEach((label) => {
+            replacement[label.id] = label;
+        });
+        set({ labels: replacement });
+        replaceLabelsInCache(newLabels).catch(console.error);
     },
 
     upsertLabels: (labels: Label[]) => {

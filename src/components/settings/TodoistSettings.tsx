@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { TodoistMappingForm } from "@/components/settings/TodoistMappingForm";
 import { TodoistConflicts } from "@/components/settings/TodoistConflicts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { requestDataRefresh } from "@/lib/sync/events";
 
 export function TodoistSettings() {
     const [token, setToken] = useState("");
@@ -63,6 +64,7 @@ export function TodoistSettings() {
         const result = await syncTodoistNow();
         if (result.success) {
             setStatus("Sync completed.");
+            requestDataRefresh();
         } else {
             setStatus(result.error ?? "Sync failed.");
         }
