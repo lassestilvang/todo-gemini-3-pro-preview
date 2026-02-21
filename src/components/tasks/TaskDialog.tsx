@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Focus, Loader2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DeleteConfirmPopover } from "@/components/ui/delete-confirm-popover";
 import { FocusMode } from "./FocusMode";
 import { TaskDetailsTab } from "./task-dialog/TaskDetailsTab";
 import { TaskDependenciesTab } from "./task-dialog/TaskDependenciesTab";
@@ -124,8 +124,6 @@ function TaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId
     } = useTaskData({ taskId: task?.id, isEdit, userId });
 
     const [focusModeOpen, setFocusModeOpen] = useState(false);
-    const [deleteOpen, setDeleteOpen] = useState(false);
-
     return (
         <div className="flex flex-col h-full max-h-[90vh]">
             <DialogHeader className="px-6 py-4 border-b">
@@ -191,30 +189,17 @@ function TaskForm({ task, defaultListId, defaultLabelIds, defaultDueDate, userId
                             <Focus className="h-4 w-4" />
                             Focus
                         </Button>
-                        <Popover open={deleteOpen} onOpenChange={setDeleteOpen}>
-                            <PopoverTrigger asChild>
-                                <Button type="button" variant="destructive" disabled={isSaving}>
-                                    Delete
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-64" align="start">
-                                <div className="flex flex-col gap-2">
-                                    <div className="space-y-1">
-                                        <h4 className="font-medium leading-none">Confirm Deletion</h4>
-                                        <p className="text-sm text-muted-foreground">
-                                            Are you sure? This action cannot be undone.
-                                        </p>
-                                    </div>
-                                    <div className="flex justify-end gap-2 mt-2">
-                                        <Button variant="ghost" size="sm" onClick={() => setDeleteOpen(false)}>Cancel</Button>
-                                        <Button variant="destructive" size="sm" onClick={handleDelete} disabled={isDeleting}>
-                                            {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            Confirm Delete
-                                        </Button>
-                                    </div>
-                                </div>
-                            </PopoverContent>
-                        </Popover>
+                        <DeleteConfirmPopover
+                            description="Are you sure? This action cannot be undone."
+                            onConfirm={handleDelete}
+                            isConfirming={isDeleting}
+                            confirmText="Confirm Delete"
+                            disabled={isSaving || isDeleting}
+                        >
+                            <Button type="button" variant="destructive" disabled={isSaving || isDeleting}>
+                                Delete
+                            </Button>
+                        </DeleteConfirmPopover>
                     </div>
                 ) : <div></div>}
                 <div className="flex gap-2">

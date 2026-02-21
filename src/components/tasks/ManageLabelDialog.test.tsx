@@ -21,4 +21,19 @@ describe("ManageLabelDialog", () => {
             expect(screen.getByText(/Labels/i) || screen.getByText(/New Label/i)).toBeDefined();
         });
     });
+
+    it("should show in-app delete confirmation for existing labels", async () => {
+        render(
+            <ManageLabelDialog
+                open={true}
+                onOpenChange={() => { }}
+                userId="test_user_123"
+                label={{ id: 1, name: "Important", color: "#ef4444", icon: "hash", description: null }}
+            />
+        );
+
+        fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+
+        expect(await screen.findByRole("button", { name: "Delete Label" })).toBeInTheDocument();
+    });
 });

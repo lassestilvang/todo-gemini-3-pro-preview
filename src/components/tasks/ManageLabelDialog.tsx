@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { createLabel, updateLabel, deleteLabel } from "@/lib/actions";
 import { IconPicker } from "@/components/ui/icon-picker";
+import { DeleteConfirmPopover } from "@/components/ui/delete-confirm-popover";
 import { cn } from "@/lib/utils";
 
 const COLORS = [
@@ -77,10 +78,13 @@ function LabelForm({ label, userId, onClose }: { label?: { id: number; name: str
     const [color, setColor] = useState(label?.color || COLORS[0]);
     const [icon, setIcon] = useState(label?.icon || "hash");
     const [description, setDescription] = useState(label?.description || "");
+    const [isSaving, setIsSaving] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const isEdit = !!label;
 
     const router = useRouter();
+    const pathname = usePathname();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -89,15 +93,22 @@ function LabelForm({ label, userId, onClose }: { label?: { id: number; name: str
             return;
         }
         try {
-            if (label) {
-                await updateLabel(label.id, userId, { name, color, icon, description });
-            } else {
-                await createLabel({ name, color, icon, description, userId });
+            setIsSaving(true);
+            const result = label
+                ? await updateLabel(label.id, userId, { name, color, icon, description })
+                : await createLabel({ name, color, icon, description, userId });
+
+            if (!result.success) {
+                console.error("Failed to save label:", result.error.message);
+                return;
             }
+
             router.refresh();
             onClose();
         } catch (error) {
             console.error("Failed to save label:", error);
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -106,14 +117,26 @@ function LabelForm({ label, userId, onClose }: { label?: { id: number; name: str
             console.error("Cannot delete label: userId is missing");
             return;
         }
-        if (confirm("Are you sure you want to delete this label?")) {
-            try {
-                await deleteLabel(label.id, userId);
-                router.refresh();
-                onClose();
-            } catch (error) {
-                console.error("Failed to delete label:", error);
+
+        try {
+            setIsDeleting(true);
+            const result = await deleteLabel(label.id, userId);
+
+            if (!result.success) {
+                console.error("Failed to delete label:", result.error.message);
+                return;
             }
+
+            onClose();
+            if (pathname === `/labels/${label.id}`) {
+                router.push("/inbox");
+                return;
+            }
+            router.refresh();
+        } catch (error) {
+            console.error("Failed to delete label:", error);
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -172,15 +195,26 @@ function LabelForm({ label, userId, onClose }: { label?: { id: number; name: str
 
             <DialogFooter className="flex justify-between sm:justify-between">
                 {isEdit && (
-                    <Button type="button" variant="destructive" onClick={handleDelete}>
-                        Delete
-                    </Button>
+                    <DeleteConfirmPopover
+                        title="Delete Label?"
+                        description="This removes the label from all tasks. This action cannot be undone."
+                        onConfirm={handleDelete}
+                        isConfirming={isDeleting}
+                        confirmText="Delete Label"
+                        disabled={isSaving || isDeleting}
+                    >
+                        <Button type="button" variant="destructive" disabled={isSaving || isDeleting}>
+                            Delete
+                        </Button>
+                    </DeleteConfirmPopover>
                 )}
                 <div className="flex gap-2">
-                    <Button type="button" variant="outline" onClick={onClose}>
+                    <Button type="button" variant="outline" onClick={onClose} disabled={isSaving || isDeleting}>
                         Cancel
                     </Button>
-                    <Button type="submit">Save</Button>
+                    <Button type="submit" disabled={isSaving || isDeleting}>
+                        {isSaving ? "Saving..." : "Save"}
+                    </Button>
                 </div>
             </DialogFooter>
         </form>

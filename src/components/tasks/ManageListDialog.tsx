@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { createList, updateList, deleteList } from "@/lib/actions";
 import { useActionResult } from "@/hooks/useActionResult";
 import { IconPicker } from "@/components/ui/icon-picker";
+import { DeleteConfirmPopover } from "@/components/ui/delete-confirm-popover";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -52,6 +53,7 @@ export function ManageListDialog({ list, open, onOpenChange, trigger, userId }: 
     const [internalOpen, setInternalOpen] = useState(false);
 
     const router = useRouter();
+    const pathname = usePathname();
     const effectiveOpen = open !== undefined ? open : internalOpen;
     const setEffectiveOpen = (val: boolean) => {
         if (onOpenChange) onOpenChange(val);
@@ -78,6 +80,10 @@ export function ManageListDialog({ list, open, onOpenChange, trigger, userId }: 
         onSuccess: () => {
             setEffectiveOpen(false);
             toast.success("List deleted successfully");
+            if (list && pathname === `/lists/${list.id}`) {
+                router.push("/inbox");
+                return;
+            }
             router.refresh();
         }
     });
@@ -158,9 +164,7 @@ function ListForm({ list, userId, onSubmit, onDelete, onCancel, isLoading }: Lis
     };
 
     const handleDelete = async () => {
-        if (confirm("Are you sure you want to delete this list? Tasks will be deleted.")) {
-            await onDelete();
-        }
+        await onDelete();
     };
 
 
@@ -218,9 +222,18 @@ function ListForm({ list, userId, onSubmit, onDelete, onCancel, isLoading }: Lis
 
             <DialogFooter className="flex justify-between sm:justify-between">
                 {isEdit && (
-                    <Button type="button" variant="destructive" onClick={handleDelete}>
-                        Delete
-                    </Button>
+                    <DeleteConfirmPopover
+                        title="Delete List?"
+                        description="Deleting this list will also delete all tasks inside it. This action cannot be undone."
+                        onConfirm={handleDelete}
+                        isConfirming={isLoading}
+                        confirmText="Delete List"
+                        disabled={isLoading}
+                    >
+                        <Button type="button" variant="destructive" disabled={isLoading}>
+                            Delete
+                        </Button>
+                    </DeleteConfirmPopover>
                 )}
                 <div className="flex gap-2">
                     <Button type="button" variant="outline" onClick={onCancel}>

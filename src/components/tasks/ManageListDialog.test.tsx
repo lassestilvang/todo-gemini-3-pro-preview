@@ -60,4 +60,19 @@ describe("ManageListDialog", () => {
             expect(list[0].userId).toBe(TEST_USER_ID);
         });
     });
+
+    it("should show in-app delete confirmation for existing lists", async () => {
+        render(
+            <ManageListDialog
+                open={true}
+                onOpenChange={() => { }}
+                userId={TEST_USER_ID}
+                list={{ id: 999, name: "Project", color: "#3b82f6", icon: "list", description: null }}
+            />
+        );
+
+        fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+
+        expect(await screen.findByRole("button", { name: "Delete List" })).toBeInTheDocument();
+    });
 });
