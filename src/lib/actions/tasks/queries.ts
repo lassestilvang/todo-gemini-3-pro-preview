@@ -241,25 +241,24 @@ async function getTasksImpl(
     }
   }
 
+  // ⚡ Bolt Opt: Re-use list reference and calculate completed count on-the-fly.
+  // This avoids maintaining a separate Map<number, number> for completed counts, saving memory and Map lookups.
+  // Iterating subtasks (usually < 10) in the final loop is faster than Map overhead.
   const subtasksByParentId = new Map<number, typeof subtasksResult>();
-  const completedSubtaskCountByParentId = new Map<number, number>();
   for (const subtask of subtasksResult) {
     if (!subtask.parentId) continue;
-    const list = subtasksByParentId.get(subtask.parentId) ?? [];
-    list.push(subtask);
-    subtasksByParentId.set(subtask.parentId, list);
-    if (subtask.isCompleted) {
-      completedSubtaskCountByParentId.set(
-        subtask.parentId,
-        (completedSubtaskCountByParentId.get(subtask.parentId) ?? 0) + 1
-      );
+    let list = subtasksByParentId.get(subtask.parentId);
+    if (!list) {
+      list = [];
+      subtasksByParentId.set(subtask.parentId, list);
     }
+    list.push(subtask);
   }
 
   const tasksWithLabelsAndSubtasks = tasksResult.map((task) => {
     const taskLabelsList = labelsByTaskId.get(task.id) ?? [];
     const taskSubtasks = subtasksByParentId.get(task.id) ?? [];
-    const completedSubtaskCount = completedSubtaskCountByParentId.get(task.id) ?? 0;
+    const completedSubtaskCount = taskSubtasks.filter((t) => t.isCompleted).length;
 
     return {
       ...task,
