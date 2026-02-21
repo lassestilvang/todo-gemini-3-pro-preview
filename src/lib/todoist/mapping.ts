@@ -20,7 +20,7 @@ export function buildDefaultProjectAssignments(
     projects: Project[],
     localLists: { id: number }[]
 ): TodoistProjectAssignment[] {
-    return projects.slice(0, 5).map((project, index) => ({
+    return projects.map((project, index) => ({
         projectId: project.id,
         listId: localLists[index]?.id ?? null,
     }));

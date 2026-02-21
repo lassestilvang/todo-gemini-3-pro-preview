@@ -7,7 +7,7 @@ import { encryptToken } from "@/lib/todoist/crypto";
 import { syncTodoistForUser } from "@/lib/todoist/sync";
 import { createTodoistClient } from "@/lib/todoist/service";
 import { mapLocalTaskToTodoist, mapTodoistTaskToLocal } from "@/lib/todoist/mapper";
-import { resolveTodoistTaskListId } from "@/lib/todoist/mapping";
+import { applyListLabelMapping, resolveTodoistTaskListId } from "@/lib/todoist/mapping";
 import { updateTask } from "@/lib/actions/tasks";
 
 export async function connectTodoist(token: string) {
@@ -189,9 +189,33 @@ export async function getTodoistMappingData() {
     });
 
     const client = createTodoistClient(accessToken);
+    const fetchAllProjects = async () => {
+        const rows: Awaited<ReturnType<typeof client.getProjects>>["results"] = [];
+        let cursor: string | null = null;
+
+        do {
+            const page = await client.getProjects({ cursor, limit: 200 });
+            rows.push(...(page.results ?? []));
+            cursor = page.nextCursor ?? null;
+        } while (cursor);
+
+        return rows;
+    };
+    const fetchAllLabels = async () => {
+        const rows: Awaited<ReturnType<typeof client.getLabels>>["results"] = [];
+        let cursor: string | null = null;
+
+        do {
+            const page = await client.getLabels({ cursor, limit: 200 });
+            rows.push(...(page.results ?? []));
+            cursor = page.nextCursor ?? null;
+        } while (cursor);
+
+        return rows;
+    };
     const [projects, labels, userLists, mappings] = await Promise.all([
-        client.getProjects(),
-        client.getLabels(),
+        fetchAllProjects(),
+        fetchAllLabels(),
         db.select().from(lists).where(eq(lists.userId, user.id)),
         db
             .select()
@@ -201,8 +225,8 @@ export async function getTodoistMappingData() {
 
     return {
         success: true,
-        projects: projects.results?.slice(0, 5) ?? [],
-        labels: labels.results ?? [],
+        projects: projects ?? [],
+        labels: labels ?? [],
         lists: userLists,
         projectMappings: mappings
             .filter((mapping) => mapping.entityType === "list")
@@ -247,22 +271,30 @@ export async function setTodoistProjectMappings(mappings: { projectId: string; l
         return { success: true };
     }
 
-    await db
-        .delete(externalEntityMap)
-        .where(and(eq(externalEntityMap.userId, user.id), eq(externalEntityMap.provider, "todoist"), eq(externalEntityMap.entityType, "list")));
-
     const filtered = mappings.filter((mapping) => mapping.listId !== null);
-    if (filtered.length > 0) {
-        await db.insert(externalEntityMap).values(
-            filtered.map((mapping) => ({
-                userId: user.id,
-                provider: "todoist" as const,
-                entityType: "list" as const,
-                localId: mapping.listId,
-                externalId: mapping.projectId,
-            }))
-        );
-    }
+    await db.transaction(async (tx) => {
+        await tx
+            .delete(externalEntityMap)
+            .where(
+                and(
+                    eq(externalEntityMap.userId, user.id),
+                    eq(externalEntityMap.provider, "todoist"),
+                    eq(externalEntityMap.entityType, "list")
+                )
+            );
+
+        if (filtered.length > 0) {
+            await tx.insert(externalEntityMap).values(
+                filtered.map((mapping) => ({
+                    userId: user.id,
+                    provider: "todoist" as const,
+                    entityType: "list" as const,
+                    localId: mapping.listId,
+                    externalId: mapping.projectId,
+                }))
+            );
+        }
+    });
 
     return { success: true };
 }
@@ -295,22 +327,30 @@ export async function setTodoistLabelMappings(mappings: { labelId: string; listI
         return { success: true };
     }
 
-    await db
-        .delete(externalEntityMap)
-        .where(and(eq(externalEntityMap.userId, user.id), eq(externalEntityMap.provider, "todoist"), eq(externalEntityMap.entityType, "list_label")));
-
     const filtered = mappings.filter((mapping) => mapping.listId);
-    if (filtered.length > 0) {
-        await db.insert(externalEntityMap).values(
-            filtered.map((mapping) => ({
-                userId: user.id,
-                provider: "todoist" as const,
-                entityType: "list_label" as const,
-                localId: mapping.listId,
-                externalId: mapping.labelId,
-            }))
-        );
-    }
+    await db.transaction(async (tx) => {
+        await tx
+            .delete(externalEntityMap)
+            .where(
+                and(
+                    eq(externalEntityMap.userId, user.id),
+                    eq(externalEntityMap.provider, "todoist"),
+                    eq(externalEntityMap.entityType, "list_label")
+                )
+            );
+
+        if (filtered.length > 0) {
+            await tx.insert(externalEntityMap).values(
+                filtered.map((mapping) => ({
+                    userId: user.id,
+                    provider: "todoist" as const,
+                    entityType: "list_label" as const,
+                    localId: mapping.listId,
+                    externalId: mapping.labelId,
+                }))
+            );
+        }
+    });
 
     return { success: true };
 }
@@ -379,6 +419,18 @@ export async function resolveTodoistConflict(conflictId: number, resolution: "lo
     });
 
     const client = createTodoistClient(accessToken);
+    const fetchAllTodoistLabels = async () => {
+        const rows: Awaited<ReturnType<typeof client.getLabels>>["results"] = [];
+        let cursor: string | null = null;
+
+        do {
+            const page = await client.getLabels({ cursor, limit: 200 });
+            rows.push(...(page.results ?? []));
+            cursor = page.nextCursor ?? null;
+        } while (cursor);
+
+        return rows;
+    };
 
     if (resolution === "local") {
         if (!conflict.externalId || !conflict.localId) {
@@ -398,6 +450,7 @@ export async function resolveTodoistConflict(conflictId: number, resolution: "lo
             .from(externalEntityMap)
             .where(and(eq(externalEntityMap.userId, user.id), eq(externalEntityMap.provider, "todoist")));
         const labelMappings = entityMappings.filter((mapping) => mapping.entityType === "label");
+        const taskMappings = entityMappings.filter((mapping) => mapping.entityType === "task");
         const listLabelMappings = entityMappings.filter((mapping) => mapping.entityType === "list_label");
         const mappingState = {
             projects: entityMappings
@@ -405,6 +458,11 @@ export async function resolveTodoistConflict(conflictId: number, resolution: "lo
                 .map((mapping) => ({ projectId: mapping.externalId, listId: mapping.localId })),
             labels: listLabelMappings.map((mapping) => ({ labelId: mapping.externalId, listId: mapping.localId })),
         };
+        const localTaskToExternal = new Map(
+            taskMappings
+                .filter((mapping) => mapping.localId !== null)
+                .map((mapping) => [mapping.localId as number, mapping.externalId])
+        );
         const localLabelToExternal = new Map(
             labelMappings
                 .filter((mapping) => mapping.localId !== null)
@@ -414,15 +472,25 @@ export async function resolveTodoistConflict(conflictId: number, resolution: "lo
             .select({ labelId: taskLabels.labelId })
             .from(taskLabels)
             .where(eq(taskLabels.taskId, localTask.id));
-        const remoteLabelsResponse = await client.getLabels();
+        const allRemoteLabels = await fetchAllTodoistLabels();
         const externalLabelToName = new Map(
-            (remoteLabelsResponse.results ?? []).map((label) => [label.id, label.name])
+            allRemoteLabels.map((label) => [label.id, label.name])
         );
         const payload = mapLocalTaskToTodoist(localTask, mappingState, {
             labelIds: localTaskLabelRows.map((row) => row.labelId),
             labelIdToExternal: localLabelToExternal,
             externalLabelToName,
         });
+        const desiredProjectId = applyListLabelMapping(localTask.listId ?? null, mappingState).projectId ?? null;
+        const desiredParentExternalId = localTask.parentId
+            ? (localTaskToExternal.get(localTask.parentId) ?? null)
+            : null;
+
+        if (desiredParentExternalId) {
+            await client.moveTask(conflict.externalId, { parentId: desiredParentExternalId });
+        } else if (desiredProjectId) {
+            await client.moveTask(conflict.externalId, { projectId: desiredProjectId });
+        }
         await client.updateTask(conflict.externalId, payload);
 
         if (localTask.isCompleted) {
@@ -442,6 +510,7 @@ export async function resolveTodoistConflict(conflictId: number, resolution: "lo
             .from(externalEntityMap)
             .where(and(eq(externalEntityMap.userId, user.id), eq(externalEntityMap.provider, "todoist")));
         const labelMappings = entityMappings.filter((mapping) => mapping.entityType === "label");
+        const taskMappings = entityMappings.filter((mapping) => mapping.entityType === "task");
         const listLabelMappings = entityMappings.filter((mapping) => mapping.entityType === "list_label");
         const mappingState = {
             projects: entityMappings
@@ -449,18 +518,23 @@ export async function resolveTodoistConflict(conflictId: number, resolution: "lo
                 .map((mapping) => ({ projectId: mapping.externalId, listId: mapping.localId })),
             labels: listLabelMappings.map((mapping) => ({ labelId: mapping.externalId, listId: mapping.localId })),
         };
+        const externalTaskToLocal = new Map(
+            taskMappings
+                .filter((mapping) => mapping.localId !== null)
+                .map((mapping) => [mapping.externalId, mapping.localId as number])
+        );
 
-        const remoteTask = await client.getTasks().then((tasks) =>
+        const remoteTask = await client.getTasks({ ids: [conflict.externalId] }).then((tasks) =>
             tasks.results.find((task) => task.id === conflict.externalId)
         );
         if (!remoteTask) {
             return { success: false, error: "Remote task not found." };
         }
 
-        const remoteLabelsResponse = await client.getLabels();
-        const remoteLabelIds = new Set((remoteLabelsResponse.results ?? []).map((label) => label.id));
+        const allRemoteLabels = await fetchAllTodoistLabels();
+        const remoteLabelIds = new Set(allRemoteLabels.map((label) => label.id));
         const remoteLabelNameToId = new Map<string, string>();
-        for (const label of remoteLabelsResponse.results ?? []) {
+        for (const label of allRemoteLabels) {
             const normalizedName = label.name.trim().toLowerCase();
             if (!remoteLabelNameToId.has(normalizedName)) {
                 remoteLabelNameToId.set(normalizedName, label.id);
@@ -479,6 +553,9 @@ export async function resolveTodoistConflict(conflictId: number, resolution: "lo
         const localUpdates = mapTodoistTaskToLocal(normalizedRemoteTask as never, mappingState);
         const resolvedListId = resolveTodoistTaskListId(normalizedRemoteTask as never, mappingState);
         const labelIdMap = new Map(labelMappings.map((mapping) => [mapping.externalId, mapping.localId]));
+        const resolvedParentId = remoteTask.parentId
+            ? (externalTaskToLocal.get(remoteTask.parentId) ?? null)
+            : null;
         const labelIds = resolvedExternalLabelIds
             .map((labelId) => labelIdMap.get(labelId))
             .filter((id): id is number => Boolean(id));
@@ -489,10 +566,16 @@ export async function resolveTodoistConflict(conflictId: number, resolution: "lo
             {
                 title: localUpdates.title,
                 description: localUpdates.description ?? null,
+                priority: localUpdates.priority,
                 isCompleted: localUpdates.isCompleted ?? false,
-                completedAt: localUpdates.isCompleted ? new Date() : null,
+                completedAt: localUpdates.isCompleted ? (localUpdates.completedAt ?? new Date()) : null,
                 dueDate: localUpdates.dueDate ?? null,
                 dueDatePrecision: localUpdates.dueDatePrecision ?? null,
+                deadline: localUpdates.deadline ?? null,
+                estimateMinutes: localUpdates.estimateMinutes ?? null,
+                isRecurring: localUpdates.isRecurring ?? false,
+                recurringRule: localUpdates.recurringRule ?? null,
+                parentId: resolvedParentId,
                 listId: resolvedListId,
                 labelIds,
             }

@@ -6,6 +6,9 @@ import type {
     UpdateLabelArgs,
     MoveTaskArgs,
     GetCompletedTasksByCompletionDateArgs,
+    GetTasksArgs,
+    GetProjectsArgs,
+    GetLabelsArgs,
 } from "@doist/todoist-api-typescript";
 
 export class TodoistClient {
@@ -15,16 +18,16 @@ export class TodoistClient {
         this.api = new TodoistApi(token);
     }
 
-    getProjects() {
-        return this.api.getProjects();
+    getProjects(args?: GetProjectsArgs) {
+        return this.api.getProjects(args);
     }
 
-    getLabels() {
-        return this.api.getLabels();
+    getLabels(args?: GetLabelsArgs) {
+        return this.api.getLabels(args);
     }
 
-    getTasks() {
-        return this.api.getTasks();
+    getTasks(args?: GetTasksArgs) {
+        return this.api.getTasks(args);
     }
 
     getCompletedTasksByCompletionDate(payload: GetCompletedTasksByCompletionDateArgs) {

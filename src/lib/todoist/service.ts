@@ -27,14 +27,29 @@ export function createTodoistClient(token: string) {
     return new TodoistClient(token);
 }
 
+async function fetchAllPages<T>(
+    fetchPage: (cursor: string | null) => Promise<{ results?: T[]; nextCursor?: string | null }>
+) {
+    const rows: T[] = [];
+    let cursor: string | null = null;
+
+    do {
+        const page = await fetchPage(cursor);
+        rows.push(...(page.results ?? []));
+        cursor = page.nextCursor ?? null;
+    } while (cursor);
+
+    return rows;
+}
+
 export async function fetchTodoistSnapshot(
     client: TodoistClient,
     options?: { lastSyncedAt?: Date | null }
 ): Promise<TodoistSettingsSnapshot> {
     const [projects, labels, activeTasks] = await Promise.all([
-        client.getProjects(),
-        client.getLabels(),
-        client.getTasks().then(res => res.results),
+        fetchAllPages((cursor) => client.getProjects({ cursor, limit: 200 })),
+        fetchAllPages((cursor) => client.getLabels({ cursor, limit: 200 })),
+        fetchAllPages((cursor) => client.getTasks({ cursor, limit: 200 })),
     ]);
 
     const taskById = new Map(activeTasks.map((task) => [task.id, task]));
@@ -59,8 +74,8 @@ export async function fetchTodoistSnapshot(
     }
 
     return {
-        projects: projects.results ?? [],
-        labels: labels.results ?? [],
+        projects,
+        labels,
         tasks: Array.from(taskById.values()),
     };
 }

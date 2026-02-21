@@ -21,6 +21,42 @@ function parseTodoistTimestamp(value: string | null | undefined) {
     return parsed;
 }
 
+function parseTodoistDateOnly(value: string | null | undefined) {
+    if (!value) {
+        return null;
+    }
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (!match) {
+        return null;
+    }
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const parsed = new Date(year, month - 1, day);
+    if (
+        parsed.getFullYear() !== year ||
+        parsed.getMonth() !== month - 1 ||
+        parsed.getDate() !== day
+    ) {
+        return null;
+    }
+    return parsed;
+}
+
+function hasLocalTimeComponent(date: Date) {
+    return date.getHours() !== 0 ||
+        date.getMinutes() !== 0 ||
+        date.getSeconds() !== 0 ||
+        date.getMilliseconds() !== 0;
+}
+
+function formatLocalDateOnly(date: Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
+
 function parseTodoistDueDate(task: Task) {
     const dueDateTime = parseTodoistTimestamp(task.due?.datetime ?? null);
     if (dueDateTime) {
@@ -31,7 +67,7 @@ function parseTodoistDueDate(task: Task) {
         return { dueDate: null as Date | null, dueDatePrecision: null as LocalTask["dueDatePrecision"] };
     }
 
-    const dueDate = parseTodoistTimestamp(task.due.date);
+    const dueDate = parseTodoistDateOnly(task.due.date);
     if (!dueDate) {
         return { dueDate: null as Date | null, dueDatePrecision: null as LocalTask["dueDatePrecision"] };
     }
@@ -46,7 +82,7 @@ function parseTodoistDeadline(task: Task) {
     if (!task.deadline?.date) {
         return null;
     }
-    return parseTodoistTimestamp(task.deadline.date);
+    return parseTodoistDateOnly(task.deadline.date);
 }
 
 function parseTodoistDurationMinutes(task: Task) {
@@ -129,9 +165,9 @@ export function mapLocalTaskToTodoist(
         )
         : undefined;
     const iso = task.dueDate ? task.dueDate.toISOString() : null;
-    const hasTime = iso ? !iso.endsWith("T00:00:00.000Z") : false;
-    const dueDate = task.dueDate ? task.dueDate.toISOString().split("T")[0] : undefined;
-    const deadlineDate = task.deadline ? task.deadline.toISOString().split("T")[0] : undefined;
+    const hasTime = task.dueDate ? hasLocalTimeComponent(task.dueDate) : false;
+    const dueDate = task.dueDate ? formatLocalDateOnly(task.dueDate) : undefined;
+    const deadlineDate = task.deadline ? formatLocalDateOnly(task.deadline) : undefined;
     const durationMinutes = typeof task.estimateMinutes === "number" && task.estimateMinutes > 0
         ? Math.round(task.estimateMinutes)
         : undefined;

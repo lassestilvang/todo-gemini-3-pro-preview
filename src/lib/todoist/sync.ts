@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, lt, ne, or } from "drizzle-orm";
 import {
     db,
     externalEntityMap,
@@ -48,15 +48,8 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
         where: and(eq(externalSyncState.userId, userId), eq(externalSyncState.provider, "todoist")),
     });
     const lastSyncedAt = previousSyncState?.lastSyncedAt ?? null;
-    const syncInProgress = previousSyncState?.status === "syncing"
-        && !!previousSyncState.updatedAt
-        && Date.now() - previousSyncState.updatedAt.getTime() < 5 * 60_000;
-
-    if (syncInProgress) {
-        return { status: "error", error: "Todoist sync already in progress." };
-    }
-
-    await db
+    const staleThreshold = new Date(Date.now() - 5 * 60_000);
+    const insertedLock = await db
         .insert(externalSyncState)
         .values({
             userId,
@@ -64,10 +57,29 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
             status: "syncing",
             error: null,
         })
-        .onConflictDoUpdate({
-            target: [externalSyncState.userId, externalSyncState.provider],
-            set: { status: "syncing", error: null },
-        });
+        .onConflictDoNothing()
+        .returning({ id: externalSyncState.id });
+
+    if (insertedLock.length === 0) {
+        const refreshed = await db
+            .update(externalSyncState)
+            .set({ status: "syncing", error: null, updatedAt: new Date() })
+            .where(
+                and(
+                    eq(externalSyncState.userId, userId),
+                    eq(externalSyncState.provider, "todoist"),
+                    or(
+                        ne(externalSyncState.status, "syncing"),
+                        lt(externalSyncState.updatedAt, staleThreshold)
+                    )
+                )
+            )
+            .returning({ id: externalSyncState.id });
+
+        if (refreshed.length === 0) {
+            return { status: "error", error: "Todoist sync already in progress." };
+        }
+    }
 
     try {
         const snapshot = await fetchTodoistSnapshot(client, { lastSyncedAt });
@@ -295,7 +307,9 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
             ? hasMappedProjects
                 ? new Set([
                     ...mappedLabelIds,
-                    ...remoteTasksInScope.flatMap((task) => task.labels ?? []),
+                    ...remoteTasksInScope.flatMap((task) =>
+                        resolveTaskLabelExternalIds(task, snapshotLabelIds, snapshotLabelNameToId)
+                    ),
                 ])
                 : new Set(mappedLabelIds)
             : null;
@@ -467,7 +481,7 @@ async function ensureProjectAssignments(params: {
 
     const hydratedAssignments = [] as { projectId: string; listId: number | null }[];
 
-    for (const project of projects.slice(0, 5)) {
+    for (const project of projects) {
         const existingMatch = lowerCaseListMap.get(project.name.toLowerCase());
         const listId = existingMatch?.id ?? null;
 
@@ -562,6 +576,20 @@ function collectScopedLocalLabelIds(params: {
 
 function normalizeLabelName(value: string) {
     return value.trim().toLowerCase();
+}
+
+function hasLocalTimeComponent(date: Date) {
+    return date.getHours() !== 0 ||
+        date.getMinutes() !== 0 ||
+        date.getSeconds() !== 0 ||
+        date.getMilliseconds() !== 0;
+}
+
+function formatLocalDateOnly(date: Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
 }
 
 function resolveExternalLabelId(
@@ -837,6 +865,7 @@ async function updateMappedTasks(params: {
         const remoteTaskForCompare = {
             ...remoteTask,
             projectId: effectiveProjectId ?? remoteTask.projectId,
+            labels: (remoteTask.labels ?? []).map((token) => externalLabelToName.get(token) ?? token),
         };
         const shouldUpdateTask = shouldUpdateTodoistTask(remoteTaskForCompare, payload);
         const shouldToggleCompletion = (localTask.isCompleted ?? false) !== (remoteTask.checked ?? false);
@@ -1146,7 +1175,9 @@ function buildLocalTaskPayload(
         description: task.description ?? "",
         priority: task.priority ?? "none",
         isCompleted: task.isCompleted ?? false,
-        dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+        dueDate: task.dueDate ? formatLocalDateOnly(task.dueDate) : null,
+        dueDateTime: task.dueDate ? task.dueDate.toISOString() : null,
+        hasDueTime: task.dueDate ? hasLocalTimeComponent(task.dueDate) : false,
         deadlineDate: task.deadline ? task.deadline.toISOString().split("T")[0] : null,
         estimateMinutes: task.estimateMinutes ?? null,
         isRecurring: task.isRecurring ?? false,
@@ -1164,6 +1195,8 @@ function buildRemoteTaskPayload(task: Task, externalLabelIds: string[]) {
         priority: toLocalPriority(task.priority),
         isCompleted: task.checked ?? false,
         dueDate: task.due?.date ?? null,
+        dueDateTime: task.due?.datetime ?? null,
+        hasDueTime: Boolean(task.due?.datetime),
         deadlineDate: task.deadline?.date ?? null,
         estimateMinutes: parseTodoistDurationMinutes(task.duration?.amount ?? null, task.duration?.unit ?? null),
         isRecurring: task.due?.isRecurring ?? false,
@@ -1187,9 +1220,17 @@ function tasksMatch(
     if (localPayload.isRecurring !== remotePayload.isRecurring) return false;
     if ((localPayload.recurringRule ?? "") !== (remotePayload.recurringRule ?? "")) return false;
 
-    const localDue = localPayload.dueDate ? localPayload.dueDate.split("T")[0] : null;
-    const remoteDue = remotePayload.dueDate ? remotePayload.dueDate.split("T")[0] : null;
-    if (localDue !== remoteDue) return false;
+    if (localPayload.hasDueTime !== remotePayload.hasDueTime) return false;
+
+    if (localPayload.hasDueTime) {
+        const localDueTimestamp = localPayload.dueDateTime ? new Date(localPayload.dueDateTime).getTime() : null;
+        const remoteDueTimestamp = parseTodoistTimestamp(remotePayload.dueDateTime)?.getTime() ?? null;
+        if (localDueTimestamp !== remoteDueTimestamp) return false;
+    } else {
+        const localDue = localPayload.dueDate ?? null;
+        const remoteDue = remotePayload.dueDate ? remotePayload.dueDate.split("T")[0] : null;
+        if (localDue !== remoteDue) return false;
+    }
 
     if (localPayload.parentExternalId !== remotePayload.parentExternalId) return false;
 

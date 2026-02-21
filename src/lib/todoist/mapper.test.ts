@@ -37,7 +37,9 @@ describe("todoist mapper", () => {
         expect(task.priority).toBe("high");
         expect(task.completedAt).toBeInstanceOf(Date);
         expect(task.createdAt).toEqual(new Date("2026-02-01T08:00:00.000Z"));
-        expect(task.deadline).toEqual(new Date("2026-02-13T00:00:00.000Z"));
+        expect(task.deadline?.getFullYear()).toBe(2026);
+        expect((task.deadline?.getMonth() ?? -1) + 1).toBe(2);
+        expect(task.deadline?.getDate()).toBe(13);
         expect(task.estimateMinutes).toBe(30);
         expect(task.dueDatePrecision).toBeNull();
     });
@@ -50,8 +52,8 @@ describe("todoist mapper", () => {
                 title: "Local",
                 description: "Desc",
                 listId: 1,
-                dueDate: new Date("2026-02-11T00:00:00.000Z"),
-                deadline: new Date("2026-02-13T00:00:00.000Z"),
+                dueDate: new Date(2026, 1, 11, 0, 0, 0, 0),
+                deadline: new Date(2026, 1, 13, 0, 0, 0, 0),
                 estimateMinutes: 45,
                 priority: "high",
                 isCompleted: false,
@@ -68,6 +70,28 @@ describe("todoist mapper", () => {
         expect(payload.deadlineDate).toBe("2026-02-13");
         expect(payload.duration).toBe(45);
         expect(payload.durationUnit).toBe("minute");
+    });
+
+    it("sends dueDatetime when local due has a time component", () => {
+        const payload = mapLocalTaskToTodoist(
+            {
+                id: 5,
+                userId: "user",
+                title: "Timed Local",
+                description: null,
+                listId: 1,
+                dueDate: new Date(2026, 1, 11, 15, 30, 0, 0),
+                priority: "none",
+                isCompleted: false,
+                position: 0,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            } as never,
+            mappings
+        );
+
+        expect(payload.dueDatetime).toBeTruthy();
+        expect(payload.dueDate).toBeUndefined();
     });
 
     it("does not send empty labels payload when no label mapping exists", () => {
