@@ -1,7 +1,7 @@
 "use server";
 
 import { and, eq, inArray } from "drizzle-orm";
-import { db, externalEntityMap, externalIntegrations, externalSyncConflicts, externalSyncState, lists, tasks } from "@/db";
+import { db, externalEntityMap, externalIntegrations, externalSyncConflicts, externalSyncState, lists, taskLabels, tasks } from "@/db";
 import { getCurrentUser } from "@/lib/auth";
 import { encryptToken } from "@/lib/todoist/crypto";
 import { syncTodoistForUser } from "@/lib/todoist/sync";
@@ -251,9 +251,10 @@ export async function setTodoistProjectMappings(mappings: { projectId: string; l
         .delete(externalEntityMap)
         .where(and(eq(externalEntityMap.userId, user.id), eq(externalEntityMap.provider, "todoist"), eq(externalEntityMap.entityType, "list")));
 
-    if (mappings.length > 0) {
+    const filtered = mappings.filter((mapping) => mapping.listId !== null);
+    if (filtered.length > 0) {
         await db.insert(externalEntityMap).values(
-            mappings.map((mapping) => ({
+            filtered.map((mapping) => ({
                 userId: user.id,
                 provider: "todoist" as const,
                 entityType: "list" as const,
@@ -390,6 +391,7 @@ export async function resolveTodoistConflict(conflictId: number, resolution: "lo
             .select()
             .from(externalEntityMap)
             .where(and(eq(externalEntityMap.userId, user.id), eq(externalEntityMap.provider, "todoist")));
+        const labelMappings = entityMappings.filter((mapping) => mapping.entityType === "label");
         const listLabelMappings = entityMappings.filter((mapping) => mapping.entityType === "list_label");
         const mappingState = {
             projects: entityMappings
@@ -397,8 +399,19 @@ export async function resolveTodoistConflict(conflictId: number, resolution: "lo
                 .map((mapping) => ({ projectId: mapping.externalId, listId: mapping.localId })),
             labels: listLabelMappings.map((mapping) => ({ labelId: mapping.externalId, listId: mapping.localId })),
         };
-
-        const payload = mapLocalTaskToTodoist(localTask, mappingState);
+        const localLabelToExternal = new Map(
+            labelMappings
+                .filter((mapping) => mapping.localId !== null)
+                .map((mapping) => [mapping.localId as number, mapping.externalId])
+        );
+        const localTaskLabelRows = await db
+            .select({ labelId: taskLabels.labelId })
+            .from(taskLabels)
+            .where(eq(taskLabels.taskId, localTask.id));
+        const payload = mapLocalTaskToTodoist(localTask, mappingState, {
+            labelIds: localTaskLabelRows.map((row) => row.labelId),
+            labelIdToExternal: localLabelToExternal,
+        });
         await client.updateTask(conflict.externalId, payload);
 
         if (localTask.isCompleted) {

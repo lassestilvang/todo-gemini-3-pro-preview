@@ -20,12 +20,14 @@ export async function GET() {
             .from(externalIntegrations)
             .where(eq(externalIntegrations.provider, "todoist"));
 
-        const results = await Promise.all(
-            integrations.map(async (integration) => ({
+        // Process sequentially to reduce burst rate limits against the Todoist API.
+        const results: Array<{ userId: string; result: Awaited<ReturnType<typeof syncTodoistForUser>> }> = [];
+        for (const integration of integrations) {
+            results.push({
                 userId: integration.userId,
                 result: await syncTodoistForUser(integration.userId),
-            }))
-        );
+            });
+        }
 
         return NextResponse.json({ success: true, results });
     }

@@ -48,4 +48,29 @@ describe("todoist mapper", () => {
         expect(payload.dueDate).toBe("2026-02-11");
         expect(payload.priority).toBe(4);
     });
+
+    it("does not send empty labels payload when no label mapping exists", () => {
+        const payload = mapLocalTaskToTodoist(
+            {
+                id: 2,
+                userId: "user",
+                title: "Unmapped labels",
+                description: null,
+                listId: 999,
+                dueDate: null,
+                priority: "none",
+                isCompleted: false,
+                position: 0,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            } as never,
+            mappings,
+            {
+                labelIds: [123],
+                labelIdToExternal: new Map<number, string>(),
+            }
+        );
+
+        expect(payload.labels).toBeUndefined();
+    });
 });

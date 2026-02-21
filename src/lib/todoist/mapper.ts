@@ -61,6 +61,9 @@ export function mapLocalTaskToTodoist(
             .map((labelId) => labelMap.get(labelId) ?? null)
             .filter((labelId): labelId is string => Boolean(labelId))
         : undefined;
+    const labels = mappedLabels && mappedLabels.length > 0
+        ? mappedLabels
+        : mapping.labelIds;
     const iso = task.dueDate ? task.dueDate.toISOString() : null;
     const hasTime = iso ? !iso.endsWith("T00:00:00.000Z") : false;
     const dueDate = task.dueDate ? task.dueDate.toISOString().split("T")[0] : undefined;
@@ -69,7 +72,7 @@ export function mapLocalTaskToTodoist(
         content: task.title,
         description: task.description ?? undefined,
         projectId: mapping.projectId,
-        labels: mappedLabels ?? mapping.labelIds,
+        labels,
         priority: toTodoistPriority(task.priority ?? "none"),
         dueDate: hasTime ? undefined : dueDate,
         dueDatetime: hasTime ? iso ?? undefined : undefined,

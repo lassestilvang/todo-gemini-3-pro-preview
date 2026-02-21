@@ -149,12 +149,14 @@ export function TodoistMappingForm() {
             dispatchUI({ type: "SAVE_END" });
             return;
         }
-
-        dispatchUI({ type: "SET_STATUS", payload: "Mappings saved. Background sync started..." });
+        const syncResult = await syncTodoistNow();
+        dispatchUI({
+            type: "SET_STATUS",
+            payload: syncResult.success
+                ? "Mappings saved and synced."
+                : `Mappings saved, but sync failed: ${syncResult.error ?? "Unknown sync error."}`,
+        });
         dispatchUI({ type: "SAVE_END" });
-
-        // Run full sync in background without blocking the UI
-        syncTodoistNow().catch(console.error);
     };
 
     if (loading) {
@@ -166,7 +168,7 @@ export function TodoistMappingForm() {
             <div>
                 <h4 className="text-sm font-semibold">Project to List Mapping</h4>
                 <p className="text-xs text-muted-foreground">
-                    Map the existing Todoist projects to local lists. Only 5 projects are supported.
+                    Map the existing Todoist projects to local lists. Only mapped projects sync.
                 </p>
                 <div className="mt-4 space-y-3">
                     {projects.map((project) => (
@@ -204,6 +206,7 @@ export function TodoistMappingForm() {
                 <h4 className="text-sm font-semibold">Extra List to Label Mapping</h4>
                 <p className="text-xs text-muted-foreground">
                     Map additional local lists to Todoist labels for sync beyond 5 projects.
+                    Only mapped labels sync.
                 </p>
                 <div className="mt-4 space-y-3">
                     {labels.slice(0, 10).map((label) => (
