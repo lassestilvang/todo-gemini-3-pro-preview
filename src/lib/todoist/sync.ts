@@ -1178,7 +1178,7 @@ function buildLocalTaskPayload(
         dueDate: task.dueDate ? formatLocalDateOnly(task.dueDate) : null,
         dueDateTime: task.dueDate ? task.dueDate.toISOString() : null,
         hasDueTime: task.dueDate ? hasLocalTimeComponent(task.dueDate) : false,
-        deadlineDate: task.deadline ? task.deadline.toISOString().split("T")[0] : null,
+        deadlineDate: task.deadline ? formatLocalDateOnly(task.deadline) : null,
         estimateMinutes: task.estimateMinutes ?? null,
         isRecurring: task.isRecurring ?? false,
         recurringRule: task.recurringRule ?? null,

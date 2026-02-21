@@ -10,6 +10,95 @@ import { mapLocalTaskToTodoist, mapTodoistTaskToLocal } from "@/lib/todoist/mapp
 import { applyListLabelMapping, resolveTodoistTaskListId } from "@/lib/todoist/mapping";
 import { updateTask } from "@/lib/actions/tasks";
 
+function hasDuplicateStrings(values: string[]) {
+    const seen = new Set<string>();
+    for (const value of values) {
+        const normalized = value.trim();
+        if (seen.has(normalized)) {
+            return true;
+        }
+        seen.add(normalized);
+    }
+    return false;
+}
+
+function hasDuplicateNonNullNumbers(values: Array<number | null>) {
+    const seen = new Set<number>();
+    for (const value of values) {
+        if (value === null) {
+            continue;
+        }
+        if (seen.has(value)) {
+            return true;
+        }
+        seen.add(value);
+    }
+    return false;
+}
+
+function slugifyListName(value: string) {
+    const slug = value
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, "")
+        .replace(/[\s_-]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    return slug || "list";
+}
+
+function buildUniqueSlug(baseSlug: string, usedSlugs: Set<string>) {
+    if (!usedSlugs.has(baseSlug)) {
+        return baseSlug;
+    }
+
+    let suffix = 2;
+    let candidate = `${baseSlug}-${suffix}`;
+    while (usedSlugs.has(candidate)) {
+        suffix += 1;
+        candidate = `${baseSlug}-${suffix}`;
+    }
+    return candidate;
+}
+
+export async function createTodoistMappingList(name: string) {
+    const user = await getCurrentUser();
+    if (!user) {
+        return { success: false, error: "Not authenticated" };
+    }
+
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+        return { success: false, error: "List name is required." };
+    }
+
+    const existingLists = await db
+        .select({ slug: lists.slug, position: lists.position })
+        .from(lists)
+        .where(eq(lists.userId, user.id));
+    const usedSlugs = new Set(existingLists.map((list) => list.slug));
+    const maxPosition = Math.max(0, ...existingLists.map((list) => list.position ?? 0));
+    const slug = buildUniqueSlug(slugifyListName(trimmedName), usedSlugs);
+
+    const [created] = await db
+        .insert(lists)
+        .values({
+            userId: user.id,
+            name: trimmedName,
+            slug,
+            position: maxPosition + 1,
+        })
+        .returning({
+            id: lists.id,
+            name: lists.name,
+        });
+
+    if (!created) {
+        return { success: false, error: "Failed to create list." };
+    }
+
+    return { success: true, list: created };
+}
+
 export async function connectTodoist(token: string) {
     if (process.env.NODE_ENV === "test") {
         return { success: true };
@@ -20,7 +109,19 @@ export async function connectTodoist(token: string) {
         return { success: false, error: "Not authenticated" };
     }
 
-    const encrypted = await encryptToken(token.trim());
+    const sanitizedToken = token.trim();
+    if (!sanitizedToken) {
+        return { success: false, error: "Todoist token is required." };
+    }
+
+    try {
+        const client = createTodoistClient(sanitizedToken);
+        await client.getProjects({ limit: 1 });
+    } catch {
+        return { success: false, error: "Invalid Todoist token." };
+    }
+
+    const encrypted = await encryptToken(sanitizedToken);
 
     await db
         .insert(externalIntegrations)
@@ -249,6 +350,13 @@ export async function setTodoistProjectMappings(mappings: { projectId: string; l
         return { success: false, error: "Not authenticated" };
     }
 
+    if (hasDuplicateStrings(mappings.map((m) => m.projectId))) {
+        return { success: false, error: "Duplicate Todoist project mappings are not allowed." };
+    }
+    if (hasDuplicateNonNullNumbers(mappings.map((m) => m.listId))) {
+        return { success: false, error: "A local list can only be mapped to one Todoist project." };
+    }
+
     const listIds = mappings
         .map((m) => m.listId)
         .filter((id): id is number => id !== null);
@@ -271,7 +379,6 @@ export async function setTodoistProjectMappings(mappings: { projectId: string; l
         return { success: true };
     }
 
-    const filtered = mappings.filter((mapping) => mapping.listId !== null);
     await db.transaction(async (tx) => {
         await tx
             .delete(externalEntityMap)
@@ -283,9 +390,9 @@ export async function setTodoistProjectMappings(mappings: { projectId: string; l
                 )
             );
 
-        if (filtered.length > 0) {
+        if (mappings.length > 0) {
             await tx.insert(externalEntityMap).values(
-                filtered.map((mapping) => ({
+                mappings.map((mapping) => ({
                     userId: user.id,
                     provider: "todoist" as const,
                     entityType: "list" as const,
@@ -305,6 +412,13 @@ export async function setTodoistLabelMappings(mappings: { labelId: string; listI
         return { success: false, error: "Not authenticated" };
     }
 
+    if (hasDuplicateStrings(mappings.map((m) => m.labelId))) {
+        return { success: false, error: "Duplicate Todoist label mappings are not allowed." };
+    }
+    if (hasDuplicateNonNullNumbers(mappings.map((m) => m.listId))) {
+        return { success: false, error: "A local list can only be mapped to one Todoist label." };
+    }
+
     const listIds = mappings
         .map((m) => m.listId)
         .filter((id): id is number => id !== null);
@@ -327,7 +441,6 @@ export async function setTodoistLabelMappings(mappings: { labelId: string; listI
         return { success: true };
     }
 
-    const filtered = mappings.filter((mapping) => mapping.listId);
     await db.transaction(async (tx) => {
         await tx
             .delete(externalEntityMap)
@@ -339,9 +452,9 @@ export async function setTodoistLabelMappings(mappings: { labelId: string; listI
                 )
             );
 
-        if (filtered.length > 0) {
+        if (mappings.length > 0) {
             await tx.insert(externalEntityMap).values(
-                filtered.map((mapping) => ({
+                mappings.map((mapping) => ({
                     userId: user.id,
                     provider: "todoist" as const,
                     entityType: "list_label" as const,
@@ -391,7 +504,11 @@ export async function resolveTodoistConflict(conflictId: number, resolution: "lo
     }
 
     const conflict = await db.query.externalSyncConflicts.findFirst({
-        where: and(eq(externalSyncConflicts.id, conflictId), eq(externalSyncConflicts.userId, user.id)),
+        where: and(
+            eq(externalSyncConflicts.id, conflictId),
+            eq(externalSyncConflicts.userId, user.id),
+            eq(externalSyncConflicts.provider, "todoist")
+        ),
     });
 
     if (!conflict || conflict.status !== "pending") {
@@ -485,10 +602,25 @@ export async function resolveTodoistConflict(conflictId: number, resolution: "lo
         const desiredParentExternalId = localTask.parentId
             ? (localTaskToExternal.get(localTask.parentId) ?? null)
             : null;
+        const remoteTask = await client.getTasks({ ids: [conflict.externalId] }).then((tasks) =>
+            tasks.results.find((task) => task.id === conflict.externalId)
+        );
+        let effectiveProjectId = remoteTask?.projectId ?? null;
+        let effectiveParentId = remoteTask?.parentId ?? null;
 
-        if (desiredParentExternalId) {
+        if (desiredParentExternalId && desiredParentExternalId !== effectiveParentId) {
             await client.moveTask(conflict.externalId, { parentId: desiredParentExternalId });
-        } else if (desiredProjectId) {
+            effectiveParentId = desiredParentExternalId;
+        } else if (!desiredParentExternalId && effectiveParentId) {
+            const projectIdForRoot = desiredProjectId ?? effectiveProjectId;
+            if (projectIdForRoot) {
+                await client.moveTask(conflict.externalId, { projectId: projectIdForRoot });
+                effectiveProjectId = projectIdForRoot;
+                effectiveParentId = null;
+            }
+        }
+
+        if (!desiredParentExternalId && desiredProjectId && desiredProjectId !== effectiveProjectId) {
             await client.moveTask(conflict.externalId, { projectId: desiredProjectId });
         }
         await client.updateTask(conflict.externalId, payload);

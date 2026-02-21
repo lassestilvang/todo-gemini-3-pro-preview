@@ -3,27 +3,44 @@
 import React, { useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getTodoistMappingData, setTodoistLabelMappings, setTodoistProjectMappings, syncTodoistNow } from "@/lib/actions/todoist";
+import {
+    createTodoistMappingList,
+    getTodoistMappingData,
+    setTodoistLabelMappings,
+    setTodoistProjectMappings,
+    syncTodoistNow,
+} from "@/lib/actions/todoist";
 
 export function TodoistMappingForm() {
+    type MappingSelection = number | null | "new";
+
     type UIState = {
         loading: boolean;
         status: string | null;
         projects: { id: string; name: string }[];
         labels: { id: string; name: string }[];
         lists: { id: number; name: string }[];
-        projectMappings: Record<string, number | null>;
-        labelMappings: Record<string, number | null>;
+        projectMappings: Record<string, MappingSelection>;
+        labelMappings: Record<string, MappingSelection>;
         isSaving: boolean;
     };
 
     type UIAction =
         | { type: "FETCH_START" }
-        | { type: "FETCH_SUCCESS"; payload: { projects: { id: string; name: string }[]; labels: { id: string; name: string }[]; lists: { id: number; name: string }[]; projectMappings: Record<string, number | null>; labelMappings: Record<string, number | null> } }
+        | {
+            type: "FETCH_SUCCESS";
+            payload: {
+                projects: { id: string; name: string }[];
+                labels: { id: string; name: string }[];
+                lists: { id: number; name: string }[];
+                projectMappings: Record<string, MappingSelection>;
+                labelMappings: Record<string, MappingSelection>;
+            }
+        }
         | { type: "FETCH_ERROR"; payload: string }
         | { type: "SET_STATUS"; payload: string | null }
-        | { type: "UPDATE_PROJECT_MAPPING"; payload: { projectId: string; listId: number | null } }
-        | { type: "UPDATE_LABEL_MAPPING"; payload: { labelId: string; listId: number | null } }
+        | { type: "UPDATE_PROJECT_MAPPING"; payload: { projectId: string; listId: MappingSelection } }
+        | { type: "UPDATE_LABEL_MAPPING"; payload: { labelId: string; listId: MappingSelection } }
         | { type: "SAVE_START" }
         | { type: "SAVE_END" };
 
@@ -84,60 +101,132 @@ export function TodoistMappingForm() {
 
     const { loading, status, projects, labels, lists, projectMappings, labelMappings, isSaving } = uiState;
 
+    const loadMappings = React.useCallback(async () => {
+        const result = await getTodoistMappingData();
+        if (!result.success) {
+            return { success: false as const, error: result.error ?? "Failed to load Todoist mapping data." };
+        }
+
+        const projectMap: Record<string, MappingSelection> = {};
+        for (const project of result.projects ?? []) {
+            const match = result.projectMappings?.find((mapping) => mapping.projectId === project.id);
+            projectMap[project.id] = match?.listId ?? null;
+        }
+
+        const labelMap: Record<string, MappingSelection> = {};
+        for (const label of result.labels ?? []) {
+            const match = result.labelMappings?.find((mapping) => mapping.labelId === label.id);
+            labelMap[label.id] = match?.listId ?? null;
+        }
+
+        return {
+            success: true as const,
+            payload: {
+                projects: result.projects ?? [],
+                labels: result.labels ?? [],
+                lists: result.lists ?? [],
+                projectMappings: projectMap,
+                labelMappings: labelMap,
+            },
+        };
+    }, []);
+
     useEffect(() => {
         let isMounted = true;
         const load = async () => {
             dispatchUI({ type: "FETCH_START" });
-            const result = await getTodoistMappingData();
-            if (!isMounted) return;
-
-            if (!result.success) {
-                dispatchUI({ type: "FETCH_ERROR", payload: result.error ?? "Failed to load Todoist mapping data." });
+            const result = await loadMappings();
+            if (!isMounted) {
                 return;
             }
 
-            const projectMap: Record<string, number | null> = {};
-            for (const project of result.projects ?? []) {
-                const match = result.projectMappings?.find((mapping) => mapping.projectId === project.id);
-                projectMap[project.id] = match?.listId ?? null;
-            }
-
-            const labelMap: Record<string, number | null> = {};
-            for (const label of result.labels ?? []) {
-                const match = result.labelMappings?.find((mapping) => mapping.labelId === label.id);
-                labelMap[label.id] = match?.listId ?? null;
+            if (!result.success) {
+                dispatchUI({ type: "FETCH_ERROR", payload: result.error });
+                return;
             }
 
             dispatchUI({
                 type: "FETCH_SUCCESS",
-                payload: {
-                    projects: result.projects ?? [],
-                    labels: result.labels ?? [],
-                    lists: result.lists ?? [],
-                    projectMappings: projectMap,
-                    labelMappings: labelMap,
-                },
+                payload: result.payload,
             });
         };
 
         load();
-        return () => { isMounted = false; };
-    }, []);
+        return () => {
+            isMounted = false;
+        };
+    }, [loadMappings]);
 
     const sortedLists = useMemo(() => {
         return [...lists].sort((a, b) => a.name.localeCompare(b.name));
     }, [lists]);
 
+    const toSelectValue = (value: MappingSelection | undefined) => {
+        if (value === "new") {
+            return "new";
+        }
+        if (typeof value === "number") {
+            return String(value);
+        }
+        return "none";
+    };
+
+    const parseSelectValue = (value: string): MappingSelection => {
+        if (value === "none") {
+            return null;
+        }
+        if (value === "new") {
+            return "new";
+        }
+        return Number(value);
+    };
+
+    const resolveMappingSelection = async (selection: MappingSelection, name: string) => {
+        if (selection !== "new") {
+            return { success: true as const, listId: selection };
+        }
+
+        const created = await createTodoistMappingList(name);
+        if (!created.success || !created.list) {
+            return {
+                success: false as const,
+                error: created.error ?? `Failed to create local list for "${name}".`,
+            };
+        }
+
+        return { success: true as const, listId: created.list.id };
+    };
+
     const handleSave = async () => {
         dispatchUI({ type: "SAVE_START" });
-        const projectPayload = projects.map((project) => ({
-            projectId: project.id,
-            listId: projectMappings[project.id] ?? null,
-        }));
-        const labelPayload = labels.map((label) => ({
-            labelId: label.id,
-            listId: labelMappings[label.id] ?? null,
-        }));
+        let createdListCount = 0;
+        const projectPayload: { projectId: string; listId: number | null }[] = [];
+        for (const project of projects) {
+            const resolved = await resolveMappingSelection(projectMappings[project.id] ?? null, project.name);
+            if (!resolved.success) {
+                dispatchUI({ type: "FETCH_ERROR", payload: resolved.error });
+                dispatchUI({ type: "SAVE_END" });
+                return;
+            }
+            if ((projectMappings[project.id] ?? null) === "new") {
+                createdListCount += 1;
+            }
+            projectPayload.push({ projectId: project.id, listId: resolved.listId });
+        }
+
+        const labelPayload: { labelId: string; listId: number | null }[] = [];
+        for (const label of labels) {
+            const resolved = await resolveMappingSelection(labelMappings[label.id] ?? null, label.name);
+            if (!resolved.success) {
+                dispatchUI({ type: "FETCH_ERROR", payload: resolved.error });
+                dispatchUI({ type: "SAVE_END" });
+                return;
+            }
+            if ((labelMappings[label.id] ?? null) === "new") {
+                createdListCount += 1;
+            }
+            labelPayload.push({ labelId: label.id, listId: resolved.listId });
+        }
 
         const [projectResult, labelResult] = await Promise.all([
             setTodoistProjectMappings(projectPayload),
@@ -149,13 +238,23 @@ export function TodoistMappingForm() {
             dispatchUI({ type: "SAVE_END" });
             return;
         }
+
         const syncResult = await syncTodoistNow();
+        const createdPrefix = createdListCount > 0
+            ? `Created ${createdListCount} local ${createdListCount === 1 ? "list" : "lists"}. `
+            : "";
         dispatchUI({
             type: "SET_STATUS",
             payload: syncResult.success
-                ? "Mappings saved and synced."
-                : `Mappings saved, but sync failed: ${syncResult.error ?? "Unknown sync error."}`,
+                ? `${createdPrefix}Mappings saved and synced.`
+                : `${createdPrefix}Mappings saved, but sync failed: ${syncResult.error ?? "Unknown sync error."}`,
         });
+
+        const refreshed = await loadMappings();
+        if (refreshed.success) {
+            dispatchUI({ type: "FETCH_SUCCESS", payload: refreshed.payload });
+        }
+
         dispatchUI({ type: "SAVE_END" });
     };
 
@@ -175,13 +274,13 @@ export function TodoistMappingForm() {
                         <div key={project.id} className="flex flex-col gap-2 md:flex-row md:items-center">
                             <div className="w-full md:w-48 text-sm text-muted-foreground">{project.name}</div>
                             <Select
-                                value={projectMappings[project.id] ? String(projectMappings[project.id]) : "none"}
+                                value={toSelectValue(projectMappings[project.id])}
                                 onValueChange={(value) => {
                                     dispatchUI({
                                         type: "UPDATE_PROJECT_MAPPING",
                                         payload: {
                                             projectId: project.id,
-                                            listId: value === "none" ? null : Number(value),
+                                            listId: parseSelectValue(value),
                                         },
                                     });
                                 }}
@@ -191,6 +290,7 @@ export function TodoistMappingForm() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="none">None</SelectItem>
+                                    <SelectItem value="new">New</SelectItem>
                                     {sortedLists.map((list) => (
                                         <SelectItem key={list.id} value={String(list.id)}>
                                             {list.name}
@@ -213,13 +313,13 @@ export function TodoistMappingForm() {
                         <div key={label.id} className="flex flex-col gap-2 md:flex-row md:items-center">
                             <div className="w-full md:w-48 text-sm text-muted-foreground">{label.name}</div>
                             <Select
-                                value={labelMappings[label.id] ? String(labelMappings[label.id]) : "none"}
+                                value={toSelectValue(labelMappings[label.id])}
                                 onValueChange={(value) => {
                                     dispatchUI({
                                         type: "UPDATE_LABEL_MAPPING",
                                         payload: {
                                             labelId: label.id,
-                                            listId: value === "none" ? null : Number(value),
+                                            listId: parseSelectValue(value),
                                         },
                                     });
                                 }}
@@ -229,6 +329,7 @@ export function TodoistMappingForm() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="none">None</SelectItem>
+                                    <SelectItem value="new">New</SelectItem>
                                     {sortedLists.map((list) => (
                                         <SelectItem key={list.id} value={String(list.id)}>
                                             {list.name}
