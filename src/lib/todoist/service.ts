@@ -27,17 +27,41 @@ export function createTodoistClient(token: string) {
     return new TodoistClient(token);
 }
 
-export async function fetchTodoistSnapshot(client: TodoistClient): Promise<TodoistSettingsSnapshot> {
-    const [projects, labels, tasks] = await Promise.all([
+export async function fetchTodoistSnapshot(
+    client: TodoistClient,
+    options?: { lastSyncedAt?: Date | null }
+): Promise<TodoistSettingsSnapshot> {
+    const [projects, labels, activeTasks] = await Promise.all([
         client.getProjects(),
         client.getLabels(),
         client.getTasks().then(res => res.results),
     ]);
 
+    const taskById = new Map(activeTasks.map((task) => [task.id, task]));
+
+    if (options?.lastSyncedAt) {
+        const since = options.lastSyncedAt.toISOString();
+        const until = new Date().toISOString();
+        let cursor: string | null = null;
+
+        do {
+            const completedPage = await client.getCompletedTasksByCompletionDate({
+                since,
+                until,
+                cursor,
+                limit: 200,
+            });
+            for (const task of completedPage.items ?? []) {
+                taskById.set(task.id, task);
+            }
+            cursor = completedPage.nextCursor;
+        } while (cursor);
+    }
+
     return {
         projects: projects.results ?? [],
         labels: labels.results ?? [],
-        tasks: tasks,
+        tasks: Array.from(taskById.values()),
     };
 }
 

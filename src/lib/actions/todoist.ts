@@ -328,7 +328,13 @@ export async function getTodoistConflicts() {
     const conflicts = await db
         .select()
         .from(externalSyncConflicts)
-        .where(and(eq(externalSyncConflicts.userId, user.id), eq(externalSyncConflicts.status, "pending")))
+        .where(
+            and(
+                eq(externalSyncConflicts.userId, user.id),
+                eq(externalSyncConflicts.provider, "todoist"),
+                eq(externalSyncConflicts.status, "pending")
+            )
+        )
         .orderBy(externalSyncConflicts.createdAt);
 
     return { success: true, conflicts };
@@ -408,9 +414,14 @@ export async function resolveTodoistConflict(conflictId: number, resolution: "lo
             .select({ labelId: taskLabels.labelId })
             .from(taskLabels)
             .where(eq(taskLabels.taskId, localTask.id));
+        const remoteLabelsResponse = await client.getLabels();
+        const externalLabelToName = new Map(
+            (remoteLabelsResponse.results ?? []).map((label) => [label.id, label.name])
+        );
         const payload = mapLocalTaskToTodoist(localTask, mappingState, {
             labelIds: localTaskLabelRows.map((row) => row.labelId),
             labelIdToExternal: localLabelToExternal,
+            externalLabelToName,
         });
         await client.updateTask(conflict.externalId, payload);
 
@@ -446,14 +457,31 @@ export async function resolveTodoistConflict(conflictId: number, resolution: "lo
             return { success: false, error: "Remote task not found." };
         }
 
-        const localUpdates = mapTodoistTaskToLocal(remoteTask as never, mappingState);
-        const resolvedListId = resolveTodoistTaskListId(remoteTask as never, mappingState);
+        const remoteLabelsResponse = await client.getLabels();
+        const remoteLabelIds = new Set((remoteLabelsResponse.results ?? []).map((label) => label.id));
+        const remoteLabelNameToId = new Map<string, string>();
+        for (const label of remoteLabelsResponse.results ?? []) {
+            const normalizedName = label.name.trim().toLowerCase();
+            if (!remoteLabelNameToId.has(normalizedName)) {
+                remoteLabelNameToId.set(normalizedName, label.id);
+            }
+        }
+        const resolvedExternalLabelIds = ((remoteTask as { labels?: string[] }).labels ?? [])
+            .map((token) =>
+                remoteLabelIds.has(token)
+                    ? token
+                    : (remoteLabelNameToId.get(token.trim().toLowerCase()) ?? token)
+            );
+        const normalizedRemoteTask = {
+            ...remoteTask,
+            labels: resolvedExternalLabelIds,
+        };
+        const localUpdates = mapTodoistTaskToLocal(normalizedRemoteTask as never, mappingState);
+        const resolvedListId = resolveTodoistTaskListId(normalizedRemoteTask as never, mappingState);
         const labelIdMap = new Map(labelMappings.map((mapping) => [mapping.externalId, mapping.localId]));
-        const labelIds = (remoteTask as { labels?: string[] }).labels
-            ? (remoteTask as { labels?: string[] }).labels
-                ?.map((labelId) => labelIdMap.get(labelId))
-                .filter((id): id is number => Boolean(id))
-            : [];
+        const labelIds = resolvedExternalLabelIds
+            .map((labelId) => labelIdMap.get(labelId))
+            .filter((id): id is number => Boolean(id));
 
         await updateTask(
             conflict.localId,

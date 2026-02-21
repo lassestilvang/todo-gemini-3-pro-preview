@@ -209,7 +209,7 @@ export function TodoistMappingForm() {
                     Only mapped labels sync.
                 </p>
                 <div className="mt-4 space-y-3">
-                    {labels.slice(0, 10).map((label) => (
+                    {labels.map((label) => (
                         <div key={label.id} className="flex flex-col gap-2 md:flex-row md:items-center">
                             <div className="w-full md:w-48 text-sm text-muted-foreground">{label.name}</div>
                             <Select
