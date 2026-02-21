@@ -578,6 +578,63 @@ function normalizeLabelName(value: string) {
     return value.trim().toLowerCase();
 }
 
+function dedupeLabelNames(labelNames: string[]) {
+    const seen = new Set<string>();
+    const deduped: string[] = [];
+    for (const label of labelNames) {
+        const normalized = normalizeLabelName(label);
+        if (!normalized || seen.has(normalized)) {
+            continue;
+        }
+        seen.add(normalized);
+        deduped.push(label);
+    }
+    return deduped;
+}
+
+function buildManagedLabelNameSet(params: {
+    mappingState: MappingState;
+    localLabelToExternal: Map<number, string>;
+    externalLabelToName: Map<string, string>;
+}) {
+    const { mappingState, localLabelToExternal, externalLabelToName } = params;
+    const managed = new Set<string>();
+
+    for (const mapping of mappingState.labels) {
+        const resolved = externalLabelToName.get(mapping.labelId) ?? mapping.labelId;
+        managed.add(normalizeLabelName(resolved));
+    }
+
+    for (const externalLabelId of localLabelToExternal.values()) {
+        const resolved = externalLabelToName.get(externalLabelId) ?? externalLabelId;
+        managed.add(normalizeLabelName(resolved));
+    }
+
+    return managed;
+}
+
+function mergeManagedAndUnmanagedTaskLabels(params: {
+    desiredManagedLabelNames: string[];
+    remoteTaskLabelTokens: string[];
+    managedLabelNames: Set<string>;
+    externalLabelToName: Map<string, string>;
+}) {
+    const { desiredManagedLabelNames, remoteTaskLabelTokens, managedLabelNames, externalLabelToName } = params;
+    const preservedUnmanaged: string[] = [];
+
+    for (const token of remoteTaskLabelTokens) {
+        const resolvedName = externalLabelToName.get(token) ?? token;
+        if (!managedLabelNames.has(normalizeLabelName(resolvedName))) {
+            preservedUnmanaged.push(resolvedName);
+        }
+    }
+
+    return dedupeLabelNames([
+        ...preservedUnmanaged,
+        ...desiredManagedLabelNames,
+    ]);
+}
+
 function hasLocalTimeComponent(date: Date) {
     return date.getHours() !== 0 ||
         date.getMinutes() !== 0 ||
@@ -794,6 +851,11 @@ async function updateMappedTasks(params: {
             .filter((mapping) => mapping.localId && mapping.externalId)
             .map((mapping) => [mapping.localId as number, mapping.externalId])
     );
+    const managedLabelNames = buildManagedLabelNameSet({
+        mappingState,
+        localLabelToExternal,
+        externalLabelToName,
+    });
 
     for (const mapping of mappedTasks) {
         const localTask = localTaskMap.get(mapping.localId as number);
@@ -834,6 +896,12 @@ async function updateMappedTasks(params: {
         const payload = mapLocalTaskToTodoist(localTask, mappingState, {
             labelIds,
             labelIdToExternal: localLabelToExternal,
+            externalLabelToName,
+        });
+        payload.labels = mergeManagedAndUnmanagedTaskLabels({
+            desiredManagedLabelNames: payload.labels ?? [],
+            remoteTaskLabelTokens: remoteTask.labels ?? [],
+            managedLabelNames,
             externalLabelToName,
         });
         const listMapping = applyListLabelMapping(localTask.listId ?? null, mappingState);

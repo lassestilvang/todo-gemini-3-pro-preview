@@ -278,6 +278,98 @@ describe("Integration: Todoist Sync", () => {
         expect(createTaskMock).not.toHaveBeenCalled();
     });
 
+    it("preserves non-scoped remote labels when pushing managed task updates", async () => {
+        const user = await createTestUser("todoist_preserve_remote_labels_user", "todoist_preserve_remote_labels@example.com");
+
+        const [testList] = await db
+            .insert(lists)
+            .values({ userId: user.id, name: "Test List", slug: "test-list", position: 0 })
+            .returning();
+        const [localTask] = await db
+            .insert(tasks)
+            .values({
+                userId: user.id,
+                listId: testList.id,
+                title: "Local Updated Title",
+                isCompleted: false,
+                position: 0,
+                updatedAt: new Date("2026-02-12T12:00:00.000Z"),
+            })
+            .returning();
+
+        await insertTodoistIntegration(user.id);
+        await db.insert(externalSyncState).values({
+            userId: user.id,
+            provider: "todoist",
+            status: "idle",
+            lastSyncedAt: new Date("2026-02-12T10:00:00.000Z"),
+            updatedAt: new Date("2026-02-12T10:00:00.000Z"),
+        });
+        await db.insert(externalEntityMap).values([
+            {
+                userId: user.id,
+                provider: "todoist",
+                entityType: "list_label",
+                localId: testList.id,
+                externalId: "label_test",
+            },
+            {
+                userId: user.id,
+                provider: "todoist",
+                entityType: "task",
+                localId: localTask.id,
+                externalId: "remote_task_1",
+            },
+        ]);
+
+        const updateTaskMock = mock(async () => undefined);
+        serviceState.client = {
+            createTask: mock(async () => ({ id: "created_task" })),
+            updateTask: updateTaskMock,
+            moveTask: mock(async () => undefined),
+            closeTask: mock(async () => undefined),
+            reopenTask: mock(async () => undefined),
+            deleteTask: mock(async () => undefined),
+            createLabel: mock(async ({ name, order }: { name: string; order?: number }) => ({
+                id: `label_${name.toLowerCase().replace(/\s+/g, "_")}`,
+                name,
+                order: order ?? 0,
+                color: "charcoal",
+                isFavorite: false,
+            })),
+            updateLabel: mock(async (id: string, payload: { name?: string; order?: number }) => ({
+                id,
+                name: payload.name ?? "updated",
+                order: payload.order ?? 0,
+                color: "charcoal",
+                isFavorite: false,
+            })),
+        };
+        serviceState.snapshot = {
+            projects: [],
+            labels: [{ id: "label_test", name: "test", order: 1 }],
+            tasks: [
+                makeTask({
+                    id: "remote_task_1",
+                    content: "Remote Old Title",
+                    projectId: "project_a",
+                    labels: ["test", "external_only"],
+                    updatedAt: "2026-02-12T09:00:00.000Z",
+                }),
+            ],
+        };
+
+        const result = await syncTodoistForUser(user.id);
+        expect(result.status).toBe("ok");
+        expect(updateTaskMock).toHaveBeenCalledTimes(1);
+
+        const updatePayload = updateTaskMock.mock.calls[0]?.[1] as { labels?: string[] } | undefined;
+        expect(updatePayload).toBeTruthy();
+        expect(updatePayload?.labels).toBeTruthy();
+        expect(updatePayload?.labels?.includes("test")).toBe(true);
+        expect(updatePayload?.labels?.includes("external_only")).toBe(true);
+    });
+
     it("does not create conflicts on initial sync without a previous sync timestamp", async () => {
         const user = await createTestUser("todoist_initial_conflict_user", "todoist_initial_conflict@example.com");
 
