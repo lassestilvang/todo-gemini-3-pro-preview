@@ -44,6 +44,28 @@ describe("todoist mapper", () => {
         expect(task.dueDatePrecision).toBeNull();
     });
 
+    it("maps due timestamp from due.date when due.datetime is missing", () => {
+        const task = mapTodoistTaskToLocal(
+            {
+                id: "t_due_date_fallback",
+                content: "Fallback due task",
+                description: "",
+                projectId: "p1",
+                due: {
+                    date: "2026-02-11T15:45:00.000Z",
+                    isRecurring: false,
+                    string: "",
+                },
+                checked: false,
+                priority: 1,
+            } as never,
+            mappings
+        );
+
+        expect(task.dueDate).toEqual(new Date("2026-02-11T15:45:00.000Z"));
+        expect(task.dueDatePrecision).toBeNull();
+    });
+
     it("maps local task to todoist payload", () => {
         const payload = mapLocalTaskToTodoist(
             {

@@ -63,18 +63,29 @@ function parseTodoistDueDate(task: Task) {
         return { dueDate: dueDateTime, dueDatePrecision: null as LocalTask["dueDatePrecision"] };
     }
 
-    if (!task.due?.date) {
+    const rawDueDate = task.due?.date ?? null;
+    if (!rawDueDate) {
         return { dueDate: null as Date | null, dueDatePrecision: null as LocalTask["dueDatePrecision"] };
     }
 
-    const dueDate = parseTodoistDateOnly(task.due.date);
-    if (!dueDate) {
-        return { dueDate: null as Date | null, dueDatePrecision: null as LocalTask["dueDatePrecision"] };
+    const dueDate = parseTodoistDateOnly(rawDueDate);
+    if (dueDate) {
+        return {
+            dueDate,
+            dueDatePrecision: "day" as LocalTask["dueDatePrecision"],
+        };
+    }
+
+    // Some Todoist payloads encode a timestamp in due.date while due.datetime is omitted.
+    // Preserve that time instead of dropping the due value.
+    const dueDateFallback = parseTodoistTimestamp(rawDueDate);
+    if (dueDateFallback) {
+        return { dueDate: dueDateFallback, dueDatePrecision: null as LocalTask["dueDatePrecision"] };
     }
 
     return {
-        dueDate,
-        dueDatePrecision: "day" as LocalTask["dueDatePrecision"],
+        dueDate: null as Date | null,
+        dueDatePrecision: null as LocalTask["dueDatePrecision"],
     };
 }
 

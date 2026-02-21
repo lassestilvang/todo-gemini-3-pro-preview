@@ -548,6 +548,81 @@ describe("Integration: Todoist Sync", () => {
         expect(updatedLocalTask?.priority).toBe("high");
     });
 
+    it("backfills missing local due datetime when Todoist encodes timestamp in due.date", async () => {
+        const user = await createTestUser("todoist_due_backfill_user", "todoist_due_backfill@example.com");
+
+        const [mappedList] = await db
+            .insert(lists)
+            .values({ userId: user.id, name: "Mapped List", slug: "mapped-list", position: 0 })
+            .returning();
+        const [localTask] = await db
+            .insert(tasks)
+            .values({
+                userId: user.id,
+                listId: mappedList.id,
+                title: "Task",
+                dueDate: null,
+                dueDatePrecision: null,
+                isCompleted: false,
+                position: 0,
+                updatedAt: new Date("2026-02-12T09:00:00.000Z"),
+            })
+            .returning();
+
+        await insertTodoistIntegration(user.id);
+        await db.insert(externalSyncState).values({
+            userId: user.id,
+            provider: "todoist",
+            status: "idle",
+            lastSyncedAt: new Date("2026-02-12T10:00:00.000Z"),
+            updatedAt: new Date("2026-02-12T10:00:00.000Z"),
+        });
+        await db.insert(externalEntityMap).values([
+            {
+                userId: user.id,
+                provider: "todoist",
+                entityType: "list",
+                localId: mappedList.id,
+                externalId: "project_a",
+            },
+            {
+                userId: user.id,
+                provider: "todoist",
+                entityType: "task",
+                localId: localTask.id,
+                externalId: "remote_task_due",
+            },
+        ]);
+
+        serviceState.snapshot = {
+            projects: [{ id: "project_a", name: "Project A" }],
+            labels: [],
+            tasks: [
+                makeTask({
+                    id: "remote_task_due",
+                    content: "Task",
+                    projectId: "project_a",
+                    due: {
+                        date: "2026-02-14T17:45:00.000Z",
+                        isRecurring: false,
+                        string: "",
+                    },
+                    updatedAt: "2026-02-12T09:30:00.000Z",
+                }),
+            ],
+        };
+
+        const result = await syncTodoistForUser(user.id);
+        expect(result.status).toBe("ok");
+
+        const [updatedLocalTask] = await db
+            .select()
+            .from(tasks)
+            .where(and(eq(tasks.userId, user.id), eq(tasks.id, localTask.id)));
+        expect(updatedLocalTask?.dueDate).toEqual(new Date("2026-02-14T17:45:00.000Z"));
+        expect(updatedLocalTask?.dueDatePrecision).toBeNull();
+    });
+
     it("moves mapped tasks to the correct Todoist project when local list mapping changes", async () => {
         const user = await createTestUser("todoist_move_project_user", "todoist_move_project@example.com");
 
@@ -751,6 +826,11 @@ describe("Integration: Todoist Sync", () => {
                     content: "Imported task",
                     projectId: "project_a",
                     addedAt: "2026-01-20T07:30:00.000Z",
+                    due: {
+                        date: "2026-02-14T17:45:00.000Z",
+                        isRecurring: false,
+                        string: "",
+                    },
                     deadline: { date: "2026-02-15", lang: "en" },
                     duration: { amount: 2, unit: "day" },
                 }),
@@ -765,6 +845,8 @@ describe("Integration: Todoist Sync", () => {
             .from(tasks)
             .where(and(eq(tasks.userId, user.id), eq(tasks.title, "Imported task")));
         expect(importedTask).toBeTruthy();
+        expect(importedTask?.dueDate).toEqual(new Date("2026-02-14T17:45:00.000Z"));
+        expect(importedTask?.dueDatePrecision).toBeNull();
         expect(importedTask?.deadline).toEqual(new Date("2026-02-15T00:00:00.000Z"));
         expect(importedTask?.estimateMinutes).toBe(2880);
         expect(importedTask?.createdAt).toEqual(new Date("2026-01-20T07:30:00.000Z"));

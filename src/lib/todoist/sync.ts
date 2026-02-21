@@ -1012,7 +1012,8 @@ async function updateRemoteTasks(params: {
         }
 
         const remoteUpdatedAt = parseTodoistTimestamp(remoteTask.updatedAt);
-        if (lastSyncedAt && (!remoteUpdatedAt || remoteUpdatedAt <= lastSyncedAt)) {
+        const shouldBackfillDue = shouldBackfillTodoistDue(localTask, remoteTask);
+        if (lastSyncedAt && (!remoteUpdatedAt || remoteUpdatedAt <= lastSyncedAt) && !shouldBackfillDue) {
             continue;
         }
 
@@ -1257,14 +1258,15 @@ function buildLocalTaskPayload(
 }
 
 function buildRemoteTaskPayload(task: Task, externalLabelIds: string[]) {
+    const remoteDue = resolveTodoistDuePayload(task);
     return {
         title: task.content,
         description: task.description ?? "",
         priority: toLocalPriority(task.priority),
         isCompleted: task.checked ?? false,
-        dueDate: task.due?.date ?? null,
-        dueDateTime: task.due?.datetime ?? null,
-        hasDueTime: Boolean(task.due?.datetime),
+        dueDate: remoteDue.dueDate,
+        dueDateTime: remoteDue.dueDateTime,
+        hasDueTime: remoteDue.hasDueTime,
         deadlineDate: task.deadline?.date ?? null,
         estimateMinutes: parseTodoistDurationMinutes(task.duration?.amount ?? null, task.duration?.unit ?? null),
         isRecurring: task.due?.isRecurring ?? false,
@@ -1394,12 +1396,15 @@ function shouldUpdateTodoistTask(remoteTask: Task, payload: ReturnType<typeof ma
         }
     }
 
+    const remoteDue = resolveTodoistDuePayload(remoteTask);
     if (payload.dueDatetime !== undefined) {
-        if (payload.dueDatetime !== (remoteTask.due?.datetime ?? null)) {
+        const payloadDueTimestamp = parseTodoistTimestamp(payload.dueDatetime)?.getTime() ?? null;
+        const remoteDueTimestamp = parseTodoistTimestamp(remoteDue.dueDateTime)?.getTime() ?? null;
+        if (payloadDueTimestamp !== remoteDueTimestamp) {
             return true;
         }
     } else if (payload.dueDate !== undefined) {
-        if (payload.dueDate !== (remoteTask.due?.date ?? null)) {
+        if (payload.dueDate !== remoteDue.dueDate) {
             return true;
         }
     }
@@ -1419,6 +1424,41 @@ function shouldUpdateTodoistTask(remoteTask: Task, payload: ReturnType<typeof ma
     }
 
     return false;
+}
+
+function resolveTodoistDuePayload(task: Task) {
+    const dueDateRaw = task.due?.date ?? null;
+    const dueDate = dueDateRaw ? dueDateRaw.split("T")[0] : null;
+    const dueDateTimeFromDateField = dueDateRaw && dueDateRaw.includes("T")
+        ? parseTodoistTimestamp(dueDateRaw)
+        : null;
+    const dueDateTime = parseTodoistTimestamp(task.due?.datetime ?? null)
+        ?? dueDateTimeFromDateField;
+
+    return {
+        dueDate,
+        dueDateTime: dueDateTime ? dueDateTime.toISOString() : null,
+        hasDueTime: Boolean(dueDateTime),
+    };
+}
+
+function shouldBackfillTodoistDue(localTask: typeof tasks.$inferSelect, remoteTask: Task) {
+    const remoteDue = resolveTodoistDuePayload(remoteTask);
+    if (!remoteDue.dueDate && !remoteDue.dueDateTime) {
+        return false;
+    }
+
+    if (!localTask.dueDate) {
+        return true;
+    }
+
+    if (remoteDue.hasDueTime) {
+        const remoteDueTimestamp = parseTodoistTimestamp(remoteDue.dueDateTime)?.getTime() ?? null;
+        return remoteDueTimestamp !== null && localTask.dueDate.getTime() !== remoteDueTimestamp;
+    }
+
+    const localDueDate = formatLocalDateOnly(localTask.dueDate);
+    return localDueDate !== remoteDue.dueDate;
 }
 
 async function pushLocalTasks(params: {
