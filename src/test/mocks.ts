@@ -180,6 +180,7 @@ export function runInAuthContext<T>(user: MockAuthUser | null, fn: () => T): T {
 
 export function setMockAuthUser(user: MockAuthUser | null) {
     mockState[GLOBAL_MOCK_USER_KEY] = user;
+    authStorage.enterWith(user);
     if (user) {
         process.env.MOCK_AUTH_USER = JSON.stringify(user);
     } else {
@@ -198,6 +199,10 @@ export function resetMockAuthUser() {
 }
 
 export function getMockAuthUser(): MockAuthUser | null {
+    const contextUser = authStorage.getStore();
+    if (contextUser !== undefined) {
+        return contextUser;
+    }
     if (process.env.MOCK_AUTH_USER) {
         try {
             const parsed = JSON.parse(process.env.MOCK_AUTH_USER) as MockAuthUser | null;
