@@ -42,6 +42,9 @@ async function createSavedViewImpl(data: {
     if (!data.name || data.name.trim().length === 0) {
         throw new ValidationError("View name is required");
     }
+    if (data.name.length > 255) {
+        throw new ValidationError("View name is too long");
+    }
 
     const result = await db.insert(savedViews).values(data).returning();
     revalidatePath("/", "layout");

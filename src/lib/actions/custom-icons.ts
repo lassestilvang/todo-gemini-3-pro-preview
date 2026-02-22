@@ -47,8 +47,14 @@ async function createCustomIconImpl(data: typeof customIcons.$inferInsert) {
     if (!data.name || data.name.trim().length === 0) {
         throw new ValidationError("Icon name is required", { name: "Name cannot be empty" });
     }
+    if (data.name.length > 255) {
+        throw new ValidationError("Icon name is too long", { name: "Name must be 255 characters or less" });
+    }
     if (!data.url || data.url.trim().length === 0) {
         throw new ValidationError("Icon URL is required", { url: "URL cannot be empty" });
+    }
+    if (data.url.length > 1048576) {
+        throw new ValidationError("Icon URL is too large", { url: "URL must be less than 1MB" });
     }
     if (!data.userId) {
         throw new ValidationError("User ID is required", { userId: "User ID cannot be empty" });

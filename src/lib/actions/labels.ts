@@ -134,6 +134,9 @@ async function createLabelImpl(data: typeof labels.$inferInsert) {
   if (!data.name || data.name.trim().length === 0) {
     throw new ValidationError("Label name is required", { name: "Name cannot be empty" });
   }
+  if (data.name.length > 255) {
+    throw new ValidationError("Label name is too long", { name: "Name must be 255 characters or less" });
+  }
   if (!data.userId) {
     throw new ValidationError("User ID is required", { userId: "User ID cannot be empty" });
   }
@@ -191,8 +194,13 @@ async function updateLabelImpl(
 ) {
   await requireUser(userId);
 
-  if (data.name !== undefined && data.name.trim().length === 0) {
-    throw new ValidationError("Label name cannot be empty", { name: "Name cannot be empty" });
+  if (data.name !== undefined) {
+    if (data.name.trim().length === 0) {
+      throw new ValidationError("Label name cannot be empty", { name: "Name cannot be empty" });
+    }
+    if (data.name.length > 255) {
+      throw new ValidationError("Label name is too long", { name: "Name must be 255 characters or less" });
+    }
   }
 
   const currentLabel = await getLabel(id, userId);
