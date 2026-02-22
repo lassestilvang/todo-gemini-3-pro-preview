@@ -206,13 +206,9 @@ export function getMockAuthUser(): MockAuthUser | null {
             return null;
         }
     }
-    const contextUser = authStorage.getStore();
     const globalUser = mockState[GLOBAL_MOCK_USER_KEY];
     if (globalUser !== undefined && globalUser !== null) {
         return globalUser;
-    }
-    if (contextUser !== undefined) {
-        return contextUser;
     }
     return null;
 }
