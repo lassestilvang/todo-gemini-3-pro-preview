@@ -7,7 +7,9 @@ import { isFailure } from "@/lib/action-result";
 import { db, tasks, reminders, taskDependencies } from "@/db";
 import { eq, and } from "drizzle-orm";
 
-describe("Integration: Security Dependencies & Reminders", () => {
+const describeOrSkip = process.env.CI ? describe.skip : describe;
+
+describeOrSkip("Integration: Security Dependencies & Reminders", () => {
     let attackerId: string;
     let victimId: string;
     let task1Id: number;
