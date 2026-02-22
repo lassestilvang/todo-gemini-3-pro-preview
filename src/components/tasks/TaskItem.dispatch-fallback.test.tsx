@@ -8,6 +8,7 @@ const fallbackDispatch = mock(() => Promise.resolve({ success: true, data: null 
 mock.module("@/components/providers/sync-provider", () => ({
     useSync: () => ({ dispatch: fallbackDispatch }),
     useOptionalSync: () => ({ dispatch: fallbackDispatch }),
+    useOptionalSyncActions: () => ({ dispatch: fallbackDispatch }),
     SyncProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
