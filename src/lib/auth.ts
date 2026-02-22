@@ -32,6 +32,18 @@ export interface AuthUser {
   calendarDenseTooltipThreshold: number | null;
 }
 
+function getTestMockUser() {
+  return (globalThis as {
+    __mockAuthUser?: {
+      id: string;
+      email: string;
+      firstName?: string | null;
+      lastName?: string | null;
+      profilePictureUrl?: string | null;
+    } | null;
+  }).__mockAuthUser;
+}
+
 /**
  * Get test user from test session cookie (E2E test mode only).
  */
@@ -247,6 +259,24 @@ export const getCurrentUser =
  * Throws UnauthorizedError if not authenticated.
  */
 export async function requireAuth(): Promise<AuthUser> {
+  if (process.env.NODE_ENV === "test") {
+    const mockUser = getTestMockUser();
+    if (!mockUser) {
+      throw new UnauthorizedError();
+    }
+    return {
+      id: mockUser.id,
+      email: mockUser.email,
+      firstName: mockUser.firstName ?? null,
+      lastName: mockUser.lastName ?? null,
+      avatarUrl: mockUser.profilePictureUrl ?? null,
+      use24HourClock: false,
+      weekStartsOnMonday: false,
+      calendarUseNativeTooltipsOnDenseDays: true,
+      calendarDenseTooltipThreshold: 6,
+    };
+  }
+
   const user = await getCurrentUser();
 
   if (!user) {
@@ -381,6 +411,27 @@ export async function requireResourceOwnership(
  * Throws ForbiddenError if authenticated user does not match userId.
  */
 export async function requireUser(userId: string): Promise<AuthUser> {
+  if (process.env.NODE_ENV === "test") {
+    const mockUser = getTestMockUser();
+    if (!mockUser) {
+      throw new UnauthorizedError();
+    }
+    if (mockUser.id !== userId) {
+      throw new ForbiddenError("You are not authorized to access this user's data");
+    }
+    return {
+      id: mockUser.id,
+      email: mockUser.email,
+      firstName: mockUser.firstName ?? null,
+      lastName: mockUser.lastName ?? null,
+      avatarUrl: mockUser.profilePictureUrl ?? null,
+      use24HourClock: false,
+      weekStartsOnMonday: false,
+      calendarUseNativeTooltipsOnDenseDays: true,
+      calendarDenseTooltipThreshold: 6,
+    };
+  }
+
   const user = await getCurrentUser();
 
   if (!user) {
