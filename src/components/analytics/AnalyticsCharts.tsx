@@ -1,13 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type ComponentProps } from "react";
 import dynamic from "next/dynamic";
 import type {
-    BarChartProps,
+    BarChart as RechartsBarChart,
     BarProps,
-    LineChartProps,
+    LineChart as RechartsLineChart,
     LineProps,
-    PieChartProps,
+    PieChart as RechartsPieChart,
     PieProps,
     CellProps,
     XAxisProps,
@@ -16,11 +16,16 @@ import type {
     LegendProps,
     ResponsiveContainerProps,
     RadarProps,
-    RadarChartProps,
+    RadarChart as RechartsRadarChart,
     PolarGridProps,
     PolarAngleAxisProps,
     PolarRadiusAxisProps
 } from "recharts";
+
+type BarChartProps = ComponentProps<typeof RechartsBarChart>;
+type LineChartProps = ComponentProps<typeof RechartsLineChart>;
+type PieChartProps = ComponentProps<typeof RechartsPieChart>;
+type RadarChartProps = ComponentProps<typeof RechartsRadarChart>;
 
 const BarChart = dynamic<BarChartProps>(() => import("recharts").then(m => m.BarChart), { ssr: false });
 const Bar = dynamic<BarProps>(() => import("recharts").then(m => m.Bar), { ssr: false });
@@ -206,7 +211,7 @@ export const AnalyticsCharts = React.memo(function AnalyticsCharts({ data }: { d
                                 cx="50%"
                                 cy="50%"
                                 labelLine={false}
-                                label={(entry: { name: string; value: number }) => `${entry.name}: ${entry.value}`}
+                                label={(entry) => `${entry.name ?? "Unknown"}: ${entry.value ?? 0}`}
                                 outerRadius={80}
                                 fill="#8884d8"
                                 dataKey="value"
