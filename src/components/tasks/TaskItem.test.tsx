@@ -159,11 +159,7 @@ describe("TaskItem", () => {
         const dateContainer = dateText.closest('div[tabindex="0"]');
         expect(dateContainer).toBeInTheDocument();
 
-        fireEvent.mouseEnter(dateContainer!);
-        fireEvent.focus(dateContainer!);
-
-        const expectedText = /Due: Tuesday, October 24th, 2023 at 5:00 PM/;
-        const tooltip = await screen.findByRole('tooltip', { hidden: true });
-        expect(tooltip).toHaveTextContent(expectedText);
+        const expectedText = "Due: Tuesday, October 24th, 2023 at 5:00 PM";
+        expect(dateContainer).toHaveAttribute("aria-label", expectedText);
     });
 });
