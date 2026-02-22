@@ -63,6 +63,20 @@ Create a written document mapping every Postgres PK/FK/unique/cascade to its Con
 
 Build and test a prototype `deleteList` that cascades through tasks → subtasks → taskLabels → dependencies → reminders → habitCompletions → timeEntries → logs. Verify it works for a list with 200+ tasks without hitting Convex mutation time/document limits. Design the batched-delete pattern (using `ctx.scheduler`) that all cascades will follow.
 
+### Spike 6: Dual-Run Reconciliation Proof (1–2 days)
+
+> ⚠️ Required if you plan to run Postgres and Convex in parallel for weeks (dual-run / dual-write).
+
+Define and validate the architecture needed to prevent drift and make rollback meaningful:
+
+1. Choose a **source-of-truth** per domain (tasks/lists/labels; time tracking; integrations; preferences). Document which backend is authoritative for each.
+2. Choose an **ID reconciliation strategy** and document it:
+   - **Canonical external IDs (recommended):** introduce a stable `externalId` for core entities (tasks, lists, labels) that exists in both Postgres and Convex.
+   - **Mapping tables:** maintain durable `postgresId ↔ convexId` maps per entity type and require all cross-entity linking to use the map.
+3. Define **dual-write ordering** (which backend is written first), retry behavior, and idempotency keys.
+4. Implement a written **drift detection + repair plan** (counts, sampling, and repair mutations/actions).
+5. Run a staging proof that can round-trip **create/update/delete** without duplicates or divergence across both backends.
+
 ### Spike 4: Offline/PWA Decision (0.5 day)
 
 **Decision:** Accept regression. The app will be online-only after migration. Remove PWA offline claims and update the service worker to show an "offline" UI state.
@@ -904,6 +918,45 @@ If you plan to run Postgres and Convex in parallel for weeks, add a delta sync s
 - Freeze writes briefly during cutover to avoid drift.
 
 **Recommendation:** Prefer a short cutover window with a write freeze + delta import if possible. Keep migration validation inside Convex internal actions to avoid maintaining separate Node scripts.
+
+#### 1.4.1 Dual-Run Architecture (Required for multi-week parallel run)
+
+> ⚠️ Running two backends with different ID systems makes rollback and data integrity non-trivial. Do not attempt a long dual-run without an explicit reconciliation architecture.
+
+**A. Source of truth**
+
+Pick one authoritative system per domain and document it (examples: core tasks vs integrations). Avoid “both are source of truth” unless you implement conflict resolution rules.
+
+**B. ID reconciliation strategy (mandatory)**
+
+Choose exactly one:
+
+1. **Canonical external IDs (recommended):** Assign a stable `externalId` to core entities (tasks, lists, labels) and store it in both Postgres and Convex. All cross-system reconciliation keys off `externalId`, not native IDs.
+2. **Mapping tables:** Maintain durable `postgresId ↔ convexId` mapping tables per entity type. All dual-write and cross-link operations must go through the map. Requires strict idempotency and careful backfill.
+
+**C. Dual-write ordering + idempotency**
+
+Define:
+
+- Which backend is written first and why (rollback bias, latency, failure mode)
+- Idempotency keys for every write so retries cannot create duplicates
+- Retry policy and user-visible behavior when the second write fails
+
+**D. Drift detection + repair**
+
+Define automated checks and remediation:
+
+- Count comparisons (per entity type) with alert thresholds
+- Random sampling diff for key fields
+- Ownership/reference audits (0 cross-user relationships, 0 missing references)
+- Repair jobs (internal actions/mutations) to reconcile mismatches
+
+**E. Rollback semantics**
+
+Document what “rollback” means in this dual-run:
+
+- Which backend can safely continue serving writes after rollback
+- How you reconcile writes performed on the non-authoritative backend during the incident window
 
 #### 1.5 Migration Runner Outline (Pseudo)
 
@@ -2126,6 +2179,7 @@ function TaskList() {
 - [ ] **Spike 3**: Cascade delete prototype — `deleteList` with 200+ tasks works within Convex limits, batching pattern designed
 - [ ] **Spike 4**: Offline/PWA decision documented — accept online-only regression with stakeholder sign-off
 - [ ] **Spike 5**: Encryption approach confirmed — use Convex env vars + pure-JS encryption library
+- [ ] **Spike 6**: Dual-run reconciliation proof — source-of-truth + ID strategy + drift detection validated in staging
 
 ### Phase Checklist
 
