@@ -96,6 +96,7 @@ export async function generateSmartSchedule(): Promise<ScheduleSuggestion[]> {
             )
         )
         .orderBy(
+            sql`${tasks.deadline} ASC NULLS LAST`,
             sql`CASE
                 WHEN ${tasks.priority} = 'high' THEN 1
                 WHEN ${tasks.priority} = 'medium' THEN 2
@@ -257,6 +258,11 @@ export async function analyzePriorities(): Promise<Array<{
                 eq(tasks.userId, user.id),
                 isNull(tasks.parentId)
             ))
+            .orderBy(
+                sql`${tasks.deadline} ASC NULLS LAST`,
+                sql`${tasks.dueDate} ASC NULLS LAST`,
+                asc(tasks.createdAt)
+            )
             .limit(100);
 
         if (incompleteTasks.length === 0) return [];
