@@ -386,11 +386,21 @@ jobs:
           pattern: blob-report-*
           merge-multiple: true
           path: all-blob-reports
+      - name: Check for Blob Reports
+        id: blob-check
+        run: |
+          if [ -d all-blob-reports ] && [ "$(ls -A all-blob-reports)" ]; then
+            echo "has_blob_reports=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_blob_reports=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Merge Reports into HTML
+        if: steps.blob-check.outputs.has_blob_reports == 'true'
         run: bunx playwright merge-reports --reporter=html ./all-blob-reports
 
       - name: Upload HTML Report
+        if: steps.blob-check.outputs.has_blob_reports == 'true'
         uses: actions/upload-artifact@v6
         with:
           name: playwright-report

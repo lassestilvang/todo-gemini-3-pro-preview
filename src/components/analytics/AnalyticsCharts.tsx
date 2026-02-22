@@ -36,7 +36,7 @@ const Pie = dynamic<PieProps>(() => import("recharts").then(m => m.Pie), { ssr: 
 const Cell = dynamic<CellProps>(() => import("recharts").then(m => m.Cell), { ssr: false });
 const XAxis = dynamic<XAxisProps>(() => import("recharts").then(m => m.XAxis), { ssr: false });
 const YAxis = dynamic<YAxisProps>(() => import("recharts").then(m => m.YAxis), { ssr: false });
-const Tooltip = dynamic<TooltipProps<number | undefined, any>>(() => import("recharts").then(m => m.Tooltip), { ssr: false });
+const Tooltip = dynamic<TooltipProps<number, string | number>>(() => import("recharts").then(m => m.Tooltip), { ssr: false });
 const Legend = dynamic<LegendProps>(() => import("recharts").then(m => m.Legend), { ssr: false });
 const ResponsiveContainer = dynamic<ResponsiveContainerProps>(() => import("recharts").then(m => m.ResponsiveContainer), { ssr: false });
 const Radar = dynamic<RadarProps>(() => import("recharts").then(m => m.Radar), { ssr: false });
