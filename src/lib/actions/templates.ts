@@ -59,8 +59,14 @@ async function createTemplateImpl(userId: string, name: string, content: string)
   if (!name || name.trim().length === 0) {
     throw new ValidationError("Template name is required", { name: "Name cannot be empty" });
   }
+  if (name.length > 255) {
+    throw new ValidationError("Template name is too long", { name: "Name must be 255 characters or less" });
+  }
   if (!content) {
     throw new ValidationError("Template content is required", { content: "Content cannot be empty" });
+  }
+  if (content.length > 100000) {
+    throw new ValidationError("Template content is too large", { content: "Content must be 100,000 characters or less" });
   }
 
   await db.insert(templates).values({
@@ -133,8 +139,14 @@ async function updateTemplateImpl(id: number, userId: string, name: string, cont
   if (!name || name.trim().length === 0) {
     throw new ValidationError("Template name is required", { name: "Name cannot be empty" });
   }
+  if (name.length > 255) {
+    throw new ValidationError("Template name is too long", { name: "Name must be 255 characters or less" });
+  }
   if (!content) {
     throw new ValidationError("Template content is required", { content: "Content cannot be empty" });
+  }
+  if (content.length > 100000) {
+    throw new ValidationError("Template content is too large", { content: "Content must be 100,000 characters or less" });
   }
 
   // First verify the template exists and belongs to the user

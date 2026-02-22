@@ -152,6 +152,9 @@ async function createListImpl(data: typeof lists.$inferInsert) {
   if (!data.name || data.name.trim().length === 0) {
     throw new ValidationError("List name is required", { name: "Name cannot be empty" });
   }
+  if (data.name.length > 255) {
+    throw new ValidationError("List name is too long", { name: "Name must be 255 characters or less" });
+  }
 
   const effectiveUserId = data.userId;
   if (!effectiveUserId) {
@@ -221,8 +224,13 @@ async function updateListImpl(
 ) {
   await requireUser(userId);
 
-  if (data.name !== undefined && data.name.trim().length === 0) {
-    throw new ValidationError("List name cannot be empty", { name: "Name cannot be empty" });
+  if (data.name !== undefined) {
+    if (data.name.trim().length === 0) {
+      throw new ValidationError("List name cannot be empty", { name: "Name cannot be empty" });
+    }
+    if (data.name.length > 255) {
+      throw new ValidationError("List name is too long", { name: "Name must be 255 characters or less" });
+    }
   }
 
   // Get current list state for logging
