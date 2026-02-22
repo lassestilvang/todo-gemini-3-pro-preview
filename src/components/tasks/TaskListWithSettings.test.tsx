@@ -29,7 +29,9 @@ mock.module("next/dynamic", () => ({
 
 // Mock sync
 mock.module("@/components/providers/sync-provider", () => ({
-    useSync: () => ({ dispatch: () => Promise.resolve() })
+    useSync: () => ({ dispatch: () => Promise.resolve() }),
+    useSyncActions: () => ({ dispatch: () => Promise.resolve() }),
+    useOptionalSyncActions: () => ({ dispatch: () => Promise.resolve() })
 }));
 
 // Mock view options popover

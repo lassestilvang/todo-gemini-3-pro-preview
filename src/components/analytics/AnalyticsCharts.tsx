@@ -1,43 +1,49 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type ComponentProps } from "react";
 import dynamic from "next/dynamic";
+import type {
+    BarChart as RechartsBarChart,
+    BarProps,
+    LineChart as RechartsLineChart,
+    LineProps,
+    PieChart as RechartsPieChart,
+    PieProps,
+    CellProps,
+    XAxisProps,
+    YAxisProps,
+    TooltipProps,
+    LegendProps,
+    ResponsiveContainerProps,
+    RadarProps,
+    RadarChart as RechartsRadarChart,
+    PolarGridProps,
+    PolarAngleAxisProps,
+    PolarRadiusAxisProps
+} from "recharts";
 
-// HACK: Cast to any to work around typing issues with recharts and Next.js dynamic import.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const BarChart = dynamic(() => import("recharts").then(m => m.BarChart), { ssr: false }) as any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const Bar = dynamic(() => import("recharts").then(m => m.Bar), { ssr: false }) as any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const LineChart = dynamic(() => import("recharts").then(m => m.LineChart), { ssr: false }) as any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const Line = dynamic(() => import("recharts").then(m => m.Line), { ssr: false }) as any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const PieChart = dynamic(() => import("recharts").then(m => m.PieChart), { ssr: false }) as any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const Pie = dynamic(() => import("recharts").then(m => m.Pie), { ssr: false }) as any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const Cell = dynamic(() => import("recharts").then(m => m.Cell), { ssr: false }) as any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const XAxis = dynamic(() => import("recharts").then(m => m.XAxis), { ssr: false }) as any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const YAxis = dynamic(() => import("recharts").then(m => m.YAxis), { ssr: false }) as any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const Tooltip = dynamic(() => import("recharts").then(m => m.Tooltip), { ssr: false }) as any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const Legend = dynamic(() => import("recharts").then(m => m.Legend), { ssr: false }) as any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const ResponsiveContainer = dynamic(() => import("recharts").then(m => m.ResponsiveContainer), { ssr: false }) as any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const Radar = dynamic(() => import("recharts").then(m => m.Radar), { ssr: false }) as any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const RadarChart = dynamic(() => import("recharts").then(m => m.RadarChart), { ssr: false }) as any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const PolarGrid = dynamic(() => import("recharts").then(m => m.PolarGrid), { ssr: false }) as any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const PolarAngleAxis = dynamic(() => import("recharts").then(m => m.PolarAngleAxis), { ssr: false }) as any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const PolarRadiusAxis = dynamic(() => import("recharts").then(m => m.PolarRadiusAxis), { ssr: false }) as any;
+type BarChartProps = ComponentProps<typeof RechartsBarChart>;
+type LineChartProps = ComponentProps<typeof RechartsLineChart>;
+type PieChartProps = ComponentProps<typeof RechartsPieChart>;
+type RadarChartProps = ComponentProps<typeof RechartsRadarChart>;
+
+const BarChart = dynamic<BarChartProps>(() => import("recharts").then(m => m.BarChart), { ssr: false });
+const Bar = dynamic<BarProps>(() => import("recharts").then(m => m.Bar), { ssr: false });
+const LineChart = dynamic<LineChartProps>(() => import("recharts").then(m => m.LineChart), { ssr: false });
+const Line = dynamic<LineProps>(() => import("recharts").then(m => m.Line), { ssr: false });
+const PieChart = dynamic<PieChartProps>(() => import("recharts").then(m => m.PieChart), { ssr: false });
+const Pie = dynamic<PieProps>(() => import("recharts").then(m => m.Pie), { ssr: false });
+const Cell = dynamic<CellProps>(() => import("recharts").then(m => m.Cell), { ssr: false });
+const XAxis = dynamic<XAxisProps>(() => import("recharts").then(m => m.XAxis), { ssr: false });
+const YAxis = dynamic<YAxisProps>(() => import("recharts").then(m => m.YAxis), { ssr: false });
+const Tooltip = dynamic<TooltipProps<number | undefined, any>>(() => import("recharts").then(m => m.Tooltip), { ssr: false });
+const Legend = dynamic<LegendProps>(() => import("recharts").then(m => m.Legend), { ssr: false });
+const ResponsiveContainer = dynamic<ResponsiveContainerProps>(() => import("recharts").then(m => m.ResponsiveContainer), { ssr: false });
+const Radar = dynamic<RadarProps>(() => import("recharts").then(m => m.Radar), { ssr: false });
+const RadarChart = dynamic<RadarChartProps>(() => import("recharts").then(m => m.RadarChart), { ssr: false });
+const PolarGrid = dynamic<PolarGridProps>(() => import("recharts").then(m => m.PolarGrid), { ssr: false });
+const PolarAngleAxis = dynamic<PolarAngleAxisProps>(() => import("recharts").then(m => m.PolarAngleAxis), { ssr: false });
+const PolarRadiusAxis = dynamic<PolarRadiusAxisProps>(() => import("recharts").then(m => m.PolarRadiusAxis), { ssr: false });
 import { cn } from "@/lib/utils";
 import React from "react";
 
@@ -205,7 +211,7 @@ export const AnalyticsCharts = React.memo(function AnalyticsCharts({ data }: { d
                                 cx="50%"
                                 cy="50%"
                                 labelLine={false}
-                                label={(entry: { name: string; value: number }) => `${entry.name}: ${entry.value}`}
+                                label={(entry) => `${entry.name ?? "Unknown"}: ${entry.value ?? 0}`}
                                 outerRadius={80}
                                 fill="#8884d8"
                                 dataKey="value"
@@ -308,8 +314,7 @@ export const AnalyticsCharts = React.memo(function AnalyticsCharts({ data }: { d
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={data.timeTracking.dailyTracked}>
                                 <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                <YAxis tick={{ fontSize: 12 }} tickFormatter={(v: any) => `${Math.floor(v / 60)}h`} />
+                                <YAxis tick={{ fontSize: 12 }} tickFormatter={(v: number) => `${Math.floor(v / 60)}h`} />
                                 <Tooltip
                                     formatter={(value: number | undefined) => [
                                         value ? `${Math.floor(value / 60)}h ${value % 60}m` : "0h 0m",

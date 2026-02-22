@@ -20,13 +20,17 @@ import { useLabelStore } from "@/lib/store/label-store";
 import { ConflictDialog } from "@/components/sync/ConflictDialog";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { useQueryClient } from "@tanstack/react-query";
+import { useSyncManager } from "@/lib/sync/useSyncManager";
 
-interface SyncContextType {
+interface SyncStateContextType {
     pendingActions: PendingAction[];
-    dispatch: <T extends ActionType>(type: T, ...args: Parameters<typeof actionRegistry[T]>) => Promise<any>;
     status: SyncStatus;
     isOnline: boolean;
     conflicts: ConflictInfo[];
+}
+
+interface SyncActionsContextType {
+    dispatch: <T extends ActionType>(type: T, ...args: Parameters<typeof actionRegistry[T]>) => Promise<any>;
     resolveConflict: (actionId: string, resolution: 'local' | 'server' | 'merge', mergedData?: unknown) => Promise<void>;
     retryAction: (actionId: string) => Promise<void>;
     dismissAction: (actionId: string) => Promise<void>;
@@ -35,17 +39,42 @@ interface SyncContextType {
     syncNow: () => void;
 }
 
-const SyncContext = createContext<SyncContextType | null>(null);
+const SyncStateContext = createContext<SyncStateContextType | null>(null);
+const SyncActionsContext = createContext<SyncActionsContextType | null>(null);
 
-export const useSync = () => {
-    const context = useContext(SyncContext);
-    if (!context) throw new Error("useSync must be used within a SyncProvider");
+export const useSyncState = () => {
+    const context = useContext(SyncStateContext);
+    if (!context) throw new Error("useSyncState must be used within a SyncProvider");
     return context;
 };
 
-export const useOptionalSync = () => useContext(SyncContext);
+export const useSyncActions = () => {
+    const context = useContext(SyncActionsContext);
+    if (!context) throw new Error("useSyncActions must be used within a SyncProvider");
+    return context;
+};
 
-import { useSyncManager } from "@/lib/sync/useSyncManager";
+export const useOptionalSyncActions = () => {
+    return useContext(SyncActionsContext);
+};
+
+export const useSync = () => {
+    const state = useContext(SyncStateContext);
+    const actions = useContext(SyncActionsContext);
+
+    if (!state || !actions) throw new Error("useSync must be used within a SyncProvider");
+
+    return { ...state, ...actions };
+};
+
+export const useOptionalSync = () => {
+    const state = useContext(SyncStateContext);
+    const actions = useContext(SyncActionsContext);
+
+    if (!state || !actions) return null;
+
+    return { ...state, ...actions };
+};
 
 export function SyncProvider({ children }: { children: React.ReactNode }) {
     const {
@@ -63,19 +92,22 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         syncNow,
     } = useSyncManager();
 
-    const value = useMemo(() => ({
+    const stateValue = useMemo(() => ({
         pendingActions,
-        dispatch,
         status,
         isOnline,
         conflicts,
+    }), [pendingActions, status, isOnline, conflicts]);
+
+    const actionsValue = useMemo(() => ({
+        dispatch,
         resolveConflict,
         retryAction,
         dismissAction,
         retryAllFailed,
         dismissAllFailed,
         syncNow,
-    }), [pendingActions, dispatch, status, isOnline, conflicts, resolveConflict, retryAction, dismissAction, retryAllFailed, dismissAllFailed, syncNow]);
+    }), [dispatch, resolveConflict, retryAction, dismissAction, retryAllFailed, dismissAllFailed, syncNow]);
 
     const currentConflict = conflicts.length > 0 ? conflicts[0] : null;
 
@@ -86,13 +118,15 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     }, [currentConflict, setConflicts]);
 
     return (
-        <SyncContext.Provider value={value}>
-            {children}
-            <ConflictDialog
-                conflict={currentConflict}
-                onResolve={resolveConflict}
-                onClose={handleConflictClose}
-            />
-        </SyncContext.Provider>
+        <SyncActionsContext.Provider value={actionsValue}>
+            <SyncStateContext.Provider value={stateValue}>
+                {children}
+                <ConflictDialog
+                    conflict={currentConflict}
+                    onResolve={resolveConflict}
+                    onClose={handleConflictClose}
+                />
+            </SyncStateContext.Provider>
+        </SyncActionsContext.Provider>
     );
 }
