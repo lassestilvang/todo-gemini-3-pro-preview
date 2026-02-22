@@ -171,12 +171,14 @@ export function resetMockAuthUser() {
 
 export function getMockAuthUser(): MockAuthUser | null {
     const contextUser = authStorage.getStore();
-    // Prioritize AsyncLocalStorage context if we are inside a runInAuthContext call
+    const globalUser = mockState[GLOBAL_MOCK_USER_KEY];
+    if (globalUser !== undefined && globalUser !== null) {
+        return globalUser;
+    }
     if (contextUser !== undefined) {
         return contextUser;
     }
-    // Fallback to global state for tests not using runInAuthContext
-    return mockState[GLOBAL_MOCK_USER_KEY];
+    return null;
 }
 
 mock.module("@workos-inc/authkit-nextjs", () => ({
