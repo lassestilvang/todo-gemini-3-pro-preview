@@ -220,40 +220,28 @@ const authStorage = new AsyncLocalStorage<MockAuthUser | null>();
 export function runInAuthContext<T>(user: MockAuthUser | null, fn: () => T): T {
     const previousUser = mockState[GLOBAL_MOCK_USER_KEY];
     mockState[GLOBAL_MOCK_USER_KEY] = user;
-    const previousEnv = process.env.MOCK_AUTH_USER;
-    if (user) {
-        process.env.MOCK_AUTH_USER = JSON.stringify(user);
-    } else {
-        delete process.env.MOCK_AUTH_USER;
-    }
+    const previousGlobalUser = (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser;
+    (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = user ?? null;
+    delete process.env.MOCK_AUTH_USER;
 
     try {
         const result = authStorage.run(user, fn);
         if (result && typeof (result as unknown as Promise<unknown>).finally === "function") {
             return (result as unknown as Promise<unknown>).finally(() => {
                 mockState[GLOBAL_MOCK_USER_KEY] = previousUser;
-                if (previousEnv !== undefined) {
-                    process.env.MOCK_AUTH_USER = previousEnv;
-                } else {
-                    delete process.env.MOCK_AUTH_USER;
-                }
+                (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = previousGlobalUser ?? null;
+                delete process.env.MOCK_AUTH_USER;
             }) as T;
         }
 
         mockState[GLOBAL_MOCK_USER_KEY] = previousUser;
-        if (previousEnv !== undefined) {
-            process.env.MOCK_AUTH_USER = previousEnv;
-        } else {
-            delete process.env.MOCK_AUTH_USER;
-        }
+        (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = previousGlobalUser ?? null;
+        delete process.env.MOCK_AUTH_USER;
         return result;
     } catch (error) {
         mockState[GLOBAL_MOCK_USER_KEY] = previousUser;
-        if (previousEnv !== undefined) {
-            process.env.MOCK_AUTH_USER = previousEnv;
-        } else {
-            delete process.env.MOCK_AUTH_USER;
-        }
+        (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = previousGlobalUser ?? null;
+        delete process.env.MOCK_AUTH_USER;
         throw error;
     }
 }
@@ -261,20 +249,19 @@ export function runInAuthContext<T>(user: MockAuthUser | null, fn: () => T): T {
 export function setMockAuthUser(user: MockAuthUser | null) {
     mockState[GLOBAL_MOCK_USER_KEY] = user;
     authStorage.enterWith(user);
-    if (user) {
-        process.env.MOCK_AUTH_USER = JSON.stringify(user);
-    } else {
-        delete process.env.MOCK_AUTH_USER;
-    }
+    (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = user ?? null;
+    delete process.env.MOCK_AUTH_USER;
 }
 
 export function clearMockAuthUser() {
     mockState[GLOBAL_MOCK_USER_KEY] = null;
+    (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = null;
     delete process.env.MOCK_AUTH_USER;
 }
 
 export function resetMockAuthUser() {
     mockState[GLOBAL_MOCK_USER_KEY] = null;
+    (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = null;
     delete process.env.MOCK_AUTH_USER;
 }
 
@@ -283,17 +270,13 @@ export function getMockAuthUser(): MockAuthUser | null {
     if (contextUser !== undefined) {
         return contextUser;
     }
-    if (process.env.MOCK_AUTH_USER) {
-        try {
-            const parsed = JSON.parse(process.env.MOCK_AUTH_USER) as MockAuthUser | null;
-            return parsed ?? null;
-        } catch {
-            return null;
-        }
-    }
-    const globalUser = mockState[GLOBAL_MOCK_USER_KEY];
+    const globalUser = (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser;
     if (globalUser !== undefined && globalUser !== null) {
         return globalUser;
+    }
+    const stateUser = mockState[GLOBAL_MOCK_USER_KEY];
+    if (stateUser !== undefined && stateUser !== null) {
+        return stateUser;
     }
     return null;
 }
