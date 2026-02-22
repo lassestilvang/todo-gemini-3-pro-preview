@@ -55,7 +55,11 @@ export function SidebarNavigation() {
                         className="w-full justify-start min-w-0 group"
                         asChild
                     >
-                        <Link href={item.href} className="w-full flex items-center min-w-0">
+                        <Link
+                            href={item.href}
+                            className="w-full flex items-center min-w-0"
+                            aria-current={pathname === item.href ? "page" : undefined}
+                        >
                             <item.icon className={cn("mr-2 h-4 w-4 shrink-0", item.color)} />
                             <span className="truncate flex-1 text-left">{item.name}</span>
                             {count > 0 && (

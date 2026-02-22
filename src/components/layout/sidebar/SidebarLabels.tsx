@@ -103,7 +103,11 @@ const SortableLabelItem = memo(function SortableLabelItem({
                 )}
                 asChild
             >
-                <Link href={`/labels/${label.id}`} className="w-full flex items-center min-w-0">
+                <Link
+                    href={`/labels/${label.id}`}
+                    className="w-full flex items-center min-w-0"
+                    aria-current={pathname === `/labels/${label.id}` ? "page" : undefined}
+                >
                     <ResolvedIcon
                         icon={label.icon}
                         className="mr-2 h-4 w-4 shrink-0 transition-colors"

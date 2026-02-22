@@ -103,15 +103,20 @@ export function SidebarSavedViews({ userId }: { userId?: string }) {
                                     )}
                                     asChild
                                 >
-                                    <Link href={href} className="w-full flex items-center min-w-0">
+                                    <Link
+                                        href={href}
+                                        className="w-full flex items-center min-w-0"
+                                        aria-current={isActive ? "page" : undefined}
+                                    >
                                         <Filter className="mr-2 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                                         <span className="truncate">{view.name}</span>
                                     </Link>
                                 </Button>
                                 <button
                                     onClick={() => deleteMutation.mutate(view.id)}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"
                                     title="Delete view"
+                                    aria-label="Delete view"
                                 >
                                     <Trash2 className="h-3.5 w-3.5" />
                                 </button>

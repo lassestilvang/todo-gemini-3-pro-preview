@@ -106,7 +106,11 @@ const SortableListItem = memo(function SortableListItem({
                 )}
                 asChild
             >
-                <Link href={href} className="w-full flex items-center min-w-0">
+                <Link
+                    href={href}
+                    className="w-full flex items-center min-w-0"
+                    aria-current={isActive ? "page" : undefined}
+                >
                     <ResolvedIcon
                         icon={list.icon}
                         className="mr-2 h-4 w-4 shrink-0 transition-colors"
