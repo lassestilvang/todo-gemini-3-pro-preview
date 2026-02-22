@@ -1,13 +1,25 @@
 
-import { describe, it, expect, mock, afterEach } from "bun:test";
+import { describe, it, expect, mock, afterEach, beforeAll } from "bun:test";
 import { render, screen, cleanup } from "@testing-library/react";
 import React from "react";
-import { SidebarSavedViews } from "./SidebarSavedViews";
+
+let SidebarSavedViews: typeof import("./SidebarSavedViews").SidebarSavedViews;
 
 // Mock next/navigation
 mock.module("next/navigation", () => ({
     usePathname: () => "/views/1",
-    useRouter: () => ({ push: () => {} }),
+    useRouter: () => ({
+        push: () => {},
+        replace: () => {},
+        prefetch: () => {},
+        back: () => {},
+        forward: () => {},
+        refresh: () => {},
+    }),
+    useSearchParams: () => new URLSearchParams(),
+    useParams: () => ({}),
+    redirect: (url: string) => { throw new Error(`REDIRECT:${url}`); },
+    notFound: () => { throw new Error("NOT_FOUND"); },
 }));
 
 // Mock react-query
@@ -34,6 +46,10 @@ mock.module("@/lib/actions", () => ({
 }));
 
 describe("SidebarSavedViews", () => {
+    beforeAll(async () => {
+        ({ SidebarSavedViews } = await import("./SidebarSavedViews"));
+    });
+
     afterEach(() => {
         cleanup();
     });
@@ -55,7 +71,7 @@ describe("SidebarSavedViews", () => {
 
     it("should have aria-label on delete buttons", () => {
         render(<SidebarSavedViews userId="user-1" />);
-        const deleteButtons = screen.getAllByLabelText("Delete view");
+        const deleteButtons = screen.getAllByLabelText(/Delete view/i);
         expect(deleteButtons).toHaveLength(2);
         expect(deleteButtons[0]).toBeInTheDocument();
     });

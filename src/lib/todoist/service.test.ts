@@ -2,9 +2,6 @@ import { describe, expect, it, mock } from "bun:test";
 
 describe("todoist service snapshot", () => {
     it("merges active and recently completed tasks since last sync", async () => {
-        // Some integration tests mock this module; restore and import a unique specifier
-        // to ensure this test executes the real implementation.
-        mock.restore();
         const { fetchTodoistSnapshot } = await import(`./service?real=${Date.now()}`);
 
         const getCompletedTasksByCompletionDate = mock()

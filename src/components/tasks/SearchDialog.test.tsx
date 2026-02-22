@@ -8,8 +8,18 @@ import { setMockAuthUser } from "@/test/mocks";
 const mockPush = mock();
 mock.module("next/navigation", () => ({
     useRouter: () => ({
-        push: mockPush
-    })
+        push: mockPush,
+        replace: () => {},
+        prefetch: () => {},
+        back: () => {},
+        forward: () => {},
+        refresh: () => {},
+    }),
+    usePathname: () => "/",
+    useSearchParams: () => new URLSearchParams(),
+    useParams: () => ({}),
+    redirect: (url: string) => { throw new Error(`REDIRECT:${url}`); },
+    notFound: () => { throw new Error("NOT_FOUND"); },
 }));
 
 // Wrapper replicating the Client-Side Search Logic with Fuse.js

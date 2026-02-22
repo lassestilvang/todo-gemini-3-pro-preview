@@ -113,7 +113,6 @@ export const TaskItem = memo(function TaskItem({
     const periodPrecision = task.dueDatePrecision && task.dueDatePrecision !== "day" ? task.dueDatePrecision : null;
     const periodLabel = task.dueDate && periodPrecision ? formatDuePeriod({ dueDate: task.dueDate, dueDatePrecision: periodPrecision as DuePrecision }) : null;
     const periodBadge = periodPrecision ? periodPrecision[0] : null;
-    const dueAriaLabel = periodLabel ? `Due ${periodLabel}` : undefined;
 
     const tooltipDate = task.dueDate ? format(task.dueDate, "eeee, MMMM do, yyyy") : "";
     const tooltipTime = task.dueDate && (task.dueDate.getHours() !== 0 || task.dueDate.getMinutes() !== 0)

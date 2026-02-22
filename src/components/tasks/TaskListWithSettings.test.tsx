@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, beforeEach, afterAll, afterEach, mock } from "bun:test";
+import { describe, it, expect, beforeAll, beforeEach, afterEach, mock } from "bun:test";
 import { render, screen, cleanup } from "@testing-library/react";
 import { setMockAuthUser, DEFAULT_MOCK_USER } from "@/test/mocks";
 import React from "react";
@@ -48,10 +48,6 @@ describe("TaskListWithSettings", () => {
 
     afterEach(() => {
         cleanup();
-    });
-
-    afterAll(() => {
-        mock.restore();
     });
 
     it("should render inbox empty state", () => {

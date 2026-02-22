@@ -51,6 +51,11 @@ mock.module("next/navigation", () => ({
         refresh: () => {},
         prefetch: () => Promise.resolve(),
     }),
+    usePathname: () => "/",
+    useSearchParams: () => new URLSearchParams(),
+    useParams: () => ({}),
+    redirect: (url: string) => { throw new Error(`REDIRECT:${url}`); },
+    notFound: () => { throw new Error("NOT_FOUND"); },
 }));
 
 // Arbitrary for valid error codes

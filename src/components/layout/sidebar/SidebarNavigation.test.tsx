@@ -1,14 +1,25 @@
 
-import { describe, it, expect, mock, afterEach } from "bun:test";
+import { describe, it, expect, mock, afterEach, beforeAll } from "bun:test";
 import { render, screen, cleanup } from "@testing-library/react";
 import React from "react";
-import { SidebarNavigation } from "./SidebarNavigation";
+
+let SidebarNavigation: typeof import("./SidebarNavigation").SidebarNavigation;
 
 // Mock next/navigation
 mock.module("next/navigation", () => ({
     usePathname: () => "/inbox",
-    useRouter: () => ({ push: () => {} }),
-    useSearchParams: () => ({ get: () => null }),
+    useRouter: () => ({
+        push: () => {},
+        replace: () => {},
+        prefetch: () => {},
+        back: () => {},
+        forward: () => {},
+        refresh: () => {},
+    }),
+    useSearchParams: () => new URLSearchParams(),
+    useParams: () => ({}),
+    redirect: (url: string) => { throw new Error(`REDIRECT:${url}`); },
+    notFound: () => { throw new Error("NOT_FOUND"); },
 }));
 
 // Mock useTaskCounts
@@ -22,6 +33,10 @@ mock.module("@/hooks/use-task-counts", () => ({
 }));
 
 describe("SidebarNavigation", () => {
+    beforeAll(async () => {
+        ({ SidebarNavigation } = await import("./SidebarNavigation"));
+    });
+
     afterEach(() => {
         cleanup();
     });
