@@ -3,10 +3,9 @@ import { expect, afterEach, mock, beforeEach } from "bun:test";
 import * as matchers from "@testing-library/jest-dom/matchers";
 import { db, sqliteConnection } from "@/db";
 import { labels, lists, tasks, timeEntries, templates, userStats, achievements, userAchievements, viewSettings, savedViews, rateLimits, taskDependencies, taskLabels, reminders, habitCompletions, taskLogs, customIcons, externalIntegrations, externalSyncState, externalEntityMap, externalSyncConflicts } from "@/db";
-import { getMockAuthUser, resetMockAuthUser } from "./mocks";
+import { resetMockAuthUser } from "./mocks";
 import React from "react";
 import { cleanup } from "@testing-library/react";
-import { ForbiddenError, UnauthorizedError } from "@/lib/auth-errors";
 
 
 
@@ -329,84 +328,6 @@ mock.module("@/components/providers/sync-provider", () => ({
 }));
 
 // Traditional auth mock for broad support across all test types
-mock.module("@/lib/auth", () => ({
-    getCurrentUser: mock(async () => {
-        const user = getMockAuthUser();
-        if (!user) return null;
-        return {
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            avatarUrl: user.profilePictureUrl,
-            use24HourClock: false,
-            weekStartsOnMonday: false,
-            calendarUseNativeTooltipsOnDenseDays: true,
-            calendarDenseTooltipThreshold: 6,
-        };
-    }),
-    requireAuth: mock(async () => {
-        const user = getMockAuthUser();
-        if (!user) throw new UnauthorizedError();
-        return {
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            avatarUrl: user.profilePictureUrl,
-            use24HourClock: false,
-            weekStartsOnMonday: false,
-            calendarUseNativeTooltipsOnDenseDays: true,
-            calendarDenseTooltipThreshold: 6,
-        };
-    }),
-    requireUser: mock(async (userId: string) => {
-        const user = getMockAuthUser();
-        if (!user) throw new UnauthorizedError();
-        if (user.id !== userId) {
-            if (process.env.CI) {
-                console.error(`[requireUser Mock] Forbidden userId=${userId} mockUser=${user.id} env=${process.env.MOCK_AUTH_USER ?? "unset"}`);
-            }
-            const err = new ForbiddenError("Forbidden");
-            Object.defineProperty(err, 'name', { value: 'ForbiddenError', enumerable: true });
-            throw err;
-        }
-        return {
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            avatarUrl: user.profilePictureUrl,
-            use24HourClock: false,
-            weekStartsOnMonday: false,
-            calendarUseNativeTooltipsOnDenseDays: true,
-            calendarDenseTooltipThreshold: 6,
-        };
-    }),
-    requireResourceOwnership: mock(async (resourceUserId: string, authUserId: string) => {
-        if (resourceUserId !== authUserId) {
-            const err = new ForbiddenError("Forbidden");
-            Object.defineProperty(err, 'name', { value: 'ForbiddenError', enumerable: true });
-            throw err;
-        }
-    }),
-    signOut: mock(async () => { }),
-    syncUser: mock(async (workosUser: { id: string; email: string; firstName?: string | null; lastName?: string | null; profilePictureUrl?: string | null }) => ({
-        id: workosUser.id,
-        email: workosUser.email,
-        firstName: workosUser.firstName ?? null,
-        lastName: workosUser.lastName ?? null,
-        avatarUrl: workosUser.profilePictureUrl ?? null,
-        use24HourClock: false,
-        weekStartsOnMonday: false,
-        calendarUseNativeTooltipsOnDenseDays: true,
-        calendarDenseTooltipThreshold: 6,
-    })),
-    checkResourceOwnership: mock(async (resourceUserId: string | null | undefined, authenticatedUserId: string) => {
-        if (!resourceUserId) return false;
-        return resourceUserId === authenticatedUserId;
-    }),
-}));
 
 // Note: Tests are responsible for setting auth context explicitly.
 
