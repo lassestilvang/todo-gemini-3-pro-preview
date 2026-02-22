@@ -2,7 +2,7 @@
 
 import { getGeminiClient, GEMINI_MODEL } from "@/lib/gemini";
 import { db, tasks } from "@/db";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, sql, asc } from "drizzle-orm";
 import { format, startOfDay } from "date-fns";
 import { requireAuth } from "@/lib/auth";
 import { coerceDuePrecision, normalizeDueAnchor, type DuePrecision } from "@/lib/due-utils";
@@ -73,15 +73,38 @@ export async function generateSmartSchedule(): Promise<ScheduleSuggestion[]> {
         const user = await requireAuth();
 
         // 1. Fetch unscheduled tasks (no due date, not completed)
+        // First get total count for context
+        const totalCountResult = await db.select({ count: sql<number>`count(*)` })
+            .from(tasks)
+            .where(
+                and(
+                    isNull(tasks.dueDate),
+                    eq(tasks.isCompleted, false),
+                    eq(tasks.userId, user.id)
+                )
+            );
+        const totalUnscheduledCount = Number(totalCountResult[0]?.count || 0);
+
+        if (totalUnscheduledCount === 0) return [];
+
+        // Fetch limited set prioritized by priority and creation date
         const unscheduledTasks = await db.select().from(tasks).where(
             and(
                 isNull(tasks.dueDate),
                 eq(tasks.isCompleted, false),
                 eq(tasks.userId, user.id)
             )
-        );
-
-        if (unscheduledTasks.length === 0) return [];
+        )
+        .orderBy(
+            sql`CASE
+                WHEN ${tasks.priority} = 'high' THEN 1
+                WHEN ${tasks.priority} = 'medium' THEN 2
+                WHEN ${tasks.priority} = 'low' THEN 3
+                ELSE 4
+            END`,
+            asc(tasks.createdAt)
+        )
+        .limit(50);
 
         // 2. Fetch existing schedule for context (tasks due in next 7 days)
         const today = startOfDay(new Date());
@@ -100,7 +123,7 @@ export async function generateSmartSchedule(): Promise<ScheduleSuggestion[]> {
         }));
 
         const prompt = `
-            I have ${unscheduledTasks.length} unscheduled tasks. Suggest a schedule for the next 5 days starting ${format(today, "yyyy-MM-dd")}.
+            I have ${totalUnscheduledCount} unscheduled tasks (showing top ${unscheduledTasks.length} prioritized by importance). Suggest a schedule for the next 5 days starting ${format(today, "yyyy-MM-dd")}.
             
             Tasks:
             ${JSON.stringify(tasksList, null, 2)}
@@ -223,14 +246,18 @@ export async function analyzePriorities(): Promise<Array<{
     if (!client) return [];
 
     try {
-        // Get all incomplete tasks
+        const user = await requireAuth();
+
+        // Get incomplete tasks (limited for performance)
         const incompleteTasks = await db
             .select()
             .from(tasks)
             .where(and(
                 eq(tasks.isCompleted, false),
+                eq(tasks.userId, user.id),
                 isNull(tasks.parentId)
-            ));
+            ))
+            .limit(100);
 
         if (incompleteTasks.length === 0) return [];
 
