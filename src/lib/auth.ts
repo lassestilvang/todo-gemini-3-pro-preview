@@ -33,6 +33,22 @@ export interface AuthUser {
 }
 
 function getTestMockUser() {
+  if (process.env.MOCK_AUTH_USER) {
+    try {
+      const parsed = JSON.parse(process.env.MOCK_AUTH_USER) as
+        | {
+            id: string;
+            email: string;
+            firstName?: string | null;
+            lastName?: string | null;
+            profilePictureUrl?: string | null;
+          }
+        | null;
+      return parsed ?? null;
+    } catch {
+      return null;
+    }
+  }
   return (globalThis as {
     __mockAuthUser?: {
       id: string;
