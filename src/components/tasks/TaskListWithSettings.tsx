@@ -11,7 +11,7 @@ import { ViewSettings, defaultViewSettings } from "@/lib/view-settings";
 import { getViewSettings } from "@/lib/actions/view-settings";
 import { useUser } from "@/components/providers/UserProvider";
 import { useTaskStore } from "@/lib/store/task-store";
-import { useSync } from "@/components/providers/sync-provider";
+import { useSyncActions } from "@/components/providers/sync-provider";
 import { useIsClient } from "@/hooks/use-is-client";
 import { usePerformanceMode } from "@/components/providers/PerformanceContext";
 import { TaskListSkeleton } from "./TaskListSkeleton";
@@ -70,7 +70,7 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
     });
     const { editingTask, isDialogOpen, calendarSelectedDate, activeId, overdueCollapsed, periodCollapsed } = uiState;
     const { weekStartsOnMonday, use24HourClock } = useUser();
-    const { dispatch } = useSync();
+    const { dispatch } = useSyncActions();
     const { tasks: storeTasksFn, setTasks, initialize, isInitialized } = useTaskStore();
 
     const isClient = useIsClient();
