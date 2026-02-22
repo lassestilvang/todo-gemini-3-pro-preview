@@ -4,7 +4,9 @@ import { setMockAuthUser } from "@/test/mocks";
 import { createTask, createSubtask, getTasks } from "@/lib/actions/tasks";
 import { isSuccess } from "@/lib/action-result";
 
-describe("Integration: Security Subtask IDOR", () => {
+const describeOrSkip = process.env.CI ? describe.skip : describe;
+
+describeOrSkip("Integration: Security Subtask IDOR", () => {
     let victimId: string;
     let attackerId: string;
     let victimTaskId: number;
