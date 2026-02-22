@@ -5,9 +5,7 @@ import { createList, deleteList } from "@/lib/actions/lists";
 import { createTask, toggleTaskCompletion, getTasks, deleteTask } from "@/lib/actions/tasks";
 import { isSuccess } from "@/lib/action-result";
 
-const describeOrSkip = process.env.CI ? describe.skip : describe;
-
-describeOrSkip("Integration: Task Flow", () => {
+describe("Integration: Task Flow", () => {
     let testUserId: string;
 
     beforeAll(async () => {

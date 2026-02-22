@@ -24,9 +24,7 @@ fc.configureGlobal({
     seed: FAST_CHECK_SEED,
 });
 
-const describeOrSkip = process.env.CI ? describe.skip : describe;
-
-describeOrSkip("Property Tests: Authorization", () => {
+describe("Property Tests: Authorization", () => {
     beforeAll(async () => {
         await setupTestDb();
     });

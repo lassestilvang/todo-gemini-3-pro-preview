@@ -1,12 +1,10 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
-import { setupTestDb, createTestUser } from "@/test/setup";
+import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
 import { createTask, createSubtask, getTasks } from "@/lib/actions/tasks";
 import { isSuccess } from "@/lib/action-result";
 
-const describeOrSkip = process.env.CI ? describe.skip : describe;
-
-describeOrSkip("Integration: Security Subtask IDOR", () => {
+describe("Integration: Security Subtask IDOR", () => {
     let victimId: string;
     let attackerId: string;
     let victimTaskId: number;
@@ -16,6 +14,7 @@ describeOrSkip("Integration: Security Subtask IDOR", () => {
     });
 
     beforeEach(async () => {
+        await resetTestDb();
         // Create users
         const victim = await createTestUser("victim", "victim@target.com");
         const attacker = await createTestUser("attacker", "attacker@evil.com");

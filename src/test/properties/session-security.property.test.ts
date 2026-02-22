@@ -20,7 +20,7 @@
 
 import { describe, it, expect, beforeEach } from "bun:test";
 import fc from "fast-check";
-import { setupTestDb, createTestUser } from "@/test/setup";
+import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser, clearMockAuthUser } from "@/test/mocks";
 import { getCurrentUser, requireAuth } from "@/lib/auth";
 import { UnauthorizedError } from "@/lib/auth-errors";
@@ -56,12 +56,10 @@ const workosUserArb = fc.record({
 });
 
 // Use describe.skip if running in CI to avoid parallel execution issues with global mocks
-const describeOrSkip = process.env.CI ? describe.skip : describe;
-
-describeOrSkip("Property Tests: Session Security", () => {
+describe("Property Tests: Session Security", () => {
   beforeEach(async () => {
     await setupTestDb();
-    // await resetTestDb();
+    await resetTestDb();
     clearMockAuthUser();
   });
 

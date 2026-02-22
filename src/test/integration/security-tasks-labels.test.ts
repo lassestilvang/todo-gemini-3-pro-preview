@@ -5,9 +5,7 @@ import { createTask, getTasks } from "@/lib/actions/tasks";
 import { createLabel } from "@/lib/actions/labels";
 import { isSuccess } from "@/lib/action-result";
 
-const describeOrSkip = process.env.CI ? describe.skip : describe;
-
-describeOrSkip("Integration: Security Task Labels IDOR", () => {
+describe("Integration: Security Task Labels IDOR", () => {
     let victimId: string;
     let attackerId: string;
     let victimLabelId: number;

@@ -24,8 +24,6 @@ fc.configureGlobal({
     seed: FAST_CHECK_SEED,
 });
 
-const describeOrSkip = process.env.CI ? describe.skip : describe;
-
 // Arbitrary for valid user IDs
 const validUserIdArb = fc.uuid();
 
@@ -35,7 +33,7 @@ const validTitleArb = fc.string({ minLength: 1, maxLength: 100 }).filter(s => s.
 // Arbitrary for invalid (empty/whitespace) titles
 const invalidTitleArb = fc.constantFrom("", "   ", "\t", "\n", "  \t\n  ");
 
-describeOrSkip("Property Tests: Server Actions Error Handling", () => {
+describe("Property Tests: Server Actions Error Handling", () => {
     beforeEach(async () => {
         await setupTestDb();
         await resetTestDb();

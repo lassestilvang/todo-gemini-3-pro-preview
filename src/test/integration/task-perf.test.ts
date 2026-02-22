@@ -5,9 +5,7 @@ import { createTask, getTasks } from "@/lib/actions/tasks";
 import { createLabel } from "@/lib/actions/labels";
 import { isSuccess } from "@/lib/action-result";
 
-const describeOrSkip = process.env.CI ? describe.skip : describe;
-
-describeOrSkip("Integration: Task Performance Optimization", () => {
+describe("Integration: Task Performance Optimization", () => {
     let testUserId: string;
 
     beforeAll(async () => {

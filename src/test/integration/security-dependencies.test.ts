@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
-import { setupTestDb, createTestUser } from "@/test/setup";
+import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
 import { addDependency, removeDependency } from "@/lib/actions/dependencies";
 import { createReminder, deleteReminder } from "@/lib/actions/reminders";
@@ -7,9 +7,7 @@ import { isFailure } from "@/lib/action-result";
 import { db, tasks, reminders, taskDependencies } from "@/db";
 import { eq, and } from "drizzle-orm";
 
-const describeOrSkip = process.env.CI ? describe.skip : describe;
-
-describeOrSkip("Integration: Security Dependencies & Reminders", () => {
+describe("Integration: Security Dependencies & Reminders", () => {
     let attackerId: string;
     let victimId: string;
     let task1Id: number;
@@ -20,6 +18,7 @@ describeOrSkip("Integration: Security Dependencies & Reminders", () => {
     });
 
     beforeEach(async () => {
+        await resetTestDb();
         const attacker = await createTestUser("attacker_dep", "attacker_dep@evil.com");
         const victim = await createTestUser("victim_dep", "victim_dep@target.com");
 
