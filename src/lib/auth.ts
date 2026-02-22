@@ -44,6 +44,8 @@ function getTestMockUser() {
   }).__mockAuthUser;
 }
 
+const isTestEnv = process.env.NODE_ENV === "test" || process.env.CI === "true";
+
 /**
  * Get test user from test session cookie (E2E test mode only).
  */
@@ -184,7 +186,7 @@ async function getCurrentUserImpl(): Promise<AuthUser | null> {
     return getTestUser();
   }
 
-  if (process.env.NODE_ENV === "test") {
+  if (isTestEnv) {
     const mockUser = (globalThis as {
       __mockAuthUser?: {
         id: string;
@@ -259,7 +261,7 @@ export const getCurrentUser =
  * Throws UnauthorizedError if not authenticated.
  */
 export async function requireAuth(): Promise<AuthUser> {
-  if (process.env.NODE_ENV === "test") {
+  if (isTestEnv) {
     const mockUser = getTestMockUser();
     if (!mockUser) {
       throw new UnauthorizedError();
@@ -411,7 +413,7 @@ export async function requireResourceOwnership(
  * Throws ForbiddenError if authenticated user does not match userId.
  */
 export async function requireUser(userId: string): Promise<AuthUser> {
-  if (process.env.NODE_ENV === "test") {
+  if (isTestEnv) {
     const mockUser = getTestMockUser();
     if (!mockUser) {
       throw new UnauthorizedError();
