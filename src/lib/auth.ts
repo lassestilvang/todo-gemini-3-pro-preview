@@ -172,6 +172,36 @@ async function getCurrentUserImpl(): Promise<AuthUser | null> {
     return getTestUser();
   }
 
+  if (process.env.NODE_ENV === "test") {
+    const mockUser = (globalThis as {
+      __mockAuthUser?: {
+        id: string;
+        email: string;
+        firstName?: string | null;
+        lastName?: string | null;
+        profilePictureUrl?: string | null;
+      } | null;
+    }).__mockAuthUser;
+
+    if (mockUser) {
+      return {
+        id: mockUser.id,
+        email: mockUser.email,
+        firstName: mockUser.firstName ?? null,
+        lastName: mockUser.lastName ?? null,
+        avatarUrl: mockUser.profilePictureUrl ?? null,
+        use24HourClock: false,
+        weekStartsOnMonday: false,
+        calendarUseNativeTooltipsOnDenseDays: true,
+        calendarDenseTooltipThreshold: 6,
+      };
+    }
+
+    if (mockUser === null) {
+      return null;
+    }
+  }
+
   const bypassUser = await getBypassUser();
   if (bypassUser) {
     return bypassUser;
