@@ -178,15 +178,10 @@ async function getCurrentUserImpl(): Promise<AuthUser | null> {
   }
 
   if (isTestEnv) {
-    const globalMock = (globalThis as { __mockAuthUser?: {
-      id: string;
-      email: string;
-      firstName?: string | null;
-      lastName?: string | null;
-      profilePictureUrl?: string | null;
-    } | null }).__mockAuthUser;
+    const { getMockAuthUser } = await import("@/test/mocks");
+    const contextUser = getMockAuthUser();
     const envMock = process.env.MOCK_AUTH_USER;
-    const mockUser = globalMock ?? (envMock ? (() => {
+    const envUser = envMock ? (() => {
       try {
         return JSON.parse(envMock) as {
           id: string;
@@ -198,7 +193,8 @@ async function getCurrentUserImpl(): Promise<AuthUser | null> {
       } catch {
         return null;
       }
-    })() : null);
+    })() : null;
+    const mockUser = contextUser ?? envUser;
 
     if (!mockUser) {
       return null;
