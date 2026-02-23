@@ -178,6 +178,23 @@ async function getCurrentUserImpl(): Promise<AuthUser | null> {
   }
 
   if (isTestEnv) {
+    // 1. Try globalThis directly (fastest, most reliable in same-process tests)
+    // This avoids dynamic import overhead and potential module isolation issues
+    const globalUser = (globalThis as any).__mockAuthUser;
+    if (globalUser) {
+      return {
+        id: globalUser.id,
+        email: globalUser.email,
+        firstName: globalUser.firstName ?? null,
+        lastName: globalUser.lastName ?? null,
+        avatarUrl: globalUser.profilePictureUrl ?? null,
+        use24HourClock: false,
+        weekStartsOnMonday: false,
+        calendarUseNativeTooltipsOnDenseDays: true,
+        calendarDenseTooltipThreshold: 6,
+      };
+    }
+
     const { getMockAuthUser } = await import("@/test/mocks");
     const contextUser = getMockAuthUser();
     const envMock = process.env.MOCK_AUTH_USER;
