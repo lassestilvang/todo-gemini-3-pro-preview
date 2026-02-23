@@ -1,8 +1,8 @@
 import { describe, expect, it, beforeAll, mock, beforeEach } from "bun:test";
 import { and, eq } from "drizzle-orm";
 import { setupTestDb, createTestUser } from "@/test/setup";
-import { db, externalIntegrations } from "@/db";
-import { setMockAuthUser } from "@/test/mocks";
+import { db, externalIntegrations, tasks } from "@/db";
+import { setMockAuthUser, runInAuthContext } from "@/test/mocks";
 import {
     createTask, getTasks, updateTask, deleteTask, getTask, createReminder, getReminders, getTaskLogs,
     createList, getLists, updateList, deleteList, getList,
@@ -42,6 +42,7 @@ const unwrap = <T>(result: { success: boolean; data?: T; error?: { message?: str
 
 describe("Server Actions", () => {
     let testUserId: string;
+    let testUser: any;
 
     beforeAll(async () => {
         // Ensure tables exist for this test suite
@@ -55,16 +56,17 @@ describe("Server Actions", () => {
         testUserId = `user_${randomId}`;
 
         // Create the user
-        await createTestUser(testUserId, `${testUserId}@example.com`);
+        const user = await createTestUser(testUserId, `${testUserId}@example.com`);
+        testUser = {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            profilePictureUrl: user.profilePictureUrl
+        };
 
         // Set the mock auth user so that requireUser() checks pass
-        setMockAuthUser({
-            id: testUserId,
-            email: `${testUserId}@example.com`,
-            firstName: "Test",
-            lastName: "User",
-            profilePictureUrl: null
-        });
+        setMockAuthUser(testUser);
     });
 
     describe("Tasks", () => {
@@ -438,17 +440,27 @@ describe("Server Actions", () => {
         });
 
         it("should not get blockers for task owned by another user", async () => {
-            // Create task for another user
+            // Create task for another user directly in DB
             const otherUserId = "other_user_" + Math.random();
-            setMockAuthUser({ id: otherUserId, email: "other@example.com", firstName: "Other", lastName: "User", profilePictureUrl: null });
-            const otherTask = unwrap(await createTask({ userId: otherUserId, title: "Other Task" }));
+            // We don't need to create the user in DB for this test, just the task
+            // But if foreign key constraints exist, we might need the user.
+            // tasks.userId usually doesn't have FK constraint in simple schemas or SQLite?
+            // Let's assume we need the user.
+            await createTestUser(otherUserId, "other@example.com");
 
-            // Switch back to testUserId
-            setMockAuthUser({ id: testUserId, email: `${testUserId}@example.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
+            const [otherTask] = await db.insert(tasks).values({
+                userId: otherUserId,
+                title: "Other Task",
+                position: 0,
+                listId: null
+            }).returning();
 
-            // Try to get blockers for otherTask
-            const blockers = await getBlockers(testUserId, otherTask.id);
-            expect(blockers).toHaveLength(0);
+            // Run in auth context of the test user to ensure isolation
+            await runInAuthContext(testUser, async () => {
+                // Try to get blockers for otherTask
+                const blockers = await getBlockers(testUserId, otherTask.id);
+                expect(blockers).toHaveLength(0);
+            });
         });
     });
 
