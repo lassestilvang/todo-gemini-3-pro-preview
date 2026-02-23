@@ -32,38 +32,6 @@ export interface AuthUser {
   calendarDenseTooltipThreshold: number | null;
 }
 
-function getTestMockUser() {
-  const globalUser = (globalThis as {
-    __mockAuthUser?: {
-      id: string;
-      email: string;
-      firstName?: string | null;
-      lastName?: string | null;
-      profilePictureUrl?: string | null;
-    } | null;
-  }).__mockAuthUser;
-  if (globalUser) {
-    return globalUser;
-  }
-  if (process.env.MOCK_AUTH_USER) {
-    try {
-      const parsed = JSON.parse(process.env.MOCK_AUTH_USER) as
-        | {
-            id: string;
-            email: string;
-            firstName?: string | null;
-            lastName?: string | null;
-            profilePictureUrl?: string | null;
-          }
-        | null;
-      return parsed ?? null;
-    } catch {
-      return null;
-    }
-  }
-  return null;
-}
-
 const isTestEnv = process.env.NODE_ENV === "test" || process.env.CI === "true";
 
 /**
@@ -281,24 +249,6 @@ export const getCurrentUser =
  * Throws UnauthorizedError if not authenticated.
  */
 export async function requireAuth(): Promise<AuthUser> {
-  if (isTestEnv) {
-    const mockUser = getTestMockUser();
-    if (!mockUser) {
-      throw new UnauthorizedError();
-    }
-    return {
-      id: mockUser.id,
-      email: mockUser.email,
-      firstName: mockUser.firstName ?? null,
-      lastName: mockUser.lastName ?? null,
-      avatarUrl: mockUser.profilePictureUrl ?? null,
-      use24HourClock: false,
-      weekStartsOnMonday: false,
-      calendarUseNativeTooltipsOnDenseDays: true,
-      calendarDenseTooltipThreshold: 6,
-    };
-  }
-
   const user = await getCurrentUser();
 
   if (!user) {
@@ -444,27 +394,6 @@ export async function requireResourceOwnership(
  * Throws ForbiddenError if authenticated user does not match userId.
  */
 export async function requireUser(userId: string): Promise<AuthUser> {
-  if (isTestEnv) {
-    const mockUser = getTestMockUser();
-    if (!mockUser) {
-      throw new UnauthorizedError();
-    }
-    if (mockUser.id !== userId) {
-      throw new ForbiddenError("You are not authorized to access this user's data");
-    }
-    return {
-      id: mockUser.id,
-      email: mockUser.email,
-      firstName: mockUser.firstName ?? null,
-      lastName: mockUser.lastName ?? null,
-      avatarUrl: mockUser.profilePictureUrl ?? null,
-      use24HourClock: false,
-      weekStartsOnMonday: false,
-      calendarUseNativeTooltipsOnDenseDays: true,
-      calendarDenseTooltipThreshold: 6,
-    };
-  }
-
   const user = await getCurrentUser();
 
   if (!user) {
