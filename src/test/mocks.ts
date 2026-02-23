@@ -144,7 +144,11 @@ export function runInAuthContext<T>(user: MockAuthUser | null, fn: () => T): T {
     const previousGlobalUser = (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser;
     (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = user ?? null;
     const previousEnv = process.env.MOCK_AUTH_USER;
-    delete process.env.MOCK_AUTH_USER;
+    if (user) {
+        process.env.MOCK_AUTH_USER = JSON.stringify(user);
+    } else {
+        delete process.env.MOCK_AUTH_USER;
+    }
 
     try {
         const result = authStorage.run(user, fn);
@@ -184,7 +188,11 @@ export function setMockAuthUser(user: MockAuthUser | null) {
     mockState[GLOBAL_MOCK_USER_KEY] = user;
     authStorage.enterWith(user);
     (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = user ?? null;
-    delete process.env.MOCK_AUTH_USER;
+    if (user) {
+        process.env.MOCK_AUTH_USER = JSON.stringify(user);
+    } else {
+        delete process.env.MOCK_AUTH_USER;
+    }
 }
 
 export function clearMockAuthUser() {

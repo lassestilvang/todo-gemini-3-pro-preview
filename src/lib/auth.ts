@@ -175,7 +175,7 @@ async function getCurrentUserImpl(): Promise<AuthUser | null> {
   }
 
   if (isTestEnv) {
-    const mockUser = (globalThis as {
+    const globalUser = (globalThis as {
       __mockAuthUser?: {
         id: string;
         email: string;
@@ -184,6 +184,21 @@ async function getCurrentUserImpl(): Promise<AuthUser | null> {
         profilePictureUrl?: string | null;
       } | null;
     }).__mockAuthUser;
+
+    let mockUser = globalUser ?? null;
+    if (!mockUser && process.env.MOCK_AUTH_USER) {
+      try {
+        mockUser = JSON.parse(process.env.MOCK_AUTH_USER) as {
+          id: string;
+          email: string;
+          firstName?: string | null;
+          lastName?: string | null;
+          profilePictureUrl?: string | null;
+        };
+      } catch {
+        mockUser = null;
+      }
+    }
 
     if (mockUser) {
       return {
@@ -199,9 +214,7 @@ async function getCurrentUserImpl(): Promise<AuthUser | null> {
       };
     }
 
-    if (mockUser === null) {
-      return null;
-    }
+    return null;
   }
 
   const bypassUser = await getBypassUser();
