@@ -43,6 +43,9 @@ describe("Integration: Task Performance Optimization", () => {
         if (!isSuccess(tasksResult)) return;
 
         const tasks = tasksResult.data;
+        if (tasks.length !== 4) {
+            console.error(`Expected 4 tasks for ${testUserId}, got ${tasks.length}. Tasks:`, tasks);
+        }
         expect(tasks.length).toBe(4);
 
         // Verify Label 1 assignment
