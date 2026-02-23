@@ -198,20 +198,22 @@ export function getMockAuthUser(): MockAuthUser | null {
         return stateUser;
     }
     
-    // 3. Check environment variable (fallback)
+    // 3. Check env var (fallback)
     if (process.env.MOCK_AUTH_USER) {
         try {
             const envUser = JSON.parse(process.env.MOCK_AUTH_USER);
             // console.log(`[MOCK] Getting mock user (env): ${envUser.id}`);
             return envUser;
-        } catch {
-            return null;
+        } catch (e) {
+            console.error("[MOCK] Failed to parse MOCK_AUTH_USER", e);
         }
     }
-
-    // console.log("[MOCK] No mock user found");
+    
     return null;
 }
+
+// Expose getMockAuthUser globally to ensure single instance across dynamic imports
+(globalThis as any).__getMockAuthUser = getMockAuthUser;
 
 mock.module("@workos-inc/authkit-nextjs", () => ({
     withAuth: mock(async () => ({ user: getMockAuthUser() })),
