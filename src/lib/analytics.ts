@@ -7,9 +7,9 @@ import { subDays, format, startOfDay } from "date-fns";
 // ⚡ Bolt Opt: Faster date formatting for map keys to avoid date-fns overhead in loops
 function formatDateKey(date: Date) {
     const y = date.getFullYear();
-    const m = date.getMonth() + 1;
-    const d = date.getDate();
-    return `${y}-${m < 10 ? '0' : ''}${m}-${d < 10 ? '0' : ''}${d}`;
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
 }
 
 export async function getAnalytics(userId: string) {
