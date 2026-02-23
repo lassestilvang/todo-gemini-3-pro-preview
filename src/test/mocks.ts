@@ -5,6 +5,7 @@
  */
 import { afterEach, mock } from "bun:test";
 import React from "react";
+import { AsyncLocalStorage } from "node:async_hooks";
 
 // Ensure DB module initializes in test mode even if NODE_ENV isn't set.
 if (!process.env.NODE_ENV) {
@@ -124,8 +125,6 @@ export const mockDb: {
         where: (_condition: unknown) => Promise.resolve({ deleted: true }),
     }),
 };
-
-import { AsyncLocalStorage } from "node:async_hooks";
 
 // Storage for mock auth user to ensure thread-safety in parallel tests
 const authStorage = new AsyncLocalStorage<MockAuthUser | null>();
