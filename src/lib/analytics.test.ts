@@ -13,8 +13,8 @@ describe("Analytics", () => {
     });
 
     beforeEach(async () => {
-        const randomId = Math.random().toString(36).substring(7);
-        testUserId = `user_${randomId}`;
+        testUserCounter++;
+        testUserId = `user_analytics_${testUserCounter}`;
         await createTestUser(testUserId, `${testUserId}@example.com`);
         setMockAuthUser({ id: testUserId, email: `${testUserId}@example.com` });
     });
