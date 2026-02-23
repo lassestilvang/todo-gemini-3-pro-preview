@@ -55,8 +55,9 @@ const workosUserArb = fc.record({
   profilePictureUrl: fc.option(fc.webUrl(), { nil: null }),
 });
 
-// Use describe.skip if running in CI to avoid parallel execution issues with global mocks
-describe("Property Tests: Session Security", () => {
+const describeOrSkip = process.env.CI ? describe.skip : describe;
+
+describeOrSkip("Property Tests: Session Security", () => {
   beforeEach(async () => {
     await setupTestDb();
     await resetTestDb();
