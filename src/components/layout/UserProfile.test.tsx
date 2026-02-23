@@ -2,13 +2,15 @@ import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
 
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { UserProfile } from "./UserProfile";
 import { OnboardingProvider } from "@/components/providers/OnboardingProvider";
-import { signOut } from "@/lib/auth";
+import { UserProfile } from "./UserProfile";
 
 describe("UserProfile", () => {
+    const mockSignOut = mock(async () => {});
+
     beforeEach(() => {
-        (signOut as unknown as ReturnType<typeof mock>).mockClear();
+        (globalThis as { __mockSignOut?: () => Promise<void> | void }).__mockSignOut = mockSignOut;
+        mockSignOut.mockClear();
     });
 
     afterEach(() => {
@@ -135,7 +137,7 @@ describe("UserProfile", () => {
         await testUser.click(signOutItem);
 
         await waitFor(() => {
-            expect(signOut).toHaveBeenCalled();
+            expect(mockSignOut).toHaveBeenCalled();
         });
     });
 

@@ -5,7 +5,6 @@
  */
 import { mock } from "bun:test";
 import React from "react";
-import { ForbiddenError, UnauthorizedError } from "@/lib/auth-errors";
 
 // Ensure DB module initializes in test mode even if NODE_ENV isn't set.
 if (!process.env.NODE_ENV) {
@@ -42,84 +41,6 @@ mock.module("next/cache", () => ({
     unstable_cache: <T,>(fn: T) => fn,
 }));
 
-mock.module("@/lib/auth", () => ({
-    getCurrentUser: mock(async () => {
-        const user = getMockAuthUser();
-        if (!user) return null;
-        return {
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            avatarUrl: user.profilePictureUrl,
-            use24HourClock: false,
-            weekStartsOnMonday: false,
-            calendarUseNativeTooltipsOnDenseDays: true,
-            calendarDenseTooltipThreshold: 6,
-        };
-    }),
-    requireAuth: mock(async () => {
-        const user = getMockAuthUser();
-        if (!user) throw new UnauthorizedError();
-        return {
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            avatarUrl: user.profilePictureUrl,
-            use24HourClock: false,
-            weekStartsOnMonday: false,
-            calendarUseNativeTooltipsOnDenseDays: true,
-            calendarDenseTooltipThreshold: 6,
-        };
-    }),
-    requireUser: mock(async (userId: string) => {
-        const user = getMockAuthUser();
-        if (!user) throw new UnauthorizedError();
-        if (user.id !== userId) {
-            if (process.env.CI) {
-                console.error(`[requireUser Mock] Forbidden userId=${userId} mockUser=${user.id} env=${process.env.MOCK_AUTH_USER ?? "unset"}`);
-            }
-            const err = new ForbiddenError("Forbidden");
-            Object.defineProperty(err, 'name', { value: 'ForbiddenError', enumerable: true });
-            throw err;
-        }
-        return {
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            avatarUrl: user.profilePictureUrl,
-            use24HourClock: false,
-            weekStartsOnMonday: false,
-            calendarUseNativeTooltipsOnDenseDays: true,
-            calendarDenseTooltipThreshold: 6,
-        };
-    }),
-    requireResourceOwnership: mock(async (resourceUserId: string, authUserId: string) => {
-        if (resourceUserId !== authUserId) {
-            const err = new ForbiddenError("Forbidden");
-            Object.defineProperty(err, 'name', { value: 'ForbiddenError', enumerable: true });
-            throw err;
-        }
-    }),
-    signOut: mock(async () => { }),
-    syncUser: mock(async (workosUser: { id: string; email: string; firstName?: string | null; lastName?: string | null; profilePictureUrl?: string | null }) => ({
-        id: workosUser.id,
-        email: workosUser.email,
-        firstName: workosUser.firstName ?? null,
-        lastName: workosUser.lastName ?? null,
-        avatarUrl: workosUser.profilePictureUrl ?? null,
-        use24HourClock: false,
-        weekStartsOnMonday: false,
-        calendarUseNativeTooltipsOnDenseDays: true,
-        calendarDenseTooltipThreshold: 6,
-    })),
-    checkResourceOwnership: mock(async (resourceUserId: string | null | undefined, authenticatedUserId: string) => {
-        if (!resourceUserId) return false;
-        return resourceUserId === authenticatedUserId;
-    }),
-}));
 
 // Mock next/headers globally
 mock.module("next/headers", () => ({

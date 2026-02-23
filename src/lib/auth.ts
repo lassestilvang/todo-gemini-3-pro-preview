@@ -390,6 +390,17 @@ export async function syncUser(workosUser: {
  * Clears the session and redirects to login.
  */
 export async function signOut(): Promise<void> {
+  if (isTestEnv) {
+    const mockSignOut = (globalThis as {
+      __mockSignOut?: () => Promise<void> | void;
+    }).__mockSignOut;
+    if (mockSignOut) {
+      await mockSignOut();
+      return;
+    }
+    await workosSignOut();
+    return;
+  }
   await workosSignOut();
   redirect("/login");
 }

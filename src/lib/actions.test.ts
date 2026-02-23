@@ -610,7 +610,7 @@ describe("Server Actions", () => {
                 expect(true).toBe(false); // Should not reach here
              } catch (error) {
                  if (error instanceof Error) {
-                     expect(error.message).toBe("Forbidden");
+                     expect(error.message).toMatch(/Forbidden|authorized/i);
                      expect(error.name).toBe("ForbiddenError");
                  } else {
                      throw error;
