@@ -175,32 +175,17 @@ async function getCurrentUserImpl(): Promise<AuthUser | null> {
   }
 
   if (isTestEnv) {
-    const globalUser = (globalThis as {
-      __mockAuthUser?: {
+    if (!process.env.MOCK_AUTH_USER) {
+      return null;
+    }
+    try {
+      const mockUser = JSON.parse(process.env.MOCK_AUTH_USER) as {
         id: string;
         email: string;
         firstName?: string | null;
         lastName?: string | null;
         profilePictureUrl?: string | null;
-      } | null;
-    }).__mockAuthUser;
-
-    let mockUser = globalUser ?? null;
-    if (!mockUser && process.env.MOCK_AUTH_USER) {
-      try {
-        mockUser = JSON.parse(process.env.MOCK_AUTH_USER) as {
-          id: string;
-          email: string;
-          firstName?: string | null;
-          lastName?: string | null;
-          profilePictureUrl?: string | null;
-        };
-      } catch {
-        mockUser = null;
-      }
-    }
-
-    if (mockUser) {
+      };
       return {
         id: mockUser.id,
         email: mockUser.email,
@@ -212,9 +197,9 @@ async function getCurrentUserImpl(): Promise<AuthUser | null> {
         calendarUseNativeTooltipsOnDenseDays: true,
         calendarDenseTooltipThreshold: 6,
       };
+    } catch {
+      return null;
     }
-
-    return null;
   }
 
   const bypassUser = await getBypassUser();
