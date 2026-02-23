@@ -23,28 +23,11 @@ mock.module("@/components/ui/tooltip", () => ({
     TooltipProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
-mock.module("@/components/providers/sync-provider", () => ({
-    SyncProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-    useSync: () => ({
-        dispatch: mock((type: string, ...args: unknown[]) => {
-            if (type === 'createTask') {
-                return mockCreateTask(...args);
-            }
-            return Promise.resolve({ success: true, data: { id: 1 } });
-        }),
-        isOnline: true,
-        status: 'online',
-        pendingActions: [],
-        conflicts: [],
-        resolveConflict: mock(() => Promise.resolve()),
-    }),
-}));
-
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CreateTaskInput } from "./CreateTaskInput";
 import React from "react";
-import { SyncProvider } from "@/components/providers/sync-provider";
+import * as syncProvider from "@/components/providers/sync-provider";
 import { setMockAuthUser } from "@/test/mocks";
 
 describe("CreateTaskInput", () => {
@@ -55,6 +38,25 @@ describe("CreateTaskInput", () => {
         mockCreateTask.mockImplementation(() => Promise.resolve({ success: true, data: { id: 1 } }));
 
         consoleErrorSpy = spyOn(console, "error").mockImplementation(() => undefined);
+
+        spyOn(syncProvider, "useSync").mockReturnValue({
+            isOnline: true,
+            status: 'online',
+            pendingActions: [],
+            conflicts: [],
+            dispatch: mock((type: string, ...args: unknown[]) => {
+                if (type === 'createTask') {
+                    return mockCreateTask(...args);
+                }
+                return Promise.resolve({ success: true, data: { id: 1 } });
+            }),
+            resolveConflict: mock(() => Promise.resolve()),
+            retryAction: mock(() => Promise.resolve()),
+            dismissAction: mock(() => Promise.resolve()),
+            retryAllFailed: mock(() => Promise.resolve()),
+            dismissAllFailed: mock(() => Promise.resolve()),
+            syncNow: mock(() => { }),
+        });
 
         setMockAuthUser({
             id: "test_user_123",
@@ -84,6 +86,7 @@ describe("CreateTaskInput", () => {
 
     afterEach(() => {
         consoleErrorSpy.mockRestore();
+        mock.restore();
         cleanup();
     });
 

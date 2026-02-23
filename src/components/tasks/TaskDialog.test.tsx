@@ -73,6 +73,7 @@ describe("TaskDialog", () => {
     });
 
     afterEach(() => {
+        mock.restore();
         cleanup();
     });
 

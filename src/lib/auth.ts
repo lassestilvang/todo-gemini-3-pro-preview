@@ -179,6 +179,26 @@ async function getCurrentUserImpl(): Promise<AuthUser | null> {
 
   if (isTestEnv) {
     try {
+      // Try global first to avoid module instance issues in tests
+      if (typeof globalThis !== "undefined" && (globalThis as any).__getMockAuthUser) {
+        const mockUser = (globalThis as any).__getMockAuthUser();
+        console.log(`[AUTH] getCurrentUser (isTestEnv/global): mockUser=${mockUser?.id}`);
+        if (mockUser) {
+          return {
+            id: mockUser.id,
+            email: mockUser.email,
+            firstName: mockUser.firstName ?? null,
+            lastName: mockUser.lastName ?? null,
+            avatarUrl: mockUser.profilePictureUrl ?? null,
+            use24HourClock: false,
+            weekStartsOnMonday: false,
+            calendarUseNativeTooltipsOnDenseDays: true,
+            calendarDenseTooltipThreshold: 6,
+          };
+        }
+        return null;
+      }
+
       const { getMockAuthUser } = await import("@/test/mocks");
       const mockUser = getMockAuthUser();
       

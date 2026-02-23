@@ -3,12 +3,17 @@ import { expect, afterEach, mock, beforeEach } from "bun:test";
 import * as matchers from "@testing-library/jest-dom/matchers";
 import { db, sqliteConnection } from "@/db";
 import { labels, lists, tasks, timeEntries, templates, userStats, achievements, userAchievements, viewSettings, savedViews, rateLimits, taskDependencies, taskLabels, reminders, habitCompletions, taskLogs, customIcons, externalIntegrations, externalSyncState, externalEntityMap, externalSyncConflicts } from "@/db";
-import { resetMockAuthUser } from "./mocks";
+import { resetMockAuthUser, getMockAuthUser } from "./mocks";
 import { mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import React from "react";
 import { cleanup } from "@testing-library/react";
+
+
+// Expose getMockAuthUser globally for src/lib/auth.ts to use without importing
+// This avoids module instance mismatch issues in Bun test runner
+(globalThis as any).__getMockAuthUser = getMockAuthUser;
 
 
 
