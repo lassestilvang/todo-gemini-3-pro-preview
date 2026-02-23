@@ -30,6 +30,7 @@ import { requireUser } from "@/lib/auth";
  * @throws {ValidationError} When task tries to block itself or circular dependency detected
  */
 async function addDependencyImpl(userId: string, taskId: number, blockerId: number) {
+  console.log(`[ACTION] addDependencyImpl: userId=${userId}, taskId=${taskId}, blockerId=${blockerId}`);
   await requireUser(userId);
 
   if (taskId === blockerId) {

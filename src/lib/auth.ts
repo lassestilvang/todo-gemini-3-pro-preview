@@ -195,6 +195,8 @@ async function getCurrentUserImpl(): Promise<AuthUser | null> {
       }
     })() : null;
     const mockUser = contextUser ?? envUser;
+    
+    console.log(`[AUTH] getCurrentUser (isTestEnv): contextUser=${contextUser?.id}, envUser=${envUser?.id}, final=${mockUser?.id}`);
 
     if (!mockUser) {
       return null;
@@ -404,12 +406,14 @@ export async function requireResourceOwnership(
  */
 export async function requireUser(userId: string): Promise<AuthUser> {
   const user = await getCurrentUser();
+  console.log(`[AUTH] requireUser: current=${user?.id}, required=${userId}`);
 
   if (!user) {
     throw new UnauthorizedError();
   }
 
   if (user.id !== userId) {
+    console.log(`[AUTH] requireUser: FORBIDDEN! current=${user.id} !== required=${userId}`);
     throw new ForbiddenError("You are not authorized to access this user's data");
   }
 

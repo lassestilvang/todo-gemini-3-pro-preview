@@ -130,6 +130,7 @@ export const mockDb: {
  * });
  */
 export function setMockAuthUser(user: MockAuthUser) {
+    console.log(`[MOCK] Setting mock user: ${user.id}`);
     mockState[GLOBAL_MOCK_USER_KEY] = user;
     // Also set on globalThis for direct access if needed
     (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = user;
@@ -142,6 +143,7 @@ export function setMockAuthUser(user: MockAuthUser) {
  * getCurrentUser() will return null (unauthenticated).
  */
 export function clearMockAuthUser() {
+    console.log("[MOCK] Clearing mock user");
     mockState[GLOBAL_MOCK_USER_KEY] = null;
     (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = null;
     delete process.env.MOCK_AUTH_USER;
@@ -163,24 +165,29 @@ export function getMockAuthUser(): MockAuthUser | null {
     // 1. Check globalThis (primary source)
     const globalUser = (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser;
     if (globalUser !== undefined && globalUser !== null) {
+        // console.log(`[MOCK] Getting mock user (global): ${globalUser.id}`);
         return globalUser;
     }
     
     // 2. Check mockState (secondary source)
     const stateUser = mockState[GLOBAL_MOCK_USER_KEY];
     if (stateUser !== undefined && stateUser !== null) {
+        // console.log(`[MOCK] Getting mock user (state): ${stateUser.id}`);
         return stateUser;
     }
     
     // 3. Check environment variable (fallback)
     if (process.env.MOCK_AUTH_USER) {
         try {
-            return JSON.parse(process.env.MOCK_AUTH_USER);
+            const envUser = JSON.parse(process.env.MOCK_AUTH_USER);
+            // console.log(`[MOCK] Getting mock user (env): ${envUser.id}`);
+            return envUser;
         } catch {
             return null;
         }
     }
 
+    // console.log("[MOCK] No mock user found");
     return null;
 }
 

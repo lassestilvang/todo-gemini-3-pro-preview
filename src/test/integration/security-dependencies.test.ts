@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser, clearMockAuthUser } from "@/test/mocks";
+import { getCurrentUser } from "@/lib/auth";
 import { addDependency, removeDependency } from "@/lib/actions/dependencies";
 import { createReminder, deleteReminder } from "@/lib/actions/reminders";
 import { isFailure } from "@/lib/action-result";
@@ -49,9 +50,18 @@ describe("Integration: Security Dependencies & Reminders", () => {
 
     it("should fail when adding dependency for another user (Impersonation)", async () => {
         setMockAuthUser(attacker);
+        const currentUser = await getCurrentUser();
+        console.log(`[TEST] Current user before action: ${currentUser?.id}`);
+        console.log(`[TEST] Calling addDependency(${victimId}, ${task1Id}, ${task2Id})`);
+        
         try {
             // Attacker tries to use victimId as the first argument
             const result = await addDependency(victimId, task1Id, task2Id);
+
+            console.log(`[TEST] Result success: ${result.success}`);
+            if (!result.success) {
+                console.log(`[TEST] Result error code: ${result.error.code}`);
+            }
 
             // Should be forbidden because auth user (attacker) != userId arg (victim)
             expect(isFailure(result)).toBe(true);
