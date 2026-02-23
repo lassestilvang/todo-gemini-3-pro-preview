@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from "bun:test";
 import { act, cleanup, render, waitFor } from "@testing-library/react";
 import { DATA_REFRESH_EVENT } from "@/lib/sync/events";
 
@@ -25,6 +25,10 @@ const mockGetLabels = mock(async () => [
 const mockIsDataStale = mock(async () => false);
 const mockSetAllLastFetched = mock(async () => {});
 
+import * as taskActions from "@/lib/actions/tasks";
+import * as listActions from "@/lib/actions/lists";
+import * as labelActions from "@/lib/actions/labels";
+
 mock.module("@/lib/store/task-store", () => ({
     useTaskStore: () => ({
         initialize: mockInitializeTasks,
@@ -47,18 +51,6 @@ mock.module("@/lib/store/label-store", () => ({
         replaceLabels: mockReplaceLabels,
         setLabels: mockSetLabels,
     }),
-}));
-
-mock.module("@/lib/actions/tasks", () => ({
-    getTasks: mockGetTasks,
-}));
-
-mock.module("@/lib/actions/lists", () => ({
-    getLists: mockGetLists,
-}));
-
-mock.module("@/lib/actions/labels", () => ({
-    getLabels: mockGetLabels,
 }));
 
 mock.module("@/lib/sync/db", () => ({
@@ -84,10 +76,15 @@ describe("DataLoader", () => {
         mockGetLabels.mockClear();
         mockIsDataStale.mockClear();
         mockSetAllLastFetched.mockClear();
+
+        spyOn(taskActions, "getTasks").mockImplementation(mockGetTasks);
+        spyOn(listActions, "getLists").mockImplementation(mockGetLists);
+        spyOn(labelActions, "getLabels").mockImplementation(mockGetLabels);
     });
 
     afterEach(() => {
         cleanup();
+        mock.restore();
     });
 
     it("uses full replacement methods after initial fetch", async () => {

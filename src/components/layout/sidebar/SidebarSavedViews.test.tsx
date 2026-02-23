@@ -1,5 +1,5 @@
 
-import { describe, it, expect, mock, afterEach, beforeAll } from "bun:test";
+import { describe, it, expect, mock, afterEach, beforeAll, beforeEach, spyOn } from "bun:test";
 import { render, screen, cleanup } from "@testing-library/react";
 import React from "react";
 
@@ -39,19 +39,22 @@ mock.module("@tanstack/react-query", () => ({
     }),
 }));
 
-// Mock actions
-mock.module("@/lib/actions", () => ({
-    getSavedViews: () => Promise.resolve([]),
-    deleteSavedView: () => Promise.resolve({ success: true }),
-}));
+// Mock actions using spyOn instead of mock.module to prevent leakage
+import * as actions from "@/lib/actions";
 
 describe("SidebarSavedViews", () => {
     beforeAll(async () => {
         ({ SidebarSavedViews } = await import("./SidebarSavedViews"));
     });
 
+    beforeEach(() => {
+        spyOn(actions, "getSavedViews").mockResolvedValue([]);
+        spyOn(actions, "deleteSavedView").mockResolvedValue({ success: true });
+    });
+
     afterEach(() => {
         cleanup();
+        mock.restore();
     });
 
     it("should render saved views", () => {
