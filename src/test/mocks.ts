@@ -5,10 +5,23 @@
  */
 import { afterEach, mock } from "bun:test";
 import React from "react";
+import { AsyncLocalStorage } from "async_hooks";
 
 // Ensure DB module initializes in test mode even if NODE_ENV isn't set.
 if (!process.env.NODE_ENV) {
     (process.env as Record<string, string | undefined>).NODE_ENV = "test";
+}
+
+// Create AsyncLocalStorage for isolated test auth context
+export const authStorage = new AsyncLocalStorage<MockAuthUser | null>();
+
+/**
+ * Runs a callback within an isolated auth context.
+ * Use this to ensure tests running in parallel don't interfere with each other's auth state.
+ */
+export function runInAuthContext<T>(user: MockAuthUser | null, callback: () => T): T {
+    // console.log(`[MOCK] Running in auth context: ${user?.id ?? "null"}`);
+    return authStorage.run(user, callback);
 }
 
 // Mock react cache to prevent state leakage across tests in the same worker
@@ -163,6 +176,13 @@ export function resetMockAuthUser() {
  * Used by @/lib/auth to retrieve the mocked identity.
  */
 export function getMockAuthUser(): MockAuthUser | null {
+    // 0. Check AsyncLocalStorage (highest priority, isolated)
+    const storageUser = authStorage.getStore();
+    if (storageUser !== undefined) {
+        console.log(`[MOCK] Getting mock user (storage): ${storageUser?.id}`);
+        return storageUser;
+    }
+
     // 1. Check globalThis (primary source)
     const globalUser = (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser;
     console.log(`[MOCK] Getting mock user. Global: ${globalUser?.id}, State: ${mockState[GLOBAL_MOCK_USER_KEY]?.id}, Env: ${!!process.env.MOCK_AUTH_USER}`);

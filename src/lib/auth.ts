@@ -178,82 +178,31 @@ async function getCurrentUserImpl(): Promise<AuthUser | null> {
   }
 
   if (isTestEnv) {
-    // 1. Try globalThis directly (fastest, most reliable in same-process tests)
-    const globalUser = (globalThis as any).__mockAuthUser;
-    console.log(`[AUTH] getCurrentUser: Test mode. Global: ${globalUser?.id}, Env: ${!!process.env.MOCK_AUTH_USER}`);
-    
-    if (globalUser) {
+    try {
+      const { getMockAuthUser } = await import("@/test/mocks");
+      const mockUser = getMockAuthUser();
+      
+      console.log(`[AUTH] getCurrentUser (isTestEnv): mockUser=${mockUser?.id}`);
+
+      if (!mockUser) {
+        return null;
+      }
+
       return {
-        id: globalUser.id,
-        email: globalUser.email,
-        firstName: globalUser.firstName ?? null,
-        lastName: globalUser.lastName ?? null,
-        avatarUrl: globalUser.profilePictureUrl ?? null,
+        id: mockUser.id,
+        email: mockUser.email,
+        firstName: mockUser.firstName ?? null,
+        lastName: mockUser.lastName ?? null,
+        avatarUrl: mockUser.profilePictureUrl ?? null,
         use24HourClock: false,
         weekStartsOnMonday: false,
         calendarUseNativeTooltipsOnDenseDays: true,
         calendarDenseTooltipThreshold: 6,
       };
-    }
-
-    // Fallback: Check environment variable directly if global isn't set
-    if (process.env.MOCK_AUTH_USER) {
-      try {
-        const envUser = JSON.parse(process.env.MOCK_AUTH_USER);
-        console.log(`[AUTH] getCurrentUser: Using Env fallback: ${envUser.id}`);
-        return {
-          id: envUser.id,
-          email: envUser.email,
-          firstName: envUser.firstName ?? null,
-          lastName: envUser.lastName ?? null,
-          avatarUrl: envUser.profilePictureUrl ?? null,
-          use24HourClock: false,
-          weekStartsOnMonday: false,
-          calendarUseNativeTooltipsOnDenseDays: true,
-          calendarDenseTooltipThreshold: 6,
-        };
-      } catch (e) {
-        console.error(`[AUTH] getCurrentUser: Failed to parse MOCK_AUTH_USER: ${process.env.MOCK_AUTH_USER}`, e);
-      }
-    } else {
-        console.warn(`[AUTH] getCurrentUser: No global user and no MOCK_AUTH_USER env var found.`);
-    }
-
-    const { getMockAuthUser } = await import("@/test/mocks");
-    const contextUser = getMockAuthUser();
-    const envMock = process.env.MOCK_AUTH_USER;
-    const envUser = envMock ? (() => {
-      try {
-        return JSON.parse(envMock) as {
-          id: string;
-          email: string;
-          firstName?: string | null;
-          lastName?: string | null;
-          profilePictureUrl?: string | null;
-        };
-      } catch {
-        return null;
-      }
-    })() : null;
-    const mockUser = contextUser ?? envUser;
-    
-    console.log(`[AUTH] getCurrentUser (isTestEnv): contextUser=${contextUser?.id}, envUser=${envUser?.id}, final=${mockUser?.id}`);
-
-    if (!mockUser) {
+    } catch (e) {
+      console.error("[AUTH] Failed to load mock auth user:", e);
       return null;
     }
-
-    return {
-      id: mockUser.id,
-      email: mockUser.email,
-      firstName: mockUser.firstName ?? null,
-      lastName: mockUser.lastName ?? null,
-      avatarUrl: mockUser.profilePictureUrl ?? null,
-      use24HourClock: false,
-      weekStartsOnMonday: false,
-      calendarUseNativeTooltipsOnDenseDays: true,
-      calendarDenseTooltipThreshold: 6,
-    };
   }
 
   const bypassUser = await getBypassUser();
