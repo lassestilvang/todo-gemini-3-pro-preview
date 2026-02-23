@@ -4,6 +4,14 @@ import { db, tasks, timeEntries } from "@/db";
 import { eq, and, gte, desc } from "drizzle-orm";
 import { subDays, format, startOfDay } from "date-fns";
 
+// ⚡ Bolt Opt: Faster date formatting for map keys to avoid date-fns overhead in loops
+function formatDateKey(date: Date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
 export async function getAnalytics(userId: string) {
     // Validate userId before querying the database
     if (typeof userId !== "string" || userId.trim().length === 0) {
@@ -129,21 +137,24 @@ export async function getAnalytics(userId: string) {
         }
 
         // Date-based aggregations (only for last 90 days to cover heatmap + 30-day chart)
-        const createdAt = new Date(t.createdAt);
+        // ⚡ Bolt Opt: Avoid new Date() wrapper as Drizzle returns Date objects
+        const createdAt = t.createdAt;
         if (createdAt.getTime() >= ninetyDaysAgoTime) {
-            const dateKey = format(createdAt, "yyyy-MM-dd");
+            // ⚡ Bolt Opt: Use manual formatting instead of date-fns format() inside loop
+            const dateKey = formatDateKey(createdAt);
             createdByDate.set(dateKey, (createdByDate.get(dateKey) || 0) + 1);
         }
 
         if (t.isCompleted && t.completedAt) {
-            const completedAt = new Date(t.completedAt);
+            // ⚡ Bolt Opt: Avoid new Date() wrapper as Drizzle returns Date objects
+            const completedAt = t.completedAt;
             
             // Productivity by day of week (all completed tasks)
             productivityByDay[completedAt.getDay()]++;
             
             // Heatmap & chart data (last 90 days only)
             if (completedAt.getTime() >= ninetyDaysAgoTime) {
-                const dateKey = format(completedAt, "yyyy-MM-dd");
+                const dateKey = formatDateKey(completedAt);
                 completedByDate.set(dateKey, (completedByDate.get(dateKey) || 0) + 1);
             }
         }
@@ -157,7 +168,7 @@ export async function getAnalytics(userId: string) {
     const tasksOverTime: { date: string; created: number; completed: number }[] = [];
     for (let i = 29; i >= 0; i--) {
         const day = subDays(now, i);
-        const dateKey = format(day, "yyyy-MM-dd");
+        const dateKey = formatDateKey(day);
         tasksOverTime.push({
             date: format(day, "MMM d"),
             created: createdByDate.get(dateKey) || 0,
@@ -169,7 +180,7 @@ export async function getAnalytics(userId: string) {
     const heatmapData: { date: string; count: number; level: number }[] = [];
     for (let i = 89; i >= 0; i--) {
         const day = subDays(now, i);
-        const dateKey = format(day, "yyyy-MM-dd");
+        const dateKey = formatDateKey(day);
         const count = completedByDate.get(dateKey) || 0;
         
         // Level 0-4 based on count
@@ -217,7 +228,8 @@ export async function getAnalytics(userId: string) {
         for (const entry of allTimeEntries) {
             const duration = entry.durationMinutes || 0;
             totalTrackedMinutes += duration;
-            const dateKey = format(new Date(entry.startedAt), "yyyy-MM-dd");
+            // ⚡ Bolt Opt: Avoid new Date() wrapper and use manual formatting
+            const dateKey = formatDateKey(entry.startedAt);
             minutesByDate.set(dateKey, (minutesByDate.get(dateKey) || 0) + duration);
         }
         
@@ -232,7 +244,7 @@ export async function getAnalytics(userId: string) {
         const dailyTracked: { date: string; minutes: number; formatted: string }[] = [];
         for (let i = 6; i >= 0; i--) {
             const day = subDays(now, i);
-            const dateKey = format(day, "yyyy-MM-dd");
+            const dateKey = formatDateKey(day);
             const minutes = minutesByDate.get(dateKey) || 0;
 
             const hours = Math.floor(minutes / 60);
