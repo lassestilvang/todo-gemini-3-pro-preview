@@ -15,9 +15,9 @@ describe("Integration: Security Subtask IDOR", () => {
 
     beforeEach(async () => {
         await resetTestDb();
-        // Create users
-        const victim = await createTestUser("victim", "victim@target.com");
-        const attacker = await createTestUser("attacker", "attacker@evil.com");
+        // Create users with unique IDs to prevent collisions
+        const victim = await createTestUser(`victim-${crypto.randomUUID()}`, "victim@target.com");
+        const attacker = await createTestUser(`attacker-${crypto.randomUUID()}`, "attacker@evil.com");
         victimId = victim.id;
         attackerId = attacker.id;
 
