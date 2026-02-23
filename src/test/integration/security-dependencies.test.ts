@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
-import { setMockAuthUser, clearMockAuthUser, runInAuthContext } from "@/test/mocks";
+import { runInAuthContext } from "@/test/mocks";
 import { getCurrentUser } from "@/lib/auth";
 import { addDependency, removeDependency } from "@/lib/actions/dependencies";
 import { createReminder, deleteReminder } from "@/lib/actions/reminders";
@@ -57,9 +57,15 @@ describe("Integration: Security Dependencies & Reminders", () => {
             // Attacker tries to use victimId as the first argument
             const result = await addDependency(victimId, task1Id, task2Id);
 
-            console.log(`[TEST] Result success: ${result.success}`);
+            console.log(`[TEST] Result:`, JSON.stringify(result));
+            console.log(`[TEST] Result success: ${result?.success}`);
+            
+            if (!result || typeof result.success === 'undefined') {
+                console.error("[TEST] FATAL: Result or result.success is undefined!");
+            }
+
             if (!result.success) {
-                console.log(`[TEST] Result error code: ${result.error.code}`);
+                console.log(`[TEST] Result error code: ${result.error?.code}`);
             }
 
             // Should be forbidden because auth user (attacker) != userId arg (victim)
