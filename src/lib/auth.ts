@@ -33,6 +33,18 @@ export interface AuthUser {
 }
 
 function getTestMockUser() {
+  const globalUser = (globalThis as {
+    __mockAuthUser?: {
+      id: string;
+      email: string;
+      firstName?: string | null;
+      lastName?: string | null;
+      profilePictureUrl?: string | null;
+    } | null;
+  }).__mockAuthUser;
+  if (globalUser) {
+    return globalUser;
+  }
   if (process.env.MOCK_AUTH_USER) {
     try {
       const parsed = JSON.parse(process.env.MOCK_AUTH_USER) as
@@ -49,15 +61,7 @@ function getTestMockUser() {
       return null;
     }
   }
-  return (globalThis as {
-    __mockAuthUser?: {
-      id: string;
-      email: string;
-      firstName?: string | null;
-      lastName?: string | null;
-      profilePictureUrl?: string | null;
-    } | null;
-  }).__mockAuthUser;
+  return null;
 }
 
 const isTestEnv = process.env.NODE_ENV === "test" || process.env.CI === "true";
