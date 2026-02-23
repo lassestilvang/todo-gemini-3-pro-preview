@@ -32,7 +32,10 @@ export interface AuthUser {
   calendarDenseTooltipThreshold: number | null;
 }
 
-const isTestEnv = process.env.NODE_ENV === "test" || process.env.CI === "true";
+const isTestEnv =
+  process.env.NODE_ENV === "test" ||
+  process.env.CI === "true" ||
+  process.env.CI === "1";
 
 /**
  * Get test user from test session cookie (E2E test mode only).
@@ -175,31 +178,43 @@ async function getCurrentUserImpl(): Promise<AuthUser | null> {
   }
 
   if (isTestEnv) {
-    if (!process.env.MOCK_AUTH_USER) {
+    const globalMock = (globalThis as { __mockAuthUser?: {
+      id: string;
+      email: string;
+      firstName?: string | null;
+      lastName?: string | null;
+      profilePictureUrl?: string | null;
+    } | null }).__mockAuthUser;
+    const envMock = process.env.MOCK_AUTH_USER;
+    const mockUser = globalMock ?? (envMock ? (() => {
+      try {
+        return JSON.parse(envMock) as {
+          id: string;
+          email: string;
+          firstName?: string | null;
+          lastName?: string | null;
+          profilePictureUrl?: string | null;
+        };
+      } catch {
+        return null;
+      }
+    })() : null);
+
+    if (!mockUser) {
       return null;
     }
-    try {
-      const mockUser = JSON.parse(process.env.MOCK_AUTH_USER) as {
-        id: string;
-        email: string;
-        firstName?: string | null;
-        lastName?: string | null;
-        profilePictureUrl?: string | null;
-      };
-      return {
-        id: mockUser.id,
-        email: mockUser.email,
-        firstName: mockUser.firstName ?? null,
-        lastName: mockUser.lastName ?? null,
-        avatarUrl: mockUser.profilePictureUrl ?? null,
-        use24HourClock: false,
-        weekStartsOnMonday: false,
-        calendarUseNativeTooltipsOnDenseDays: true,
-        calendarDenseTooltipThreshold: 6,
-      };
-    } catch {
-      return null;
-    }
+
+    return {
+      id: mockUser.id,
+      email: mockUser.email,
+      firstName: mockUser.firstName ?? null,
+      lastName: mockUser.lastName ?? null,
+      avatarUrl: mockUser.profilePictureUrl ?? null,
+      use24HourClock: false,
+      weekStartsOnMonday: false,
+      calendarUseNativeTooltipsOnDenseDays: true,
+      calendarDenseTooltipThreshold: 6,
+    };
   }
 
   const bypassUser = await getBypassUser();
