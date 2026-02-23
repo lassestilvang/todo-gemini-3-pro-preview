@@ -3,7 +3,7 @@
  * This file is preloaded before setup.ts to ensure mocks are in place
  * before any modules that depend on them are loaded.
  */
-import { mock } from "bun:test";
+import { afterEach, mock } from "bun:test";
 import React from "react";
 
 // Ensure DB module initializes in test mode even if NODE_ENV isn't set.
@@ -144,11 +144,7 @@ export function runInAuthContext<T>(user: MockAuthUser | null, fn: () => T): T {
     const previousGlobalUser = (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser;
     (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = user ?? null;
     const previousEnv = process.env.MOCK_AUTH_USER;
-    if (user) {
-        process.env.MOCK_AUTH_USER = JSON.stringify(user);
-    } else {
-        delete process.env.MOCK_AUTH_USER;
-    }
+    delete process.env.MOCK_AUTH_USER;
 
     try {
         const result = authStorage.run(user, fn);
@@ -188,11 +184,7 @@ export function setMockAuthUser(user: MockAuthUser | null) {
     mockState[GLOBAL_MOCK_USER_KEY] = user;
     authStorage.enterWith(user);
     (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = user ?? null;
-    if (user) {
-        process.env.MOCK_AUTH_USER = JSON.stringify(user);
-    } else {
-        delete process.env.MOCK_AUTH_USER;
-    }
+    delete process.env.MOCK_AUTH_USER;
 }
 
 export function clearMockAuthUser() {
@@ -237,3 +229,7 @@ mock.module("@workos-inc/authkit-nextjs", () => ({
 export function resetAllMocks() {
     clearMockAuthUser();
 }
+
+afterEach(() => {
+    resetMockAuthUser();
+});
