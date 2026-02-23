@@ -2,7 +2,7 @@ import { describe, expect, it, beforeAll, mock, beforeEach } from "bun:test";
 import { and, eq } from "drizzle-orm";
 import { setupTestDb, createTestUser } from "@/test/setup";
 import { db, externalIntegrations, tasks } from "@/db";
-import { setMockAuthUser, runInAuthContext } from "@/test/mocks";
+import { setMockAuthUser } from "@/test/mocks";
 import {
     createTask, getTasks, updateTask, deleteTask, getTask, createReminder, getReminders, getTaskLogs,
     createList, getLists, updateList, deleteList, getList,
@@ -456,11 +456,9 @@ describe("Server Actions", () => {
             }).returning();
 
             // Run in auth context of the test user to ensure isolation
-            await runInAuthContext(testUser, async () => {
-                // Try to get blockers for otherTask
-                const blockers = await getBlockers(testUserId, otherTask.id);
-                expect(blockers).toHaveLength(0);
-            });
+            // Try to get blockers for otherTask
+            const blockers = await getBlockers(testUserId, otherTask.id);
+            expect(blockers).toHaveLength(0);
         });
     });
 

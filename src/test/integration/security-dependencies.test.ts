@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
-import { runInAuthContext } from "@/test/mocks";
+import { setMockAuthUser, clearMockAuthUser } from "@/test/mocks";
 import { addDependency, removeDependency } from "@/lib/actions/dependencies";
 import { createReminder, deleteReminder } from "@/lib/actions/reminders";
 import { isFailure } from "@/lib/action-result";
@@ -48,7 +48,8 @@ describe("Integration: Security Dependencies & Reminders", () => {
     });
 
     it("should fail when adding dependency for another user (Impersonation)", async () => {
-        await runInAuthContext(attacker, async () => {
+        setMockAuthUser(attacker);
+        try {
             // Attacker tries to use victimId as the first argument
             const result = await addDependency(victimId, task1Id, task2Id);
 
@@ -57,22 +58,28 @@ describe("Integration: Security Dependencies & Reminders", () => {
             if (isFailure(result)) {
                 expect(result.error.code).toBe("FORBIDDEN");
             }
-        });
+        } finally {
+            clearMockAuthUser();
+        }
     });
 
     it("should fail when removing dependency for another user (Impersonation)", async () => {
-        await runInAuthContext(attacker, async () => {
+        setMockAuthUser(attacker);
+        try {
             const result = await removeDependency(victimId, task1Id, task2Id);
 
             expect(isFailure(result)).toBe(true);
             if (isFailure(result)) {
                 expect(result.error.code).toBe("FORBIDDEN");
             }
-        });
+        } finally {
+            clearMockAuthUser();
+        }
     });
 
     it("should fail when attacker tries to add dependency between victim's tasks (IDOR)", async () => {
-        await runInAuthContext(attacker, async () => {
+        setMockAuthUser(attacker);
+        try {
             // Attacker uses THEIR own ID (so requireUser passes), but tries to link victim's tasks
             const result = await addDependency(attackerId, task1Id, task2Id);
 
@@ -90,16 +97,20 @@ describe("Integration: Security Dependencies & Reminders", () => {
                 ));
 
             expect(dep.length).toBe(0);
-        });
+        } finally {
+            clearMockAuthUser();
+        }
     });
 
     it("should fail when attacker tries to block their task with victim's task (IDOR)", async () => {
-        await runInAuthContext(attacker, async () => {
+        setMockAuthUser(attacker);
+        try {
             // Create attacker's task
             const [at1] = await db.insert(tasks).values({
                 userId: attackerId,
                 title: "Attacker Task 1",
-                position: 0
+                position: 0,
+                listId: null
             }).returning();
 
             const result = await addDependency(attackerId, at1.id, task1Id);
@@ -116,7 +127,9 @@ describe("Integration: Security Dependencies & Reminders", () => {
                 ));
 
             expect(dep.length).toBe(0);
-        });
+        } finally {
+            clearMockAuthUser();
+        }
     });
 
     it("should fail when attacker tries to remove dependency between victim's tasks (IDOR)", async () => {
@@ -126,7 +139,8 @@ describe("Integration: Security Dependencies & Reminders", () => {
             blockerId: task2Id
         });
 
-        await runInAuthContext(attacker, async () => {
+        setMockAuthUser(attacker);
+        try {
             const result = await removeDependency(attackerId, task1Id, task2Id);
 
             expect(isFailure(result)).toBe(true);
@@ -142,42 +156,50 @@ describe("Integration: Security Dependencies & Reminders", () => {
                 ));
 
             expect(dep.length).toBe(1);
-        });
+        } finally {
+            clearMockAuthUser();
+        }
     });
 
     // Reminders tests
     it("should fail when creating reminder for another user (Impersonation)", async () => {
-        await runInAuthContext(attacker, async () => {
+        setMockAuthUser(attacker);
+        try {
             const result = await createReminder(victimId, task1Id, new Date());
 
             expect(isFailure(result)).toBe(true);
             if (isFailure(result)) {
                 expect(result.error.code).toBe("FORBIDDEN");
             }
-        });
+        } finally {
+            clearMockAuthUser();
+        }
     });
 
     it("should fail when deleting reminder for another user (Impersonation)", async () => {
         // Create a reminder first (as victim)
-        // We can do this directly in DB or use runInAuthContext(victim)
         const [r1] = await db.insert(reminders).values({
             taskId: task1Id,
             remindAt: new Date()
         }).returning();
 
         // Switch back to attacker
-        await runInAuthContext(attacker, async () => {
+        setMockAuthUser(attacker);
+        try {
             const result = await deleteReminder(victimId, r1.id);
 
             expect(isFailure(result)).toBe(true);
             if (isFailure(result)) {
                 expect(result.error.code).toBe("FORBIDDEN");
             }
-        });
+        } finally {
+            clearMockAuthUser();
+        }
     });
 
     it("should fail when creating reminder for another user's task (IDOR)", async () => {
-        await runInAuthContext(attacker, async () => {
+        setMockAuthUser(attacker);
+        try {
             // Attacker uses THEIR own ID but tries to add reminder to victim's task
             const result = await createReminder(attackerId, task1Id, new Date());
 
@@ -189,7 +211,9 @@ describe("Integration: Security Dependencies & Reminders", () => {
             // Verify reminder was NOT created
             const rem = await db.select().from(reminders).where(eq(reminders.taskId, task1Id));
             expect(rem.length).toBe(0);
-        });
+        } finally {
+            clearMockAuthUser();
+        }
     });
 
     it("should fail when deleting another user's reminder (IDOR)", async () => {
@@ -200,7 +224,8 @@ describe("Integration: Security Dependencies & Reminders", () => {
         }).returning();
 
         // Attacker uses THEIR own ID but tries to delete victim's reminder
-        await runInAuthContext(attacker, async () => {
+        setMockAuthUser(attacker);
+        try {
             const result = await deleteReminder(attackerId, r1.id);
 
             expect(isFailure(result)).toBe(true);
@@ -211,6 +236,8 @@ describe("Integration: Security Dependencies & Reminders", () => {
             // Verify reminder STILL exists
             const rem = await db.select().from(reminders).where(eq(reminders.id, r1.id));
             expect(rem.length).toBe(1);
-        });
+        } finally {
+            clearMockAuthUser();
+        }
     });
 });
