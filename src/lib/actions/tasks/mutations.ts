@@ -607,6 +607,10 @@ async function reorderTasksImpl(userId: string, items: { id: number; position: n
     return;
   }
 
+  if (items.length > 1000) {
+    throw new ValidationError("Too many tasks to reorder at once. Limit is 1000.");
+  }
+
   const taskIds = items.map((i) => i.id);
   const caseWhen = sql.join(
     items.map((item) => sql`WHEN ${tasks.id} = ${item.id} THEN ${item.position}`),
