@@ -179,8 +179,9 @@ async function getCurrentUserImpl(): Promise<AuthUser | null> {
 
   if (isTestEnv) {
     // 1. Try globalThis directly (fastest, most reliable in same-process tests)
-    // This avoids dynamic import overhead and potential module isolation issues
     const globalUser = (globalThis as any).__mockAuthUser;
+    console.log(`[AUTH] getCurrentUser: Test mode. Global: ${globalUser?.id}, Env: ${!!process.env.MOCK_AUTH_USER}`);
+    
     if (globalUser) {
       return {
         id: globalUser.id,
@@ -426,7 +427,8 @@ export async function requireUser(userId: string): Promise<AuthUser> {
   console.log(`[AUTH] requireUser: current=${user?.id}, required=${userId}`);
 
   if (!user) {
-    throw new UnauthorizedError();
+    console.error(`[AUTH] requireUser: Access denied. No user found. Test env: ${isTestEnv}, Global Mock: ${!!(globalThis as any).__mockAuthUser}`);
+    throw new UnauthorizedError("You must be logged in to access this resource");
   }
 
   if (user.id !== userId) {

@@ -130,12 +130,13 @@ export const mockDb: {
  * });
  */
 export function setMockAuthUser(user: MockAuthUser) {
-    console.log(`[MOCK] Setting mock user: ${user.id}`);
+    console.log(`[MOCK] Setting mock user: ${user.id} (Global: ${!!(globalThis as any).__mockAuthUser}, Env: ${!!process.env.MOCK_AUTH_USER})`);
     mockState[GLOBAL_MOCK_USER_KEY] = user;
     // Also set on globalThis for direct access if needed
     (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = user;
     // Set env var as fallback/compatibility
     process.env.MOCK_AUTH_USER = JSON.stringify(user);
+    console.log(`[MOCK] Set complete. Global matches: ${(globalThis as any).__mockAuthUser?.id === user.id}`);
 }
 
 /**
@@ -164,6 +165,7 @@ export function resetMockAuthUser() {
 export function getMockAuthUser(): MockAuthUser | null {
     // 1. Check globalThis (primary source)
     const globalUser = (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser;
+    console.log(`[MOCK] Getting mock user. Global: ${globalUser?.id}, State: ${mockState[GLOBAL_MOCK_USER_KEY]?.id}, Env: ${!!process.env.MOCK_AUTH_USER}`);
     if (globalUser !== undefined && globalUser !== null) {
         // console.log(`[MOCK] Getting mock user (global): ${globalUser.id}`);
         return globalUser;
