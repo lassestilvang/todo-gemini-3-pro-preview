@@ -40,11 +40,11 @@ async function addDependencyImpl(userId: string, taskId: number, blockerId: numb
 
   // Validate ownership of both tasks to prevent IDOR
   const tasksCheck = await db
-    .select({ id: tasks.id, userId: tasks.userId })
+    .select({ id: tasks.id })
     .from(tasks)
-    .where(inArray(tasks.id, [taskId, blockerId]));
+    .where(and(eq(tasks.userId, userId), inArray(tasks.id, [taskId, blockerId])));
 
-  if (tasksCheck.length !== 2 || tasksCheck.some((t) => t.userId !== userId)) {
+  if (tasksCheck.length !== 2) {
     throw new NotFoundError("One or both tasks not found or access denied");
   }
 
@@ -103,11 +103,11 @@ async function removeDependencyImpl(userId: string, taskId: number, blockerId: n
 
   // Validate ownership of both tasks to prevent IDOR
   const tasksCheck = await db
-    .select({ id: tasks.id, userId: tasks.userId })
+    .select({ id: tasks.id })
     .from(tasks)
-    .where(inArray(tasks.id, [taskId, blockerId]));
+    .where(and(eq(tasks.userId, userId), inArray(tasks.id, [taskId, blockerId])));
 
-  if (tasksCheck.length !== 2 || tasksCheck.some((t) => t.userId !== userId)) {
+  if (tasksCheck.length !== 2) {
     throw new NotFoundError("One or both tasks not found or access denied");
   }
 

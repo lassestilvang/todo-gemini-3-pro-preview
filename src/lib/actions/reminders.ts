@@ -60,12 +60,12 @@ async function createReminderImpl(userId: string, taskId: number, remindAt: Date
 
   // Validate task ownership to prevent IDOR
   const task = await db
-    .select({ id: tasks.id, userId: tasks.userId })
+    .select({ id: tasks.id })
     .from(tasks)
-    .where(eq(tasks.id, taskId))
+    .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)))
     .limit(1);
 
-  if (task.length === 0 || task[0].userId !== userId) {
+  if (task.length === 0) {
     throw new NotFoundError("Task not found or access denied");
   }
 
@@ -115,14 +115,13 @@ async function deleteReminderImpl(userId: string, id: number) {
       id: reminders.id,
       taskId: reminders.taskId,
       remindAt: reminders.remindAt,
-      userId: tasks.userId,
     })
     .from(reminders)
     .innerJoin(tasks, eq(reminders.taskId, tasks.id))
-    .where(eq(reminders.id, id))
+    .where(and(eq(reminders.id, id), eq(tasks.userId, userId)))
     .limit(1);
 
-  if (reminder.length === 0 || reminder[0].userId !== userId) {
+  if (reminder.length === 0) {
     throw new NotFoundError("Reminder not found or access denied");
   }
 

@@ -51,12 +51,12 @@ async function createTaskImpl(data: typeof tasks.$inferInsert & { labelIds?: num
       }
 
       const parentTask = await db
-        .select({ id: tasks.id, userId: tasks.userId })
+        .select({ id: tasks.id })
         .from(tasks)
-        .where(eq(tasks.id, taskData.parentId))
+        .where(and(eq(tasks.id, taskData.parentId), eq(tasks.userId, taskData.userId)))
         .limit(1);
 
-      if (parentTask.length === 0 || parentTask[0].userId !== taskData.userId) {
+      if (parentTask.length === 0) {
         throw new NotFoundError("Parent task not found or access denied");
       }
     }
@@ -277,12 +277,12 @@ async function updateTaskImpl(
 
     if (taskData.parentId) {
       const parentTask = await db
-        .select({ id: tasks.id, userId: tasks.userId })
+        .select({ id: tasks.id })
         .from(tasks)
-        .where(eq(tasks.id, taskData.parentId))
+        .where(and(eq(tasks.id, taskData.parentId), eq(tasks.userId, userId)))
         .limit(1);
 
-      if (parentTask.length === 0 || parentTask[0].userId !== userId) {
+      if (parentTask.length === 0) {
         throw new NotFoundError("Parent task not found or access denied");
       }
     }
