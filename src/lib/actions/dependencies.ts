@@ -21,6 +21,8 @@ import {
 } from "./shared";
 import { requireUser } from "@/lib/auth";
 
+console.error("[ACTION] src/lib/actions/dependencies.ts loaded");
+
 /**
  * Internal implementation for adding a dependency between tasks.
  *

@@ -49,16 +49,20 @@ describe("Integration: Security Dependencies & Reminders", () => {
     });
 
     it("should fail when adding dependency for another user (Impersonation)", async () => {
+        console.error(`[TEST] addDependency type: ${typeof addDependency}`);
+        console.error(`[TEST] addDependency name: ${addDependency.name}`);
+        console.error(`[TEST] isMock: ${!!(addDependency as any).mock}`);
+        
         await runInAuthContext(attacker, async () => {
             const currentUser = await getCurrentUser();
-            console.log(`[TEST] Current user before action: ${currentUser?.id}`);
-            console.log(`[TEST] Calling addDependency(${victimId}, ${task1Id}, ${task2Id})`);
+            console.error(`[TEST] Current user before action: ${currentUser?.id}`);
+            console.error(`[TEST] Calling addDependency(${victimId}, ${task1Id}, ${task2Id})`);
             
             // Attacker tries to use victimId as the first argument
             const result = await addDependency(victimId, task1Id, task2Id);
 
-            console.log(`[TEST] Result:`, JSON.stringify(result));
-            console.log(`[TEST] Result success: ${result?.success}`);
+            console.error(`[TEST] Result:`, JSON.stringify(result));
+            console.error(`[TEST] Result success: ${result?.success}`);
             
             if (!result || typeof result.success === 'undefined') {
                 console.error("[TEST] FATAL: Result or result.success is undefined!");
