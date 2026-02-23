@@ -197,12 +197,14 @@ export function setMockAuthUser(user: MockAuthUser | null) {
 
 export function clearMockAuthUser() {
     mockState[GLOBAL_MOCK_USER_KEY] = null;
+    authStorage.enterWith(null);
     (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = null;
     delete process.env.MOCK_AUTH_USER;
 }
 
 export function resetMockAuthUser() {
     mockState[GLOBAL_MOCK_USER_KEY] = null;
+    authStorage.enterWith(null);
     (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = null;
     delete process.env.MOCK_AUTH_USER;
 }
