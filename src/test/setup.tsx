@@ -4,6 +4,9 @@ import * as matchers from "@testing-library/jest-dom/matchers";
 import { db, sqliteConnection } from "@/db";
 import { labels, lists, tasks, timeEntries, templates, userStats, achievements, userAchievements, viewSettings, savedViews, rateLimits, taskDependencies, taskLabels, reminders, habitCompletions, taskLogs, customIcons, externalIntegrations, externalSyncState, externalEntityMap, externalSyncConflicts } from "@/db";
 import { resetMockAuthUser } from "./mocks";
+import { mkdir, rm } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import React from "react";
 import { cleanup } from "@testing-library/react";
 
@@ -332,8 +335,32 @@ mock.module("@/components/providers/sync-provider", () => ({
 // Note: Tests are responsible for setting auth context explicitly.
 
 let testMutex = Promise.resolve();
+const globalLockPath = join(tmpdir(), "todo-gemini-test-lock");
+
+async function acquireGlobalTestLock() {
+    const start = Date.now();
+    while (true) {
+        try {
+            await mkdir(globalLockPath);
+            return;
+        } catch (error) {
+            if (error instanceof Error && "code" in error && (error as { code?: string }).code !== "EEXIST") {
+                throw error;
+            }
+            if (Date.now() - start > 30000) {
+                throw new Error("Timed out acquiring test lock");
+            }
+            await new Promise((resolve) => setTimeout(resolve, 5));
+        }
+    }
+}
+
+async function releaseGlobalTestLock() {
+    await rm(globalLockPath, { recursive: true, force: true });
+}
 
 beforeEach(async () => {
+    await acquireGlobalTestLock();
     let release: () => void;
     const next = new Promise<void>((resolve) => {
         release = resolve;
@@ -448,12 +475,13 @@ export async function resetTestDb() {
     await resetQueue;
 }
 
-afterEach(() => {
+afterEach(async () => {
     const release = (globalThis as { __testMutexRelease?: () => void }).__testMutexRelease;
     if (release) {
         release();
         (globalThis as { __testMutexRelease?: () => void }).__testMutexRelease = undefined;
     }
+    await releaseGlobalTestLock();
 
     try {
         cleanup();
