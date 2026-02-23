@@ -196,6 +196,29 @@ async function getCurrentUserImpl(): Promise<AuthUser | null> {
       };
     }
 
+    // Fallback: Check environment variable directly if global isn't set
+    if (process.env.MOCK_AUTH_USER) {
+      try {
+        const envUser = JSON.parse(process.env.MOCK_AUTH_USER);
+        console.log(`[AUTH] getCurrentUser: Using Env fallback: ${envUser.id}`);
+        return {
+          id: envUser.id,
+          email: envUser.email,
+          firstName: envUser.firstName ?? null,
+          lastName: envUser.lastName ?? null,
+          avatarUrl: envUser.profilePictureUrl ?? null,
+          use24HourClock: false,
+          weekStartsOnMonday: false,
+          calendarUseNativeTooltipsOnDenseDays: true,
+          calendarDenseTooltipThreshold: 6,
+        };
+      } catch (e) {
+        console.error(`[AUTH] getCurrentUser: Failed to parse MOCK_AUTH_USER: ${process.env.MOCK_AUTH_USER}`, e);
+      }
+    } else {
+        console.warn(`[AUTH] getCurrentUser: No global user and no MOCK_AUTH_USER env var found.`);
+    }
+
     const { getMockAuthUser } = await import("@/test/mocks");
     const contextUser = getMockAuthUser();
     const envMock = process.env.MOCK_AUTH_USER;
