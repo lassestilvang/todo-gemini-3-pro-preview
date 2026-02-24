@@ -41,6 +41,9 @@ jobs:
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
           NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
         run: |
+          echo "Listing all branches to diagnose limit issue:"
+          neonctl branches list --project-id $NEON_PROJECT_ID -o json | jq -r '.[] | "\(.id) \(.name)"'
+
           # List all branches, filter for 'preview/run-', and delete them
           branches=$(neonctl branches list --project-id $NEON_PROJECT_ID -o json | jq -r '.[] | select(.name | startswith("preview/run-")) | .id')
 
@@ -56,30 +59,22 @@ jobs:
             done
           fi
 
-      - name: Prune Stale PR Branches (keep most recent 10)
+      - name: Prune PR Preview Branches
         if: github.event_name == 'pull_request'
         env:
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
           NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
         run: |
-          # Fetch all PR preview branches with their created_at timestamps
+          # Fetch all PR preview branches
           current="preview/pr-${{ github.event.pull_request.number }}"
+          # Get IDs of all branches starting with preview/pr- except the current one
           ids=$(neonctl branches list --project-id $NEON_PROJECT_ID -o json | jq -r --arg cur "$current" '.[] | select(.name | startswith("preview/pr-")) | select(.name != $cur) | .id')
-          count=$(echo "$ids" | wc -l | tr -d ' ')
-          # If count isn't numeric (no lines), set to 0
-          if ! [[ "$count" =~ ^[0-9]+$ ]]; then count=0; fi
-          delete_count=$(( count > 10 ? count - 10 : 0 ))
-          prune_list=""
-          if [ "$delete_count" -gt 0 ]; then
-            prune_list=$(echo "$ids" | head -n "$delete_count")
-          fi
           
-          if [ -z "$prune_list" ]; then
+          if [ -z "$ids" ]; then
             echo "No stale PR branches to prune."
           else
-            echo "Pruning stale PR branches:"
-            echo "$prune_list"
-            for id in $prune_list; do
+            echo "Pruning stale PR branches to free up quota:"
+            for id in $ids; do
               echo "Deleting branch $id..."
               neonctl branches delete "$id" --project-id $NEON_PROJECT_ID || echo "Failed to delete $id"
             done
