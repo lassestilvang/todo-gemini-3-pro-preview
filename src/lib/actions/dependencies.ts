@@ -21,6 +21,8 @@ import {
 } from "./shared";
 import { requireUser } from "@/lib/auth";
 
+console.error("[ACTION] src/lib/actions/dependencies.ts loaded");
+
 /**
  * Internal implementation for adding a dependency between tasks.
  *
@@ -30,7 +32,15 @@ import { requireUser } from "@/lib/auth";
  * @throws {ValidationError} When task tries to block itself or circular dependency detected
  */
 async function addDependencyImpl(userId: string, taskId: number, blockerId: number) {
-  await requireUser(userId);
+  console.log(`[ACTION] addDependencyImpl START: userId=${userId}, taskId=${taskId}, blockerId=${blockerId}`);
+  
+  try {
+    const user = await requireUser(userId);
+    console.log(`[ACTION] addDependencyImpl: requireUser success. User=${user.id}`);
+  } catch (error) {
+    console.error(`[ACTION] addDependencyImpl: requireUser failed. Error=${error}`);
+    throw error;
+  }
 
   if (taskId === blockerId) {
     throw new ValidationError("Task cannot block itself", {

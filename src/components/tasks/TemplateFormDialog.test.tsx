@@ -1,121 +1,11 @@
-import { describe, it, expect, mock, beforeEach, beforeAll } from "bun:test";
-import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
+import { describe, it, expect, mock, beforeEach, beforeAll, afterEach, spyOn } from "bun:test";
+import { render, screen, fireEvent, waitFor, within, cleanup } from "@testing-library/react";
 import { TemplateFormDialog } from "./TemplateFormDialog";
 import React from "react";
-
-const mockToastSuccess = mock(() => { });
-const mockToastError = mock(() => { });
-
-// Mock sonner toast
-mock.module("sonner", () => ({
-  toast: {
-    success: mockToastSuccess,
-    error: mockToastError,
-  },
-}));
+import { toast } from "sonner";
 
 // Mock UI components to avoid Radix/Portal issues in happy-dom
-const DialogContext = React.createContext<{ open: boolean; setOpen: (o: boolean) => void }>({ open: false, setOpen: () => { } });
-
-mock.module("@/components/ui/dialog", () => ({
-  Dialog: ({ children, open, onOpenChange }: { children: React.ReactNode; open?: boolean; onOpenChange?: (open: boolean) => void }) => {
-    const [internalOpen, setInternalOpen] = React.useState(false);
-    const isControlled = open !== undefined;
-    const isOpen = isControlled ? open : internalOpen;
-    const handleOpenChange = (newOpen: boolean) => {
-      if (isControlled && onOpenChange) {
-        onOpenChange(newOpen);
-      }
-      setInternalOpen(newOpen);
-    };
-
-    return (
-      <DialogContext.Provider value={{ open: !!isOpen, setOpen: handleOpenChange }}>
-        <div data-testid="dialog-root" data-open={isOpen}>
-          {children}
-        </div>
-      </DialogContext.Provider>
-    );
-  },
-  DialogTrigger: ({ children, asChild, onClick }: { children: React.ReactNode; asChild?: boolean; onClick?: () => void }) => {
-    const { setOpen } = React.useContext(DialogContext);
-    return (
-      <div
-        data-testid="dialog-trigger"
-        role="button"
-        tabIndex={0}
-        onClick={() => {
-          if (onClick) onClick();
-          setOpen(true);
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            if (onClick) onClick();
-            setOpen(true);
-          }
-        }}
-      >
-        {asChild ? children : <button>{children}</button>}
-      </div>
-    );
-  },
-  DialogContent: ({ children }: { children: React.ReactNode }) => {
-    const { open } = React.useContext(DialogContext);
-    if (!open) return null;
-    return (
-      <div role="dialog" data-testid="dialog-content">
-        {children}
-      </div>
-    );
-  },
-  DialogHeader: ({ children }: { children: React.ReactNode }) => <div data-testid="dialog-header">{children}</div>,
-  DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
-  DialogDescription: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
-  DialogFooter: ({ children }: { children: React.ReactNode }) => <div data-testid="dialog-footer">{children}</div>,
-}));
-
-mock.module("@/components/ui/select", () => ({
-  Select: ({ children, value, onValueChange }: { children: React.ReactNode; value?: string; onValueChange?: (val: string) => void }) => (
-    <div
-      data-testid="select-root"
-      data-value={value}
-      role="button"
-      tabIndex={0}
-      onClick={() => { if (onValueChange) onValueChange(value === "none" ? "mock-value" : "none"); }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          if (onValueChange) onValueChange(value === "none" ? "mock-value" : "none");
-        }
-      }}
-    >
-      {children}
-    </div>
-  ),
-  SelectTrigger: ({ children, "data-testid": testId }: { children: React.ReactNode; "data-testid"?: string }) => (
-    <button data-testid={testId || "select-trigger"}>{children}</button>
-  ),
-  SelectValue: ({ children, placeholder }: { children?: React.ReactNode; placeholder?: string }) => <span>{children || placeholder}</span>,
-  SelectContent: ({ children }: { children: React.ReactNode }) => <div data-testid="select-content">{children}</div>,
-  SelectItem: ({ children, value }: { children: React.ReactNode; value: string }) => (
-    <div
-      data-testid={`select-item-${value}`}
-      role="option"
-      aria-selected="false"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-        }
-      }}
-    >
-      {children}
-    </div>
-  ),
-}));
-
-
+// UI components are now handled globally in src/test/setup.tsx via src/test/mocks-ui.tsx
 
 import { db, templates } from "@/db";
 import { createTestUser, resetTestDb } from "@/test/setup";
@@ -123,6 +13,8 @@ import { setMockAuthUser } from "@/test/mocks";
 
 describe("TemplateFormDialog", () => {
   let TEST_USER_ID: string;
+  let mockToastSuccess: ReturnType<typeof spyOn>;
+  let mockToastError: ReturnType<typeof spyOn>;
 
   beforeAll(async () => {
     // Rely on setup.tsx for schema initialization
@@ -155,9 +47,14 @@ describe("TemplateFormDialog", () => {
       profilePictureUrl: null,
     });
 
-    // Clear mocks
-    mockToastSuccess.mockClear();
-    mockToastError.mockClear();
+    // Mock toast using spyOn
+    mockToastSuccess = spyOn(toast, "success").mockImplementation(() => { return "" as string | number; });
+    mockToastError = spyOn(toast, "error").mockImplementation(() => { return "" as string | number; });
+  });
+
+  afterEach(() => {
+    mock.restore();
+    cleanup();
   });
 
   describe("renders all form fields", () => {

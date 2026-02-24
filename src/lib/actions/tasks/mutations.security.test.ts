@@ -1,25 +1,15 @@
-import { describe, expect, it, beforeAll, beforeEach, mock } from "bun:test";
+import { describe, expect, it, beforeAll, beforeEach, afterEach, mock, spyOn } from "bun:test";
 import { setupTestDb, createTestUser } from "@/test/setup";
 import { createTask, createList } from "@/lib/actions";
 import { setMockAuthUser } from "@/test/mocks";
 import { tasks, db } from "@/db";
 import { eq } from "drizzle-orm";
-
-// Mock suggestMetadata to simulate prompt injection returning another user's list ID
-let maliciousListId: number | null = null;
-
-mock.module("@/lib/smart-tags", () => ({
-    suggestMetadata: mock(async () => {
-        if (maliciousListId) {
-            return { listId: maliciousListId, labelIds: [] };
-        }
-        return { listId: null, labelIds: [] };
-    })
-}));
+import * as smartTags from "@/lib/smart-tags";
 
 describe("Security: Task Mutations", () => {
     let attackerId: string;
     let victimId: string;
+    let suggestMetadataSpy: ReturnType<typeof spyOn>;
 
     beforeAll(async () => {
         await setupTestDb();
@@ -32,7 +22,13 @@ describe("Security: Task Mutations", () => {
         await createTestUser(attackerId, `${attackerId}@example.com`);
         await createTestUser(victimId, `${victimId}@example.com`);
 
-        maliciousListId = null;
+        suggestMetadataSpy = spyOn(smartTags, "suggestMetadata").mockImplementation(async () => {
+            return { listId: null, labelIds: [] };
+        });
+    });
+
+    afterEach(() => {
+        mock.restore();
     });
 
     it("should prevent creating task in another user's list via smart tags injection", async () => {
@@ -44,7 +40,9 @@ describe("Security: Task Mutations", () => {
 
         // 2. Attacker tries to create a task, and smart tags "suggests" the victim's list
         setMockAuthUser({ id: attackerId, email: "attacker@example.com" });
-        maliciousListId = victimListId;
+
+        // Mock suggestMetadata to return victim's list ID
+        suggestMetadataSpy.mockResolvedValue({ listId: victimListId, labelIds: [] });
 
         // Attacker creates a task without listId, triggering smart tags
         // The title doesn't matter here because we mocked suggestMetadata

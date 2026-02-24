@@ -6,14 +6,7 @@ import { COMMON_COLORS } from "./icon-picker/types";
 import { Tabs } from "./tabs";
 import React from "react";
 
-// Mock ResolvedIcon
-mock.module("./resolved-icon", () => ({
-    ResolvedIcon: ({ icon, className }: { icon: string; className?: string }) => (
-        <div data-testid={`icon-${icon}`} className={className}>
-            {icon}
-        </div>
-    )
-}));
+// Mock ResolvedIcon is now handled globally in src/test/setup.tsx via src/test/mocks-ui.tsx
 
 describe("IconPickerIconsTab", () => {
     afterEach(() => {

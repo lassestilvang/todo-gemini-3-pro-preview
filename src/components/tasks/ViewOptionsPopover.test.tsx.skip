@@ -1,26 +1,21 @@
-import { describe, it, expect, mock, afterEach } from "bun:test";
+import { describe, it, expect, mock, spyOn, afterEach, beforeEach } from "bun:test";
 import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 import { ViewOptionsPopover } from "./ViewOptionsPopover";
 import React from "react";
+import * as labelsActions from "@/lib/actions/labels";
+import * as viewSettingsActions from "@/lib/actions/view-settings";
+import * as viewsActions from "@/lib/actions/views";
 
-// Mock server actions
-// Note: sonner is mocked globally in src/test/setup.tsx
-
-mock.module("@/lib/actions/labels", () => ({
-    getLabels: mock(async () => []),
-}));
-
-mock.module("@/lib/actions/view-settings", () => ({
-    saveViewSettings: mock(async () => ({ success: true })),
-    resetViewSettings: mock(async () => ({ success: true })),
-}));
-
-mock.module("@/lib/actions/views", () => ({
-    createSavedView: mock(async () => ({ success: true, data: { id: 1 } })),
-}));
+beforeEach(() => {
+    spyOn(labelsActions, "getLabels").mockResolvedValue([]);
+    spyOn(viewSettingsActions, "saveViewSettings").mockResolvedValue({ success: true } as any);
+    spyOn(viewSettingsActions, "resetViewSettings").mockResolvedValue({ success: true } as any);
+    spyOn(viewsActions, "createSavedView").mockResolvedValue({ success: true, data: { id: 1 } } as any);
+});
 
 describe("ViewOptionsPopover", () => {
     afterEach(() => {
+        mock.restore();
         cleanup();
     });
 

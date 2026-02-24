@@ -1,44 +1,30 @@
-
-import { describe, it, expect, mock, afterEach, beforeAll } from "bun:test";
+import { describe, it, expect, mock, afterEach, beforeEach, beforeAll } from "bun:test";
 import { render, screen, cleanup } from "@testing-library/react";
 import React from "react";
+import { mockUsePathname, mockUseTaskCounts } from "@/test/mocks";
 
 let SidebarNavigation: typeof import("./SidebarNavigation").SidebarNavigation;
-
-// Mock next/navigation
-mock.module("next/navigation", () => ({
-    usePathname: () => "/inbox",
-    useRouter: () => ({
-        push: () => {},
-        replace: () => {},
-        prefetch: () => {},
-        back: () => {},
-        forward: () => {},
-        refresh: () => {},
-    }),
-    useSearchParams: () => new URLSearchParams(),
-    useParams: () => ({}),
-    redirect: (url: string) => { throw new Error(`REDIRECT:${url}`); },
-    notFound: () => { throw new Error("NOT_FOUND"); },
-}));
-
-// Mock useTaskCounts
-mock.module("@/hooks/use-task-counts", () => ({
-    useTaskCounts: () => ({
-        inbox: 5,
-        today: 0,
-        upcoming: 0,
-        total: 10,
-    }),
-}));
 
 describe("SidebarNavigation", () => {
     beforeAll(async () => {
         ({ SidebarNavigation } = await import("./SidebarNavigation"));
     });
 
+    beforeEach(() => {
+        mockUsePathname.mockReturnValue("/inbox");
+        mockUseTaskCounts.mockReturnValue({
+            inbox: 5,
+            today: 0,
+            upcoming: 0,
+            total: 10,
+            listCounts: {},
+            labelCounts: {},
+        });
+    });
+
     afterEach(() => {
         cleanup();
+        mockUseTaskCounts.mockClear();
     });
 
     it("should render navigation links", () => {

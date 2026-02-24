@@ -3,28 +3,7 @@ import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { LabelSelector } from "./LabelSelector";
 import React from "react";
 
-// Mock UI components
-mock.module("@/components/ui/checkbox", () => ({
-    Checkbox: ({ checked, onCheckedChange, id }: { checked: boolean; onCheckedChange: () => void; id: string }) => (
-        <input
-            type="checkbox"
-            data-testid="checkbox"
-            id={id}
-            checked={checked}
-            onChange={onCheckedChange}
-        />
-    ),
-}));
-
-mock.module("@/components/ui/label", () => ({
-    Label: ({ children, htmlFor }: { children: React.ReactNode; htmlFor: string }) => (
-        <label htmlFor={htmlFor}>{children}</label>
-    ),
-}));
-
-mock.module("@/lib/icons", () => ({
-    getLabelIcon: () => (props: React.SVGProps<SVGSVGElement>) => <svg {...props} />,
-}));
+// Mock UI components are now handled globally in src/test/setup.tsx via src/test/mocks-ui.tsx
 
 describe("LabelSelector", () => {
     const mockLabels = [
@@ -47,16 +26,15 @@ describe("LabelSelector", () => {
 
     it("should show checked state for selected labels", () => {
         render(<LabelSelector labels={mockLabels} selectedLabelIds={[1]} onToggle={mockToggle} />);
-        const checkbox1 = screen.getAllByTestId("checkbox")[0] as HTMLInputElement;
-        const checkbox2 = screen.getAllByTestId("checkbox")[1] as HTMLInputElement;
+        const [checkbox1, checkbox2] = screen.getAllByRole("checkbox");
 
-        expect(checkbox1.checked).toBe(true);
-        expect(checkbox2.checked).toBe(false);
+        expect(checkbox1).toHaveAttribute("aria-checked", "true");
+        expect(checkbox2).toHaveAttribute("aria-checked", "false");
     });
 
     it("should call onToggle when clicked", () => {
         render(<LabelSelector labels={mockLabels} selectedLabelIds={[]} onToggle={mockToggle} />);
-        const checkbox1 = screen.getAllByTestId("checkbox")[0];
+        const [checkbox1] = screen.getAllByRole("checkbox");
         fireEvent.click(checkbox1);
         expect(mockToggle).toHaveBeenCalledWith(1);
     });

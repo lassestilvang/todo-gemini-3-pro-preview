@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { runInAuthContext } from "@/test/auth-helpers";
+import { runInAuthContext } from "@/test/mocks";
 import { createTask, getTasks } from "@/lib/actions/tasks";
 import { createLabel } from "@/lib/actions/labels";
 import { isSuccess } from "@/lib/action-result";
@@ -16,13 +17,14 @@ describe("Integration: Task Performance Optimization", () => {
     beforeEach(async () => {
         await resetTestDb();
         const randomId = Math.random().toString(36).substring(7);
-        testUserId = `user_perf_${randomId}`;
+        const testUserId = `user_perf_${randomId}`;
 
         testUser = await createTestUser(testUserId, `${testUserId}@perf.com`);
     });
 
     it("should correctly fetch tasks and labels after optimization", async () => {
         await runInAuthContext(testUser, async () => {
+            const testUserId = testUser.id;
             // Create 3 labels
             const labels = await Promise.all([
                 createLabel({ userId: testUserId, name: "Label 1", color: "#ff0000", icon: "Tag" }),
@@ -69,6 +71,7 @@ describe("Integration: Task Performance Optimization", () => {
 
     it("should handle empty task list correctly", async () => {
         await runInAuthContext(testUser, async () => {
+            const testUserId = testUser.id;
             // Just create labels but no tasks
             await createLabel({ userId: testUserId, name: "Label 1", color: "#ff0000", icon: "Tag" });
 

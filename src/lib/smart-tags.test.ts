@@ -1,5 +1,6 @@
 import { describe, it, expect, mock, beforeEach, afterEach, beforeAll } from "bun:test";
 import { suggestMetadata } from "./smart-tags";
+import { mockGetGeminiClient } from "@/test/mocks";
 
 // Mock gemini client
 const mockGenerateContent = mock(() => Promise.resolve({
@@ -12,28 +13,30 @@ const mockGetGenerativeModel = mock(() => ({
     generateContent: mockGenerateContent
 }));
 
-const mockGetGeminiClient = mock(() => ({
-    getGenerativeModel: mockGetGenerativeModel
-}));
+// Use global mock instead of local mock
+// const mockGetGeminiClient = mock(() => ({
+//     getGenerativeModel: mockGetGenerativeModel
+// }));
 
 describe("Smart Tags", () => {
     const originalError = console.error;
 
     beforeAll(() => {
-        mock.module("@/lib/gemini", () => ({
-            getGeminiClient: mockGetGeminiClient,
-            GEMINI_MODEL: "gemini-pro"
-        }));
+        // No local mock.module needed, using global mockGetGeminiClient
     });
 
     beforeEach(() => {
         mockGenerateContent.mockClear();
-        mockGetGeminiClient.mockClear();
+        // Configure global mock to return our test client
+        mockGetGeminiClient.mockReturnValue({
+            getGenerativeModel: mockGetGenerativeModel
+        } as any);
         console.error = mock(() => { });
     });
 
     afterEach(() => {
         console.error = originalError;
+        mockGetGeminiClient.mockRestore();
     });
 
     it("should return suggestions from Gemini", async () => {

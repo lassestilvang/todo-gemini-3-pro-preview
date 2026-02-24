@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { runInAuthContext, clearMockAuthUser } from "@/test/auth-helpers";
+import { runInAuthContext } from "@/test/mocks";
+import { getCurrentUser } from "@/lib/auth";
 import { addDependency, removeDependency } from "@/lib/actions/dependencies";
 import { createReminder, deleteReminder } from "@/lib/actions/reminders";
 import { isFailure } from "@/lib/action-result";

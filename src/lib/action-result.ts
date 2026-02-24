@@ -190,9 +190,12 @@ export function withErrorHandling<T, Args extends unknown[]>(
 ): (...args: Args) => Promise<ActionResult<T>> {
   return async (...args: Args): Promise<ActionResult<T>> => {
     try {
+      console.log(`[ActionResult] Calling wrapped function: ${fn.name}`);
       const result = await fn(...args);
+      // console.log(`[ActionResult] Success:`, JSON.stringify(result).substring(0, 50));
       return success(result);
     } catch (error) {
+      console.error(`[ActionResult] Error caught in wrapped function ${fn.name}:`, error);
       // 0. Define a helper type for error checking
       const err = error as {
         code?: string;

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { runInAuthContext, clearMockAuthUser } from "@/test/auth-helpers";
+import { runInAuthContext } from "@/test/mocks";
 import { createTask, createSubtask, getTasks } from "@/lib/actions/tasks";
 import { isSuccess } from "@/lib/action-result";
 
@@ -41,8 +42,8 @@ describe("Integration: Security Subtask IDOR", () => {
     });
 
     it("should prevent creating a subtask under another user's task", async () => {
+        // Attacker tries to create a subtask linked to Victim's task
         await runInAuthContext(attacker, async () => {
-            // Attacker tries to create a subtask linked to Victim's task
             const result = await createSubtask(victimTaskId, attackerId, "Evil Subtask");
             expect(isSuccess(result)).toBe(false);
             if (!isSuccess(result)) {
@@ -62,8 +63,8 @@ describe("Integration: Security Subtask IDOR", () => {
     });
 
     it("should prevent creating a task with parentId pointing to another user's task", async () => {
+        // Attacker tries to create a task with parentId set to Victim's task
         await runInAuthContext(attacker, async () => {
-            // Attacker tries to create a task with parentId set to Victim's task
             const result = await createTask({
                 userId: attackerId,
                 title: "Evil Child Task",

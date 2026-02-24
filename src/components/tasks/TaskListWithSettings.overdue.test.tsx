@@ -1,64 +1,47 @@
-import { describe, it, expect, beforeAll, beforeEach, afterEach, mock } from "bun:test";
+import { describe, it, expect, beforeEach, afterEach, mock, spyOn } from "bun:test";
 import { render, screen, cleanup } from "@testing-library/react";
-import { setMockAuthUser, DEFAULT_MOCK_USER } from "@/test/mocks";
+import { setMockAuthUser, DEFAULT_MOCK_USER, mockUseTaskStore } from "@/test/mocks";
 import React from "react";
 import { Task } from "@/lib/types";
 import { addDays, subDays } from "date-fns";
-
-let TaskListWithSettings: typeof import("./TaskListWithSettings").TaskListWithSettings;
+import { TaskListWithSettings } from "./TaskListWithSettings";
+import * as ViewOptionsPopoverModule from "./ViewOptionsPopover";
 
 // Mock store state
 let storeTasks: Record<number, Task> = {};
 
-const mockUseTaskStore = mock(() => ({
-    tasks: storeTasks,
-    setTasks: (newTasks: Task[]) => {
-        const next: Record<number, Task> = { ...storeTasks };
-        newTasks.forEach(t => next[t.id] = t);
-        storeTasks = next;
-    },
-    initialize: () => {},
-    isInitialized: true,
-}));
-
-mock.module("@/lib/store/task-store", () => ({
-    useTaskStore: mockUseTaskStore
-}));
-
-// Mock next/dynamic
-mock.module("next/dynamic", () => ({
-    __esModule: true,
-    default: () => {
-        const DynamicComponent = () => null;
-        DynamicComponent.displayName = "DynamicComponentMock";
-        return DynamicComponent;
-    },
-}));
-
-// Mock sync
-mock.module("@/components/providers/sync-provider", () => ({
-    useSync: () => ({ dispatch: () => Promise.resolve() }),
-    useSyncActions: () => ({ dispatch: () => Promise.resolve() }),
-    useOptionalSyncActions: () => ({ dispatch: () => Promise.resolve() })
-}));
-
-// Mock view options popover
-mock.module("./ViewOptionsPopover", () => ({
-    ViewOptionsPopover: () => <div>View Options</div>
-}));
-
 describe("TaskListWithSettings Overdue Logic", () => {
-    beforeAll(async () => {
-        ({ TaskListWithSettings } = await import("./TaskListWithSettings"));
-    });
-
     beforeEach(() => {
+        cleanup();
         setMockAuthUser(DEFAULT_MOCK_USER);
         storeTasks = {}; // Reset store
+
+        mockUseTaskStore.mockImplementation(() => ({
+            tasks: storeTasks,
+            setTasks: (newTasks: Task[]) => {
+                const next: Record<number, Task> = { ...storeTasks };
+                newTasks.forEach(t => next[t.id] = t);
+                storeTasks = next;
+            },
+            initialize: mock(() => Promise.resolve()),
+            isInitialized: true,
+            replaceTasks: mock(() => {}),
+            upsertTasks: mock(() => {}),
+            upsertTask: mock(() => {}),
+            deleteTasks: mock(() => {}),
+            deleteTask: mock(() => {}),
+            updateSubtaskCompletion: mock(() => {}),
+            getTaskBySubtaskId: mock(() => undefined),
+            subtaskIndex: {},
+        }));
+
+        spyOn(ViewOptionsPopoverModule, "ViewOptionsPopover").mockReturnValue(<div>View Options</div>);
     });
 
     afterEach(() => {
         cleanup();
+        mockUseTaskStore.mockRestore();
+        mock.restore();
     });
 
     it("should categorize past due tasks as Overdue", async () => {

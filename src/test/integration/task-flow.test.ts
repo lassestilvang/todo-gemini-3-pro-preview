@@ -1,12 +1,13 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { runInAuthContext } from "@/test/auth-helpers";
+import { runInAuthContext } from "@/test/mocks";
 import { createList, deleteList } from "@/lib/actions/lists";
 import { createTask, toggleTaskCompletion, getTasks, deleteTask } from "@/lib/actions/tasks";
 import { isSuccess } from "@/lib/action-result";
 
 describe("Integration: Task Flow", () => {
-    let testUserId: string;
+    let testUser: any;
 
     beforeAll(async () => {
         await setupTestDb();
@@ -17,7 +18,7 @@ describe("Integration: Task Flow", () => {
         await resetTestDb();
         // Use unique ID per test for isolation
         const randomId = Math.random().toString(36).substring(7);
-        testUserId = `user_${randomId}`;
+        const testUserId = `user_${randomId}`;
 
         await createTestUser(testUserId, `${testUserId}@integration.com`);
     });

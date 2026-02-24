@@ -1,24 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, spyOn, mock } from "bun:test";
+import { KMSClient } from "@aws-sdk/client-kms";
 
 let sentCommands: unknown[] = [];
-
-mock.module("@aws-sdk/client-kms", () => {
-    class KMSClient {
-        async send(command: unknown) {
-            sentCommands.push(command);
-            return { Plaintext: new Uint8Array(Buffer.alloc(32, 7)) };
-        }
-    }
-
-    class DecryptCommand {
-        input: unknown;
-        constructor(input: unknown) {
-            this.input = input;
-        }
-    }
-
-    return { KMSClient, DecryptCommand };
-});
 
 describe("todoist crypto kms", () => {
     const originalEnv = { ...process.env };
@@ -31,9 +14,15 @@ describe("todoist crypto kms", () => {
         process.env.TODOIST_ENCRYPTION_KEYS = "";
         process.env.TODOIST_ENCRYPTION_KEY_ENCRYPTED = "ZmFrZQ==";
         process.env.TODOIST_ENCRYPTION_KEYS_ENCRYPTED = "";
+
+        spyOn(KMSClient.prototype, "send").mockImplementation(async (command) => {
+            sentCommands.push(command);
+            return { Plaintext: new Uint8Array(Buffer.alloc(32, 7)) } as any;
+        });
     });
 
     afterEach(async () => {
+        mock.restore();
         const { resetTodoistKeyRingForTests } = await import("./crypto");
         resetTodoistKeyRingForTests();
         process.env = { ...originalEnv };
