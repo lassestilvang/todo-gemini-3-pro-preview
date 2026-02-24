@@ -19,16 +19,16 @@ export function formatTimeManual(date: Date | number, is24h: boolean): string {
     const d = date instanceof Date ? date : new Date(date);
     const hours = d.getHours();
     const minutes = d.getMinutes();
-    const minStr = minutes < 10 ? `0${minutes}` : minutes;
+    const minStr = String(minutes).padStart(2, '0');
 
     if (is24h) {
-        const hStr = hours < 10 ? `0${hours}` : hours;
+        const hStr = String(hours).padStart(2, '0');
         return `${hStr}:${minStr}`;
-    } else {
-        const period = hours >= 12 ? "PM" : "AM";
-        const h = hours % 12 || 12;
-        return `${h}:${minStr} ${period}`;
     }
+
+    const period = hours >= 12 ? "PM" : "AM";
+    const h = hours % 12 || 12;
+    return `${h}:${minStr} ${period}`;
 }
 
 let cachedIs24Hour: boolean | null = null;
