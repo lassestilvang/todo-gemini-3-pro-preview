@@ -5,16 +5,28 @@
  */
 import { afterEach, mock } from "bun:test";
 import React from "react";
-import { getMockAuthUser, resetMockAuthUser } from "./auth-helpers";
-
-// Re-export auth helpers for convenience, though direct import is preferred
-export * from "./auth-helpers";
 import { AsyncLocalStorage } from "async_hooks";
 
-// Ensure DB module initializes in test mode even if NODE_ENV isn't set.
-if (!process.env.NODE_ENV) {
-    (process.env as Record<string, string | undefined>).NODE_ENV = "test";
+// Define MockAuthUser type here to avoid circular dependencies
+export interface MockAuthUser {
+    id: string;
+    email: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    profilePictureUrl?: string | null;
 }
+
+export const DEFAULT_MOCK_USER: MockAuthUser = {
+    id: "user_1",
+    email: "user_1@example.com",
+    firstName: "Test",
+    lastName: "User",
+    profilePictureUrl: null
+};
+
+const GLOBAL_MOCK_USER_KEY = "mockAuthUser";
+// Use a global object that persists across module reloads in the same worker
+const mockState = globalThis as unknown as Record<string, MockAuthUser | null>;
 
 // Create AsyncLocalStorage for isolated test auth context
 export const authStorage = new AsyncLocalStorage<MockAuthUser | null>();
@@ -26,6 +38,93 @@ export const authStorage = new AsyncLocalStorage<MockAuthUser | null>();
 export function runInAuthContext<T>(user: MockAuthUser | null, callback: () => T): T {
     // console.log(`[MOCK] Running in auth context: ${user?.id ?? "null"}`);
     return authStorage.run(user, callback);
+}
+
+/**
+ * Sets the mock user for the current test context.
+ * This user will be returned by getCurrentUser() in @/lib/auth.
+ *
+ * Usage:
+ * beforeEach(() => {
+ *   setMockAuthUser({ id: "user_1", email: "test@example.com" });
+ * });
+ */
+export function setMockAuthUser(user: MockAuthUser) {
+    console.log(`[MOCK] Setting mock user: ${user.id} (Global: ${!!(globalThis as any).__mockAuthUser}, Env: ${!!process.env.MOCK_AUTH_USER})`);
+    mockState[GLOBAL_MOCK_USER_KEY] = user;
+    // Also set on globalThis for direct access if needed
+    (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = user;
+    // Set env var as fallback/compatibility
+    process.env.MOCK_AUTH_USER = JSON.stringify(user);
+    console.log(`[MOCK] Set complete. Global matches: ${(globalThis as any).__mockAuthUser?.id === user.id}`);
+}
+
+/**
+ * Clears the mock user.
+ * getCurrentUser() will return null (unauthenticated).
+ */
+export function clearMockAuthUser() {
+    console.log("[MOCK] Clearing mock user");
+    mockState[GLOBAL_MOCK_USER_KEY] = null;
+    (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = null;
+    delete process.env.MOCK_AUTH_USER;
+}
+
+/**
+ * Resets the mock user to null.
+ * Alias for clearMockAuthUser.
+ */
+export function resetMockAuthUser() {
+    clearMockAuthUser();
+}
+
+/**
+ * Gets the current mock user.
+ * Used by @/lib/auth to retrieve the mocked identity.
+ */
+export function getMockAuthUser(): MockAuthUser | null {
+    // 0. Check AsyncLocalStorage (highest priority, isolated)
+    const storageUser = authStorage.getStore();
+    if (storageUser !== undefined) {
+        console.log(`[MOCK] Getting mock user (storage): ${storageUser?.id}`);
+        return storageUser;
+    }
+
+    // 1. Check globalThis (primary source)
+    const globalUser = (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser;
+    console.log(`[MOCK] Getting mock user. Global: ${globalUser?.id}, State: ${mockState[GLOBAL_MOCK_USER_KEY]?.id}, Env: ${!!process.env.MOCK_AUTH_USER}`);
+    if (globalUser !== undefined && globalUser !== null) {
+        // console.log(`[MOCK] Getting mock user (global): ${globalUser.id}`);
+        return globalUser;
+    }
+
+    // 2. Check mockState (secondary source)
+    const stateUser = mockState[GLOBAL_MOCK_USER_KEY];
+    if (stateUser !== undefined && stateUser !== null) {
+        // console.log(`[MOCK] Getting mock user (state): ${stateUser.id}`);
+        return stateUser;
+    }
+
+    // 3. Check env var (fallback)
+    if (process.env.MOCK_AUTH_USER) {
+        try {
+            const envUser = JSON.parse(process.env.MOCK_AUTH_USER);
+            // console.log(`[MOCK] Getting mock user (env): ${envUser.id}`);
+            return envUser;
+        } catch (e) {
+            console.error("[MOCK] Failed to parse MOCK_AUTH_USER", e);
+        }
+    }
+
+    return null;
+}
+
+// Expose getMockAuthUser globally to ensure single instance across dynamic imports
+(globalThis as any).__getMockAuthUser = getMockAuthUser;
+
+// Ensure DB module initializes in test mode even if NODE_ENV isn't set.
+if (!process.env.NODE_ENV) {
+    (process.env as Record<string, string | undefined>).NODE_ENV = "test";
 }
 
 // Mock react cache to prevent state leakage across tests in the same worker
@@ -269,144 +368,6 @@ mock.module("@/components/providers/sync-provider", () => ({
     useSyncActions: mockUseSyncActions,
     useOptionalSyncActions: mockUseOptionalSyncActions
 }));
-
-/**
- * WorkOS AuthKit mock for testing.
- * Tests can control the mock user via setMockAuthUser().
- * 
- * Note: We use a global object to store the mock user so that the mock function
- * can dynamically read the current value when called.
- */
-export interface MockAuthUser {
-    id: string;
-    email: string;
-    firstName?: string | null;
-    lastName?: string | null;
-    profilePictureUrl?: string | null;
-}
-
-export const DEFAULT_MOCK_USER: MockAuthUser = {
-    id: "user_1",
-    email: "user_1@example.com",
-    firstName: "Test",
-    lastName: "User",
-    profilePictureUrl: null
-};
-
-const GLOBAL_MOCK_USER_KEY = "mockAuthUser";
-// Use a global object that persists across module reloads in the same worker
-const mockState = globalThis as unknown as Record<string, MockAuthUser | null>;
-
-export const mockDb: {
-    select: () => { from: () => { where: () => Promise<unknown[]>; limit: () => Promise<unknown[]>; orderBy: () => Promise<unknown[]>; execute: () => Promise<unknown[]> } };
-    insert: (table: unknown) => { values: (data: unknown) => { returning: () => Promise<unknown[]> } };
-    update: (table: unknown) => { set: (data: unknown) => { where: (condition: unknown) => Promise<unknown[]> } };
-    delete: (table: unknown) => { where: (condition: unknown) => Promise<{ deleted: boolean }> };
-} = {
-    select: () => ({
-        from: () => ({
-            where: () => Promise.resolve([]),
-            limit: () => Promise.resolve([]),
-            orderBy: () => Promise.resolve([]),
-            execute: () => Promise.resolve([]),
-        }),
-    }),
-    insert: (_table: unknown) => ({
-        values: (data: unknown) => ({
-            returning: () => Promise.resolve([Object.assign({}, data, { id: Math.random().toString(36).substring(7) })]),
-        }),
-    }),
-    update: (_table: unknown) => ({
-        set: (data: unknown) => ({
-            where: (_condition: unknown) => Promise.resolve([Object.assign({}, data, { id: "mock-id" })]),
-        }),
-    }),
-    delete: (_table: unknown) => ({
-        where: (_condition: unknown) => Promise.resolve({ deleted: true }),
-    }),
-};
-
-/**
- * Sets the mock user for the current test context.
- * This user will be returned by getCurrentUser() in @/lib/auth.
- * 
- * Usage:
- * beforeEach(() => {
- *   setMockAuthUser({ id: "user_1", email: "test@example.com" });
- * });
- */
-export function setMockAuthUser(user: MockAuthUser) {
-    console.log(`[MOCK] Setting mock user: ${user.id} (Global: ${!!(globalThis as any).__mockAuthUser}, Env: ${!!process.env.MOCK_AUTH_USER})`);
-    mockState[GLOBAL_MOCK_USER_KEY] = user;
-    // Also set on globalThis for direct access if needed
-    (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = user;
-    // Set env var as fallback/compatibility
-    process.env.MOCK_AUTH_USER = JSON.stringify(user);
-    console.log(`[MOCK] Set complete. Global matches: ${(globalThis as any).__mockAuthUser?.id === user.id}`);
-}
-
-/**
- * Clears the mock user.
- * getCurrentUser() will return null (unauthenticated).
- */
-export function clearMockAuthUser() {
-    console.log("[MOCK] Clearing mock user");
-    mockState[GLOBAL_MOCK_USER_KEY] = null;
-    (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = null;
-    delete process.env.MOCK_AUTH_USER;
-}
-
-/**
- * Resets the mock user to null.
- * Alias for clearMockAuthUser.
- */
-export function resetMockAuthUser() {
-    clearMockAuthUser();
-}
-
-/**
- * Gets the current mock user.
- * Used by @/lib/auth to retrieve the mocked identity.
- */
-export function getMockAuthUser(): MockAuthUser | null {
-    // 0. Check AsyncLocalStorage (highest priority, isolated)
-    const storageUser = authStorage.getStore();
-    if (storageUser !== undefined) {
-        console.log(`[MOCK] Getting mock user (storage): ${storageUser?.id}`);
-        return storageUser;
-    }
-
-    // 1. Check globalThis (primary source)
-    const globalUser = (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser;
-    console.log(`[MOCK] Getting mock user. Global: ${globalUser?.id}, State: ${mockState[GLOBAL_MOCK_USER_KEY]?.id}, Env: ${!!process.env.MOCK_AUTH_USER}`);
-    if (globalUser !== undefined && globalUser !== null) {
-        // console.log(`[MOCK] Getting mock user (global): ${globalUser.id}`);
-        return globalUser;
-    }
-    
-    // 2. Check mockState (secondary source)
-    const stateUser = mockState[GLOBAL_MOCK_USER_KEY];
-    if (stateUser !== undefined && stateUser !== null) {
-        // console.log(`[MOCK] Getting mock user (state): ${stateUser.id}`);
-        return stateUser;
-    }
-    
-    // 3. Check env var (fallback)
-    if (process.env.MOCK_AUTH_USER) {
-        try {
-            const envUser = JSON.parse(process.env.MOCK_AUTH_USER);
-            // console.log(`[MOCK] Getting mock user (env): ${envUser.id}`);
-            return envUser;
-        } catch (e) {
-            console.error("[MOCK] Failed to parse MOCK_AUTH_USER", e);
-        }
-    }
-    
-    return null;
-}
-
-// Expose getMockAuthUser globally to ensure single instance across dynamic imports
-(globalThis as any).__getMockAuthUser = getMockAuthUser;
 
 mock.module("@workos-inc/authkit-nextjs", () => ({
     withAuth: mock(async () => ({ user: getMockAuthUser() })),
