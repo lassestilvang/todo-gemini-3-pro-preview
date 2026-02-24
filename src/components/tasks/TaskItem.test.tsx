@@ -162,4 +162,25 @@ describe("TaskItem", () => {
         const expectedText = "Due: Tuesday, October 24th, 2023 at 5:00 PM";
         expect(dateContainer).toHaveAttribute("aria-label", expectedText);
     });
+
+    it("should render accessible tooltips for energy and context", () => {
+        const taskWithDetails: Task = {
+            ...sampleTask,
+            energyLevel: "high",
+            context: "meeting"
+        };
+        render(<TaskItem task={taskWithDetails} {...defaultProps} />);
+
+        // Energy
+        const energyText = screen.getByText("🔋");
+        const energyContainer = energyText.closest('div[tabindex="0"]');
+        expect(energyContainer).toBeInTheDocument();
+        expect(energyContainer).toHaveAttribute("aria-label", "High Energy");
+
+        // Context
+        const contextText = screen.getByText("👥");
+        const contextContainer = contextText.closest('div[tabindex="0"]');
+        expect(contextContainer).toBeInTheDocument();
+        expect(contextContainer).toHaveAttribute("aria-label", "Meeting");
+    });
 });
