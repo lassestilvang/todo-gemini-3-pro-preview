@@ -68,11 +68,16 @@ describe("Integration: Security Subtask IDOR", () => {
 
     it("should prevent creating a task with parentId pointing to another user's task", async () => {
         // Attacker tries to create a task with parentId set to Victim's task
-        setMockAuthUser(attacker);
-        const result = await createTask({
-            userId: attackerId,
-            title: "Evil Child Task",
-            parentId: victimTaskId
+        await runInAuthContext(attacker, async () => {
+            const result = await createTask({
+                userId: attackerId,
+                title: "Evil Child Task",
+                parentId: victimTaskId
+            });
+            expect(isSuccess(result)).toBe(false);
+            if (!isSuccess(result)) {
+                expect(["NOT_FOUND", "UNAUTHORIZED"]).toContain(result.error.code);
+            }
         });
         expect(isSuccess(result)).toBe(false);
         if (!isSuccess(result)) {

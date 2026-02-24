@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
-import { runInAuthContext } from "@/test/auth-helpers";
-import { runInAuthContext as runInAuthContextMock } from "@/test/mocks";
+import { runInAuthContext } from "@/test/mocks";
 import { createList, deleteList } from "@/lib/actions/lists";
 import { createTask, toggleTaskCompletion, getTasks, deleteTask } from "@/lib/actions/tasks";
 import { isSuccess } from "@/lib/action-result";
