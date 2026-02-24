@@ -1,9 +1,10 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, mock } from "bun:test";
+import { afterAll, beforeAll, beforeEach, afterEach, describe, expect, it, mock, spyOn } from "bun:test";
 import { and, eq } from "drizzle-orm";
 import type { Task as TodoistTask } from "@doist/todoist-api-typescript";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { db, externalEntityMap, externalIntegrations, externalSyncConflicts, externalSyncState, labels, lists, taskLabels, tasks } from "@/db";
 import { encryptToken, resetTodoistKeyRingForTests } from "@/lib/todoist/crypto";
+import * as todoistService from "@/lib/todoist/service";
 
 type Snapshot = {
     projects: { id: string; name: string }[];
@@ -49,10 +50,7 @@ const serviceState: {
     },
 };
 
-mock.module("@/lib/todoist/service", () => ({
-    createTodoistClient: () => serviceState.client,
-    fetchTodoistSnapshot: async () => serviceState.snapshot,
-}));
+// Removed mock.module, replaced with spyOn in beforeEach
 
 import { syncTodoistForUser } from "@/lib/todoist/sync";
 
@@ -140,6 +138,13 @@ describe("Integration: Todoist Sync", () => {
                 isFavorite: false,
             })),
         };
+
+        spyOn(todoistService, "createTodoistClient").mockImplementation(() => serviceState.client as any);
+        spyOn(todoistService, "fetchTodoistSnapshot").mockImplementation(async () => serviceState.snapshot);
+    });
+
+    afterEach(() => {
+        mock.restore();
     });
 
     it("pulls only mapped-label tasks and imports only scoped labels", async () => {

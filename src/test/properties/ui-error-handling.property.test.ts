@@ -22,41 +22,9 @@ fc.configureGlobal({
 
 // Mock toast notifications
 const toastCalls: { type: string; message: string }[] = [];
-mock.module("sonner", () => ({
-    toast: {
-        success: (message: string) => {
-            toastCalls.push({ type: "success", message });
-        },
-        error: (message: string) => {
-            toastCalls.push({ type: "error", message });
-        },
-        info: (message: string) => {
-            toastCalls.push({ type: "info", message });
-        },
-    },
-}));
 
 // Mock next/navigation
 let lastPushPath: string | null = null;
-mock.module("next/navigation", () => ({
-    useRouter: () => ({
-        push: (path: string) => {
-            lastPushPath = path;
-        },
-        replace: (path: string) => {
-            lastPushPath = path;
-        },
-        back: () => {},
-        forward: () => {},
-        refresh: () => {},
-        prefetch: () => Promise.resolve(),
-    }),
-    usePathname: () => "/",
-    useSearchParams: () => new URLSearchParams(),
-    useParams: () => ({}),
-    redirect: (url: string) => { throw new Error(`REDIRECT:${url}`); },
-    notFound: () => { throw new Error("NOT_FOUND"); },
-}));
 
 // Arbitrary for valid error codes
 const errorCodeArb = fc.constantFrom<ErrorCode>(
