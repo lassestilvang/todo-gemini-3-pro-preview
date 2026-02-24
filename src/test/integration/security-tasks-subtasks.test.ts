@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, beforeAll, afterEach } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
-import { setMockAuthUser, clearMockAuthUser } from "@/test/mocks";
+import { setMockAuthUser, clearMockAuthUser, runInAuthContext } from "@/test/mocks";
 import { createTask, createSubtask, getTasks } from "@/lib/actions/tasks";
 import { isSuccess } from "@/lib/action-result";
 
@@ -44,12 +44,26 @@ describe("Integration: Security Subtask IDOR", () => {
 
     it("should prevent creating a subtask under another user's task", async () => {
         // Attacker tries to create a subtask linked to Victim's task
-        setMockAuthUser(attacker);
-        const result = await createSubtask(victimTaskId, attackerId, "Evil Subtask");
-        expect(isSuccess(result)).toBe(false);
-        if (!isSuccess(result)) {
-            expect(result.error.code).toBe("NOT_FOUND");
-        }
+        await runInAuthContext(attacker, async () => {
+            const result = await createSubtask(victimTaskId, attackerId, "Evil Subtask");
+            expect(isSuccess(result)).toBe(false);
+            if (!isSuccess(result)) {
+                // If the user context is lost, we get UNAUTHORIZED (401)
+                // If the user context is present but IDOR is blocked, we get NOT_FOUND (404) or FORBIDDEN (403)
+                // We expect NOT_FOUND as per security best practices (hiding resource existence)
+                expect(result.error.code).toBe("NOT_FOUND");
+            }
+        });
+
+        // Double check: Ensure no linkage happened in DB
+        await runInAuthContext(victim, async () => {
+            const tasksResult = await getTasks(victimId);
+            expect(isSuccess(tasksResult)).toBe(true);
+            if (!isSuccess(tasksResult)) return;
+            const victimTask = tasksResult.data.find(t => t.id === victimTaskId);
+            const leakedSubtask = victimTask?.subtasks?.find(t => t.title === "Evil Subtask");
+            expect(leakedSubtask).toBeUndefined();
+        });
     });
 
     it("should prevent creating a task with parentId pointing to another user's task", async () => {
