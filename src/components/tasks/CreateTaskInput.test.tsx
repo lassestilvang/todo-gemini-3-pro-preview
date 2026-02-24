@@ -5,29 +5,14 @@ const mockCreateTask = mock();
 
 // Mocks should be targeted and not leak to other tests
 
-// Local UI Mocks
-mock.module("@/components/ui/dialog", () => ({
-    Dialog: ({ children, open }: { children: React.ReactNode; open?: boolean }) => <div data-testid="dialog-root" data-open={open}>{children}</div>,
-    DialogContent: ({ children }: { children: React.ReactNode }) => <div data-testid="dialog-content">{children}</div>,
-    DialogHeader: ({ children }: { children: React.ReactNode }) => <div data-testid="dialog-header">{children}</div>,
-    DialogFooter: ({ children }: { children: React.ReactNode }) => <div data-testid="dialog-footer">{children}</div>,
-    DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
-    DialogDescription: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
-    DialogTrigger: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => asChild ? children : <button>{children}</button>,
-}));
-
-mock.module("@/components/ui/tooltip", () => ({
-    Tooltip: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    TooltipTrigger: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => asChild ? children : <button>{children}</button>,
-    TooltipContent: ({ children }: { children: React.ReactNode }) => <div data-testid="tooltip-content">{children}</div>,
-    TooltipProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}));
+// Mock UI components are now handled globally in src/test/setup.tsx via src/test/mocks-ui.tsx
 
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CreateTaskInput } from "./CreateTaskInput";
 import React from "react";
 import * as syncProvider from "@/components/providers/sync-provider";
+const { SyncProvider } = syncProvider;
 import { setMockAuthUser } from "@/test/mocks";
 
 describe("CreateTaskInput", () => {

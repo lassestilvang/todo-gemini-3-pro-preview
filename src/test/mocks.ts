@@ -31,20 +31,36 @@ mock.module("react", () => ({
 }));
 
 // Mock next/navigation globally - must be before any component imports
+export const mockPush = mock();
+export const mockReplace = mock();
+export const mockPrefetch = mock();
+export const mockBack = mock();
+export const mockForward = mock();
+export const mockRefresh = mock();
+
+export const mockRouter = {
+    push: mockPush,
+    replace: mockReplace,
+    prefetch: mockPrefetch,
+    back: mockBack,
+    forward: mockForward,
+    refresh: mockRefresh,
+};
+
+export const mockUseRouter = mock(() => mockRouter);
+export const mockUsePathname = mock(() => "/");
+export const mockUseSearchParams = mock(() => new URLSearchParams());
+export const mockUseParams = mock(() => ({}));
+export const mockRedirect = mock((url: string) => { throw new Error(`REDIRECT:${url}`); });
+export const mockNotFound = mock(() => { throw new Error("NOT_FOUND"); });
+
 mock.module("next/navigation", () => ({
-    useRouter: () => ({
-        push: () => { },
-        replace: () => { },
-        prefetch: () => { },
-        back: () => { },
-        forward: () => { },
-        refresh: () => { },
-    }),
-    usePathname: () => "/",
-    useSearchParams: () => new URLSearchParams(),
-    useParams: () => ({}),
-    redirect: (url: string) => { throw new Error(`REDIRECT:${url}`); },
-    notFound: () => { throw new Error("NOT_FOUND"); },
+    useRouter: mockUseRouter,
+    usePathname: mockUsePathname,
+    useSearchParams: mockUseSearchParams,
+    useParams: mockUseParams,
+    redirect: mockRedirect,
+    notFound: mockNotFound,
 }));
 
 // Mock next/cache globally
@@ -67,14 +83,187 @@ mock.module("next/headers", () => ({
 
 // Mock gemini client globally to prevent AI calls during tests
 // Individual tests can override this mock if they need to test AI functionality
+export const mockGetGeminiClient = mock(() => null);
+
 mock.module("@/lib/gemini", () => ({
-    getGeminiClient: () => null,
+    getGeminiClient: mockGetGeminiClient,
     GEMINI_MODEL: "gemini-pro",
 }));
 
 // Mock canvas-confetti
 mock.module("canvas-confetti", () => ({
     default: () => Promise.resolve(),
+}));
+
+// Mock sonner
+mock.module("sonner", () => ({
+    toast: {
+        success: mock(),
+        error: mock(),
+        info: mock(),
+        warning: mock(),
+        message: mock(),
+    }
+}));
+
+// Mock audio library
+mock.module("@/lib/audio", () => ({
+    playLevelUpSound: mock(() => { }),
+    playSuccessSound: mock(() => { }),
+}));
+
+// Mock next/dynamic globally
+mock.module("next/dynamic", () => ({
+    __esModule: true,
+    default: () => {
+        const DynamicComponent = () => null;
+        DynamicComponent.displayName = "DynamicComponentMock";
+        return DynamicComponent;
+    },
+}));
+
+// Mock Stores
+export const mockUseTaskStore = mock(() => ({
+    tasks: {},
+    subtaskIndex: {},
+    isInitialized: true,
+    initialize: mock(() => Promise.resolve()),
+    setTasks: mock(() => {}),
+    replaceTasks: mock(() => {}),
+    upsertTasks: mock(() => {}),
+    upsertTask: mock(() => {}),
+    deleteTasks: mock(() => {}),
+    deleteTask: mock(() => {}),
+    updateSubtaskCompletion: mock(() => {}),
+    getTaskBySubtaskId: mock(() => undefined),
+}));
+
+export const mockUseListStore = mock(() => ({
+    lists: {},
+    isInitialized: true,
+    initialize: mock(() => Promise.resolve()),
+    setLists: mock(() => {}),
+    replaceLists: mock(() => {}),
+    upsertLists: mock(() => {}),
+    upsertList: mock(() => {}),
+    deleteLists: mock(() => {}),
+    deleteList: mock(() => {}),
+}));
+
+export const mockUseLabelStore = mock(() => ({
+    labels: {},
+    isInitialized: true,
+    initialize: mock(() => Promise.resolve()),
+    setLabels: mock(() => {}),
+    replaceLabels: mock(() => {}),
+    upsertLabels: mock(() => {}),
+    upsertLabel: mock(() => {}),
+    deleteLabels: mock(() => {}),
+    deleteLabel: mock(() => {}),
+}));
+
+mock.module("@/lib/store/task-store", () => ({
+    useTaskStore: mockUseTaskStore
+}));
+
+mock.module("@/lib/store/list-store", () => ({
+    useListStore: mockUseListStore
+}));
+
+mock.module("@/lib/store/label-store", () => ({
+    useLabelStore: mockUseLabelStore
+}));
+
+export function resetGlobalStoreMocks() {
+    mockUseTaskStore.mockImplementation(() => ({
+        tasks: {},
+        subtaskIndex: {},
+        isInitialized: true,
+        initialize: mock(() => Promise.resolve()),
+        setTasks: mock(() => {}),
+        replaceTasks: mock(() => {}),
+        upsertTasks: mock(() => {}),
+        upsertTask: mock(() => {}),
+        deleteTasks: mock(() => {}),
+        deleteTask: mock(() => {}),
+        updateSubtaskCompletion: mock(() => {}),
+        getTaskBySubtaskId: mock(() => undefined),
+    }));
+    mockUseListStore.mockImplementation(() => ({
+        lists: {},
+        isInitialized: true,
+        initialize: mock(() => Promise.resolve()),
+        setLists: mock(() => {}),
+        replaceLists: mock(() => {}),
+        upsertLists: mock(() => {}),
+        upsertList: mock(() => {}),
+        deleteLists: mock(() => {}),
+        deleteList: mock(() => {}),
+    }));
+    mockUseLabelStore.mockImplementation(() => ({
+        labels: {},
+        isInitialized: true,
+        initialize: mock(() => Promise.resolve()),
+        setLabels: mock(() => {}),
+        replaceLabels: mock(() => {}),
+        upsertLabels: mock(() => {}),
+        upsertLabel: mock(() => {}),
+        deleteLabels: mock(() => {}),
+        deleteLabel: mock(() => {}),
+    }));
+    mockUseTaskCounts.mockImplementation(() => ({
+        total: 0,
+        inbox: 0,
+        today: 0,
+        upcoming: 0,
+        listCounts: {},
+        labelCounts: {},
+    }));
+}
+
+// Mock useTaskCounts
+export const mockUseTaskCounts = mock(() => ({
+    total: 0,
+    inbox: 0,
+    today: 0,
+    upcoming: 0,
+    listCounts: {},
+    labelCounts: {},
+}));
+
+mock.module("@/hooks/use-task-counts", () => ({
+    useTaskCounts: mockUseTaskCounts
+}));
+
+// Mock next-themes
+export const mockSetTheme = mock(() => { });
+export const mockUseTheme = mock(() => ({
+    theme: "light",
+    setTheme: mockSetTheme,
+}));
+
+mock.module("next-themes", () => ({
+    useTheme: mockUseTheme,
+    ThemeProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+// Mock sync-provider
+export const mockDispatch = mock(() => Promise.resolve());
+export const mockUseSync = mock(() => ({ dispatch: mockDispatch }));
+export const mockUseSyncActions = mock(() => ({ dispatch: mockDispatch }));
+export const mockUseOptionalSyncActions = mock(() => ({ dispatch: mockDispatch }));
+
+mock.module("@/components/providers/sync-provider", () => ({
+    SyncProvider: ({ children }: { children: React.ReactNode }) => React.createElement(React.Fragment, null, children),
+    useSyncState: () => ({
+        isOnline: true,
+        pendingActions: [],
+        status: 'online' as const,
+        conflicts: [],
+    }),
+    useSync: mockUseSync,
+    useSyncActions: mockUseSyncActions,
+    useOptionalSyncActions: mockUseOptionalSyncActions
 }));
 
 /**

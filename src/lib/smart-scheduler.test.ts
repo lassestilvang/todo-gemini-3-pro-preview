@@ -1,6 +1,6 @@
-import { describe, it, expect, mock, beforeEach, beforeAll } from "bun:test";
+import { describe, it, expect, mock, beforeEach, beforeAll, afterEach } from "bun:test";
 import { setupTestDb, createTestUser } from "../test/setup";
-import { setMockAuthUser } from "@/test/mocks";
+import { setMockAuthUser, mockGetGeminiClient } from "@/test/mocks";
 import { db, tasks } from "@/db";
 import { eq } from "drizzle-orm";
 import { generateSubtasks, extractDeadline, generateSmartSchedule, analyzePriorities, applyScheduleSuggestion } from "./smart-scheduler";
@@ -16,19 +16,16 @@ const mockGetGenerativeModel = mock(() => ({
     generateContent: mockGenerateContent
 }));
 
-const mockGetGeminiClient = mock(() => ({
-    getGenerativeModel: mockGetGenerativeModel
-}));
+// Use global mock instead of local mock.module
+// const mockGetGeminiClient = mock(() => ({
+//     getGenerativeModel: mockGetGenerativeModel
+// }));
 
-// Mock the module
 describe("smart-scheduler", () => {
     let testUserId: string;
 
     beforeAll(async () => {
-        mock.module("@/lib/gemini", () => ({
-            getGeminiClient: mockGetGeminiClient,
-            GEMINI_MODEL: "gemini-pro"
-        }));
+        // No local mock.module needed, using global mockGetGeminiClient
         await setupTestDb();
         // await resetTestDb();
     });
@@ -40,8 +37,17 @@ describe("smart-scheduler", () => {
 
         await createTestUser(testUserId, `${testUserId}@scheduler.com`);
         setMockAuthUser({ id: testUserId, email: `${testUserId}@scheduler.com`, firstName: "Test", lastName: "User", profilePictureUrl: null });
+        
         mockGenerateContent.mockClear();
-        mockGetGeminiClient.mockClear();
+        // Configure global mock to return our test client
+        mockGetGeminiClient.mockReturnValue({
+            getGenerativeModel: mockGetGenerativeModel
+        } as any);
+    });
+
+    afterEach(() => {
+        // Restore global mock to original state (returning null)
+        mockGetGeminiClient.mockRestore();
     });
 
     describe("generateSubtasks", () => {

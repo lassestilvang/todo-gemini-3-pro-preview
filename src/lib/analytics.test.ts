@@ -7,6 +7,7 @@ import { format, subDays } from "date-fns";
 
 describe("Analytics", () => {
     let testUserId: string;
+    let testUserCounter = 0;
 
     beforeAll(async () => {
         await setupTestDb();

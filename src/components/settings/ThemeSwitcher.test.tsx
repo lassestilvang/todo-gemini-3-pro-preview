@@ -1,18 +1,10 @@
-import { describe, it, expect, mock, beforeEach } from "bun:test";
+import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { ThemeSwitcher } from "./ThemeSwitcher";
-
-// Mock next-themes
-const mockSetTheme = mock(() => { });
-mock.module("next-themes", () => ({
-    useTheme: () => ({
-        theme: "light",
-        setTheme: mockSetTheme,
-    }),
-}));
+import { mockSetTheme } from "../../test/mocks";
 
 describe("ThemeSwitcher", () => {
-    beforeEach(() => {
+    afterEach(() => {
         cleanup();
         mockSetTheme.mockClear();
     });

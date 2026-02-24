@@ -1,9 +1,10 @@
-import { beforeAll, beforeEach, describe, expect, it, mock } from "bun:test";
+import { beforeAll, beforeEach, afterEach, describe, expect, it, mock, spyOn } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
 import { db, externalEntityMap, externalIntegrations, externalSyncConflicts, externalSyncState, lists, tasks } from "@/db";
 import { and, eq } from "drizzle-orm";
 import type { GoogleTask } from "@/lib/google-tasks/types";
+import * as googleTasksService from "@/lib/google-tasks/service";
 
 type Snapshot = {
     tasklists: { id: string; title: string; updated?: string; etag?: string }[];
@@ -15,15 +16,6 @@ const serviceState: { snapshot: Snapshot; client: Record<string, unknown> } = {
     client: {},
 };
 
-mock.module("@/lib/google-tasks/service", () => ({
-    createGoogleTasksClient: () => serviceState.client,
-    fetchGoogleTasksSnapshot: async () => serviceState.snapshot,
-    getGoogleTasksAccessToken: async (userId: string) => ({
-        accessToken: "token",
-        integration: { userId },
-    }),
-}));
-
 import { syncGoogleTasksForUser } from "@/lib/google-tasks/sync";
 import { resolveGoogleTasksConflict } from "@/lib/actions/google-tasks";
 
@@ -34,6 +26,18 @@ describe("Integration: Google Tasks Sync", () => {
 
     beforeEach(async () => {
         await resetTestDb();
+        
+        // Mock service methods using spyOn
+        spyOn(googleTasksService, "createGoogleTasksClient").mockImplementation(() => serviceState.client as any);
+        spyOn(googleTasksService, "fetchGoogleTasksSnapshot").mockImplementation(async () => serviceState.snapshot);
+        spyOn(googleTasksService, "getGoogleTasksAccessToken").mockImplementation(async (userId: string) => ({
+            accessToken: "token",
+            integration: { userId } as any,
+        }));
+    });
+
+    afterEach(() => {
+        mock.restore();
     });
 
     it("pulls remote tasks into local database", async () => {
