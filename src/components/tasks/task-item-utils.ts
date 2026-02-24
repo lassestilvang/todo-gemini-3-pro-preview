@@ -21,6 +21,21 @@ export const priorityColors = {
     none: "text-gray-400",
 } as const;
 
+export const energyLabels = {
+    high: "High Energy",
+    medium: "Medium Energy",
+    low: "Low Energy",
+} as const;
+
+export const contextLabels = {
+    computer: "Computer",
+    phone: "Phone",
+    errands: "Errands",
+    meeting: "Meeting",
+    home: "Home",
+    anywhere: "Anywhere",
+} as const;
+
 /**
  * Custom comparison for TaskItem memoization.
  */
@@ -70,6 +85,10 @@ export function areTaskPropsEqual(prev: any, next: any) {
     if (p.estimateMinutes !== n.estimateMinutes) return false;
     if (p.actualMinutes !== n.actualMinutes) return false;
     if (p.isRecurring !== n.isRecurring) return false;
+
+    // Check if energyLevel or context changed (Fix for memoization bug)
+    if (p.energyLevel !== n.energyLevel) return false;
+    if (p.context !== n.context) return false;
 
     const pDue = p.dueDate instanceof Date ? p.dueDate.getTime() : (p.dueDate ? new Date(p.dueDate).getTime() : null);
     const nDue = n.dueDate instanceof Date ? n.dueDate.getTime() : (n.dueDate ? new Date(n.dueDate).getTime() : null);

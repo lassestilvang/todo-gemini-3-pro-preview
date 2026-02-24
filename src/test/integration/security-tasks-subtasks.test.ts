@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
-import { runInAuthContext, clearMockAuthUser } from "@/test/auth-helpers";
 import { runInAuthContext } from "@/test/mocks";
 import { createTask, createSubtask, getTasks } from "@/lib/actions/tasks";
 import { isSuccess } from "@/lib/action-result";
@@ -19,8 +18,10 @@ describe("Integration: Security Subtask IDOR", () => {
     beforeEach(async () => {
         await resetTestDb();
         // Create users with unique IDs to prevent collisions
-        const victim = await createTestUser(`victim-${crypto.randomUUID()}`, "victim@target.com");
-        const attacker = await createTestUser(`attacker-${crypto.randomUUID()}`, "attacker@evil.com");
+        const victimUser = await createTestUser(`victim-${crypto.randomUUID()}`, "victim@target.com");
+        const attackerUser = await createTestUser(`attacker-${crypto.randomUUID()}`, "attacker@evil.com");
+        victim = victimUser;
+        attacker = attackerUser;
         victimId = victim.id;
         attackerId = attacker.id;
 
@@ -45,6 +46,9 @@ describe("Integration: Security Subtask IDOR", () => {
             const result = await createSubtask(victimTaskId, attackerId, "Evil Subtask");
             expect(isSuccess(result)).toBe(false);
             if (!isSuccess(result)) {
+                // If the user context is lost, we get UNAUTHORIZED (401)
+                // If the user context is present but IDOR is blocked, we get NOT_FOUND (404) or FORBIDDEN (403)
+                // We expect NOT_FOUND as per security best practices (hiding resource existence)
                 expect(result.error.code).toBe("NOT_FOUND");
             }
         });
