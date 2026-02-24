@@ -268,7 +268,7 @@ export const TaskItem = memo(function TaskItem({
                                         aria-label={energyLabels[task.energyLevel]}
                                         tabIndex={0}
                                     >
-                                        {task.energyLevel === "high" ? "🔋" : task.energyLevel === "medium" ? "🔌" : "🪫"}
+                                        {energyEmojis[task.energyLevel]}
                                     </div>
                                 </TooltipTrigger>
                                 <TooltipContent><p>{energyLabels[task.energyLevel]}</p></TooltipContent>
