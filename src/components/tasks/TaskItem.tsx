@@ -282,7 +282,7 @@ export const TaskItem = memo(function TaskItem({
                                         aria-label={contextLabels[task.context] || "Context"}
                                         tabIndex={0}
                                     >
-                                        {task.context === "computer" ? "💻" : task.context === "phone" ? "📱" : task.context === "errands" ? "🏃" : task.context === "meeting" ? "👥" : task.context === "home" ? "🏠" : "🌍"}
+                                        {contextEmojis[task.context]}
                                     </div>
                                 </TooltipTrigger>
                                 <TooltipContent><p>{contextLabels[task.context] || "Context"}</p></TooltipContent>
