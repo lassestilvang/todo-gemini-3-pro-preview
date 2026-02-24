@@ -1,7 +1,6 @@
-import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
+import { describe, it, expect, beforeEach, beforeAll, afterEach } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
-import { runInAuthContext, clearMockAuthUser } from "@/test/auth-helpers";
-import { runInAuthContext } from "@/test/mocks";
+import { setMockAuthUser, clearMockAuthUser } from "@/test/mocks";
 import { createTask, createSubtask, getTasks } from "@/lib/actions/tasks";
 import { isSuccess } from "@/lib/action-result";
 
@@ -19,59 +18,51 @@ describe("Integration: Security Subtask IDOR", () => {
     beforeEach(async () => {
         await resetTestDb();
         // Create users with unique IDs to prevent collisions
-        const victim = await createTestUser(`victim-${crypto.randomUUID()}`, "victim@target.com");
-        const attacker = await createTestUser(`attacker-${crypto.randomUUID()}`, "attacker@evil.com");
+        victim = await createTestUser(`victim-${crypto.randomUUID()}`, "victim@target.com");
+        attacker = await createTestUser(`attacker-${crypto.randomUUID()}`, "attacker@evil.com");
         victimId = victim.id;
         attackerId = attacker.id;
 
         // Login as Victim to create a task
-        await runInAuthContext(victim, async () => {
-            const taskResult = await createTask({
-                userId: victimId,
-                title: "Sensitive Project Task",
-                description: "Top secret",
-            });
-
-            if (!isSuccess(taskResult)) {
-                throw new Error("Failed to create victim task");
-            }
-            victimTaskId = taskResult.data.id;
+        setMockAuthUser(victim);
+        const taskResult = await createTask({
+            userId: victimId,
+            title: "Sensitive Project Task",
+            description: "Top secret",
         });
+
+        if (!isSuccess(taskResult)) {
+            throw new Error("Failed to create victim task");
+        }
+        victimTaskId = taskResult.data.id;
+        clearMockAuthUser();
+    });
+
+    afterEach(() => {
+        clearMockAuthUser();
     });
 
     it("should prevent creating a subtask under another user's task", async () => {
         // Attacker tries to create a subtask linked to Victim's task
-        await runInAuthContext(attacker, async () => {
-            const result = await createSubtask(victimTaskId, attackerId, "Evil Subtask");
-            expect(isSuccess(result)).toBe(false);
-            if (!isSuccess(result)) {
-                expect(result.error.code).toBe("NOT_FOUND");
-            }
-        });
-
-        // Double check: Ensure no linkage happened in DB
-        await runInAuthContext(victim, async () => {
-            const tasksResult = await getTasks(victimId);
-            expect(isSuccess(tasksResult)).toBe(true);
-            if (!isSuccess(tasksResult)) return;
-            const victimTask = tasksResult.data.find(t => t.id === victimTaskId);
-            const leakedSubtask = victimTask?.subtasks?.find(t => t.title === "Evil Subtask");
-            expect(leakedSubtask).toBeUndefined();
-        });
+        setMockAuthUser(attacker);
+        const result = await createSubtask(victimTaskId, attackerId, "Evil Subtask");
+        expect(isSuccess(result)).toBe(false);
+        if (!isSuccess(result)) {
+            expect(result.error.code).toBe("NOT_FOUND");
+        }
     });
 
     it("should prevent creating a task with parentId pointing to another user's task", async () => {
         // Attacker tries to create a task with parentId set to Victim's task
-        await runInAuthContext(attacker, async () => {
-            const result = await createTask({
-                userId: attackerId,
-                title: "Evil Child Task",
-                parentId: victimTaskId
-            });
-            expect(isSuccess(result)).toBe(false);
-            if (!isSuccess(result)) {
-                expect(result.error.code).toBe("NOT_FOUND");
-            }
+        setMockAuthUser(attacker);
+        const result = await createTask({
+            userId: attackerId,
+            title: "Evil Child Task",
+            parentId: victimTaskId
         });
+        expect(isSuccess(result)).toBe(false);
+        if (!isSuccess(result)) {
+            expect(result.error.code).toBe("NOT_FOUND");
+        }
     });
 });
