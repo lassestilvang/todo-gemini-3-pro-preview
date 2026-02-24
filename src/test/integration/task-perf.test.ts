@@ -14,8 +14,8 @@ describe("Integration: Task Performance Optimization", () => {
 
     beforeEach(async () => {
         await resetTestDb();
-        const randomId = Math.random().toString(36).substring(7);
-        testUserId = `user_perf_${randomId}`;
+        const uuid = crypto.randomUUID();
+        testUserId = `user_perf_${uuid}`;
 
         await createTestUser(testUserId, `${testUserId}@perf.com`);
         setMockAuthUser({ id: testUserId, email: `${testUserId}@perf.com`, firstName: "Perf", lastName: "User", profilePictureUrl: null });
