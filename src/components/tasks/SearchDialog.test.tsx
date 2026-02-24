@@ -2,25 +2,7 @@ import { describe, it, expect, mock, beforeEach } from "bun:test";
 import { render, screen, fireEvent } from "@testing-library/react";
 import React from "react";
 import Fuse from "fuse.js";
-import { setMockAuthUser } from "@/test/mocks";
-
-// Mock navigation
-const mockPush = mock();
-mock.module("next/navigation", () => ({
-    useRouter: () => ({
-        push: mockPush,
-        replace: () => {},
-        prefetch: () => {},
-        back: () => {},
-        forward: () => {},
-        refresh: () => {},
-    }),
-    usePathname: () => "/",
-    useSearchParams: () => new URLSearchParams(),
-    useParams: () => ({}),
-    redirect: (url: string) => { throw new Error(`REDIRECT:${url}`); },
-    notFound: () => { throw new Error("NOT_FOUND"); },
-}));
+import { setMockAuthUser, mockPush } from "@/test/mocks";
 
 // Wrapper replicating the Client-Side Search Logic with Fuse.js
 // In a real integration test, we would test SearchDialog itself.

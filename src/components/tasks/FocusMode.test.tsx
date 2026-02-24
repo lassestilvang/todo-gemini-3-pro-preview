@@ -7,19 +7,6 @@ import { cleanup } from "@testing-library/react";
 import { setMockAuthUser } from "@/test/mocks";
 import { eq } from "drizzle-orm";
 
-// Mock dependencies
-mock.module("canvas-confetti", () => ({
-    default: mock(() => Promise.resolve())
-}));
-
-mock.module("sonner", () => ({
-    toast: {
-        success: mock(),
-        error: mock(),
-        info: mock()
-    }
-}));
-
 describe("FocusMode", () => {
     beforeAll(async () => {
         await setupTestDb();

@@ -5,46 +5,14 @@ const mockCreateTask = mock();
 
 // Mocks should be targeted and not leak to other tests
 
-// Local UI Mocks
-mock.module("@/components/ui/dialog", () => ({
-    Dialog: ({ children, open }: { children: React.ReactNode; open?: boolean }) => <div data-testid="dialog-root" data-open={open}>{children}</div>,
-    DialogContent: ({ children }: { children: React.ReactNode }) => <div data-testid="dialog-content">{children}</div>,
-    DialogHeader: ({ children }: { children: React.ReactNode }) => <div data-testid="dialog-header">{children}</div>,
-    DialogFooter: ({ children }: { children: React.ReactNode }) => <div data-testid="dialog-footer">{children}</div>,
-    DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
-    DialogDescription: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
-    DialogTrigger: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => asChild ? children : <button>{children}</button>,
-}));
-
-mock.module("@/components/ui/tooltip", () => ({
-    Tooltip: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    TooltipTrigger: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => asChild ? children : <button>{children}</button>,
-    TooltipContent: ({ children }: { children: React.ReactNode }) => <div data-testid="tooltip-content">{children}</div>,
-    TooltipProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}));
-
-mock.module("@/components/providers/sync-provider", () => ({
-    SyncProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-    useSync: () => ({
-        dispatch: mock((type: string, ...args: unknown[]) => {
-            if (type === 'createTask') {
-                return mockCreateTask(...args);
-            }
-            return Promise.resolve({ success: true, data: { id: 1 } });
-        }),
-        isOnline: true,
-        status: 'online',
-        pendingActions: [],
-        conflicts: [],
-        resolveConflict: mock(() => Promise.resolve()),
-    }),
-}));
+// Mock UI components are now handled globally in src/test/setup.tsx via src/test/mocks-ui.tsx
 
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CreateTaskInput } from "./CreateTaskInput";
 import React from "react";
-import { SyncProvider } from "@/components/providers/sync-provider";
+import * as syncProvider from "@/components/providers/sync-provider";
+const { SyncProvider } = syncProvider;
 import { setMockAuthUser } from "@/test/mocks";
 
 describe("CreateTaskInput", () => {
@@ -55,6 +23,25 @@ describe("CreateTaskInput", () => {
         mockCreateTask.mockImplementation(() => Promise.resolve({ success: true, data: { id: 1 } }));
 
         consoleErrorSpy = spyOn(console, "error").mockImplementation(() => undefined);
+
+        spyOn(syncProvider, "useSync").mockReturnValue({
+            isOnline: true,
+            status: 'online',
+            pendingActions: [],
+            conflicts: [],
+            dispatch: mock((type: string, ...args: unknown[]) => {
+                if (type === 'createTask') {
+                    return mockCreateTask(...args);
+                }
+                return Promise.resolve({ success: true, data: { id: 1 } });
+            }),
+            resolveConflict: mock(() => Promise.resolve()),
+            retryAction: mock(() => Promise.resolve()),
+            dismissAction: mock(() => Promise.resolve()),
+            retryAllFailed: mock(() => Promise.resolve()),
+            dismissAllFailed: mock(() => Promise.resolve()),
+            syncNow: mock(() => { }),
+        });
 
         setMockAuthUser({
             id: "test_user_123",
@@ -84,6 +71,7 @@ describe("CreateTaskInput", () => {
 
     afterEach(() => {
         consoleErrorSpy.mockRestore();
+        mock.restore();
         cleanup();
     });
 

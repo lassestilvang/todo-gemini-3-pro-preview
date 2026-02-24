@@ -3,12 +3,18 @@ import { expect, afterEach, mock, beforeEach } from "bun:test";
 import * as matchers from "@testing-library/jest-dom/matchers";
 import { db, sqliteConnection } from "@/db";
 import { labels, lists, tasks, timeEntries, templates, userStats, achievements, userAchievements, viewSettings, savedViews, rateLimits, taskDependencies, taskLabels, reminders, habitCompletions, taskLogs, customIcons, externalIntegrations, externalSyncState, externalEntityMap, externalSyncConflicts } from "@/db";
-import { resetMockAuthUser } from "./mocks";
+import { resetMockAuthUser, getMockAuthUser, resetGlobalStoreMocks } from "./mocks";
 import { mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import React from "react";
 import { cleanup } from "@testing-library/react";
+import { DialogMocks, SelectMocks, PopoverMocks, TooltipMocks, IconPickerMocks, ResolvedIconMocks } from "./mocks-ui";
+
+
+// Expose getMockAuthUser globally for src/lib/auth.ts to use without importing
+// This avoids module instance mismatch issues in Bun test runner
+(globalThis as any).__getMockAuthUser = getMockAuthUser;
 
 
 
@@ -102,19 +108,7 @@ const createMockIDBRequest = () => {
     });
 };
 
-// Mock sonner globally
-mock.module("sonner", () => ({
-    toast: {
-        success: mock(() => { }),
-        error: mock(() => { }),
-        info: mock(() => { }),
-        warning: mock(() => { }),
-        message: mock(() => { }),
-        promise: mock(() => { }),
-        custom: mock(() => { }),
-        dismiss: mock(() => { }),
-    },
-}));
+// Mock sonner globally is handled in mocks.ts
 
 mock.module("idb", () => {
     const createTransaction = () => ({
@@ -275,60 +269,16 @@ if (!global.Element.prototype.scrollIntoView) {
 // console.warn = () => { };
 // console.error = () => { };
 
-// Mock SyncProvider
-mock.module("@/components/providers/sync-provider", () => ({
-    SyncProvider: ({ children }: { children: React.ReactNode }) => React.createElement(React.Fragment, null, children),
-    useSyncState: () => ({
-        isOnline: true,
-        pendingActions: [],
-        status: 'online' as const,
-        conflicts: [],
-    }),
-    useSyncActions: () => ({
-        dispatch: mock(() => Promise.resolve({ success: true, data: null })),
-        resolveConflict: mock(() => Promise.resolve()),
-        retryAction: mock(() => Promise.resolve()),
-        dismissAction: mock(() => Promise.resolve()),
-        retryAllFailed: mock(() => Promise.resolve()),
-        dismissAllFailed: mock(() => Promise.resolve()),
-        syncNow: mock(() => { }),
-    }),
-    useSync: () => ({
-        isOnline: true,
-        pendingActions: [],
-        status: 'online' as const,
-        conflicts: [],
-        dispatch: mock(() => Promise.resolve({ success: true, data: null })),
-        resolveConflict: mock(() => Promise.resolve()),
-        retryAction: mock(() => Promise.resolve()),
-        dismissAction: mock(() => Promise.resolve()),
-        retryAllFailed: mock(() => Promise.resolve()),
-        dismissAllFailed: mock(() => Promise.resolve()),
-        syncNow: mock(() => { }),
-    }),
-    useOptionalSyncActions: () => ({
-        dispatch: mock(() => Promise.resolve({ success: true, data: null })),
-        resolveConflict: mock(() => Promise.resolve()),
-        retryAction: mock(() => Promise.resolve()),
-        dismissAction: mock(() => Promise.resolve()),
-        retryAllFailed: mock(() => Promise.resolve()),
-        dismissAllFailed: mock(() => Promise.resolve()),
-        syncNow: mock(() => { }),
-    }),
-    useOptionalSync: () => ({
-        isOnline: true,
-        pendingActions: [],
-        status: 'online' as const,
-        conflicts: [],
-        dispatch: mock(() => Promise.resolve({ success: true, data: null })),
-        resolveConflict: mock(() => Promise.resolve()),
-        retryAction: mock(() => Promise.resolve()),
-        dismissAction: mock(() => Promise.resolve()),
-        retryAllFailed: mock(() => Promise.resolve()),
-        dismissAllFailed: mock(() => Promise.resolve()),
-        syncNow: mock(() => { }),
-    }),
-}));
+// Mock SyncProvider is now handled globally in mocks.ts
+// It provides mockUseSync, mockUseSyncActions, mockUseOptionalSyncActions, etc.
+
+// Mock UI components globally
+mock.module("@/components/ui/dialog", () => DialogMocks);
+mock.module("@/components/ui/select", () => SelectMocks);
+mock.module("@/components/ui/popover", () => PopoverMocks);
+mock.module("@/components/ui/tooltip", () => TooltipMocks);
+mock.module("@/components/ui/icon-picker", () => IconPickerMocks);
+mock.module("@/components/ui/resolved-icon", () => ResolvedIconMocks);
 
 // Traditional auth mock for broad support across all test types
 
@@ -360,6 +310,7 @@ async function releaseGlobalTestLock() {
 }
 
 beforeEach(async () => {
+    resetGlobalStoreMocks();
     await acquireGlobalTestLock();
     let release: () => void;
     const next = new Promise<void>((resolve) => {

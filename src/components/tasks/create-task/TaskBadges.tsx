@@ -29,9 +29,9 @@ function BadgeRemoveButton({ onClick, label }: { onClick: () => void, label: str
 }
 
 export function TaskBadges({ state, dispatchState, onRemoveFocus }: TaskBadgesProps) {
-    const { title, priority, dueDate, dueDatePrecision, energyLevel, context } = state;
+    const { priority, dueDate, dueDatePrecision, energyLevel, context } = state;
 
-    if (!title.trim() || (priority === "none" && !dueDate && !energyLevel && !context)) {
+    if (priority === "none" && !dueDate && !energyLevel && !context) {
         return null;
     }
 

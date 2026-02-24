@@ -6,14 +6,6 @@ import { isSuccess } from "../action-result";
 import { db, labels } from "@/db";
 import { asc, eq } from "drizzle-orm";
 
-// Explicitly mock next/cache to match other test files and ensure isolation
-mock.module("next/cache", () => ({
-    revalidatePath: () => { },
-    revalidateTag: () => { },
-    unstable_cache: <T,>(fn: T) => fn,
-    cache: <T,>(fn: T) => fn,
-}));
-
 describe("reorderLabels", () => {
     let testUserId: string;
 

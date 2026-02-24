@@ -5,10 +5,27 @@
  */
 import { afterEach, mock } from "bun:test";
 import React from "react";
+import { getMockAuthUser, resetMockAuthUser } from "./auth-helpers";
+
+// Re-export auth helpers for convenience, though direct import is preferred
+export * from "./auth-helpers";
+import { AsyncLocalStorage } from "async_hooks";
 
 // Ensure DB module initializes in test mode even if NODE_ENV isn't set.
 if (!process.env.NODE_ENV) {
     (process.env as Record<string, string | undefined>).NODE_ENV = "test";
+}
+
+// Create AsyncLocalStorage for isolated test auth context
+export const authStorage = new AsyncLocalStorage<MockAuthUser | null>();
+
+/**
+ * Runs a callback within an isolated auth context.
+ * Use this to ensure tests running in parallel don't interfere with each other's auth state.
+ */
+export function runInAuthContext<T>(user: MockAuthUser | null, callback: () => T): T {
+    // console.log(`[MOCK] Running in auth context: ${user?.id ?? "null"}`);
+    return authStorage.run(user, callback);
 }
 
 // Mock react cache to prevent state leakage across tests in the same worker
@@ -18,20 +35,36 @@ mock.module("react", () => ({
 }));
 
 // Mock next/navigation globally - must be before any component imports
+export const mockPush = mock();
+export const mockReplace = mock();
+export const mockPrefetch = mock();
+export const mockBack = mock();
+export const mockForward = mock();
+export const mockRefresh = mock();
+
+export const mockRouter = {
+    push: mockPush,
+    replace: mockReplace,
+    prefetch: mockPrefetch,
+    back: mockBack,
+    forward: mockForward,
+    refresh: mockRefresh,
+};
+
+export const mockUseRouter = mock(() => mockRouter);
+export const mockUsePathname = mock(() => "/");
+export const mockUseSearchParams = mock(() => new URLSearchParams());
+export const mockUseParams = mock(() => ({}));
+export const mockRedirect = mock((url: string) => { throw new Error(`REDIRECT:${url}`); });
+export const mockNotFound = mock(() => { throw new Error("NOT_FOUND"); });
+
 mock.module("next/navigation", () => ({
-    useRouter: () => ({
-        push: () => { },
-        replace: () => { },
-        prefetch: () => { },
-        back: () => { },
-        forward: () => { },
-        refresh: () => { },
-    }),
-    usePathname: () => "/",
-    useSearchParams: () => new URLSearchParams(),
-    useParams: () => ({}),
-    redirect: (url: string) => { throw new Error(`REDIRECT:${url}`); },
-    notFound: () => { throw new Error("NOT_FOUND"); },
+    useRouter: mockUseRouter,
+    usePathname: mockUsePathname,
+    useSearchParams: mockUseSearchParams,
+    useParams: mockUseParams,
+    redirect: mockRedirect,
+    notFound: mockNotFound,
 }));
 
 // Mock next/cache globally
@@ -54,14 +87,187 @@ mock.module("next/headers", () => ({
 
 // Mock gemini client globally to prevent AI calls during tests
 // Individual tests can override this mock if they need to test AI functionality
+export const mockGetGeminiClient = mock(() => null);
+
 mock.module("@/lib/gemini", () => ({
-    getGeminiClient: () => null,
+    getGeminiClient: mockGetGeminiClient,
     GEMINI_MODEL: "gemini-pro",
 }));
 
 // Mock canvas-confetti
 mock.module("canvas-confetti", () => ({
     default: () => Promise.resolve(),
+}));
+
+// Mock sonner
+mock.module("sonner", () => ({
+    toast: {
+        success: mock(),
+        error: mock(),
+        info: mock(),
+        warning: mock(),
+        message: mock(),
+    }
+}));
+
+// Mock audio library
+mock.module("@/lib/audio", () => ({
+    playLevelUpSound: mock(() => { }),
+    playSuccessSound: mock(() => { }),
+}));
+
+// Mock next/dynamic globally
+mock.module("next/dynamic", () => ({
+    __esModule: true,
+    default: () => {
+        const DynamicComponent = () => null;
+        DynamicComponent.displayName = "DynamicComponentMock";
+        return DynamicComponent;
+    },
+}));
+
+// Mock Stores
+export const mockUseTaskStore = mock(() => ({
+    tasks: {},
+    subtaskIndex: {},
+    isInitialized: true,
+    initialize: mock(() => Promise.resolve()),
+    setTasks: mock(() => {}),
+    replaceTasks: mock(() => {}),
+    upsertTasks: mock(() => {}),
+    upsertTask: mock(() => {}),
+    deleteTasks: mock(() => {}),
+    deleteTask: mock(() => {}),
+    updateSubtaskCompletion: mock(() => {}),
+    getTaskBySubtaskId: mock(() => undefined),
+}));
+
+export const mockUseListStore = mock(() => ({
+    lists: {},
+    isInitialized: true,
+    initialize: mock(() => Promise.resolve()),
+    setLists: mock(() => {}),
+    replaceLists: mock(() => {}),
+    upsertLists: mock(() => {}),
+    upsertList: mock(() => {}),
+    deleteLists: mock(() => {}),
+    deleteList: mock(() => {}),
+}));
+
+export const mockUseLabelStore = mock(() => ({
+    labels: {},
+    isInitialized: true,
+    initialize: mock(() => Promise.resolve()),
+    setLabels: mock(() => {}),
+    replaceLabels: mock(() => {}),
+    upsertLabels: mock(() => {}),
+    upsertLabel: mock(() => {}),
+    deleteLabels: mock(() => {}),
+    deleteLabel: mock(() => {}),
+}));
+
+mock.module("@/lib/store/task-store", () => ({
+    useTaskStore: mockUseTaskStore
+}));
+
+mock.module("@/lib/store/list-store", () => ({
+    useListStore: mockUseListStore
+}));
+
+mock.module("@/lib/store/label-store", () => ({
+    useLabelStore: mockUseLabelStore
+}));
+
+export function resetGlobalStoreMocks() {
+    mockUseTaskStore.mockImplementation(() => ({
+        tasks: {},
+        subtaskIndex: {},
+        isInitialized: true,
+        initialize: mock(() => Promise.resolve()),
+        setTasks: mock(() => {}),
+        replaceTasks: mock(() => {}),
+        upsertTasks: mock(() => {}),
+        upsertTask: mock(() => {}),
+        deleteTasks: mock(() => {}),
+        deleteTask: mock(() => {}),
+        updateSubtaskCompletion: mock(() => {}),
+        getTaskBySubtaskId: mock(() => undefined),
+    }));
+    mockUseListStore.mockImplementation(() => ({
+        lists: {},
+        isInitialized: true,
+        initialize: mock(() => Promise.resolve()),
+        setLists: mock(() => {}),
+        replaceLists: mock(() => {}),
+        upsertLists: mock(() => {}),
+        upsertList: mock(() => {}),
+        deleteLists: mock(() => {}),
+        deleteList: mock(() => {}),
+    }));
+    mockUseLabelStore.mockImplementation(() => ({
+        labels: {},
+        isInitialized: true,
+        initialize: mock(() => Promise.resolve()),
+        setLabels: mock(() => {}),
+        replaceLabels: mock(() => {}),
+        upsertLabels: mock(() => {}),
+        upsertLabel: mock(() => {}),
+        deleteLabels: mock(() => {}),
+        deleteLabel: mock(() => {}),
+    }));
+    mockUseTaskCounts.mockImplementation(() => ({
+        total: 0,
+        inbox: 0,
+        today: 0,
+        upcoming: 0,
+        listCounts: {},
+        labelCounts: {},
+    }));
+}
+
+// Mock useTaskCounts
+export const mockUseTaskCounts = mock(() => ({
+    total: 0,
+    inbox: 0,
+    today: 0,
+    upcoming: 0,
+    listCounts: {},
+    labelCounts: {},
+}));
+
+mock.module("@/hooks/use-task-counts", () => ({
+    useTaskCounts: mockUseTaskCounts
+}));
+
+// Mock next-themes
+export const mockSetTheme = mock(() => { });
+export const mockUseTheme = mock(() => ({
+    theme: "light",
+    setTheme: mockSetTheme,
+}));
+
+mock.module("next-themes", () => ({
+    useTheme: mockUseTheme,
+    ThemeProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+// Mock sync-provider
+export const mockDispatch = mock(() => Promise.resolve());
+export const mockUseSync = mock(() => ({ dispatch: mockDispatch }));
+export const mockUseSyncActions = mock(() => ({ dispatch: mockDispatch }));
+export const mockUseOptionalSyncActions = mock(() => ({ dispatch: mockDispatch }));
+
+mock.module("@/components/providers/sync-provider", () => ({
+    SyncProvider: ({ children }: { children: React.ReactNode }) => React.createElement(React.Fragment, null, children),
+    useSyncState: () => ({
+        isOnline: true,
+        pendingActions: [],
+        status: 'online' as const,
+        conflicts: [],
+    }),
+    useSync: mockUseSync,
+    useSyncActions: mockUseSyncActions,
+    useOptionalSyncActions: mockUseOptionalSyncActions
 }));
 
 /**
@@ -71,30 +277,25 @@ mock.module("canvas-confetti", () => ({
  * Note: We use a global object to store the mock user so that the mock function
  * can dynamically read the current value when called.
  */
-interface MockAuthUser {
+export interface MockAuthUser {
     id: string;
     email: string;
-    firstName: string | null;
-    lastName: string | null;
-    profilePictureUrl: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+    profilePictureUrl?: string | null;
 }
 
-export const DEFAULT_MOCK_USER = {
-    id: "test_user_123",
-    email: "test@example.com",
+export const DEFAULT_MOCK_USER: MockAuthUser = {
+    id: "user_1",
+    email: "user_1@example.com",
     firstName: "Test",
     lastName: "User",
-    profilePictureUrl: null,
+    profilePictureUrl: null
 };
 
-// Initialize mock state
-const GLOBAL_MOCK_USER_KEY = "__mockAuthUser";
+const GLOBAL_MOCK_USER_KEY = "mockAuthUser";
+// Use a global object that persists across module reloads in the same worker
 const mockState = globalThis as unknown as Record<string, MockAuthUser | null>;
-
-// Initialize to null (unauthenticated) by default to prevent accidental access
-if (mockState[GLOBAL_MOCK_USER_KEY] === undefined) {
-    mockState[GLOBAL_MOCK_USER_KEY] = null;
-}
 
 export const mockDb: {
     select: () => { from: () => { where: () => Promise<unknown[]>; limit: () => Promise<unknown[]>; orderBy: () => Promise<unknown[]>; execute: () => Promise<unknown[]> } };
@@ -125,103 +326,87 @@ export const mockDb: {
     }),
 };
 
-import { AsyncLocalStorage } from "node:async_hooks";
-
-// Storage for mock auth user to ensure thread-safety in parallel tests
-const authStorage = new AsyncLocalStorage<MockAuthUser | null>();
-
-// Use globalThis to ensure the mock state is shared across module boundaries as a fallback
-// (Defined above to ensure early initialization)
+/**
+ * Sets the mock user for the current test context.
+ * This user will be returned by getCurrentUser() in @/lib/auth.
+ * 
+ * Usage:
+ * beforeEach(() => {
+ *   setMockAuthUser({ id: "user_1", email: "test@example.com" });
+ * });
+ */
+export function setMockAuthUser(user: MockAuthUser) {
+    console.log(`[MOCK] Setting mock user: ${user.id} (Global: ${!!(globalThis as any).__mockAuthUser}, Env: ${!!process.env.MOCK_AUTH_USER})`);
+    mockState[GLOBAL_MOCK_USER_KEY] = user;
+    // Also set on globalThis for direct access if needed
+    (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = user;
+    // Set env var as fallback/compatibility
+    process.env.MOCK_AUTH_USER = JSON.stringify(user);
+    console.log(`[MOCK] Set complete. Global matches: ${(globalThis as any).__mockAuthUser?.id === user.id}`);
+}
 
 /**
- * Runs a function within a specific authentication context.
- * This is the preferred way to set a mock user for a specific test block.
- * When in an auth context, getMockAuthUser will prioritize this user.
+ * Clears the mock user.
+ * getCurrentUser() will return null (unauthenticated).
  */
-export function runInAuthContext<T>(user: MockAuthUser | null, fn: () => T): T {
-    const previousUser = mockState[GLOBAL_MOCK_USER_KEY];
-    mockState[GLOBAL_MOCK_USER_KEY] = user;
-    const previousGlobalUser = (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser;
-    (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = user ?? null;
-    const previousEnv = process.env.MOCK_AUTH_USER;
-    if (user) {
-        process.env.MOCK_AUTH_USER = JSON.stringify(user);
-    } else {
-        delete process.env.MOCK_AUTH_USER;
-    }
-
-    try {
-        const result = authStorage.run(user, fn);
-        if (result && typeof (result as unknown as Promise<unknown>).finally === "function") {
-            return (result as unknown as Promise<unknown>).finally(() => {
-                mockState[GLOBAL_MOCK_USER_KEY] = previousUser;
-                (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = previousGlobalUser ?? null;
-                if (previousEnv !== undefined) {
-                    process.env.MOCK_AUTH_USER = previousEnv;
-                } else {
-                    delete process.env.MOCK_AUTH_USER;
-                }
-            }) as T;
-        }
-
-        mockState[GLOBAL_MOCK_USER_KEY] = previousUser;
-        (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = previousGlobalUser ?? null;
-        if (previousEnv !== undefined) {
-            process.env.MOCK_AUTH_USER = previousEnv;
-        } else {
-            delete process.env.MOCK_AUTH_USER;
-        }
-        return result;
-    } catch (error) {
-        mockState[GLOBAL_MOCK_USER_KEY] = previousUser;
-        (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = previousGlobalUser ?? null;
-        if (previousEnv !== undefined) {
-            process.env.MOCK_AUTH_USER = previousEnv;
-        } else {
-            delete process.env.MOCK_AUTH_USER;
-        }
-        throw error;
-    }
-}
-
-export function setMockAuthUser(user: MockAuthUser | null) {
-    mockState[GLOBAL_MOCK_USER_KEY] = user;
-    authStorage.enterWith(user);
-    (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = user ?? null;
-    if (user) {
-        process.env.MOCK_AUTH_USER = JSON.stringify(user);
-    } else {
-        delete process.env.MOCK_AUTH_USER;
-    }
-}
-
 export function clearMockAuthUser() {
+    console.log("[MOCK] Clearing mock user");
     mockState[GLOBAL_MOCK_USER_KEY] = null;
     (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = null;
     delete process.env.MOCK_AUTH_USER;
 }
 
+/**
+ * Resets the mock user to null.
+ * Alias for clearMockAuthUser.
+ */
 export function resetMockAuthUser() {
-    mockState[GLOBAL_MOCK_USER_KEY] = null;
-    (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = null;
-    delete process.env.MOCK_AUTH_USER;
+    clearMockAuthUser();
 }
 
+/**
+ * Gets the current mock user.
+ * Used by @/lib/auth to retrieve the mocked identity.
+ */
 export function getMockAuthUser(): MockAuthUser | null {
-    const contextUser = authStorage.getStore();
-    if (contextUser !== undefined) {
-        return contextUser;
+    // 0. Check AsyncLocalStorage (highest priority, isolated)
+    const storageUser = authStorage.getStore();
+    if (storageUser !== undefined) {
+        console.log(`[MOCK] Getting mock user (storage): ${storageUser?.id}`);
+        return storageUser;
     }
+
+    // 1. Check globalThis (primary source)
     const globalUser = (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser;
+    console.log(`[MOCK] Getting mock user. Global: ${globalUser?.id}, State: ${mockState[GLOBAL_MOCK_USER_KEY]?.id}, Env: ${!!process.env.MOCK_AUTH_USER}`);
     if (globalUser !== undefined && globalUser !== null) {
+        // console.log(`[MOCK] Getting mock user (global): ${globalUser.id}`);
         return globalUser;
     }
+    
+    // 2. Check mockState (secondary source)
     const stateUser = mockState[GLOBAL_MOCK_USER_KEY];
     if (stateUser !== undefined && stateUser !== null) {
+        // console.log(`[MOCK] Getting mock user (state): ${stateUser.id}`);
         return stateUser;
     }
+    
+    // 3. Check env var (fallback)
+    if (process.env.MOCK_AUTH_USER) {
+        try {
+            const envUser = JSON.parse(process.env.MOCK_AUTH_USER);
+            // console.log(`[MOCK] Getting mock user (env): ${envUser.id}`);
+            return envUser;
+        } catch (e) {
+            console.error("[MOCK] Failed to parse MOCK_AUTH_USER", e);
+        }
+    }
+    
     return null;
 }
+
+// Expose getMockAuthUser globally to ensure single instance across dynamic imports
+(globalThis as any).__getMockAuthUser = getMockAuthUser;
 
 mock.module("@workos-inc/authkit-nextjs", () => ({
     withAuth: mock(async () => ({ user: getMockAuthUser() })),
@@ -235,7 +420,7 @@ mock.module("@workos-inc/authkit-nextjs", () => ({
  * Requirements: 3.1, 3.2 - Test isolation and mock reset
  */
 export function resetAllMocks() {
-    clearMockAuthUser();
+    resetMockAuthUser();
 }
 
 afterEach(() => {

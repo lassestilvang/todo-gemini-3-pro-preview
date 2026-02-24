@@ -1,23 +1,9 @@
-import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
+import { describe, it, expect, mock, beforeEach, afterEach, spyOn } from "bun:test";
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import { SmartScheduleDialog } from "./SmartScheduleDialog";
 import * as smartScheduler from "@/lib/smart-scheduler";
 import { toast } from "sonner";
 import userEvent from "@testing-library/user-event";
-
-// Mock dependencies
-mock.module("@/lib/smart-scheduler", () => ({
-    generateSmartSchedule: mock(),
-    applyScheduleSuggestion: mock()
-}));
-
-mock.module("sonner", () => ({
-    toast: {
-        success: mock(),
-        error: mock(),
-        info: mock()
-    }
-}));
 
 type MockFn = ReturnType<typeof mock> & {
     mockClear: () => void;
@@ -28,20 +14,27 @@ type MockFn = ReturnType<typeof mock> & {
 
 describe("SmartScheduleDialog", () => {
     const mockOnOpenChange = mock();
-    const mockGenerateSmartSchedule = smartScheduler.generateSmartSchedule as unknown as MockFn;
-    const mockApplyScheduleSuggestion = smartScheduler.applyScheduleSuggestion as unknown as MockFn;
+    let mockGenerateSmartSchedule: ReturnType<typeof spyOn>;
+    let mockApplyScheduleSuggestion: ReturnType<typeof spyOn>;
+    let mockToastSuccess: ReturnType<typeof spyOn>;
+    let mockToastError: ReturnType<typeof spyOn>;
+    let mockToastInfo: ReturnType<typeof spyOn>;
 
     beforeEach(() => {
         mockOnOpenChange.mockClear();
-        mockGenerateSmartSchedule.mockClear();
-        mockApplyScheduleSuggestion.mockClear();
-        // Reset toast mocks
-        (toast.success as unknown as MockFn).mockClear();
-        (toast.error as unknown as MockFn).mockClear();
-        (toast.info as unknown as MockFn).mockClear();
+
+        // Spy on smart-scheduler functions
+        mockGenerateSmartSchedule = spyOn(smartScheduler, "generateSmartSchedule").mockImplementation(() => Promise.resolve([]));
+        mockApplyScheduleSuggestion = spyOn(smartScheduler, "applyScheduleSuggestion").mockImplementation(() => Promise.resolve());
+
+        // Spy on toast functions
+        mockToastSuccess = spyOn(toast, "success").mockImplementation(() => { return "" as string | number; });
+        mockToastError = spyOn(toast, "error").mockImplementation(() => { return "" as string | number; });
+        mockToastInfo = spyOn(toast, "info").mockImplementation(() => { return "" as string | number; });
     });
 
     afterEach(() => {
+        mock.restore();
         cleanup();
     });
 
@@ -97,7 +90,7 @@ describe("SmartScheduleDialog", () => {
 
         // Wait for async action to complete
         await waitFor(() => {
-            expect(toast.info).toHaveBeenCalledWith("No unscheduled tasks found to schedule!");
+            expect(mockToastInfo).toHaveBeenCalledWith("No unscheduled tasks found to schedule!");
             expect(mockOnOpenChange).toHaveBeenCalledWith(false);
         });
     });
@@ -111,7 +104,7 @@ describe("SmartScheduleDialog", () => {
         await user.click(screen.getByText("Generate Schedule"));
 
         await waitFor(() => {
-            expect(toast.error).toHaveBeenCalledWith("Failed to generate schedule. Please check your API key.");
+            expect(mockToastError).toHaveBeenCalledWith("Failed to generate schedule. Please check your API key.");
         });
     });
 
@@ -147,7 +140,7 @@ describe("SmartScheduleDialog", () => {
             expect(mockApplyScheduleSuggestion).toHaveBeenCalledWith(1, suggestions[0].suggestedDate);
         });
         await waitFor(() => {
-            expect(toast.success).toHaveBeenCalledWith("Task scheduled!");
+            expect(mockToastSuccess).toHaveBeenCalledWith("Task scheduled!");
         });
     });
 

@@ -4,84 +4,14 @@ import { TaskDialog } from "./TaskDialog";
 import React from "react";
 import { setMockAuthUser } from "@/test/mocks";
 import * as syncProvider from "@/components/providers/sync-provider";
+import * as listActions from "@/lib/actions/lists";
+import * as labelActions from "@/lib/actions/labels";
+import * as taskActions from "@/lib/actions/tasks";
+import * as reminderActions from "@/lib/actions/reminders";
+import * as logActions from "@/lib/actions/logs";
+import * as dependencyActions from "@/lib/actions/dependencies";
 
-// Mock server actions
-mock.module("@/lib/actions/lists", () => ({
-    getLists: mock(() => Promise.resolve([
-        { id: 1, name: "Inbox", color: null, icon: "list" },
-        { id: 2, name: "Work", color: "#ff0000", icon: "briefcase" }
-    ]))
-}));
-
-mock.module("@/lib/actions/labels", () => ({
-    getLabels: mock(() => Promise.resolve([
-        { id: 1, name: "Urgent", color: "#ff0000", icon: "alert-circle" },
-        { id: 2, name: "Home", color: "#00ff00", icon: "home" }
-    ]))
-}));
-
-mock.module("@/lib/actions/tasks", () => ({
-    getSubtasks: mock(() => Promise.resolve({ success: true, data: [] })),
-    createSubtask: mock(() => Promise.resolve({ success: true, data: {} })),
-    updateSubtask: mock(() => Promise.resolve({ success: true, data: {} })),
-    deleteSubtask: mock(() => Promise.resolve({ success: true, data: {} })),
-    searchTasks: mock(() => Promise.resolve({ success: true, data: [] }))
-}));
-
-mock.module("@/lib/actions/reminders", () => ({
-    getReminders: mock(() => Promise.resolve([])),
-    createReminder: mock(() => Promise.resolve({})),
-    deleteReminder: mock(() => Promise.resolve({}))
-}));
-
-mock.module("@/lib/actions/logs", () => ({
-    getTaskLogs: mock(() => Promise.resolve([]))
-}));
-
-mock.module("@/lib/actions/dependencies", () => ({
-    getBlockers: mock(() => Promise.resolve([])),
-    addDependency: mock(() => Promise.resolve({})),
-    removeDependency: mock(() => Promise.resolve({}))
-}));
-
-
-// Local UI Mocks to avoid Portals issues in Happy-dom
-mock.module("@/components/ui/dialog", () => ({
-    Dialog: ({ children, open }: { children: React.ReactNode; open?: boolean }) => <div data-testid="dialog-root" data-open={open}>{children}</div>,
-    DialogContent: ({ children }: { children: React.ReactNode }) => <div data-testid="dialog-content">{children}</div>,
-    DialogHeader: ({ children }: { children: React.ReactNode }) => <div data-testid="dialog-header">{children}</div>,
-    DialogFooter: ({ children }: { children: React.ReactNode }) => <div data-testid="dialog-footer">{children}</div>,
-    DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
-    DialogDescription: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
-    DialogTrigger: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => asChild ? children : <button>{children}</button>,
-}));
-
-mock.module("@/components/ui/popover", () => ({
-    Popover: ({ children, open }: { children: React.ReactNode; open?: boolean }) => <div data-testid="popover-root" data-open={open}>{children}</div>,
-    PopoverContent: ({ children }: { children: React.ReactNode }) => <div data-testid="popover-content">{children}</div>,
-    PopoverTrigger: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => asChild ? children : <button>{children}</button>,
-}));
-
-mock.module("@/components/ui/select", () => ({
-    Select: ({ children, value }: { children: React.ReactNode; value?: string }) => <div data-testid="select-root" data-value={value}>{children}</div>,
-    SelectTrigger: ({ children }: { children: React.ReactNode }) => <button>{children}</button>,
-    SelectValue: ({ children, placeholder }: { children?: React.ReactNode; placeholder?: string }) => <span>{children || placeholder}</span>,
-    SelectContent: ({ children }: { children: React.ReactNode }) => <div data-testid="select-content">{children}</div>,
-    SelectItem: ({ children, value }: { children: React.ReactNode; value: string }) => <div data-testid={`select-item-${value}`} role="option" aria-selected="false">{children}</div>,
-}));
-
-mock.module("@/components/ui/icon-picker", () => ({
-    IconPicker: ({ value, onChange, trigger }: { value: string | null; onChange: (v: string) => void; trigger: React.ReactNode }) => (
-        <div data-testid="icon-picker">
-            {trigger}
-            <input
-                data-testid="icon-picker-input"
-                value={value || ""}
-                onChange={(e) => onChange(e.target.value)}
-            />
-        </div>
-    ),
-}));
+// UI components are now handled globally in src/test/setup.tsx via src/test/mocks-ui.tsx
 
 describe("TaskDialog Interaction", () => {
     beforeEach(() => {
@@ -107,10 +37,38 @@ describe("TaskDialog Interaction", () => {
             lastName: "User",
             profilePictureUrl: null,
         });
+
+        // Spy on server actions
+        spyOn(listActions, "getLists").mockResolvedValue([
+            { id: 1, name: "Inbox", color: null, icon: "list" },
+            { id: 2, name: "Work", color: "#ff0000", icon: "briefcase" }
+        ]);
+
+        spyOn(labelActions, "getLabels").mockResolvedValue([
+            { id: 1, name: "Urgent", color: "#ff0000", icon: "alert-circle" },
+            { id: 2, name: "Home", color: "#00ff00", icon: "home" }
+        ]);
+
+        spyOn(taskActions, "getSubtasks").mockResolvedValue({ success: true, data: [] });
+        spyOn(taskActions, "createSubtask").mockResolvedValue({ success: true, data: {} });
+        spyOn(taskActions, "updateSubtask").mockResolvedValue({ success: true, data: {} });
+        spyOn(taskActions, "deleteSubtask").mockResolvedValue({ success: true, data: {} });
+        spyOn(taskActions, "searchTasks").mockResolvedValue({ success: true, data: [] });
+
+        spyOn(reminderActions, "getReminders").mockResolvedValue([]);
+        spyOn(reminderActions, "createReminder").mockResolvedValue({});
+        spyOn(reminderActions, "deleteReminder").mockResolvedValue({});
+
+        spyOn(logActions, "getTaskLogs").mockResolvedValue([]);
+
+        spyOn(dependencyActions, "getBlockers").mockResolvedValue([]);
+        spyOn(dependencyActions, "addDependency").mockResolvedValue({ success: true, data: undefined });
+        spyOn(dependencyActions, "removeDependency").mockResolvedValue({ success: true, data: undefined });
     });
 
     afterEach(() => {
         cleanup();
+        mock.restore(); // Restore all spies
     });
 
     it("should render removable label as a button with correct aria-label", async () => {

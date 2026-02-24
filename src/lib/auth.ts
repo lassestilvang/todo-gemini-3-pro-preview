@@ -178,39 +178,51 @@ async function getCurrentUserImpl(): Promise<AuthUser | null> {
   }
 
   if (isTestEnv) {
-    const { getMockAuthUser } = await import("@/test/mocks");
-    const contextUser = getMockAuthUser();
-    const envMock = process.env.MOCK_AUTH_USER;
-    const envUser = envMock ? (() => {
-      try {
-        return JSON.parse(envMock) as {
-          id: string;
-          email: string;
-          firstName?: string | null;
-          lastName?: string | null;
-          profilePictureUrl?: string | null;
-        };
-      } catch {
+    try {
+      // Try global first to avoid module instance issues in tests
+      if (typeof globalThis !== "undefined" && (globalThis as any).__getMockAuthUser) {
+        const mockUser = (globalThis as any).__getMockAuthUser();
+        console.log(`[AUTH] getCurrentUser (isTestEnv/global): mockUser=${mockUser?.id}`);
+        if (mockUser) {
+          return {
+            id: mockUser.id,
+            email: mockUser.email,
+            firstName: mockUser.firstName ?? null,
+            lastName: mockUser.lastName ?? null,
+            avatarUrl: mockUser.profilePictureUrl ?? null,
+            use24HourClock: false,
+            weekStartsOnMonday: false,
+            calendarUseNativeTooltipsOnDenseDays: true,
+            calendarDenseTooltipThreshold: 6,
+          };
+        }
         return null;
       }
-    })() : null;
-    const mockUser = contextUser ?? envUser;
 
-    if (!mockUser) {
+      const { getMockAuthUser } = await import("@/test/mocks");
+      const mockUser = getMockAuthUser();
+      
+      console.log(`[AUTH] getCurrentUser (isTestEnv): mockUser=${mockUser?.id}`);
+
+      if (!mockUser) {
+        return null;
+      }
+
+      return {
+        id: mockUser.id,
+        email: mockUser.email,
+        firstName: mockUser.firstName ?? null,
+        lastName: mockUser.lastName ?? null,
+        avatarUrl: mockUser.profilePictureUrl ?? null,
+        use24HourClock: false,
+        weekStartsOnMonday: false,
+        calendarUseNativeTooltipsOnDenseDays: true,
+        calendarDenseTooltipThreshold: 6,
+      };
+    } catch (e) {
+      console.error("[AUTH] Failed to load mock auth user:", e);
       return null;
     }
-
-    return {
-      id: mockUser.id,
-      email: mockUser.email,
-      firstName: mockUser.firstName ?? null,
-      lastName: mockUser.lastName ?? null,
-      avatarUrl: mockUser.profilePictureUrl ?? null,
-      use24HourClock: false,
-      weekStartsOnMonday: false,
-      calendarUseNativeTooltipsOnDenseDays: true,
-      calendarDenseTooltipThreshold: 6,
-    };
   }
 
   const bypassUser = await getBypassUser();
@@ -404,12 +416,15 @@ export async function requireResourceOwnership(
  */
 export async function requireUser(userId: string): Promise<AuthUser> {
   const user = await getCurrentUser();
+  console.log(`[AUTH] requireUser: current=${user?.id}, required=${userId}`);
 
   if (!user) {
-    throw new UnauthorizedError();
+    console.error(`[AUTH] requireUser: Access denied. No user found. Test env: ${isTestEnv}, Global Mock: ${!!(globalThis as any).__mockAuthUser}`);
+    throw new UnauthorizedError("You must be logged in to access this resource");
   }
 
   if (user.id !== userId) {
+    console.log(`[AUTH] requireUser: FORBIDDEN! current=${user.id} !== required=${userId}`);
     throw new ForbiddenError("You are not authorized to access this user's data");
   }
 

@@ -21,18 +21,12 @@ import { isSuccess } from "./action-result";
 import { normalizeDueAnchor } from "./due-utils";
 import { reorderTasks } from "./actions/tasks";
 
-mock.module("next/cache", () => ({
-    revalidatePath: () => { },
-}));
-
 // Mock gamification helpers to avoid complex logic in integration tests if needed,
 // but since we have a DB, we can test them directly.
 // However, calculateLevel is imported from gamification.ts, which is pure logic.
 // suggestMetadata is from smart-tags.ts, which might use Gemini. We should mock suggestMetadata.
-
-mock.module("./smart-tags", () => ({
-    suggestMetadata: mock(() => Promise.resolve({ listId: null, labelIds: [] }))
-}));
+// Note: suggestMetadata uses getGeminiClient which is globally mocked in mocks.ts to return null,
+// so suggestMetadata will naturally return empty results without needing a module mock here.
 
 const unwrap = <T>(result: { success: boolean; data?: T; error?: { message?: string } }) => {
     if (!result.success) {

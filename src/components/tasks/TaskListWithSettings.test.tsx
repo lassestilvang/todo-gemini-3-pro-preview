@@ -1,55 +1,46 @@
-import { describe, it, expect, beforeAll, beforeEach, afterEach, mock } from "bun:test";
+import { describe, it, expect, mock, beforeEach, afterEach, beforeAll, spyOn } from "bun:test";
 import { render, screen, cleanup } from "@testing-library/react";
-import { setMockAuthUser, DEFAULT_MOCK_USER } from "@/test/mocks";
+import { setMockAuthUser, DEFAULT_MOCK_USER, mockUseTaskStore } from "@/test/mocks";
 import React from "react";
+import * as ViewOptionsPopoverModule from "./ViewOptionsPopover";
 
 let TaskListWithSettings: typeof import("./TaskListWithSettings").TaskListWithSettings;
 
-// Mock store
-const mockUseTaskStore = mock(() => ({
-    tasks: {},
-    setTasks: () => {},
-    initialize: () => {},
-    isInitialized: true,
-}));
-
-mock.module("@/lib/store/task-store", () => ({
-    useTaskStore: mockUseTaskStore
-}));
-
-// Mock next/dynamic to avoid async loadable updates during tests.
-mock.module("next/dynamic", () => ({
-    __esModule: true,
-    default: () => {
-        const DynamicComponent = () => null;
-        DynamicComponent.displayName = "DynamicComponentMock";
-        return DynamicComponent;
-    },
-}));
-
-// Mock sync
-mock.module("@/components/providers/sync-provider", () => ({
-    useSync: () => ({ dispatch: () => Promise.resolve() }),
-    useSyncActions: () => ({ dispatch: () => Promise.resolve() }),
-    useOptionalSyncActions: () => ({ dispatch: () => Promise.resolve() })
-}));
-
-// Mock view options popover
-mock.module("./ViewOptionsPopover", () => ({
-    ViewOptionsPopover: () => <div>View Options</div>
-}));
-
 describe("TaskListWithSettings", () => {
     beforeAll(async () => {
+        // Mock ViewOptionsPopover before importing the component under test
+        // However, since it's a child component, we can spy on it if the import is live.
+        // But if TaskListWithSettings imports it directly, the binding might be fixed.
+        // In Bun/ESM, we might need to rely on mock.module if spyOn doesn't work on the import.
+        // BUT, let's try spyOn first.
         ({ TaskListWithSettings } = await import("./TaskListWithSettings"));
     });
 
     beforeEach(() => {
         setMockAuthUser(DEFAULT_MOCK_USER);
+        mockUseTaskStore.mockReturnValue({
+            tasks: {},
+            setTasks: mock(() => {}),
+            initialize: mock(() => {}),
+            isInitialized: true,
+            subtaskIndex: {},
+            replaceTasks: mock(() => {}),
+            upsertTasks: mock(() => {}),
+            upsertTask: mock(() => {}),
+            deleteTasks: mock(() => {}),
+            deleteTask: mock(() => {}),
+            updateSubtaskCompletion: mock(() => {}),
+            getTaskBySubtaskId: mock(() => undefined),
+        });
+
+        // Spy on the component
+        spyOn(ViewOptionsPopoverModule, "ViewOptionsPopover").mockReturnValue(<div>View Options</div>);
     });
 
     afterEach(() => {
         cleanup();
+        mockUseTaskStore.mockRestore();
+        mock.restore(); // Restores all spies
     });
 
     it("should render inbox empty state", () => {
