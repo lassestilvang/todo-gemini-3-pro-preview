@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
+import { runInAuthContext, clearMockAuthUser } from "@/test/auth-helpers";
 import { runInAuthContext } from "@/test/mocks";
 import { createTask, createSubtask, getTasks } from "@/lib/actions/tasks";
 import { isSuccess } from "@/lib/action-result";
@@ -17,9 +18,11 @@ describe("Integration: Security Subtask IDOR", () => {
 
     beforeEach(async () => {
         await resetTestDb();
+        clearMockAuthUser();
         // Create users
-        victim = await createTestUser("victim", "victim@target.com");
-        attacker = await createTestUser("attacker", "attacker@evil.com");
+        const suffix = Math.random().toString(36).substring(7);
+        victim = await createTestUser(`victim_${suffix}`, `victim_${suffix}@target.com`);
+        attacker = await createTestUser(`attacker_${suffix}`, `attacker_${suffix}@evil.com`);
         victimId = victim.id;
         attackerId = attacker.id;
 

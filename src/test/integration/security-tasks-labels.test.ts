@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
+import { runInAuthContext, clearMockAuthUser } from "@/test/auth-helpers";
 import { runInAuthContext } from "@/test/mocks";
 import { createTask, getTasks } from "@/lib/actions/tasks";
 import { createLabel } from "@/lib/actions/labels";
@@ -10,6 +11,8 @@ describe("Integration: Security Task Labels IDOR", () => {
     let attacker: any;
     let victimId: string;
     let attackerId: string;
+    let victim: any;
+    let attacker: any;
     let victimLabelId: number;
 
     beforeAll(async () => {
@@ -18,9 +21,12 @@ describe("Integration: Security Task Labels IDOR", () => {
 
     beforeEach(async () => {
         await resetTestDb();
-        // Create users
-        victim = await createTestUser("victim", "victim@target.com");
-        attacker = await createTestUser("attacker", "attacker@evil.com");
+        clearMockAuthUser();
+
+        // Create users with random IDs to avoid collisions
+        const suffix = Math.random().toString(36).substring(7);
+        victim = await createTestUser(`victim_${suffix}`, `victim_${suffix}@target.com`);
+        attacker = await createTestUser(`attacker_${suffix}`, `attacker_${suffix}@evil.com`);
         victimId = victim.id;
         attackerId = attacker.id;
 

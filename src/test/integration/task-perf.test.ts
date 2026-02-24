@@ -1,11 +1,13 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
+import { runInAuthContext } from "@/test/auth-helpers";
 import { runInAuthContext } from "@/test/mocks";
 import { createTask, getTasks } from "@/lib/actions/tasks";
 import { createLabel } from "@/lib/actions/labels";
 import { isSuccess } from "@/lib/action-result";
 
 describe("Integration: Task Performance Optimization", () => {
+    let testUserId: string;
     let testUser: any;
 
     beforeAll(async () => {

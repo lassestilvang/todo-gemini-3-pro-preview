@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
+import { runInAuthContext } from "@/test/auth-helpers";
 import { runInAuthContext } from "@/test/mocks";
 import { createList, deleteList } from "@/lib/actions/lists";
 import { createTask, toggleTaskCompletion, getTasks, deleteTask } from "@/lib/actions/tasks";
@@ -19,17 +20,17 @@ describe("Integration: Task Flow", () => {
         const randomId = Math.random().toString(36).substring(7);
         const testUserId = `user_${randomId}`;
 
-        testUser = await createTestUser(testUserId, `${testUserId}@integration.com`);
+        await createTestUser(testUserId, `${testUserId}@integration.com`);
     });
 
     it("should create a list, add a task, and complete it", async () => {
+        const testUser = { id: testUserId, email: `${testUserId}@integration.com`, firstName: "Test", lastName: "User", profilePictureUrl: null };
+
         await runInAuthContext(testUser, async () => {
-            const testUserId = testUser.id;
             // Use timestamp to ensure unique slugs
             const timestamp = Date.now();
 
             // 1. Create a list
-            console.log(`[TEST] Creating list for user ${testUserId}`);
             const listResult = await createList({
                 userId: testUserId,
                 name: `Integration List ${timestamp}`,
@@ -37,7 +38,6 @@ describe("Integration: Task Flow", () => {
                 icon: "List",
                 slug: `integration-list-${timestamp}`
             });
-            console.log(`[TEST] Create list result success: ${listResult?.success}`);
 
             expect(isSuccess(listResult)).toBe(true);
             if (!isSuccess(listResult)) return;

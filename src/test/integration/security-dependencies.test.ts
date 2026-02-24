@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
+import { runInAuthContext, clearMockAuthUser } from "@/test/auth-helpers";
 import { runInAuthContext } from "@/test/mocks";
 import { getCurrentUser } from "@/lib/auth";
 import { addDependency, removeDependency } from "@/lib/actions/dependencies";
@@ -23,8 +24,9 @@ describe("Integration: Security Dependencies & Reminders", () => {
 
     beforeEach(async () => {
         await resetTestDb();
-        attacker = await createTestUser("attacker_dep", "attacker_dep@evil.com");
-        victim = await createTestUser("victim_dep", "victim_dep@target.com");
+        const suffix = Math.random().toString(36).substring(7);
+        attacker = await createTestUser(`attacker_${suffix}`, `attacker_${suffix}@evil.com`);
+        victim = await createTestUser(`victim_${suffix}`, `victim_${suffix}@target.com`);
 
         attackerId = attacker.id;
         victimId = victim.id;

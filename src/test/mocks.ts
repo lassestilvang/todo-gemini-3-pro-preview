@@ -5,6 +5,10 @@
  */
 import { afterEach, mock } from "bun:test";
 import React from "react";
+import { getMockAuthUser, resetMockAuthUser } from "./auth-helpers";
+
+// Re-export auth helpers for convenience, though direct import is preferred
+export * from "./auth-helpers";
 import { AsyncLocalStorage } from "async_hooks";
 
 // Ensure DB module initializes in test mode even if NODE_ENV isn't set.
@@ -416,7 +420,7 @@ mock.module("@workos-inc/authkit-nextjs", () => ({
  * Requirements: 3.1, 3.2 - Test isolation and mock reset
  */
 export function resetAllMocks() {
-    clearMockAuthUser();
+    resetMockAuthUser();
 }
 
 afterEach(() => {

@@ -2,7 +2,7 @@
 
 import { useSync } from "@/components/providers/sync-provider";
 import { useUser } from "@/components/providers/UserProvider";
-import { useReducer, useRef } from "react";
+import { useReducer, useRef, useState, useEffect } from "react";
 import { useIsClient } from "@/hooks/use-is-client";
 import { parseNaturalLanguage } from "@/lib/nlp-parser";
 import { extractDeadline } from "@/lib/smart-scheduler";
@@ -19,6 +19,12 @@ import { CreateTaskFooter } from "./create-task/CreateTaskFooter";
 import { TaskBadges } from "./create-task/TaskBadges";
 
 export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelIds }: { listId?: number, defaultDueDate?: Date | string, userId: string, defaultLabelIds?: number[] }) {
+    const PLACEHOLDERS = [
+        "Add a task... (try 'Buy milk tomorrow !high')",
+        "Add a task... (try 'Call John next Friday @phone')",
+        "Add a task... (try 'Deep work session @energy:high')",
+        "Add a task... (try 'Review quarterly goals next week')",
+    ];
     const { dispatch } = useSync();
     const { weekStartsOnMonday } = useUser();
 
@@ -46,6 +52,18 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
 
     const isClient = useIsClient();
     const inputRef = useRef<HTMLInputElement>(null);
+
+    const [placeholder, setPlaceholder] = useState(PLACEHOLDERS[0]);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setPlaceholder((current) => {
+                const currentIndex = PLACEHOLDERS.indexOf(current);
+                return PLACEHOLDERS[(currentIndex + 1) % PLACEHOLDERS.length];
+            });
+        }, 4000);
+        return () => clearInterval(interval);
+    }, []);
 
     const updateTitle = (nextTitle: string) => {
         const parsed = nextTitle.trim() ? parseNaturalLanguage(nextTitle, { weekStartsOnMonday: weekStartsOnMonday ?? false }) : undefined;
@@ -153,7 +171,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                                     handleSubmit();
                                 }
                             }}
-                            placeholder="Add a task... (try 'Buy milk tomorrow !high @errands')"
+                            placeholder={placeholder}
                             className="border-0 bg-transparent shadow-none focus-visible:ring-0 text-lg py-6 pr-10"
                             data-testid="task-input"
                             aria-label="Create new task"
