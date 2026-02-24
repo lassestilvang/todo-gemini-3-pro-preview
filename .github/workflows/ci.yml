@@ -56,6 +56,32 @@ jobs:
             done
           fi
 
+      - name: Prune Stale PR Branches (keep most recent 10)
+        if: github.event_name == 'pull_request'
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
+        run: |
+          # Fetch all PR preview branches with their created_at timestamps
+          branches_json=$(neonctl branches list --project-id $NEON_PROJECT_ID -o json)
+          # Build list of preview/pr-* branches excluding current PR branch
+          current="preview/pr-${{ github.event.pull_request.number }}"
+          prune_list=$(echo "$branches_json" | jq -r --arg cur "$current" '
+            [ .[] | select(.name | startswith("preview/pr-")) | select(.name != $cur) | {id: .id, name: .name, created: .created_at} ]
+            | sort_by(.created) | .[:(length-10)] | .[].id
+          ')
+          
+          if [ -z "$prune_list" ]; then
+            echo "No stale PR branches to prune."
+          else
+            echo "Pruning stale PR branches:"
+            echo "$prune_list"
+            for id in $prune_list; do
+              echo "Deleting branch $id..."
+              neonctl branches delete "$id" --project-id $NEON_PROJECT_ID || echo "Failed to delete $id"
+            done
+          fi
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
