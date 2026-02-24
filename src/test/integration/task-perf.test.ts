@@ -16,8 +16,8 @@ describe("Integration: Task Performance Optimization", () => {
 
     beforeEach(async () => {
         await resetTestDb();
-        const randomId = Math.random().toString(36).substring(7);
-        const testUserId = `user_perf_${randomId}`;
+        const uuid = crypto.randomUUID();
+        testUserId = `user_perf_${uuid}`;
 
         testUser = await createTestUser(testUserId, `${testUserId}@perf.com`);
     });
@@ -45,8 +45,11 @@ describe("Integration: Task Performance Optimization", () => {
             expect(isSuccess(tasksResult)).toBe(true);
             if (!isSuccess(tasksResult)) return;
 
-            const tasks = tasksResult.data;
-            expect(tasks.length).toBe(4);
+        const tasks = tasksResult.data;
+        if (tasks.length !== 4) {
+            console.error(`Expected 4 tasks for ${testUserId}, got ${tasks.length}. Tasks:`, tasks);
+        }
+        expect(tasks.length).toBe(4);
 
             // Verify Label 1 assignment
             const task1 = tasks.find(t => t.title === "Task 1");

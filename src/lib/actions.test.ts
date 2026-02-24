@@ -19,6 +19,7 @@ import { rotateTodoistTokens } from "./actions/todoist";
 import { encryptToken, resetTodoistKeyRingForTests } from "@/lib/todoist/crypto";
 import { isSuccess } from "./action-result";
 import { normalizeDueAnchor } from "./due-utils";
+import { reorderTasks } from "./actions/tasks";
 
 // Mock gamification helpers to avoid complex logic in integration tests if needed,
 // but since we have a DB, we can test them directly.
@@ -61,6 +62,36 @@ describe("Server Actions", () => {
 
         // Set the mock auth user so that requireUser() checks pass
         setMockAuthUser(testUser);
+    });
+
+    describe("reorderTasks", () => {
+        it("should reorder tasks successfully within limit", async () => {
+            const task1 = unwrap(await createTask({ userId: testUserId, title: "Task 1" }));
+            const task2 = unwrap(await createTask({ userId: testUserId, title: "Task 2" }));
+
+            const result = await reorderTasks(testUserId, [
+                { id: task1.id, position: 100 },
+                { id: task2.id, position: 200 }
+            ]);
+
+            expect(isSuccess(result)).toBe(true);
+        });
+
+        it("should fail when items exceed limit", async () => {
+            // Generate 1001 items
+            const items = Array.from({ length: 1001 }, (_, i) => ({
+                id: i,
+                position: i
+            }));
+
+            const result = await reorderTasks(testUserId, items);
+
+            expect(isSuccess(result)).toBe(false);
+            if (!isSuccess(result)) {
+                expect(result.error.code).toBe("VALIDATION_ERROR");
+                expect(result.error.message).toContain("Limit is 1000");
+            }
+        });
     });
 
     describe("Tasks", () => {

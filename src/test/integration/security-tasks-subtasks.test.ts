@@ -18,11 +18,9 @@ describe("Integration: Security Subtask IDOR", () => {
 
     beforeEach(async () => {
         await resetTestDb();
-        clearMockAuthUser();
-        // Create users
-        const suffix = Math.random().toString(36).substring(7);
-        victim = await createTestUser(`victim_${suffix}`, `victim_${suffix}@target.com`);
-        attacker = await createTestUser(`attacker_${suffix}`, `attacker_${suffix}@evil.com`);
+        // Create users with unique IDs to prevent collisions
+        const victim = await createTestUser(`victim-${crypto.randomUUID()}`, "victim@target.com");
+        const attacker = await createTestUser(`attacker-${crypto.randomUUID()}`, "attacker@evil.com");
         victimId = victim.id;
         attackerId = attacker.id;
 

@@ -53,6 +53,21 @@ describe("Task Validation Schemas", () => {
             const result = createTaskSchema.safeParse(invalidTask);
             expect(result.success).toBe(false);
         });
+
+        it("should fail when too many labelIds", () => {
+            const manyLabels = Array.from({ length: 51 }, (_, i) => i);
+            const invalidTask = {
+                userId: "user_123",
+                title: "Valid title",
+                labelIds: manyLabels,
+            };
+
+            const result = createTaskSchema.safeParse(invalidTask);
+            expect(result.success).toBe(false);
+            if (!result.success) {
+                expect(result.error.issues[0].message).toContain("Maximum 50 labels allowed");
+            }
+        });
     });
 
     describe("updateTaskSchema", () => {

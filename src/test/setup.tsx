@@ -372,7 +372,12 @@ export async function setupTestDb() {
  * Helper to create a test user in the SQLite database.
  */
 export async function createTestUser(id: string, email: string) {
-    sqliteConnection.run("INSERT INTO users (id, email, first_name, last_name) VALUES (?, ?, 'Test', 'User') ON CONFLICT(id) DO UPDATE SET email=excluded.email", [id, email]);
+    try {
+        sqliteConnection.run("INSERT INTO users (id, email, first_name, last_name) VALUES (?, ?, 'Test', 'User') ON CONFLICT(id) DO UPDATE SET email=excluded.email", [id, email]);
+    } catch (error) {
+        console.error(`Failed to create test user ${id}:`, error);
+        throw error;
+    }
     return { id, email, firstName: "Test", lastName: "User" };
 }
 
@@ -390,29 +395,29 @@ export async function resetTestDb() {
             // Turn off FKs to speed up and simplify deletion
             sqliteConnection.run("PRAGMA foreign_keys = OFF;");
 
-            await Promise.all([
-                db.delete(timeEntries),
-                db.delete(savedViews),
-                db.delete(userAchievements),
-                db.delete(achievements),
-                db.delete(viewSettings),
-                db.delete(userStats),
-                db.delete(taskLogs),
-                db.delete(reminders),
-                db.delete(habitCompletions),
-                db.delete(taskDependencies),
-                db.delete(taskLabels),
-                db.delete(tasks),
-                db.delete(labels),
-                db.delete(lists),
-                db.delete(templates),
-                db.delete(rateLimits),
-                db.delete(customIcons),
-                db.delete(externalSyncConflicts),
-                db.delete(externalEntityMap),
-                db.delete(externalSyncState),
-                db.delete(externalIntegrations)
-            ]);
+            // Execute deletions sequentially to avoid potential SQLite locking issues in high concurrency
+            // Although Promise.all is faster, reliability is key for CI
+            await db.delete(timeEntries);
+            await db.delete(savedViews);
+            await db.delete(userAchievements);
+            await db.delete(achievements);
+            await db.delete(viewSettings);
+            await db.delete(userStats);
+            await db.delete(taskLogs);
+            await db.delete(reminders);
+            await db.delete(habitCompletions);
+            await db.delete(taskDependencies);
+            await db.delete(taskLabels);
+            await db.delete(tasks);
+            await db.delete(labels);
+            await db.delete(lists);
+            await db.delete(templates);
+            await db.delete(rateLimits);
+            await db.delete(customIcons);
+            await db.delete(externalSyncConflicts);
+            await db.delete(externalEntityMap);
+            await db.delete(externalSyncState);
+            await db.delete(externalIntegrations);
 
             // Delete users last using direct SQL for performance
             sqliteConnection.run("DELETE FROM users");

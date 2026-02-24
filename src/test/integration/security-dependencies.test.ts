@@ -24,9 +24,9 @@ describe("Integration: Security Dependencies & Reminders", () => {
 
     beforeEach(async () => {
         await resetTestDb();
-        const suffix = Math.random().toString(36).substring(7);
-        attacker = await createTestUser(`attacker_${suffix}`, `attacker_${suffix}@evil.com`);
-        victim = await createTestUser(`victim_${suffix}`, `victim_${suffix}@target.com`);
+        const uuid = crypto.randomUUID();
+        attacker = await createTestUser(`attacker_dep_${uuid}`, `attacker_${uuid}@evil.com`);
+        victim = await createTestUser(`victim_dep_${uuid}`, `victim_${uuid}@target.com`);
 
         attackerId = attacker.id;
         victimId = victim.id;
