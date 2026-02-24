@@ -50,8 +50,9 @@ const workosMiddleware = authkitMiddleware({
 });
 
 const isE2ETestMode =
-  process.env.E2E_TEST_MODE === "true" ||
-  process.env.NEXT_PUBLIC_E2E_TEST_MODE === "true";
+  process.env.NODE_ENV !== "production" &&
+  (process.env.E2E_TEST_MODE === "true" ||
+    process.env.NEXT_PUBLIC_E2E_TEST_MODE === "true");
 
 async function maybeBypassAuth(request: NextRequest): Promise<NextResponse | null> {
   if (isE2ETestMode) {

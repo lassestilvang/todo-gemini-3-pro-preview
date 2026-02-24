@@ -22,7 +22,7 @@ import confetti from "canvas-confetti";
 import { Task } from "@/lib/types";
 import { ActionType, actionRegistry } from "@/lib/sync/registry";
 import { SubtaskRow } from "./SubtaskRow";
-import { areTaskPropsEqual, formatDuration, priorityColors } from "./task-item-utils";
+import { areTaskPropsEqual, formatDuration, priorityColors, energyLabels, contextLabels } from "./task-item-utils";
 import { useOptionalSyncActions } from "@/components/providers/sync-provider";
 
 export interface TaskItemProps {
@@ -261,8 +261,34 @@ export const TaskItem = memo(function TaskItem({
                             </div>
                         )}
                         {task.isRecurring && <div className="flex items-center gap-1 text-blue-500"><Repeat className="h-3 w-3" /><span>Recurring</span></div>}
-                        {task.energyLevel && <div>{task.energyLevel === "high" ? "🔋" : task.energyLevel === "medium" ? "🔌" : "🪫"}</div>}
-                        {task.context && <div>{task.context === "computer" ? "💻" : task.context === "phone" ? "📱" : task.context === "errands" ? "🏃" : task.context === "meeting" ? "👥" : task.context === "home" ? "🏠" : "🌍"}</div>}
+                        {task.energyLevel && (
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div
+                                        className="cursor-help"
+                                        aria-label={energyLabels[task.energyLevel]}
+                                        tabIndex={0}
+                                    >
+                                        {energyEmojis[task.energyLevel]}
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent><p>{energyLabels[task.energyLevel]}</p></TooltipContent>
+                            </Tooltip>
+                        )}
+                        {task.context && (
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div
+                                        className="cursor-help"
+                                        aria-label={contextLabels[task.context] || "Context"}
+                                        tabIndex={0}
+                                    >
+                                        {contextEmojis[task.context]}
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent><p>{contextLabels[task.context] || "Context"}</p></TooltipContent>
+                            </Tooltip>
+                        )}
                     </div>
 
                     {task.labels && task.labels.length > 0 && (

@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
+import { describe, it, expect, beforeEach, beforeAll, afterEach } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
-import { runInAuthContext } from "@/test/mocks";
+import { setMockAuthUser, clearMockAuthUser, runInAuthContext } from "@/test/mocks";
 import { createTask, createSubtask, getTasks } from "@/lib/actions/tasks";
 import { isSuccess } from "@/lib/action-result";
 
@@ -24,18 +24,22 @@ describe("Integration: Security Subtask IDOR", () => {
         attackerId = attacker.id;
 
         // Login as Victim to create a task
-        await runInAuthContext(victim, async () => {
-            const taskResult = await createTask({
-                userId: victimId,
-                title: "Sensitive Project Task",
-                description: "Top secret",
-            });
-
-            if (!isSuccess(taskResult)) {
-                throw new Error("Failed to create victim task");
-            }
-            victimTaskId = taskResult.data.id;
+        setMockAuthUser(victim);
+        const taskResult = await createTask({
+            userId: victimId,
+            title: "Sensitive Project Task",
+            description: "Top secret",
         });
+
+        if (!isSuccess(taskResult)) {
+            throw new Error("Failed to create victim task");
+        }
+        victimTaskId = taskResult.data.id;
+        clearMockAuthUser();
+    });
+
+    afterEach(() => {
+        clearMockAuthUser();
     });
 
     it("should prevent creating a subtask under another user's task", async () => {
@@ -44,8 +48,10 @@ describe("Integration: Security Subtask IDOR", () => {
             const result = await createSubtask(victimTaskId, attackerId, "Evil Subtask");
             expect(isSuccess(result)).toBe(false);
             if (!isSuccess(result)) {
-                // Should be NOT_FOUND (preferred for IDOR) or UNAUTHORIZED
-                expect(["NOT_FOUND", "UNAUTHORIZED"]).toContain(result.error.code);
+                // If the user context is lost, we get UNAUTHORIZED (401)
+                // If the user context is present but IDOR is blocked, we get NOT_FOUND (404) or FORBIDDEN (403)
+                // We expect NOT_FOUND as per security best practices (hiding resource existence)
+                expect(result.error.code).toBe("NOT_FOUND");
             }
         });
 
@@ -73,5 +79,9 @@ describe("Integration: Security Subtask IDOR", () => {
                 expect(["NOT_FOUND", "UNAUTHORIZED"]).toContain(result.error.code);
             }
         });
+        expect(isSuccess(result)).toBe(false);
+        if (!isSuccess(result)) {
+            expect(result.error.code).toBe("NOT_FOUND");
+        }
     });
 });

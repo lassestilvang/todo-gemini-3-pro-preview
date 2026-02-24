@@ -32,15 +32,16 @@ export interface AuthUser {
   calendarDenseTooltipThreshold: number | null;
 }
 
-const isTestEnv =
-  process.env.NODE_ENV === "test" ||
-  process.env.CI === "true" ||
-  process.env.CI === "1";
+const isTestEnv = process.env.NODE_ENV === "test";
 
 /**
  * Get test user from test session cookie (E2E test mode only).
  */
 async function getTestUser(): Promise<AuthUser | null> {
+  if (process.env.NODE_ENV === "production") {
+    return null;
+  }
+
   if (process.env.E2E_TEST_MODE !== 'true') {
     return null;
   }
@@ -173,7 +174,7 @@ async function getBypassUser(): Promise<AuthUser | null> {
  */
 async function getCurrentUserImpl(): Promise<AuthUser | null> {
   // In E2E test mode, only use test session (skip WorkOS entirely)
-  if (process.env.E2E_TEST_MODE === 'true') {
+  if (process.env.NODE_ENV !== "production" && process.env.E2E_TEST_MODE === 'true') {
     return getTestUser();
   }
 
