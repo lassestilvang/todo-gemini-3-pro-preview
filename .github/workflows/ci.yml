@@ -63,13 +63,16 @@ jobs:
           NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
         run: |
           # Fetch all PR preview branches with their created_at timestamps
-          branches_json=$(neonctl branches list --project-id $NEON_PROJECT_ID -o json)
-          # Build list of preview/pr-* branches excluding current PR branch
           current="preview/pr-${{ github.event.pull_request.number }}"
-          prune_list=$(echo "$branches_json" | jq -r --arg cur "$current" '
-            [ .[] | select(.name | startswith("preview/pr-")) | select(.name != $cur) | {id: .id, name: .name, created: .created_at} ]
-            | sort_by(.created) | .[:(length-10)] | .[].id
-          ')
+          ids=$(neonctl branches list --project-id $NEON_PROJECT_ID -o json | jq -r --arg cur "$current" '.[] | select(.name | startswith("preview/pr-")) | select(.name != $cur) | .id')
+          count=$(echo "$ids" | wc -l | tr -d ' ')
+          # If count isn't numeric (no lines), set to 0
+          if ! [[ "$count" =~ ^[0-9]+$ ]]; then count=0; fi
+          delete_count=$(( count > 10 ? count - 10 : 0 ))
+          prune_list=""
+          if [ "$delete_count" -gt 0 ]; then
+            prune_list=$(echo "$ids" | head -n "$delete_count")
+          fi
           
           if [ -z "$prune_list" ]; then
             echo "No stale PR branches to prune."
