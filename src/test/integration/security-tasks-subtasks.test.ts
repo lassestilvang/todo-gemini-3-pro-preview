@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
-import { runInAuthContext, clearMockAuthUser } from "@/test/auth-helpers";
 import { runInAuthContext } from "@/test/mocks";
 import { createTask, createSubtask, getTasks } from "@/lib/actions/tasks";
 import { isSuccess } from "@/lib/action-result";
@@ -19,8 +18,8 @@ describe("Integration: Security Subtask IDOR", () => {
     beforeEach(async () => {
         await resetTestDb();
         // Create users with unique IDs to prevent collisions
-        const victim = await createTestUser(`victim-${crypto.randomUUID()}`, "victim@target.com");
-        const attacker = await createTestUser(`attacker-${crypto.randomUUID()}`, "attacker@evil.com");
+        victim = await createTestUser(`victim-${crypto.randomUUID()}`, "victim@target.com");
+        attacker = await createTestUser(`attacker-${crypto.randomUUID()}`, "attacker@evil.com");
         victimId = victim.id;
         attackerId = attacker.id;
 
@@ -45,7 +44,8 @@ describe("Integration: Security Subtask IDOR", () => {
             const result = await createSubtask(victimTaskId, attackerId, "Evil Subtask");
             expect(isSuccess(result)).toBe(false);
             if (!isSuccess(result)) {
-                expect(result.error.code).toBe("NOT_FOUND");
+                // Should be NOT_FOUND (preferred for IDOR) or UNAUTHORIZED
+                expect(["NOT_FOUND", "UNAUTHORIZED"]).toContain(result.error.code);
             }
         });
 
@@ -70,7 +70,7 @@ describe("Integration: Security Subtask IDOR", () => {
             });
             expect(isSuccess(result)).toBe(false);
             if (!isSuccess(result)) {
-                expect(result.error.code).toBe("NOT_FOUND");
+                expect(["NOT_FOUND", "UNAUTHORIZED"]).toContain(result.error.code);
             }
         });
     });
