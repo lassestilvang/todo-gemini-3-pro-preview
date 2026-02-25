@@ -27,6 +27,12 @@ export const energyLabels = {
     low: "Low Energy",
 } as const;
 
+export const energyEmojis = {
+    high: "⚡",
+    medium: "🔋",
+    low: "💤",
+} as const;
+
 export const contextLabels = {
     computer: "Computer",
     phone: "Phone",
@@ -34,6 +40,15 @@ export const contextLabels = {
     meeting: "Meeting",
     home: "Home",
     anywhere: "Anywhere",
+} as const;
+
+export const contextEmojis = {
+    computer: "💻",
+    phone: "📱",
+    errands: "🏃",
+    meeting: "📅",
+    home: "🏠",
+    anywhere: "🌍",
 } as const;
 
 /**
