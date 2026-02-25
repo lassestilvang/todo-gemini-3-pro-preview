@@ -11,8 +11,6 @@ describe("Integration: Security Task Labels IDOR", () => {
     let attacker: any;
     let victimId: string;
     let attackerId: string;
-    let victim: any;
-    let attacker: any;
     let victimLabelId: number;
 
     beforeAll(async () => {
