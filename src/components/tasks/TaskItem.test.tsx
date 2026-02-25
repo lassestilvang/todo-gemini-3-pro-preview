@@ -171,13 +171,13 @@ describe("TaskItem", () => {
         };
         render(<TaskItem task={taskWithDetails} {...defaultProps} />);
 
-        // Energy
+        // Energy (High = ⚡)
         const energyText = screen.getByText("⚡");
         const energyContainer = energyText.closest('div[tabindex="0"]');
         expect(energyContainer).toBeInTheDocument();
         expect(energyContainer).toHaveAttribute("aria-label", "High Energy");
 
-        // Context
+        // Context (Meeting = 📅)
         const contextText = screen.getByText("📅");
         const contextContainer = contextText.closest('div[tabindex="0"]');
         expect(contextContainer).toBeInTheDocument();
