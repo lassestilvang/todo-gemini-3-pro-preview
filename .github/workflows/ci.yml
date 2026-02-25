@@ -239,7 +239,7 @@ jobs:
     runs-on: ubuntu-latest
     # Build needs lint and test to pass. Cleanup jobs are PR-only but we can depend on them optionally.
     needs: [lint, test, cleanup-legacy, cleanup-neon]
-    if: always() && (needs.lint.result == 'success') && (needs.test.result == 'success') && (needs.cleanup-legacy.result == 'success' || needs.cleanup-legacy.result == 'skipped') && (needs.cleanup-neon.result == 'success' || needs.cleanup-neon.result == 'skipped')
+    if: always() && (needs.lint.result == 'success') && (needs.test.result == 'success')
     steps:
       - name: Checkout code
         uses: actions/checkout@v6

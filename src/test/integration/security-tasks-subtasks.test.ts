@@ -67,7 +67,7 @@ describe("Integration: Security Subtask IDOR", () => {
     });
 
     it("should prevent creating a task with parentId pointing to another user's task", async () => {
-        // Attacker tries to create a task with parentId set to Victim's task
+        // Attacker tries to create a task with parentId set to Victim's task (IDOR attempt)
         await runInAuthContext(attacker, async () => {
             const result = await createTask({
                 userId: attackerId,
