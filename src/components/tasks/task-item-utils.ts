@@ -28,9 +28,9 @@ export const energyLabels = {
 } as const;
 
 export const energyEmojis = {
-    high: "⚡",
-    medium: "🔋",
-    low: "💤",
+    high: "🔋",
+    medium: "⚡",
+    low: "🔌",
 } as const;
 
 export const contextLabels = {
