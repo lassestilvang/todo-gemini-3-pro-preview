@@ -45,8 +45,8 @@ export const contextLabels = {
 export const contextEmojis = {
     computer: "💻",
     phone: "📱",
-    errands: "🛒",
-    meeting: "👥",
+    errands: "🏃",
+    meeting: "📅",
     home: "🏠",
     anywhere: "🌍",
 } as const;
