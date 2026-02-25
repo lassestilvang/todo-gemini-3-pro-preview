@@ -5,6 +5,26 @@ import { createList, deleteList } from "@/lib/actions/lists";
 import { createTask, toggleTaskCompletion, getTasks, deleteTask } from "@/lib/actions/tasks";
 import { isSuccess } from "@/lib/action-result";
 
+async function waitForTaskInList(userId: string, listId: number, taskId: number) {
+    const maxAttempts = 8;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const tasksResult = await getTasks(userId, listId);
+        if (!isSuccess(tasksResult)) {
+            throw new Error("Failed to fetch tasks while waiting for created task");
+        }
+
+        const createdTask = tasksResult.data.find((task) => task.id === taskId);
+        if (createdTask) {
+            return { tasks: tasksResult.data, createdTask };
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+
+    throw new Error(`Task ${taskId} did not appear in list ${listId}`);
+}
+
 describe("Integration: Task Flow", () => {
     let testUserId: string;
 
@@ -26,7 +46,6 @@ describe("Integration: Task Flow", () => {
         const testUser = { id: testUserId, email: `${testUserId}@integration.com`, firstName: "Test", lastName: "User", profilePictureUrl: null };
 
         await runInAuthContext(testUser, async () => {
-            // Use timestamp to ensure unique slugs
             const timestamp = Date.now();
 
             // 1. Create a list
@@ -62,15 +81,8 @@ describe("Integration: Task Flow", () => {
             expect(task.priority).toBe("high");
 
             // 3. Verify task is in the list
-            // Add small delay to mitigate potential CI race conditions with SQLite
-            await new Promise(resolve => setTimeout(resolve, 100));
-            const tasksResult = await getTasks(testUserId, list.id);
-            expect(isSuccess(tasksResult)).toBe(true);
-            if (!isSuccess(tasksResult)) return;
-            const tasks = tasksResult.data;
+            const { tasks, createdTask } = await waitForTaskInList(testUserId, list.id, task.id);
             expect(tasks.length).toBeGreaterThanOrEqual(1);
-
-            const createdTask = tasks.find(t => t.id === task.id);
             expect(createdTask).toBeDefined();
             expect(createdTask?.title).toBe(`Integration Task ${timestamp}`);
 
