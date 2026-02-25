@@ -31,6 +31,15 @@ export function useSyncManager() {
     );
     const [conflicts, setConflicts] = useState<ConflictInfo[]>([]);
 
+    // Refs for stable callbacks
+    const pendingActionsRef = useRef(pendingActions);
+    const conflictsRef = useRef(conflicts);
+
+    useEffect(() => {
+        pendingActionsRef.current = pendingActions;
+        conflictsRef.current = conflicts;
+    }, [pendingActions, conflicts]);
+
     const MAX_PENDING_QUEUE = 100;
     const FLUSH_IDLE_TIMEOUT_MS = 200;
 
@@ -279,13 +288,13 @@ export function useSyncManager() {
         resolution: 'local' | 'server' | 'merge',
         mergedData?: unknown
     ) => {
-        const action = pendingActions.find(a => a.id === actionId);
+        const action = pendingActionsRef.current.find(a => a.id === actionId);
         if (!action) return;
 
         if (resolution === 'server') {
             await removeFromQueue(actionId);
             setPendingActions(prev => prev.filter(p => p.id !== actionId));
-            const conflict = conflicts.find(c => c.actionId === actionId);
+            const conflict = conflictsRef.current.find(c => c.actionId === actionId);
             if (conflict?.serverData && action.type.includes('Task')) {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 useTaskStore.getState().upsertTask(conflict.serverData as any);
@@ -312,7 +321,7 @@ export function useSyncManager() {
         }
 
         setConflicts(prev => prev.filter(c => c.actionId !== actionId));
-    }, [pendingActions, conflicts, processQueue]);
+    }, [processQueue]);
 
     const dispatch = useCallback(async <T extends ActionType>(type: T, ...args: Parameters<typeof actionRegistry[T]>) => {
         const id = uuidv4();
@@ -374,19 +383,19 @@ export function useSyncManager() {
     }, []);
 
     const retryAllFailed = useCallback(async () => {
-        const failedIds = pendingActions.filter(a => a.status === 'failed').map(a => a.id);
+        const failedIds = pendingActionsRef.current.filter(a => a.status === 'failed').map(a => a.id);
         if (failedIds.length === 0) return;
         await updateActionStatusBatch(failedIds.map(id => ({ id, status: 'pending' as const })));
         setPendingActions(prev => prev.map(a => a.status === 'failed' ? { ...a, status: 'pending' as const, error: undefined } : a));
         void processQueue();
-    }, [pendingActions, processQueue]);
+    }, [processQueue]);
 
     const dismissAllFailed = useCallback(async () => {
-        const failedIds = pendingActions.filter(a => a.status === 'failed').map(a => a.id);
+        const failedIds = pendingActionsRef.current.filter(a => a.status === 'failed').map(a => a.id);
         if (failedIds.length === 0) return;
         await removeFromQueueBatch(failedIds);
         setPendingActions(prev => prev.filter(a => a.status !== 'failed'));
-    }, [pendingActions]);
+    }, []);
 
     return {
         pendingActions,
