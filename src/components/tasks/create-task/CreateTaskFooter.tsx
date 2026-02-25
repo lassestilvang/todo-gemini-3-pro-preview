@@ -32,6 +32,7 @@ export function CreateTaskFooter({
     onSubmit
 }: CreateTaskFooterProps) {
     const { title, isAiLoading, isSubmitting } = state;
+    const isDisabled = !title.trim() || !userId || isSubmitting;
 
     return (
         <div className="flex items-center justify-between p-2 border-t bg-muted/20 rounded-b-lg">
@@ -96,11 +97,11 @@ export function CreateTaskFooter({
                 </Button>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <span tabIndex={0} className="inline-block">
+                        <span tabIndex={isDisabled ? 0 : -1} className="inline-block">
                             <Button
                                 type="submit"
                                 size="sm"
-                                disabled={!title.trim() || !userId || isSubmitting}
+                                disabled={isDisabled}
                                 data-testid="add-task-button"
                                 className="w-full"
                                 onClick={(e) => {
