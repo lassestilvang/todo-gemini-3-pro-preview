@@ -36,6 +36,21 @@ export const contextLabels = {
     anywhere: "Anywhere",
 } as const;
 
+export const energyEmojis = {
+    high: "⚡",
+    medium: "🔋",
+    low: "🪫",
+} as const;
+
+export const contextEmojis = {
+    computer: "💻",
+    phone: "📱",
+    errands: "🏃",
+    meeting: "👥",
+    home: "🏠",
+    anywhere: "🌍",
+} as const;
+
 /**
  * Custom comparison for TaskItem memoization.
  */

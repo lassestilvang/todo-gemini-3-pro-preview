@@ -22,7 +22,7 @@ import confetti from "canvas-confetti";
 import { Task } from "@/lib/types";
 import { ActionType, actionRegistry } from "@/lib/sync/registry";
 import { SubtaskRow } from "./SubtaskRow";
-import { areTaskPropsEqual, formatDuration, priorityColors, energyLabels, contextLabels } from "./task-item-utils";
+import { areTaskPropsEqual, formatDuration, priorityColors, energyLabels, contextLabels, energyEmojis, contextEmojis } from "./task-item-utils";
 import { useOptionalSyncActions } from "@/components/providers/sync-provider";
 
 export interface TaskItemProps {

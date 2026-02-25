@@ -172,7 +172,7 @@ describe("TaskItem", () => {
         render(<TaskItem task={taskWithDetails} {...defaultProps} />);
 
         // Energy
-        const energyText = screen.getByText("🔋");
+        const energyText = screen.getByText("⚡");
         const energyContainer = energyText.closest('div[tabindex="0"]');
         expect(energyContainer).toBeInTheDocument();
         expect(energyContainer).toHaveAttribute("aria-label", "High Energy");
