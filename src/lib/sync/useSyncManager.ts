@@ -394,7 +394,7 @@ export function useSyncManager() {
         const failedIds = pendingActionsRef.current.filter(a => a.status === 'failed').map(a => a.id);
         if (failedIds.length === 0) return;
         await removeFromQueueBatch(failedIds);
-        setPendingActions(prev => prev.filter(a => a.status !== 'failed'));
+        setPendingActions(prev => prev.filter(a => !failedIds.includes(a.id)));
     }, []);
 
     return {
