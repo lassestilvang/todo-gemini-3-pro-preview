@@ -42,6 +42,12 @@ export const contextLabels = {
     anywhere: "Anywhere",
 } as const;
 
+export const energyEmojis = {
+    high: "⚡",
+    medium: "🔋",
+    low: "🪫",
+} as const;
+
 export const contextEmojis = {
     computer: "💻",
     phone: "📱",
