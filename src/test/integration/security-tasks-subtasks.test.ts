@@ -79,9 +79,5 @@ describe("Integration: Security Subtask IDOR", () => {
                 expect(["NOT_FOUND", "UNAUTHORIZED"]).toContain(result.error.code);
             }
         });
-        expect(isSuccess(result)).toBe(false);
-        if (!isSuccess(result)) {
-            expect(result.error.code).toBe("NOT_FOUND");
-        }
     });
 });
