@@ -58,6 +58,6 @@ describe("Labels Rate Limits", () => {
 
     // Expect rate limit to be hit
     expect(rateLimitHit).toBe(true);
-    expect(successCount).toBeLessThan(110);
+    expect(successCount).toBe(100);
   });
 });
