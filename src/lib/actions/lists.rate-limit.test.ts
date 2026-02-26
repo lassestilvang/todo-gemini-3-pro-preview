@@ -60,6 +60,6 @@ describe("Lists Rate Limits", () => {
 
     // Expect rate limit to be hit
     expect(rateLimitHit).toBe(true);
-    expect(successCount).toBeLessThan(60);
+    expect(successCount).toBe(50);
   });
 });
