@@ -215,6 +215,39 @@ export async function createTask(page: Page, title: string): Promise<void> {
 }
 
 /**
+ * Helper to create a list from the sidebar manage-list dialog.
+ */
+export async function createList(page: Page, name: string): Promise<void> {
+  const addListButton = page.getByTestId('add-list-button');
+  await expect(addListButton).toBeVisible({ timeout: 10000 });
+  await addListButton.click();
+
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible({ timeout: 15000 });
+
+  const nameInput = page.getByPlaceholder('List Name');
+  await expect(nameInput).toBeVisible({ timeout: 10000 });
+  await nameInput.fill(name);
+
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(dialog).not.toBeVisible({ timeout: 15000 });
+
+  const listLink = page.getByRole('link', { name });
+  await expect(listLink).toBeVisible({ timeout: 20000 });
+}
+
+/**
+ * Helper to open a list page from the sidebar.
+ */
+export async function openList(page: Page, name: string): Promise<void> {
+  const listLink = page.getByRole('link', { name });
+  await expect(listLink).toBeVisible({ timeout: 20000 });
+  await listLink.click();
+  await page.waitForURL(/\/lists\/\d+/, { timeout: 20000 });
+  await expect(page.getByRole('heading', { name })).toBeVisible({ timeout: 10000 });
+}
+
+/**
  * Helper to wait for a task to appear in the list.
  */
 export async function waitForTask(page: Page, titleContains: string): Promise<void> {
