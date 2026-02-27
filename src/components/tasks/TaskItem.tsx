@@ -187,6 +187,7 @@ export const TaskItem = memo(function TaskItem({
                         checked={isCompleted}
                         onCheckedChange={handleToggle}
                         disabled={isBlocked && !isCompleted}
+                        data-testid="task-checkbox"
                         className={cn("rounded-full h-5 w-5 transition-all border-2", isCompleted ? "data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" : "border-muted-foreground/30")}
                         onClick={(e) => e.stopPropagation()}
                         aria-label="Mark task as complete"
