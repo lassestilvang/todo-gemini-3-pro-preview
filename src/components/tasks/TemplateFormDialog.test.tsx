@@ -14,7 +14,6 @@ import { setMockAuthUser } from "@/test/mocks";
 describe("TemplateFormDialog", () => {
   let TEST_USER_ID: string;
   let mockToastSuccess: ReturnType<typeof spyOn>;
-  let mockToastError: ReturnType<typeof spyOn>;
 
   beforeAll(async () => {
     // Rely on setup.tsx for schema initialization
@@ -49,7 +48,7 @@ describe("TemplateFormDialog", () => {
 
     // Mock toast using spyOn
     mockToastSuccess = spyOn(toast, "success").mockImplementation(() => { return "" as string | number; });
-    mockToastError = spyOn(toast, "error").mockImplementation(() => { return "" as string | number; });
+    spyOn(toast, "error").mockImplementation(() => { return "" as string | number; });
   });
 
   afterEach(() => {
