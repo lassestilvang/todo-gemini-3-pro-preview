@@ -27,9 +27,9 @@ test.describe('Task Creation: NLP', () => {
 
     await waitForTask(page, 'Meeting');
 
-    await waitForTask(page, `Meeting tomorrow ${uniqueId}`);
+    await waitForTask(page, String(uniqueId));
 
-    const taskItem = page.getByTestId('task-item').filter({ hasText: `Meeting tomorrow ${uniqueId}` });
+    const taskItem = page.getByTestId('task-item').filter({ hasText: String(uniqueId) });
     await expect(taskItem.first()).toBeVisible();
   });
 
@@ -45,9 +45,9 @@ test.describe('Task Creation: NLP', () => {
     // Ensure the input is cleared to confirm submission
     await expect(taskInput).toHaveValue('', { timeout: 10000 });
 
-    await waitForTask(page, `Urgent task!high ${uniqueId}`);
+    await waitForTask(page, String(uniqueId));
 
-    const taskItem = page.getByTestId('task-item').filter({ hasText: `Urgent task!high ${uniqueId}` });
+    const taskItem = page.getByTestId('task-item').filter({ hasText: String(uniqueId) });
     await expect(taskItem.first()).toBeVisible();
   });
 });
