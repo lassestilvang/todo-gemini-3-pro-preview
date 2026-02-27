@@ -82,3 +82,8 @@
 **Vulnerability:** `setGoogleTasksListMappings` in `src/lib/actions/google-tasks.ts` accepted `listId` without verifying ownership, allowing attackers to map their Google Task list to a victim's local list and view/modify tasks via sync.
 **Learning:** Checking `process.env.NODE_ENV === "test"` *before* security checks can mask vulnerabilities in tests if the test environment returns early. Security checks must always run before environment bypasses.
 **Prevention:** Always place `requireUser` and ownership verification at the very top of the function. Ensure regression tests (like `google-tasks.security.test.ts`) fail if these checks are missing or bypassed.
+
+## 2026-02-15 - [High] Missing Rate Limiting on Resource Creation
+**Vulnerability:** `createList` and `createLabel` server actions lacked rate limiting, allowing a malicious or buggy client to create unlimited resources (lists/labels) and exhaust database storage or degrade performance (DoS).
+**Learning:** While `withErrorHandling` sanitizes errors, it masks the specific cause of failure (e.g. rate limit vs DB error). Throwing `ValidationError` allows the client to receive the specific error message, which is necessary for rate limit feedback.
+**Prevention:** Enforce `rateLimit(userId, limit, window)` on all resource creation actions. Use `ValidationError` to communicate policy violations like rate limits to the client.

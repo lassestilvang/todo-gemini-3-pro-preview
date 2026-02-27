@@ -18,6 +18,7 @@ import {
   withErrorHandling,
   ValidationError,
 } from "./shared";
+import { rateLimit } from "@/lib/rate-limit";
 import { logActivity } from "./activity-logger";
 import { requireUser } from "@/lib/auth";
 
@@ -162,6 +163,11 @@ async function createListImpl(data: typeof lists.$inferInsert) {
   }
 
   await requireUser(effectiveUserId);
+
+  const limit = await rateLimit(`list:create:${effectiveUserId}`, 50, 3600);
+  if (!limit.success) {
+    throw new ValidationError("Rate limit exceeded. Please try again later.");
+  }
 
   // Generate slug if not provided
   const slug = data.slug || data.name.toLowerCase().trim()

@@ -18,6 +18,7 @@ import {
   withErrorHandling,
   ValidationError,
 } from "./shared";
+import { rateLimit } from "@/lib/rate-limit";
 import { revalidateTag, unstable_cache } from "next/cache";
 import { logActivity } from "./activity-logger";
 import { requireUser } from "@/lib/auth";
@@ -142,6 +143,11 @@ async function createLabelImpl(data: typeof labels.$inferInsert) {
   }
 
   await requireUser(data.userId);
+
+  const limit = await rateLimit(`label:create:${data.userId}`, 100, 3600);
+  if (!limit.success) {
+    throw new ValidationError("Rate limit exceeded. Please try again later.");
+  }
 
   const result = await db.insert(labels).values(data).returning();
 
