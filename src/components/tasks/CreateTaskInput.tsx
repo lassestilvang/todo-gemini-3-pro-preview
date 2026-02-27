@@ -53,7 +53,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
     const isClient = useIsClient();
     const inputRef = useRef<HTMLInputElement>(null);
 
-    const [placeholder, setPlaceholder] = useState(PLACEHOLDERS[0]);
+    const [placeholder, setPlaceholder] = useState<string>(PLACEHOLDERS[0]);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -63,7 +63,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
             });
         }, 4000);
         return () => clearInterval(interval);
-    }, []);
+    }, [PLACEHOLDERS]);
 
     const updateTitle = (nextTitle: string) => {
         const parsed = nextTitle.trim() ? parseNaturalLanguage(nextTitle, { weekStartsOnMonday: weekStartsOnMonday ?? false }) : undefined;
