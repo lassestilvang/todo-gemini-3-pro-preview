@@ -7,14 +7,17 @@ import { resetMockAuthUser, getMockAuthUser, resetGlobalStoreMocks } from "./moc
 import { mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import React from "react";
 import { cleanup } from "@testing-library/react";
 import { DialogMocks, SelectMocks, PopoverMocks, TooltipMocks, IconPickerMocks, ResolvedIconMocks } from "./mocks-ui";
+
+type TestGlobal = typeof globalThis & {
+    __getMockAuthUser?: typeof getMockAuthUser;
+};
 
 
 // Expose getMockAuthUser globally for src/lib/auth.ts to use without importing
 // This avoids module instance mismatch issues in Bun test runner
-(globalThis as any).__getMockAuthUser = getMockAuthUser;
+(globalThis as TestGlobal).__getMockAuthUser = getMockAuthUser;
 
 
 
