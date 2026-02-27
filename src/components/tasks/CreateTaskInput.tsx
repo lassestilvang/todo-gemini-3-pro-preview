@@ -19,7 +19,7 @@ import { CreateTaskFooter } from "./create-task/CreateTaskFooter";
 import { TaskBadges } from "./create-task/TaskBadges";
 
 export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelIds }: { listId?: number, defaultDueDate?: Date | string, userId: string, defaultLabelIds?: number[] }) {
-    const PLACEHOLDERS = [
+    const PLACEHOLDERS: string[] = [
         "Add a task... (try 'Buy milk tomorrow !high')",
         "Add a task... (try 'Call John next Friday @phone')",
         "Add a task... (try 'Deep work session @energy:high')",
@@ -53,7 +53,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
     const isClient = useIsClient();
     const inputRef = useRef<HTMLInputElement>(null);
 
-    const [placeholder, setPlaceholder] = useState(PLACEHOLDERS[0]);
+    const [placeholder, setPlaceholder] = useState<string>(PLACEHOLDERS[0]);
 
     useEffect(() => {
         const interval = setInterval(() => {
