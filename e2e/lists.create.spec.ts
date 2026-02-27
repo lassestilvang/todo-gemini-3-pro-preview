@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect, createList } from './fixtures';
 
 test.describe('List Management: Create', () => {
   test.beforeEach(async ({ authenticatedPage }) => {
@@ -20,19 +20,7 @@ test.describe('List Management: Create', () => {
   });
 
   test('should create a new list', async ({ authenticatedPage: page }) => {
-    const addListButton = page.getByTestId('add-list-button');
-    await addListButton.click();
-
-    await expect(page.getByRole('dialog')).toBeVisible();
-
     const listName = `Test List ${Date.now()}`;
-    const nameInput = page.getByPlaceholder(/list name|name/i);
-    await nameInput.fill(listName);
-
-    const createButton = page.getByRole('button', { name: /create|add|save/i });
-    await createButton.click();
-
-    await expect(page.getByRole('dialog')).not.toBeVisible();
-    await expect(page.getByText(listName)).toBeVisible({ timeout: 10000 });
+    await createList(page, listName);
   });
 });
