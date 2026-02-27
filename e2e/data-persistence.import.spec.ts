@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect, createList, openList } from './fixtures';
 
 test.describe('Data Persistence: Import', () => {
     test('should import data correctly preserving relationships', async ({ authenticatedPage: page }) => {
@@ -10,14 +10,8 @@ test.describe('Data Persistence: Import', () => {
 
         await page.goto('/');
 
-        await page.getByTestId('add-list-button').click();
-        await expect(page.getByRole('dialog')).toBeVisible();
-        await page.getByPlaceholder('List Name').fill(listName);
-        await page.keyboard.press('Enter');
-
-        await page.getByRole('link', { name: listName }).click();
-        await page.waitForURL(/\/lists\/\d+/);
-        await expect(page.getByRole('heading', { name: listName })).toBeVisible();
+        await createList(page, listName);
+        await openList(page, listName);
 
         await page.getByTestId('task-input').fill(taskName);
         await expect(page.getByTestId('add-task-button')).toBeVisible();
