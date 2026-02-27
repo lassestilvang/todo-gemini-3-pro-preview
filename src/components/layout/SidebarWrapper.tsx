@@ -114,8 +114,9 @@ export function SidebarWrapper({ children, className, lists, labels }: SidebarWr
     return (
         <>
             {/* Normal mode */}
-            <div
+            <aside
                 ref={sidebarRef}
+                id="app-sidebar"
                 className={cn(
                     "sidebar-normal relative group/sidebar",
                     responsiveClassName,
@@ -167,6 +168,10 @@ export function SidebarWrapper({ children, className, lists, labels }: SidebarWr
                     role="separator"
                     aria-orientation="vertical"
                     aria-label="Resize sidebar"
+                    aria-controls="app-sidebar"
+                    aria-valuemin={MIN_WIDTH}
+                    aria-valuemax={MAX_WIDTH}
+                    aria-valuenow={Math.round(width)}
                     tabIndex={0}
                 >
                     <div className={cn(
@@ -174,7 +179,7 @@ export function SidebarWrapper({ children, className, lists, labels }: SidebarWr
                         isResizing ? "bg-primary scale-y-150" : "bg-border opacity-0 group-hover/sidebar:opacity-100"
                     )} />
                 </div>
-            </div>
+            </aside>
 
             {/* Slim mode — always rendered so CSS can reveal instantly based on data attribute */}
             <div className={cn("sidebar-slim", mode === "slim" ? "flex" : "hidden")}>
