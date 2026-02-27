@@ -1,6 +1,7 @@
-import { describe, it, expect, mock, beforeEach, afterEach, beforeAll } from "bun:test";
+import { describe, it, expect, mock, beforeEach, afterEach, beforeAll, spyOn } from "bun:test";
 import { suggestMetadata } from "./smart-tags";
 import { mockGetGeminiClient } from "@/test/mocks";
+import { db } from "@/db";
 
 // Mock gemini client
 const mockGenerateContent = mock(() => Promise.resolve({
@@ -13,16 +14,27 @@ const mockGetGenerativeModel = mock(() => ({
     generateContent: mockGenerateContent
 }));
 
-// Use global mock instead of local mock
-// const mockGetGeminiClient = mock(() => ({
-//     getGenerativeModel: mockGetGenerativeModel
-// }));
-
 describe("Smart Tags", () => {
     const originalError = console.error;
+    let dbSelectSpy: any;
+    let dbFromSpy: any;
+    let dbWhereSpy: any;
 
     beforeAll(() => {
-        // No local mock.module needed, using global mockGetGeminiClient
+        // Since db.select is a property on the db object, let's spy/mock it directly.
+        // We need to return a chainable mock object.
+
+        dbWhereSpy = mock(() => Promise.resolve([{ id: 1, name: "Groceries" }, { id: 2, name: "Food" }]));
+        dbFromSpy = mock(() => ({ where: dbWhereSpy }));
+        dbSelectSpy = mock(() => ({ from: dbFromSpy }));
+
+        // Overwrite db.select for testing purposes since we can't easily mock the import
+        // Check if db.select is writable
+        try {
+            (db as any).select = dbSelectSpy;
+        } catch (e) {
+            console.warn("Could not overwrite db.select directly. Tests might fail if not mocked correctly via module.");
+        }
     });
 
     beforeEach(() => {
@@ -32,6 +44,14 @@ describe("Smart Tags", () => {
             getGenerativeModel: mockGetGenerativeModel
         } as any);
         console.error = mock(() => { });
+
+        // Reset spies
+        dbSelectSpy.mockClear();
+        dbFromSpy.mockClear();
+        dbWhereSpy.mockClear();
+
+        // Default behavior: return some dummy data
+        dbWhereSpy.mockResolvedValue([{ id: 1, name: "Groceries" }, { id: 2, name: "Food" }]);
     });
 
     afterEach(() => {
@@ -40,24 +60,17 @@ describe("Smart Tags", () => {
     });
 
     it("should return suggestions from Gemini", async () => {
-        const result = await suggestMetadata(
-            "Buy milk",
-            [{ id: 1, name: "Groceries" }],
-            [{ id: 2, name: "Food" }]
-        );
+        const result = await suggestMetadata("Buy milk", "user_1");
 
         expect(result).toEqual({ listId: 1, labelIds: [2] });
         expect(mockGenerateContent).toHaveBeenCalled();
+        expect(dbSelectSpy).toHaveBeenCalledTimes(2); // Lists and Labels
     });
 
     it("should handle empty response or error gracefully", async () => {
         mockGenerateContent.mockImplementationOnce(() => Promise.reject("API Error"));
 
-        const result = await suggestMetadata(
-            "Buy milk",
-            [],
-            []
-        );
+        const result = await suggestMetadata("Buy milk", "user_1");
 
         expect(result).toEqual({ listId: null, labelIds: [] });
     });
@@ -69,25 +82,20 @@ describe("Smart Tags", () => {
             }
         }));
 
-        const result = await suggestMetadata(
-            "Buy milk",
-            [],
-            []
-        );
+        const result = await suggestMetadata("Buy milk", "user_1");
 
         expect(result).toEqual({ listId: null, labelIds: [] });
     });
 
-    it("should return null/empty if client is not available", async () => {
+    it("should return null/empty if client is not available (Optimized Check)", async () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mockGetGeminiClient.mockReturnValueOnce(null as any);
+        dbSelectSpy.mockClear();
 
-        const result = await suggestMetadata(
-            "Buy milk",
-            [],
-            []
-        );
+        const result = await suggestMetadata("Buy milk", "user_1");
 
         expect(result).toEqual({ listId: null, labelIds: [] });
+        // Crucial: DB should NOT be called if client is null
+        expect(dbSelectSpy).not.toHaveBeenCalled();
     });
 });
