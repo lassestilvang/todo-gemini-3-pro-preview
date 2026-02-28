@@ -1,4 +1,4 @@
-import { describe, it, expect, mock, beforeEach, afterEach, beforeAll } from "bun:test";
+import { describe, it, expect, mock, beforeEach, afterEach, beforeAll, afterAll } from "bun:test";
 import { suggestMetadata } from "./smart-tags";
 import { mockGetGeminiClient } from "@/test/mocks";
 import { db } from "@/db";
@@ -16,6 +16,7 @@ const mockGetGenerativeModel = mock(() => ({
 
 describe("Smart Tags", () => {
     const originalError = console.error;
+    const originalDbSelect = db.select;
     let dbSelectSpy: ReturnType<typeof mock>;
     let dbFromSpy: ReturnType<typeof mock>;
     let dbWhereSpy: ReturnType<typeof mock>;
@@ -57,6 +58,11 @@ describe("Smart Tags", () => {
     afterEach(() => {
         console.error = originalError;
         mockGetGeminiClient.mockRestore();
+        (db as unknown as { select: typeof db.select }).select = originalDbSelect;
+    });
+
+    afterAll(() => {
+        (db as unknown as { select: typeof db.select }).select = originalDbSelect;
     });
 
     it("should return suggestions from Gemini", async () => {
