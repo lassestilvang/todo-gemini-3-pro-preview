@@ -1,28 +1,20 @@
 "use server";
 
 import { getGeminiClient, GEMINI_MODEL } from "@/lib/gemini";
-
-interface List {
-    id: number;
-    name: string;
-}
-
-interface Label {
-    id: number;
-    name: string;
-}
+import { db, lists, labels } from "@/db";
+import { eq } from "drizzle-orm";
 
 interface SuggestionResult {
     listId: number | null;
     labelIds: number[];
 }
 
+// Optimized signature: Accept userId instead of full lists/labels to control fetching
 export async function suggestMetadata(
     taskTitle: string,
-    availableLists: List[],
-    availableLabels: Label[]
+    userId: string
 ): Promise<SuggestionResult> {
-    // Skip AI suggestions in E2E test mode for speed and reliability
+    // 1. Check environment & client availability FIRST to avoid any DB calls if feature is disabled
     if (process.env.E2E_TEST_MODE === 'true') {
         return { listId: null, labelIds: [] };
     }
@@ -31,6 +23,17 @@ export async function suggestMetadata(
     if (!client) return { listId: null, labelIds: [] };
 
     try {
+        // 2. Fetch MINIMAL data (ID & Name only)
+        // This replaces the previous behavior where the caller fetched full objects (including unrelated fields)
+        const [availableLists, availableLabels] = await Promise.all([
+            db.select({ id: lists.id, name: lists.name })
+              .from(lists)
+              .where(eq(lists.userId, userId)),
+            db.select({ id: labels.id, name: labels.name })
+              .from(labels)
+              .where(eq(labels.userId, userId))
+        ]);
+
         const model = client.getGenerativeModel({ model: GEMINI_MODEL });
 
         const prompt = `
@@ -56,13 +59,34 @@ export async function suggestMetadata(
 
         const result = await model.generateContent(prompt);
         const response = result.response;
-        const text = response.text().replace(/```json|```/g, "").trim();
+        const text = response.text().replace(/\`\`\`json|\`\`\`/g, "").trim();
 
         const data = JSON.parse(text);
 
+        const suggestedListId = typeof data.listId === 'number' ? data.listId : null;
+        const suggestedLabelIds = Array.isArray(data.labelIds) ? data.labelIds : [];
+
+        // 3. Security Validation: Ensure suggested IDs actually belong to the user
+        // Since we just fetched the valid IDs, we can check against them in memory
+        // This prevents the LLM from hallucinating IDs or a malicious prompt injection suggesting other users' IDs
+
+        let validListId: number | null = null;
+        if (suggestedListId !== null) {
+            const listExists = availableLists.some(l => l.id === suggestedListId);
+            if (listExists) {
+                validListId = suggestedListId;
+            } else {
+                console.warn(`[SECURITY] Smart tagging suggested invalid listId (${suggestedListId}) for user ${userId}`);
+            }
+        }
+
+        const validLabelIds = suggestedLabelIds.filter((id: number) =>
+            availableLabels.some(l => l.id === id)
+        );
+
         return {
-            listId: typeof data.listId === 'number' ? data.listId : null,
-            labelIds: Array.isArray(data.labelIds) ? data.labelIds : []
+            listId: validListId,
+            labelIds: validLabelIds
         };
 
     } catch (error) {

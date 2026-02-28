@@ -74,19 +74,12 @@ async function createTaskImpl(data: typeof tasks.$inferInsert & { labelIds?: num
 
     if (!taskData.listId && finalLabelIds.length === 0 && taskData.title && taskData.userId) {
       try {
-        // Fetch lists and labels sequentially to avoid SQLite concurrency issues in tests
-        const allLists = await getListsInternal(taskData.userId);
-        const allLabels = await getLabelsInternal(taskData.userId);
-        const suggestions = await suggestMetadata(taskData.title, allLists, allLabels);
+        // Optimized: Pass userId directly to suggestMetadata.
+        // It now handles fetching minimal data internally, reducing over-fetching overhead.
+        const suggestions = await suggestMetadata(taskData.title, taskData.userId);
 
-        // Security check: Ensure suggested listId belongs to the user
         if (suggestions.listId) {
-          const isValidList = allLists.some((list) => list.id === suggestions.listId);
-          if (isValidList) {
             taskData.listId = suggestions.listId;
-          } else {
-            console.warn(`[SECURITY] Smart tagging suggested an invalid listId (${suggestions.listId}) for user ${taskData.userId}. This may indicate a bug or an attack attempt.`);
-          }
         }
 
         if (suggestions.labelIds.length > 0) finalLabelIds = suggestions.labelIds;
