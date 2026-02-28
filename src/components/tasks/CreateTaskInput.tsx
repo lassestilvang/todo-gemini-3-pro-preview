@@ -54,12 +54,12 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
     const isClient = useIsClient();
     const inputRef = useRef<HTMLInputElement>(null);
 
-    const [placeholder, setPlaceholder] = useState(PLACEHOLDERS[0]);
+    const [placeholder, setPlaceholder] = useState<string>(PLACEHOLDERS[0]);
 
     useEffect(() => {
         const interval = setInterval(() => {
             setPlaceholder((current) => {
-                const currentIndex = PLACEHOLDERS.indexOf(current);
+                const currentIndex = PLACEHOLDERS.indexOf(current as typeof PLACEHOLDERS[number]);
                 return PLACEHOLDERS[(currentIndex + 1) % PLACEHOLDERS.length];
             });
         }, 4000);
