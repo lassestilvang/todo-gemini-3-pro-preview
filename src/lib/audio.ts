@@ -1,11 +1,17 @@
+type AudioContextWindow = Window & { webkitAudioContext?: typeof AudioContext };
+
+function getAudioContextCtor(): typeof AudioContext | undefined {
+    if (typeof window === "undefined") return undefined;
+    return window.AudioContext || (window as AudioContextWindow).webkitAudioContext;
+}
+
 export function playSuccessSound() {
     if (typeof window === 'undefined') return;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContext) return;
+    const AudioContextCtor = getAudioContextCtor();
+    if (!AudioContextCtor) return;
 
-    const ctx = new AudioContext();
+    const ctx = new AudioContextCtor();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
@@ -26,11 +32,10 @@ export function playSuccessSound() {
 export function playLevelUpSound() {
     if (typeof window === 'undefined') return;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContext) return;
+    const AudioContextCtor = getAudioContextCtor();
+    if (!AudioContextCtor) return;
 
-    const ctx = new AudioContext();
+    const ctx = new AudioContextCtor();
 
     // Arpeggio
     [440, 554, 659, 880].forEach((freq, i) => {
