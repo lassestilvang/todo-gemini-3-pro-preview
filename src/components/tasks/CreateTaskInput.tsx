@@ -25,6 +25,8 @@ const PLACEHOLDERS = [
     "Add a task... (try 'Review quarterly goals next week')",
 ] as const;
 
+type Placeholder = (typeof PLACEHOLDERS)[number];
+
 export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelIds }: { listId?: number, defaultDueDate?: Date | string, userId: string, defaultLabelIds?: number[] }) {
     const { dispatch } = useSync();
     const { weekStartsOnMonday } = useUser();
@@ -54,7 +56,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
     const isClient = useIsClient();
     const inputRef = useRef<HTMLInputElement>(null);
 
-    const [placeholder, setPlaceholder] = useState(PLACEHOLDERS[0]);
+    const [placeholder, setPlaceholder] = useState<Placeholder>(PLACEHOLDERS[0]);
 
     useEffect(() => {
         const interval = setInterval(() => {
