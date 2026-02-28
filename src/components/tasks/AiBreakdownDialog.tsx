@@ -38,11 +38,8 @@ function AiBreakdownDialogContent({ open, onOpenChange, taskTitle, onConfirm }: 
     const suggestions = shouldLoad ? (suggestionsQuery.data ?? EMPTY_SUGGESTIONS) : EMPTY_SUGGESTIONS;
     const isLoading = shouldLoad && suggestionsQuery.isLoading;
     const selectedCount = useMemo(
-        // ⚡ Bolt Opt: Replaced O(N) array reduction with O(1) mathematical calculation.
-        // The excluded set only contains valid indices from the suggestions array,
-        // so total valid items is simply length minus excluded size.
-        () => suggestions.length - excluded.size,
-        [excluded.size, suggestions.length]
+        () => suggestions.reduce((count, _, i) => (excluded.has(i) ? count : count + 1), 0),
+        [excluded, suggestions]
     );
 
     const handleToggle = (index: number) => {

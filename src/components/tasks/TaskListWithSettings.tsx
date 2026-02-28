@@ -112,7 +112,6 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
             const newIndex = derivedTasks.findIndex(t => t.id === over.id);
             const newTasks = arrayMove(derivedTasks, oldIndex, newIndex);
             setTasks(newTasks);
-
             dispatch("reorderTasks", userId, newTasks.map((t, i) => ({ id: t.id, position: i }))).catch(console.error);
         }
     };
