@@ -1,39 +1,8 @@
-import { db, lists, labels } from "@/db";
-import { eq } from "drizzle-orm";
-import { getListsInternal, getLabelsInternal } from "@/lib/actions/lists";
-import { getLabelsInternal as getLabels } from "@/lib/actions/labels";
-import { suggestMetadata } from "@/lib/smart-tags";
-
-// Mock implementations
-async function currentSuggestMetadata(userId: string, taskTitle: string) {
-    const allLists = await getListsInternal(userId);
-    const allLabels = await getLabels(userId);
-    return suggestMetadata(taskTitle, allLists, allLabels);
-}
-
-async function optimizedSuggestMetadata(userId: string, taskTitle: string) {
-    // Simulated optimization (fetch only necessary fields)
-    const minimalLists = await db
-        .select({ id: lists.id, name: lists.name })
-        .from(lists)
-        .where(eq(lists.userId, userId));
-
-    const minimalLabels = await db
-        .select({ id: labels.id, name: labels.name })
-        .from(labels)
-        .where(eq(labels.userId, userId));
-
-    return suggestMetadata(taskTitle, minimalLists as any, minimalLabels as any);
-}
-
-// ... rest of benchmark logic ...
-// (Since I cannot run db operations in this environment easily without setup,
-// I will create a simpler benchmark focusing on the overhead of object creation/memory)
+// Lightweight benchmark focused on object allocation/serialization overhead.
 
 async function memoryBenchmark() {
     const iterations = 10000;
     const listCount = 100;
-    const labelCount = 100;
 
     // Simulate full objects (like current implementation)
     const createFullLists = () => Array.from({ length: listCount }, (_, i) => ({
