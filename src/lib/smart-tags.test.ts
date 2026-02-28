@@ -42,7 +42,7 @@ describe("Smart Tags", () => {
         // Configure global mock to return our test client
         mockGetGeminiClient.mockReturnValue({
             getGenerativeModel: mockGetGenerativeModel
-        } as any);
+        } as unknown);
         console.error = mock(() => { });
 
         // Reset spies

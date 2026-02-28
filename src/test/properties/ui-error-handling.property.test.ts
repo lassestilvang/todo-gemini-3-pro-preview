@@ -5,7 +5,7 @@
  * including displaying toast notifications and preserving user input on failures.
  */
 
-import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
+import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import * as fc from "fast-check";
 import type { ActionResult, ActionError, ErrorCode } from "@/lib/action-result";
 

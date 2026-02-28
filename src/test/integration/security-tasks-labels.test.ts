@@ -6,9 +6,11 @@ import { createTask, getTasks } from "@/lib/actions/tasks";
 import { createLabel } from "@/lib/actions/labels";
 import { isSuccess } from "@/lib/action-result";
 
+type TestUser = Awaited<ReturnType<typeof createTestUser>>;
+
 describe("Integration: Security Task Labels IDOR", () => {
-    let victim: any;
-    let attacker: any;
+    let victim: TestUser;
+    let attacker: TestUser;
     let victimId: string;
     let attackerId: string;
     let victimLabelId: number;

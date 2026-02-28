@@ -117,6 +117,7 @@ export function SidebarWrapper({ children, className, lists, labels }: SidebarWr
             <aside
                 ref={sidebarRef}
                 id="app-sidebar"
+                aria-label="Sidebar wrapper"
                 className={cn(
                     "sidebar-normal relative group/sidebar",
                     responsiveClassName,

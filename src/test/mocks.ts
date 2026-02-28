@@ -24,6 +24,11 @@ export const DEFAULT_MOCK_USER: MockAuthUser = {
     profilePictureUrl: null
 };
 
+type MockGlobal = typeof globalThis & {
+    __mockAuthUser?: MockAuthUser | null;
+    __getMockAuthUser?: typeof getMockAuthUser;
+};
+
 const GLOBAL_MOCK_USER_KEY = "mockAuthUser";
 // Use a global object that persists across module reloads in the same worker
 const mockState = globalThis as unknown as Record<string, MockAuthUser | null>;
@@ -50,13 +55,14 @@ export function runInAuthContext<T>(user: MockAuthUser | null, callback: () => T
  * });
  */
 export function setMockAuthUser(user: MockAuthUser) {
-    console.log(`[MOCK] Setting mock user: ${user.id} (Global: ${!!(globalThis as any).__mockAuthUser}, Env: ${!!process.env.MOCK_AUTH_USER})`);
+    const mockGlobal = globalThis as MockGlobal;
+    console.log(`[MOCK] Setting mock user: ${user.id} (Global: ${!!mockGlobal.__mockAuthUser}, Env: ${!!process.env.MOCK_AUTH_USER})`);
     mockState[GLOBAL_MOCK_USER_KEY] = user;
     // Also set on globalThis for direct access if needed
-    (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = user;
+    mockGlobal.__mockAuthUser = user;
     // Set env var as fallback/compatibility
     process.env.MOCK_AUTH_USER = JSON.stringify(user);
-    console.log(`[MOCK] Set complete. Global matches: ${(globalThis as any).__mockAuthUser?.id === user.id}`);
+    console.log(`[MOCK] Set complete. Global matches: ${mockGlobal.__mockAuthUser?.id === user.id}`);
 }
 
 /**
@@ -65,8 +71,9 @@ export function setMockAuthUser(user: MockAuthUser) {
  */
 export function clearMockAuthUser() {
     console.log("[MOCK] Clearing mock user");
+    const mockGlobal = globalThis as MockGlobal;
     mockState[GLOBAL_MOCK_USER_KEY] = null;
-    (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser = null;
+    mockGlobal.__mockAuthUser = null;
     delete process.env.MOCK_AUTH_USER;
 }
 
@@ -91,7 +98,7 @@ export function getMockAuthUser(): MockAuthUser | null {
     }
 
     // 1. Check globalThis (primary source)
-    const globalUser = (globalThis as { __mockAuthUser?: MockAuthUser | null }).__mockAuthUser;
+    const globalUser = (globalThis as MockGlobal).__mockAuthUser;
     console.log(`[MOCK] Getting mock user. Global: ${globalUser?.id}, State: ${mockState[GLOBAL_MOCK_USER_KEY]?.id}, Env: ${!!process.env.MOCK_AUTH_USER}`);
     if (globalUser !== undefined && globalUser !== null) {
         // console.log(`[MOCK] Getting mock user (global): ${globalUser.id}`);
@@ -120,7 +127,7 @@ export function getMockAuthUser(): MockAuthUser | null {
 }
 
 // Expose getMockAuthUser globally to ensure single instance across dynamic imports
-(globalThis as any).__getMockAuthUser = getMockAuthUser;
+(globalThis as MockGlobal).__getMockAuthUser = getMockAuthUser;
 
 // Ensure DB module initializes in test mode even if NODE_ENV isn't set.
 if (!process.env.NODE_ENV) {
