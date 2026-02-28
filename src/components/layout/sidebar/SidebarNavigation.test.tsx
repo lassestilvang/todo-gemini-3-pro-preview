@@ -1,4 +1,4 @@
-import { describe, it, expect, mock, afterEach, beforeEach, beforeAll } from "bun:test";
+import { describe, it, expect, afterEach, beforeEach, beforeAll } from "bun:test";
 import { render, screen, cleanup } from "@testing-library/react";
 import React from "react";
 import { mockUsePathname, mockUseTaskCounts } from "@/test/mocks";

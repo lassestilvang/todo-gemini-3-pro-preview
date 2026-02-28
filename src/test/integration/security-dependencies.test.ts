@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach, beforeAll } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
-import { runInAuthContext, clearMockAuthUser } from "@/test/auth-helpers";
 import { runInAuthContext } from "@/test/mocks";
-import { getCurrentUser } from "@/lib/auth";
 import { addDependency, removeDependency } from "@/lib/actions/dependencies";
 import { createReminder, deleteReminder } from "@/lib/actions/reminders";
 import { isFailure } from "@/lib/action-result";
 import { db, tasks, reminders, taskDependencies } from "@/db";
 import { eq, and } from "drizzle-orm";
+
+type TestUser = Awaited<ReturnType<typeof createTestUser>>;
 
 describe("Integration: Security Dependencies & Reminders", () => {
     let attackerId: string;
@@ -19,8 +19,8 @@ describe("Integration: Security Dependencies & Reminders", () => {
         await setupTestDb();
     });
 
-    let attacker: any;
-    let victim: any;
+    let attacker: TestUser;
+    let victim: TestUser;
 
     beforeEach(async () => {
         await resetTestDb();

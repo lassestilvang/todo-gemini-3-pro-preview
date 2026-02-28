@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeAll, mock, beforeEach } from "bun:test";
+import { describe, expect, it, beforeAll, beforeEach } from "bun:test";
 import { and, eq } from "drizzle-orm";
 import { setupTestDb, createTestUser } from "@/test/setup";
 import { db, externalIntegrations, tasks } from "@/db";
@@ -37,7 +37,13 @@ const unwrap = <T>(result: { success: boolean; data?: T; error?: { message?: str
 
 describe("Server Actions", () => {
     let testUserId: string;
-    let testUser: any;
+    let testUser: {
+        id: string;
+        email: string;
+        firstName: string;
+        lastName: string;
+        profilePictureUrl: string | null | undefined;
+    };
 
     beforeAll(async () => {
         // Ensure tables exist for this test suite
