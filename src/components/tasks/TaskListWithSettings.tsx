@@ -1,7 +1,6 @@
 
 "use client";
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import React, { useState, useEffect, useMemo, useCallback, Suspense, useReducer } from "react";
 import dynamic from "next/dynamic";
 import { format, isToday, isTomorrow, isThisYear } from "date-fns";
@@ -20,7 +19,6 @@ import { SortableTaskItem } from "./list/SortableTaskItem";
 import { TaskListEmptyState } from "./list/TaskListEmptyState";
 import { TaskListOverdueSection } from "./list/TaskListOverdueSection";
 import { TaskListPeriodSection } from "./list/TaskListPeriodSection";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { useTaskListView, PeriodPrecision } from "@/hooks/use-task-list-view";
 
 // Extracted Components
@@ -32,7 +30,7 @@ const TaskDialog = dynamic(() => import("./TaskDialog").then(mod => mod.TaskDial
 const TaskBoardView = dynamic(() => import("./board/TaskBoardView").then(mod => mod.TaskBoardView), { ssr: false, loading: () => <TaskListSkeleton variant="board" compact /> });
 const TaskCalendarLayout = dynamic(() => import("./calendar/TaskCalendarLayout").then(mod => mod.TaskCalendarLayout), { ssr: false, loading: () => <TaskListSkeleton variant="calendar" compact /> });
 
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay } from "@dnd-kit/core";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay, DragStartEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 
@@ -109,6 +107,40 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
         () => (activeId ? taskById.get(activeId) ?? null : null),
         [activeId, taskById]
     );
+    const handleEditTask = useCallback(
+        (task: Task) => dispatchUI({ type: "SET_EDITING_TASK", payload: task }),
+        []
+    );
+    const handleSelectCalendarDate = useCallback(
+        (date: Date) => dispatchUI({ type: "SET_CALENDAR_DATE", payload: date }),
+        []
+    );
+    const handleToggleOverdue = useCallback(
+        () => dispatchUI({ type: "TOGGLE_OVERDUE" }),
+        []
+    );
+    const handleTogglePeriod = useCallback(
+        (precision: PeriodPrecision) => dispatchUI({ type: "TOGGLE_PERIOD", payload: precision }),
+        []
+    );
+    const handleDragStart = useCallback(
+        (event: DragStartEvent) => dispatchUI({ type: "SET_ACTIVE_ID", payload: event.active.id }),
+        []
+    );
+    const handleDragCancel = useCallback(
+        () => dispatchUI({ type: "SET_ACTIVE_ID", payload: null }),
+        []
+    );
+    const handleRescheduleOverdue = useCallback(
+        () => overdueTasks.forEach((task) => dispatch("updateTask", task.id, userId || "", { dueDate: new Date(), dueDatePrecision: null })),
+        [dispatch, overdueTasks, userId]
+    );
+    const handleTaskDialogOpenChange = useCallback((open: boolean) => {
+        dispatchUI({ type: "SET_DIALOG_OPEN", payload: open });
+        if (!open) {
+            setTimeout(() => dispatchUI({ type: "CLEAR_TASK" }), 300);
+        }
+    }, []);
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
@@ -162,28 +194,28 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
         <div className="space-y-4">
             <ListHeader title={title} viewId={viewId} userId={userId} viewIndicator={viewIndicator} settings={settings} onSettingsChange={setSettings} />
 
-            {settings.layout === "board" ? <TaskBoardView tasks={processedTasks} userId={userId || ""} onEdit={t => dispatchUI({ type: "SET_EDITING_TASK", payload: t })} /> :
-                settings.layout === "calendar" ? <TaskCalendarLayout tasks={processedTasks} onEdit={t => dispatchUI({ type: "SET_EDITING_TASK", payload: t })} onDateClick={d => dispatchUI({ type: "SET_CALENDAR_DATE", payload: d })} /> : (
+            {settings.layout === "board" ? <TaskBoardView tasks={processedTasks} userId={userId || ""} onEdit={handleEditTask} /> :
+                settings.layout === "calendar" ? <TaskCalendarLayout tasks={processedTasks} onEdit={handleEditTask} onDateClick={handleSelectCalendarDate} /> : (
                     <div className="space-y-6">
-                        <TaskListOverdueSection overdueTasks={overdueTasks} overdueCollapsed={overdueCollapsed} onToggle={() => dispatchUI({ type: "TOGGLE_OVERDUE" })} onEdit={t => dispatchUI({ type: "SET_EDITING_TASK", payload: t })} listId={listId} userId={userId} dispatch={dispatch} onReschedule={() => overdueTasks.forEach(t => dispatch("updateTask", t.id, userId || "", { dueDate: new Date(), dueDatePrecision: null }))} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} />
+                        <TaskListOverdueSection overdueTasks={overdueTasks} overdueCollapsed={overdueCollapsed} onToggle={handleToggleOverdue} onEdit={handleEditTask} listId={listId} userId={userId} dispatch={dispatch} onReschedule={handleRescheduleOverdue} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} />
                         {settings.groupBy === "none" ? (
                             <>
                                 {activeTasks.length > 0 && (
-                                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={e => dispatchUI({ type: "SET_ACTIVE_ID", payload: e.active.id })} onDragEnd={handleDragEnd} onDragCancel={() => dispatchUI({ type: "SET_ACTIVE_ID", payload: null })} modifiers={[restrictToVerticalAxis]}>
+                                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel} modifiers={[restrictToVerticalAxis]}>
                                         <SortableContext items={activeTaskIds} strategy={verticalListSortingStrategy} disabled={!isDragEnabled}>
-                                            <div className="space-y-2">{activeTasks.map(t => <SortableTaskItem key={t.id} task={t} handleEdit={t => dispatchUI({ type: "SET_EDITING_TASK", payload: t })} listId={listId} userId={userId} isDragEnabled={isDragEnabled} dispatch={dispatch} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} />)}</div>
+                                            <div className="space-y-2">{activeTasks.map(t => <SortableTaskItem key={t.id} task={t} handleEdit={handleEditTask} listId={listId} userId={userId} isDragEnabled={isDragEnabled} dispatch={dispatch} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} />)}</div>
                                         </SortableContext>
-                                        <DragOverlay>{activeDragTask ? <div className="opacity-90 rotate-2 scale-105 cursor-grabbing"><TaskItem task={activeDragTask} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={t => dispatchUI({ type: "SET_EDITING_TASK", payload: t })} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} /></div> : null}</DragOverlay>
+                                        <DragOverlay>{activeDragTask ? <div className="opacity-90 rotate-2 scale-105 cursor-grabbing"><TaskItem task={activeDragTask} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={handleEditTask} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} /></div> : null}</DragOverlay>
                                     </DndContext>
                                 )}
-                                <CompletedTasksSection tasks={completedTasks} listId={listId} userId={userId} onEdit={t => dispatchUI({ type: "SET_EDITING_TASK", payload: t })} dispatch={dispatch} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} />
+                                <CompletedTasksSection tasks={completedTasks} listId={listId} userId={userId} onEdit={handleEditTask} dispatch={dispatch} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} />
                             </>
-                        ) : <GroupedListView groupedEntries={groupedEntries} groupedVirtualSections={groupedVirtualSections} formattedGroupNames={formattedGroupNames} listId={listId} userId={userId} onEdit={t => dispatchUI({ type: "SET_EDITING_TASK", payload: t })} dispatch={dispatch} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} />}
-                        {periodSections.length > 0 && <div className="space-y-3 pt-2">{listTasks.length === 0 && <div className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">No tasks specifically for today.</div>}{periodSections.map(s => <TaskListPeriodSection key={s.precision} precision={s.precision} label={s.label} tasks={s.tasks} collapsed={periodCollapsed[s.precision]} onToggle={() => dispatchUI({ type: "TOGGLE_PERIOD", payload: s.precision })} listId={listId} userId={userId} onEdit={t => dispatchUI({ type: "SET_EDITING_TASK", payload: t })} dispatch={dispatch} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} />)}</div>}
+                        ) : <GroupedListView groupedEntries={groupedEntries} groupedVirtualSections={groupedVirtualSections} formattedGroupNames={formattedGroupNames} listId={listId} userId={userId} onEdit={handleEditTask} dispatch={dispatch} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} />}
+                        {periodSections.length > 0 && <div className="space-y-3 pt-2">{listTasks.length === 0 && <div className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">No tasks specifically for today.</div>}{periodSections.map(s => <TaskListPeriodSection key={s.precision} precision={s.precision} label={s.label} tasks={s.tasks} collapsed={periodCollapsed[s.precision]} onToggle={() => handleTogglePeriod(s.precision)} listId={listId} userId={userId} onEdit={handleEditTask} dispatch={dispatch} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} />)}</div>}
                     </div>
                 )}
             <Suspense fallback={null}>
-                <TaskDialog task={editingTask ? { ...editingTask, icon: editingTask.icon ?? null } : undefined} defaultListId={listId ?? undefined} defaultLabelIds={labelId ? [labelId] : undefined} defaultDueDate={calendarSelectedDate || defaultDueDate} open={isDialogOpen} onOpenChange={o => { dispatchUI({ type: "SET_DIALOG_OPEN", payload: o }); if (!o) { setTimeout(() => dispatchUI({ type: "CLEAR_TASK" }), 300); } }} userId={userId} />
+                <TaskDialog task={editingTask ? { ...editingTask, icon: editingTask.icon ?? null } : undefined} defaultListId={listId ?? undefined} defaultLabelIds={labelId ? [labelId] : undefined} defaultDueDate={calendarSelectedDate || defaultDueDate} open={isDialogOpen} onOpenChange={handleTaskDialogOpenChange} userId={userId} />
             </Suspense>
         </div>
     );
