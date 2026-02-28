@@ -1,4 +1,4 @@
-import { describe, it, expect, mock, beforeEach, afterEach, beforeAll, spyOn } from "bun:test";
+import { describe, it, expect, mock, beforeEach, afterEach, beforeAll } from "bun:test";
 import { suggestMetadata } from "./smart-tags";
 import { mockGetGeminiClient } from "@/test/mocks";
 import { db } from "@/db";
@@ -16,9 +16,9 @@ const mockGetGenerativeModel = mock(() => ({
 
 describe("Smart Tags", () => {
     const originalError = console.error;
-    let dbSelectSpy: any;
-    let dbFromSpy: any;
-    let dbWhereSpy: any;
+    let dbSelectSpy: ReturnType<typeof mock>;
+    let dbFromSpy: ReturnType<typeof mock>;
+    let dbWhereSpy: ReturnType<typeof mock>;
 
     beforeAll(() => {
         // Since db.select is a property on the db object, let's spy/mock it directly.
@@ -31,8 +31,8 @@ describe("Smart Tags", () => {
         // Overwrite db.select for testing purposes since we can't easily mock the import
         // Check if db.select is writable
         try {
-            (db as any).select = dbSelectSpy;
-        } catch (e) {
+            (db as unknown as { select: ReturnType<typeof mock> }).select = dbSelectSpy;
+        } catch {
             console.warn("Could not overwrite db.select directly. Tests might fail if not mocked correctly via module.");
         }
     });
@@ -88,8 +88,7 @@ describe("Smart Tags", () => {
     });
 
     it("should return null/empty if client is not available (Optimized Check)", async () => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        mockGetGeminiClient.mockReturnValueOnce(null as any);
+        mockGetGeminiClient.mockReturnValueOnce(null as never);
         dbSelectSpy.mockClear();
 
         const result = await suggestMetadata("Buy milk", "user_1");
