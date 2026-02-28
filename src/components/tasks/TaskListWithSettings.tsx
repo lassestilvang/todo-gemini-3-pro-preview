@@ -24,7 +24,7 @@ import { useTaskListView, PeriodPrecision } from "@/hooks/use-task-list-view";
 // Extracted Components
 import { ListHeader } from "./list/ListHeader";
 import { CompletedTasksSection } from "./list/CompletedTasksSection";
-import { GroupedListView } from "./list/GroupedListView";
+import { GroupedListView, type GroupedVirtualSection } from "./list/GroupedListView";
 
 const TaskDialog = dynamic(() => import("./TaskDialog").then(mod => mod.TaskDialog), { ssr: false });
 const TaskBoardView = dynamic(() => import("./board/TaskBoardView").then(mod => mod.TaskBoardView), { ssr: false, loading: () => <TaskListSkeleton variant="board" compact /> });
@@ -46,8 +46,25 @@ interface TaskListWithSettingsProps {
     filterType?: "inbox" | "today" | "upcoming" | "all" | "completed";
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function uiReducer(state: any, action: any) {
+interface TaskListUIState {
+    editingTask: Task | null;
+    isDialogOpen: boolean;
+    calendarSelectedDate?: Date;
+    activeId: Task["id"] | null;
+    overdueCollapsed: boolean;
+    periodCollapsed: Record<PeriodPrecision, boolean>;
+}
+
+type TaskListUIAction =
+    | { type: "SET_EDITING_TASK"; payload: Task }
+    | { type: "SET_DIALOG_OPEN"; payload: boolean }
+    | { type: "SET_CALENDAR_DATE"; payload: Date }
+    | { type: "SET_ACTIVE_ID"; payload: Task["id"] | null }
+    | { type: "TOGGLE_OVERDUE" }
+    | { type: "TOGGLE_PERIOD"; payload: PeriodPrecision }
+    | { type: "CLEAR_TASK" };
+
+function uiReducer(state: TaskListUIState, action: TaskListUIAction): TaskListUIState {
     switch (action.type) {
         case "SET_EDITING_TASK": return { ...state, editingTask: action.payload, isDialogOpen: true };
         case "SET_DIALOG_OPEN": return { ...state, isDialogOpen: action.payload };
@@ -55,17 +72,16 @@ function uiReducer(state: any, action: any) {
         case "SET_ACTIVE_ID": return { ...state, activeId: action.payload };
         case "TOGGLE_OVERDUE": return { ...state, overdueCollapsed: !state.overdueCollapsed };
         case "TOGGLE_PERIOD": return { ...state, periodCollapsed: { ...state.periodCollapsed, [action.payload]: !state.periodCollapsed[action.payload] } };
-        case "CLOSE_DIALOG": return { ...state, isDialogOpen: false, editingTask: state.editingTask, calendarSelectedDate: undefined };
         case "CLEAR_TASK": return { ...state, editingTask: null };
-        default: return state;
     }
 }
 
 export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDueDate, viewId, userId, initialSettings, filterType }: TaskListWithSettingsProps) {
-    const [uiState, dispatchUI] = useReducer(uiReducer, {
+    const initialUIState: TaskListUIState = {
         editingTask: null, isDialogOpen: false, calendarSelectedDate: undefined,
         activeId: null, overdueCollapsed: false, periodCollapsed: { week: false, month: false, year: false }
-    });
+    };
+    const [uiState, dispatchUI] = useReducer(uiReducer, initialUIState);
     const { editingTask, isDialogOpen, calendarSelectedDate, activeId, overdueCollapsed, periodCollapsed } = uiState;
     const { weekStartsOnMonday, use24HourClock } = useUser();
     const { dispatch } = useSyncActions();
@@ -88,8 +104,7 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
 
     useEffect(() => { initialize(); if (tasks?.length) setTasks(tasks); }, [tasks, setTasks, initialize]);
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { processedTasks, listTasks, periodSections, overdueTasks, activeTasks, completedTasks, groupedEntries, nonOverdueTasks, derivedTasks } = useTaskListView({
+    const { processedTasks, listTasks, periodSections, overdueTasks, activeTasks, completedTasks, groupedEntries, derivedTasks } = useTaskListView({
         allStoreTasks: Object.values(storeTasksFn), listId, labelId, filterType, tasksFromProps: tasks, weekStartsOnMonday: weekStartsOnMonday ?? undefined, settings
     });
 
@@ -171,7 +186,7 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
         return map;
     }, [groupedEntries, settings.groupBy]);
 
-    const groupedVirtualSections = useMemo(() => settings.groupBy === "none" ? [] : groupedEntries.map(([groupName, gTasks]) => {
+    const groupedVirtualSections = useMemo<GroupedVirtualSection[]>(() => settings.groupBy === "none" ? [] : groupedEntries.map(([groupName, gTasks]) => {
         const active: Task[] = [], completed: Task[] = [];
         gTasks.forEach(t => (t.isCompleted ? completed : active).push(t));
         const items: ({ type: "task"; task: Task } | { type: "separator" })[] = active.map(t => ({ type: "task" as const, task: t }));
