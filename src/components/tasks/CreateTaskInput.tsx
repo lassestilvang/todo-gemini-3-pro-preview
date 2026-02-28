@@ -28,12 +28,6 @@ const PLACEHOLDERS = [
 type Placeholder = (typeof PLACEHOLDERS)[number];
 
 export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelIds }: { listId?: number, defaultDueDate?: Date | string, userId: string, defaultLabelIds?: number[] }) {
-    const PLACEHOLDERS: string[] = [
-        "Add a task... (try 'Buy milk tomorrow !high')",
-        "Add a task... (try 'Call John next Friday @phone')",
-        "Add a task... (try 'Deep work session @energy:high')",
-        "Add a task... (try 'Review quarterly goals next week')",
-    ];
     const { dispatch } = useSync();
     const { weekStartsOnMonday } = useUser();
 
@@ -62,17 +56,17 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
     const isClient = useIsClient();
     const inputRef = useRef<HTMLInputElement>(null);
 
-    const [placeholder, setPlaceholder] = useState<string>(PLACEHOLDERS[0]);
+    const [placeholder, setPlaceholder] = useState<Placeholder>(PLACEHOLDERS[0]);
 
     useEffect(() => {
         const interval = setInterval(() => {
             setPlaceholder((current) => {
-                const currentIndex = PLACEHOLDERS.indexOf(current as typeof PLACEHOLDERS[number]);
+                const currentIndex = PLACEHOLDERS.indexOf(current);
                 return PLACEHOLDERS[(currentIndex + 1) % PLACEHOLDERS.length];
             });
         }, 4000);
         return () => clearInterval(interval);
-    }, [PLACEHOLDERS]);
+    }, []);
 
     const updateTitle = (nextTitle: string) => {
         const parsed = nextTitle.trim() ? parseNaturalLanguage(nextTitle, { weekStartsOnMonday: weekStartsOnMonday ?? false }) : undefined;
