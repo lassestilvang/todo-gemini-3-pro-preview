@@ -65,6 +65,7 @@ export function SlimSidebar({ lists, labels, onExpand, onHide, active = true }: 
     return (
         <aside
             className="flex flex-col h-full border-r bg-card/50 backdrop-blur-xl w-[52px] shrink-0 transition-all duration-300 items-center"
+            aria-label="Slim Sidebar"
             data-testid="slim-sidebar"
         >
             <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pt-3 w-full custom-scrollbar">

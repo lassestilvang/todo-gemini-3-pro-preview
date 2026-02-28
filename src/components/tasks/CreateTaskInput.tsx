@@ -18,13 +18,16 @@ import { reducer, State, Action } from "@/lib/tasks/create-task-reducer";
 import { CreateTaskFooter } from "./create-task/CreateTaskFooter";
 import { TaskBadges } from "./create-task/TaskBadges";
 
+const PLACEHOLDERS = [
+    "Add a task... (try 'Buy milk tomorrow !high')",
+    "Add a task... (try 'Call John next Friday @phone')",
+    "Add a task... (try 'Deep work session @energy:high')",
+    "Add a task... (try 'Review quarterly goals next week')",
+] as const;
+
+type Placeholder = (typeof PLACEHOLDERS)[number];
+
 export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelIds }: { listId?: number, defaultDueDate?: Date | string, userId: string, defaultLabelIds?: number[] }) {
-    const PLACEHOLDERS = [
-        "Add a task... (try 'Buy milk tomorrow !high')",
-        "Add a task... (try 'Call John next Friday @phone')",
-        "Add a task... (try 'Deep work session @energy:high')",
-        "Add a task... (try 'Review quarterly goals next week')",
-    ];
     const { dispatch } = useSync();
     const { weekStartsOnMonday } = useUser();
 

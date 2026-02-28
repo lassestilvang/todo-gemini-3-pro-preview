@@ -5,13 +5,6 @@ import * as smartScheduler from "@/lib/smart-scheduler";
 import { toast } from "sonner";
 import userEvent from "@testing-library/user-event";
 
-type MockFn = ReturnType<typeof mock> & {
-    mockClear: () => void;
-    mockResolvedValue: (value: unknown) => void;
-    mockRejectedValue: (value: unknown) => void;
-    mockReturnValue: (value: unknown) => void;
-};
-
 describe("SmartScheduleDialog", () => {
     const mockOnOpenChange = mock();
     let mockGenerateSmartSchedule: ReturnType<typeof spyOn>;

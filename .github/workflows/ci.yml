@@ -90,7 +90,7 @@ jobs:
           # Fetch all PR preview branches
           current="preview/pr-${{ github.event.pull_request.number }}"
           # Get IDs of all branches starting with preview/pr- except the current one
-          ids=$(neonctl branches list --project-id $NEON_PROJECT_ID -o json | jq -r --arg cur "$current" '.[] | select(.name | startswith("preview/pr-")) | select(.name != $cur) | .id')
+          ids=$(neonctl branches list --project-id $NEON_PROJECT_ID -o json | jq -r --arg cur "$current" '.[] | select(.name | startswith("preview/")) | select(.name != $cur) | .id')
           
           if [ -z "$ids" ]; then
             echo "No stale PR branches to prune."

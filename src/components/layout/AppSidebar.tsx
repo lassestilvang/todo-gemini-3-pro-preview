@@ -58,6 +58,7 @@ export function AppSidebar({ className, lists, labels, user, id }: AppSidebarPro
                 "flex flex-col h-full overflow-hidden border-r bg-card/50 backdrop-blur-xl shrink-0 transition-all duration-300 w-full",
                 className
             )}
+            aria-label="Sidebar"
             data-testid="app-sidebar"
         >
             <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pt-4 custom-scrollbar">

@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, afterEach, mock } from "bun:test";
-import React from "react";
 import { renderHook } from "@testing-library/react";
 import { waitFor } from "@testing-library/react";
 import { create } from "zustand";

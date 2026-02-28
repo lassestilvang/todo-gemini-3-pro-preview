@@ -17,7 +17,7 @@ describe("todoist crypto kms", () => {
 
         spyOn(KMSClient.prototype, "send").mockImplementation(async (command) => {
             sentCommands.push(command);
-            return { Plaintext: new Uint8Array(Buffer.alloc(32, 7)) } as any;
+            return { Plaintext: new Uint8Array(Buffer.alloc(32, 7)) } as unknown;
         });
     });
 

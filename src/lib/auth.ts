@@ -32,6 +32,17 @@ export interface AuthUser {
   calendarDenseTooltipThreshold: number | null;
 }
 
+type AuthTestGlobal = typeof globalThis & {
+  __getMockAuthUser?: () => {
+    id: string;
+    email: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    profilePictureUrl?: string | null;
+  } | null;
+  __mockAuthUser?: unknown;
+};
+
 const isTestEnv = process.env.NODE_ENV === "test";
 
 /**
@@ -181,8 +192,9 @@ async function getCurrentUserImpl(): Promise<AuthUser | null> {
   if (isTestEnv) {
     try {
       // Try global first to avoid module instance issues in tests
-      if (typeof globalThis !== "undefined" && (globalThis as any).__getMockAuthUser) {
-        const mockUser = (globalThis as any).__getMockAuthUser();
+      const testGlobal = globalThis as AuthTestGlobal;
+      if (typeof globalThis !== "undefined" && testGlobal.__getMockAuthUser) {
+        const mockUser = testGlobal.__getMockAuthUser();
         console.log(`[AUTH] getCurrentUser (isTestEnv/global): mockUser=${mockUser?.id}`);
         if (mockUser) {
           return {
@@ -420,7 +432,7 @@ export async function requireUser(userId: string): Promise<AuthUser> {
   console.log(`[AUTH] requireUser: current=${user?.id}, required=${userId}`);
 
   if (!user) {
-    console.error(`[AUTH] requireUser: Access denied. No user found. Test env: ${isTestEnv}, Global Mock: ${!!(globalThis as any).__mockAuthUser}`);
+    console.error(`[AUTH] requireUser: Access denied. No user found. Test env: ${isTestEnv}, Global Mock: ${!!(globalThis as AuthTestGlobal).__mockAuthUser}`);
     throw new UnauthorizedError("You must be logged in to access this resource");
   }
 
