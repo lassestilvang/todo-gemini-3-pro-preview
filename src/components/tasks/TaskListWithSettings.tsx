@@ -110,8 +110,10 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
 
     useEffect(() => {
         if (initialSettings || !userId) return;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        getViewSettings(userId, viewId).then(s => s && setSettings(prev => ({ ...prev, ...(s as any) })));
+        getViewSettings(userId, viewId).then((stored) => {
+            if (!stored) return;
+            setSettings((prev) => ({ ...prev, ...(stored as Partial<ViewSettings>) }));
+        });
     }, [viewId, userId, initialSettings]);
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
