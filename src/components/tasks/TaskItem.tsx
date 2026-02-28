@@ -6,8 +6,7 @@ import React, { useState, useCallback, memo } from "react";
 import { format } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { Calendar, Flag, Clock, Repeat, AlertCircle, Lock, ChevronDown, GitBranch, GripVertical, Pencil, Target } from "lucide-react";
+import { Calendar, Flag, Clock, Repeat, Lock, ChevronDown, GitBranch, GripVertical, Pencil, Target } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
