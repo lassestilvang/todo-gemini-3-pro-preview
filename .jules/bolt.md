@@ -112,3 +112,7 @@
 ## 2026-02-14 - CI Neon Action Version
 **Learning:** `neondatabase/create-branch-action@v6` may behave differently or reject certain configurations (like `suspend_timeout: 0` or specific branch name patterns) with 422 errors.
 **Action:** Reverted to `v5` and simplified inputs to minimum required fields to restore stability.
+
+## 2025-02-14 - Redundant Reduce with Sets
+**Learning:** Using an array `.reduce()` to count the number of items that are NOT in a `Set` of indices is O(N) when a simple O(1) mathematical calculation (`array.length - set.size`) achieves the same result if the set only contains valid indices.
+**Action:** Replace `array.reduce((acc, _, i) => set.has(i) ? acc : acc + 1, 0)` with `array.length - set.size` for immediate O(N) to O(1) performance improvements in selection logic.

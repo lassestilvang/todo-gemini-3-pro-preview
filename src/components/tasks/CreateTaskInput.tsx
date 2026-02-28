@@ -54,17 +54,16 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
     const isClient = useIsClient();
     const inputRef = useRef<HTMLInputElement>(null);
 
-    const [placeholder, setPlaceholder] = useState(PLACEHOLDERS[0]);
+    const [placeholderIndex, setPlaceholderIndex] = useState(0);
 
     useEffect(() => {
         const interval = setInterval(() => {
-            setPlaceholder((current) => {
-                const currentIndex = PLACEHOLDERS.indexOf(current);
-                return PLACEHOLDERS[(currentIndex + 1) % PLACEHOLDERS.length];
-            });
+            setPlaceholderIndex((current) => (current + 1) % PLACEHOLDERS.length);
         }, 4000);
         return () => clearInterval(interval);
     }, []);
+
+    const placeholder = PLACEHOLDERS[placeholderIndex];
 
     const updateTitle = (nextTitle: string) => {
         const parsed = nextTitle.trim() ? parseNaturalLanguage(nextTitle, { weekStartsOnMonday: weekStartsOnMonday ?? false }) : undefined;
