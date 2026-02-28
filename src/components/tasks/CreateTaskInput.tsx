@@ -13,8 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { TaskDialog } from "@/components/tasks/TaskDialog";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { reducer, State, Action } from "@/lib/tasks/create-task-reducer";
+import { reducer } from "@/lib/tasks/create-task-reducer";
 import { CreateTaskFooter } from "./create-task/CreateTaskFooter";
 import { TaskBadges } from "./create-task/TaskBadges";
 
