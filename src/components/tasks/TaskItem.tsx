@@ -98,7 +98,6 @@ export const TaskItem = memo(function TaskItem({
         if (!userId || !dispatch) return;
         dispatch("toggleTaskCompletion", task.id, userId, checked);
     };
-    const nowTime = now.getTime();
 
     let isOverdue = false;
     if (task.dueDate && !isCompleted) {
@@ -121,8 +120,6 @@ export const TaskItem = memo(function TaskItem({
         ? `Due: ${periodLabel}`
         : `Due: ${tooltipDate}${tooltipTime}`;
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const isDeadlineExceeded = task.deadline && task.deadline.getTime() < nowTime && !isCompleted;
     const isBlocked = (task.blockedByCount || 0) > 0;
 
     const effectiveDisableAnimations = disableAnimations || resolvedPerformanceMode;
