@@ -1,4 +1,3 @@
-
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Task } from "@/lib/types";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -27,6 +26,12 @@ export const energyLabels = {
     low: "Low Energy",
 } as const;
 
+export const energyEmojis = {
+    high: "⚡",
+    medium: "🔋",
+    low: "🪫",
+} as const;
+
 export const contextLabels = {
     computer: "Computer",
     phone: "Phone",
@@ -34,12 +39,6 @@ export const contextLabels = {
     meeting: "Meeting",
     home: "Home",
     anywhere: "Anywhere",
-} as const;
-
-export const energyEmojis = {
-    high: "⚡",
-    medium: "🔋",
-    low: "🪫",
 } as const;
 
 export const contextEmojis = {

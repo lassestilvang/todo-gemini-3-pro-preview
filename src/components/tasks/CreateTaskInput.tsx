@@ -28,6 +28,12 @@ const PLACEHOLDERS = [
 type Placeholder = (typeof PLACEHOLDERS)[number];
 
 export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelIds }: { listId?: number, defaultDueDate?: Date | string, userId: string, defaultLabelIds?: number[] }) {
+    const PLACEHOLDERS: string[] = [
+        "Add a task... (try 'Buy milk tomorrow !high')",
+        "Add a task... (try 'Call John next Friday @phone')",
+        "Add a task... (try 'Deep work session @energy:high')",
+        "Add a task... (try 'Review quarterly goals next week')",
+    ];
     const { dispatch } = useSync();
     const { weekStartsOnMonday } = useUser();
 
