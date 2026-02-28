@@ -181,8 +181,12 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
                 return map.set(groupName, isToday(d) ? "Today" : isTomorrow(d) ? "Tomorrow" : format(d, isThisYear(d) ? "EEEE, MMM do" : "EEEE, MMM do, yyyy"));
             }
             const [p, iso] = groupName.split(":");
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const formatStr = ({ month: "LLLL yyyy", year: "yyyy", week: "'Week of' MMM d" } as any)[p] || "MMM d";
+            const periodFormatByPrecision: Partial<Record<PeriodPrecision, string>> = {
+                month: "LLLL yyyy",
+                year: "yyyy",
+                week: "'Week of' MMM d",
+            };
+            const formatStr = periodFormatByPrecision[p as PeriodPrecision] ?? "MMM d";
             map.set(groupName, format(new Date(iso), formatStr));
         });
         return map;
