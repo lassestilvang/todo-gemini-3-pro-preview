@@ -103,6 +103,12 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
     const isDragEnabled = settings.sortBy === "manual" && settings.groupBy === "none" && !!userId;
+    const activeTaskIds = useMemo(() => activeTasks.map((task) => task.id), [activeTasks]);
+    const taskById = useMemo(() => new Map(derivedTasks.map((task) => [task.id, task])), [derivedTasks]);
+    const activeDragTask = useMemo(
+        () => (activeId ? taskById.get(activeId) ?? null : null),
+        [activeId, taskById]
+    );
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
@@ -164,10 +170,10 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
                             <>
                                 {activeTasks.length > 0 && (
                                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={e => dispatchUI({ type: "SET_ACTIVE_ID", payload: e.active.id })} onDragEnd={handleDragEnd} onDragCancel={() => dispatchUI({ type: "SET_ACTIVE_ID", payload: null })} modifiers={[restrictToVerticalAxis]}>
-                                        <SortableContext items={activeTasks.map(t => t.id)} strategy={verticalListSortingStrategy} disabled={!isDragEnabled}>
+                                        <SortableContext items={activeTaskIds} strategy={verticalListSortingStrategy} disabled={!isDragEnabled}>
                                             <div className="space-y-2">{activeTasks.map(t => <SortableTaskItem key={t.id} task={t} handleEdit={t => dispatchUI({ type: "SET_EDITING_TASK", payload: t })} listId={listId} userId={userId} isDragEnabled={isDragEnabled} dispatch={dispatch} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} />)}</div>
                                         </SortableContext>
-                                        <DragOverlay>{activeId ? <div className="opacity-90 rotate-2 scale-105 cursor-grabbing"><TaskItem task={derivedTasks.find(t => t.id === activeId)!} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={t => dispatchUI({ type: "SET_EDITING_TASK", payload: t })} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} /></div> : null}</DragOverlay>
+                                        <DragOverlay>{activeDragTask ? <div className="opacity-90 rotate-2 scale-105 cursor-grabbing"><TaskItem task={activeDragTask} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={t => dispatchUI({ type: "SET_EDITING_TASK", payload: t })} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} /></div> : null}</DragOverlay>
                                     </DndContext>
                                 )}
                                 <CompletedTasksSection tasks={completedTasks} listId={listId} userId={userId} onEdit={t => dispatchUI({ type: "SET_EDITING_TASK", payload: t })} dispatch={dispatch} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} />
