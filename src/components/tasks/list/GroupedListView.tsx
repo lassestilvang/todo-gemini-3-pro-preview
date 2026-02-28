@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useMemo } from "react";
 import { GroupedVirtuoso } from "react-virtuoso";
 import { TaskItem } from "../TaskItem";
 import { Task } from "@/lib/types";
@@ -23,13 +23,29 @@ interface GroupedListViewProps {
 export function GroupedListView({
     groupedEntries, groupedVirtualSections, formattedGroupNames, listId, userId, onEdit, dispatch, now, isClient, performanceMode, userPreferences
 }: GroupedListViewProps) {
-    const totalGroupTasks = groupedEntries.reduce((acc, [_, tasks]) => acc + tasks.length, 0);
+    const groupCounts = useMemo(
+        () => groupedVirtualSections.map((section) => section.items.length),
+        [groupedVirtualSections]
+    );
+    const groupedSplit = useMemo(
+        () => groupedEntries.map(([groupName, groupTasks]) => {
+            const groupActive: Task[] = [];
+            const groupCompleted: Task[] = [];
+            for (const task of groupTasks) (task.isCompleted ? groupCompleted : groupActive).push(task);
+            return { groupName, groupTasks, groupActive, groupCompleted };
+        }),
+        [groupedEntries]
+    );
+    const totalGroupTasks = useMemo(
+        () => groupedEntries.reduce((acc, [_, tasks]) => acc + tasks.length, 0),
+        [groupedEntries]
+    );
 
     if (totalGroupTasks > 50) {
         return (
             <GroupedVirtuoso
                 useWindowScroll
-                groupCounts={groupedVirtualSections.map(s => s.items.length)}
+                groupCounts={groupCounts}
                 groupContent={(index) => {
                     const section = groupedVirtualSections[index];
                     return (
@@ -56,10 +72,7 @@ export function GroupedListView({
 
     return (
         <>
-            {groupedEntries.map(([groupName, groupTasks]) => {
-                const groupActive: Task[] = [];
-                const groupCompleted: Task[] = [];
-                for (const task of groupTasks) (task.isCompleted ? groupCompleted : groupActive).push(task);
+            {groupedSplit.map(({ groupName, groupTasks, groupActive, groupCompleted }) => {
                 return (
                     <div key={groupName} className="space-y-2">
                         <h3 className="text-sm font-semibold text-muted-foreground bg-background/95 backdrop-blur-md sticky top-0 py-2 z-10 border-b flex items-center justify-between px-2 -mx-2">
