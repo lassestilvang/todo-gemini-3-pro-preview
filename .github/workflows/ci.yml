@@ -60,6 +60,27 @@ jobs:
             done
           fi
 
+      - name: Cleanup Current PR Branch
+        continue-on-error: true
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
+        run: |
+          # Explicitly delete the branch for this PR if it exists to ensure a fresh start
+          # and clear the "already exists" state if the limit is hit.
+          BRANCH_NAME="preview/pr-${{ github.event.pull_request.number }}"
+          echo "Attempting to delete current PR branch: $BRANCH_NAME"
+
+          # Find branch ID by name
+          BRANCH_ID=$(neonctl branches list --project-id ${{ secrets.NEON_PROJECT_ID }} --api-key ${{ secrets.NEON_API_KEY }} -o json | jq -r --arg name "$BRANCH_NAME" '.[] | select(.name == $name) | .id')
+
+          if [ ! -z "$BRANCH_ID" ]; then
+             echo "Found existing branch $BRANCH_NAME with ID $BRANCH_ID. Deleting..."
+             neonctl branches delete $BRANCH_ID --project-id ${{ secrets.NEON_PROJECT_ID }} --api-key ${{ secrets.NEON_API_KEY }}
+          else
+             echo "Branch $BRANCH_NAME does not exist."
+          fi
+
       - name: Prune PR Preview Branches
         if: github.event_name == 'pull_request'
         env:
@@ -193,56 +214,11 @@ jobs:
             }
           '
 
-  cleanup-neon:
-    name: Cleanup Leaked Branches
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    steps:
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.3.9
-      - name: Install neonctl
-        run: bun install -g neonctl@2
-        continue-on-error: true
-
-      - name: Cleanup Current PR Branch
-        continue-on-error: true
-        run: |
-          # Explicitly delete the branch for this PR if it exists to ensure a fresh start
-          # and clear the "already exists" state if the limit is hit.
-          BRANCH_NAME="preview/pr-${{ github.event.pull_request.number }}"
-          echo "Attempting to delete current PR branch: $BRANCH_NAME"
-
-          # Find branch ID by name
-          BRANCH_ID=$(neonctl branches list --project-id ${{ secrets.NEON_PROJECT_ID }} --api-key ${{ secrets.NEON_API_KEY }} -o json | jq -r --arg name "$BRANCH_NAME" '.[] | select(.name == $name) | .id')
-
-          if [ ! -z "$BRANCH_ID" ]; then
-             echo "Found existing branch $BRANCH_NAME with ID $BRANCH_ID. Deleting..."
-             neonctl branches delete $BRANCH_ID --project-id ${{ secrets.NEON_PROJECT_ID }} --api-key ${{ secrets.NEON_API_KEY }}
-          else
-             echo "Branch $BRANCH_NAME does not exist."
-          fi
-
-      - name: Cleanup Orphaned Run Branches
-        continue-on-error: true
-        run: |
-          # Delete leaked 'preview/run-*' branches from previous failures
-          echo "Searching for leaked 'preview/run-*' branches..."
-          LEAKED_IDS=$(neonctl branches list --project-id ${{ secrets.NEON_PROJECT_ID }} --api-key ${{ secrets.NEON_API_KEY }} -o json | jq -r '.[] | select(.name | startswith("preview/run-")) | .id')
-
-          if [ ! -z "$LEAKED_IDS" ]; then
-            echo "Found leaked branches: $LEAKED_IDS"
-            echo "$LEAKED_IDS" | xargs -I {} -P 5 neonctl branches delete {} --project-id ${{ secrets.NEON_PROJECT_ID }} --api-key ${{ secrets.NEON_API_KEY }}
-          else
-            echo "No leaked 'preview/run-*' branches found."
-          fi
-
   build:
     name: Build
     runs-on: ubuntu-latest
-    # Build needs lint and test to pass. Cleanup jobs are PR-only but we can depend on them optionally.
-    needs: [lint, test, cleanup-legacy, cleanup-neon]
+    # Build needs lint and test to pass. Cleanup job is PR-only but we can depend on it optionally.
+    needs: [lint, test, cleanup-legacy]
     if: always() && (needs.lint.result == 'success') && (needs.test.result == 'success')
     steps:
       - name: Checkout code
@@ -309,8 +285,8 @@ jobs:
     name: E2E Tests (${{ matrix.shard }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [cleanup-legacy, cleanup-neon]
-    if: always() && (needs.cleanup-legacy.result == 'success' || needs.cleanup-legacy.result == 'skipped') && (needs.cleanup-neon.result == 'success' || needs.cleanup-neon.result == 'skipped')
+    needs: [cleanup-legacy]
+    if: always() && (needs.cleanup-legacy.result == 'success' || needs.cleanup-legacy.result == 'skipped')
     strategy:
       fail-fast: false
       matrix:

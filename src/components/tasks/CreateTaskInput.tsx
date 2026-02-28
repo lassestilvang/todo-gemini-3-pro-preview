@@ -72,7 +72,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
             });
         }, 4000);
         return () => clearInterval(interval);
-    }, []);
+    }, [PLACEHOLDERS]);
 
     const updateTitle = (nextTitle: string) => {
         const parsed = nextTitle.trim() ? parseNaturalLanguage(nextTitle, { weekStartsOnMonday: weekStartsOnMonday ?? false }) : undefined;
