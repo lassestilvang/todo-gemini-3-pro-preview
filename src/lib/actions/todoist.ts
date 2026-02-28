@@ -1,7 +1,7 @@
 "use server";
 
 import { and, eq, inArray, not, sql } from "drizzle-orm";
-import { db, externalEntityMap, externalIntegrations, externalSyncConflicts, externalSyncState, lists, taskLabels, tasks, labels } from "@/db";
+import { db, externalEntityMap, externalIntegrations, externalSyncConflicts, externalSyncState, lists, taskLabels, tasks } from "@/db";
 import { getCurrentUser } from "@/lib/auth";
 import { encryptToken } from "@/lib/todoist/crypto";
 import { syncTodoistForUser } from "@/lib/todoist/sync";
@@ -703,16 +703,6 @@ export async function resolveTodoistConflict(conflictId: number, resolution: "lo
             if (externalId) {
                 labelIdsToFetch.push(externalId);
             }
-        }
-
-        // Fetch local label details to get names for unmapped labels (or mapped ones if fetch fails)
-        let localLabelMap = new Map<number, string>();
-        if (localTaskLabelRows.length > 0) {
-            const localLabelDetails = await db
-                .select({ id: labels.id, name: labels.name })
-                .from(labels)
-                .where(inArray(labels.id, localTaskLabelRows.map(r => r.labelId)));
-            localLabelMap = new Map(localLabelDetails.map(l => [l.id, l.name]));
         }
 
         if (labelIdsToFetch.length > 0) {
