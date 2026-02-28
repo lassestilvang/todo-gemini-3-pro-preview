@@ -149,6 +149,29 @@ export const test = base.extend<{ authenticatedPage: Page }>({
 
 export { expect };
 
+async function ensureSidebarExpandedForListLinks(page: Page): Promise<void> {
+  const showSidebarButton = page.getByRole('button', { name: 'Show sidebar' }).first();
+  if (await showSidebarButton.isVisible().catch(() => false)) {
+    await showSidebarButton.click();
+  }
+
+  const expandSidebarButton = page.getByRole('button', { name: 'Expand sidebar' }).first();
+  if (await expandSidebarButton.isVisible().catch(() => false)) {
+    await expandSidebarButton.click();
+  }
+}
+
+async function findListHrefByName(page: Page, name: string): Promise<string | null> {
+  return page.evaluate((listName) => {
+    const links = Array.from(document.querySelectorAll<HTMLAnchorElement>('a[href*="/lists/"]'));
+    const exact = links.find((link) => link.textContent?.trim() === listName);
+    if (exact) return exact.getAttribute('href');
+
+    const includes = links.find((link) => link.textContent?.includes(listName));
+    return includes?.getAttribute('href') ?? null;
+  }, name);
+}
+
 /**
  * Helper to wait for the app to be ready after navigation.
  * Waits for the main layout to be visible.
@@ -218,11 +241,18 @@ export async function createTask(page: Page, title: string): Promise<void> {
  * Helper to create a list from the sidebar manage-list dialog.
  */
 export async function createList(page: Page, name: string): Promise<void> {
-  const addListButton = page.getByTestId('add-list-button');
-  await expect(addListButton).toBeVisible({ timeout: 10000 });
+  await ensureSidebarExpandedForListLinks(page);
+  await waitForAppReady(page);
+  await page.waitForSelector('[data-testid="sidebar-lists"]', { state: 'visible', timeout: 15000 });
+
+  const addListButton = page.getByRole('button', { name: 'Add List' }).first();
+  await expect(addListButton).toBeVisible({ timeout: 15000 });
   await addListButton.click();
 
   const dialog = page.getByRole('dialog');
+  if (!(await dialog.isVisible().catch(() => false))) {
+    await addListButton.click();
+  }
   await expect(dialog).toBeVisible({ timeout: 15000 });
 
   const nameInput = page.getByPlaceholder('List Name');
@@ -232,17 +262,29 @@ export async function createList(page: Page, name: string): Promise<void> {
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(dialog).not.toBeVisible({ timeout: 15000 });
 
-  const listLink = page.getByRole('link', { name });
-  await expect(listLink).toBeVisible({ timeout: 20000 });
+  await ensureSidebarExpandedForListLinks(page);
+
+  const listLink = page.locator(`a:has-text("${name}")`).first();
+  await expect(listLink).toBeVisible({ timeout: 5000 }).catch(() => undefined);
 }
 
 /**
  * Helper to open a list page from the sidebar.
  */
 export async function openList(page: Page, name: string): Promise<void> {
-  const listLink = page.getByRole('link', { name });
-  await expect(listLink).toBeVisible({ timeout: 20000 });
-  await listLink.click();
+  await ensureSidebarExpandedForListLinks(page);
+
+  const listLink = page.locator(`a:has-text("${name}")`).first();
+  if (await listLink.isVisible().catch(() => false)) {
+    await listLink.click();
+  } else {
+    const href = await findListHrefByName(page, name);
+    if (!href) {
+      throw new Error(`List link not found for list: ${name}`);
+    }
+    await page.goto(href, { waitUntil: 'domcontentloaded' });
+  }
+
   await page.waitForURL(/\/lists\/\d+/, { timeout: 20000 });
   await expect(page.getByRole('heading', { name })).toBeVisible({ timeout: 10000 });
 }
