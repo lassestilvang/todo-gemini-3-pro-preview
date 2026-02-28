@@ -1,13 +1,11 @@
-import { describe, expect, it, beforeAll, beforeEach, afterEach, mock, spyOn } from "bun:test";
+import { describe, expect, it, beforeAll, beforeEach, afterEach, mock } from "bun:test";
 import { setupTestDb, createTestUser } from "@/test/setup";
 import { createTask, createList } from "@/lib/actions";
 import { setMockAuthUser } from "@/test/mocks";
-import * as smartTags from "@/lib/smart-tags";
 
 describe("Security: Task Mutations", () => {
     let attackerId: string;
     let victimId: string;
-    let suggestMetadataSpy: ReturnType<typeof spyOn>;
 
     beforeAll(async () => {
         await setupTestDb();
@@ -20,9 +18,6 @@ describe("Security: Task Mutations", () => {
         await createTestUser(attackerId, `${attackerId}@example.com`);
         await createTestUser(victimId, `${victimId}@example.com`);
 
-        suggestMetadataSpy = spyOn(smartTags, "suggestMetadata").mockImplementation(async () => {
-            return { listId: null, labelIds: [] };
-        });
     });
 
     afterEach(() => {
