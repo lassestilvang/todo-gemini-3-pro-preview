@@ -42,7 +42,7 @@ describe("smart-scheduler", () => {
         // Configure global mock to return our test client
         mockGetGeminiClient.mockReturnValue({
             getGenerativeModel: mockGetGenerativeModel
-        } as any);
+        } as unknown);
     });
 
     afterEach(() => {
@@ -84,8 +84,7 @@ describe("smart-scheduler", () => {
         });
 
         it("returns empty if client is null", async () => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            mockGetGeminiClient.mockReturnValueOnce(undefined as unknown as any);
+            mockGetGeminiClient.mockReturnValueOnce(null);
             const subtasks = await generateSubtasks("Test Task");
             expect(subtasks).toEqual([]);
         });
@@ -139,8 +138,7 @@ describe("smart-scheduler", () => {
         });
 
         it("returns null if client is null", async () => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            mockGetGeminiClient.mockReturnValueOnce(undefined as unknown as any);
+            mockGetGeminiClient.mockReturnValueOnce(null);
             const result = await extractDeadline("Task");
             expect(result).toBeNull();
         });

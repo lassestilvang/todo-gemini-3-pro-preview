@@ -30,7 +30,7 @@ describe("Smart Tags", () => {
         // Configure global mock to return our test client
         mockGetGeminiClient.mockReturnValue({
             getGenerativeModel: mockGetGenerativeModel
-        } as any);
+        } as unknown);
         console.error = mock(() => { });
     });
 
@@ -79,8 +79,7 @@ describe("Smart Tags", () => {
     });
 
     it("should return null/empty if client is not available", async () => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        mockGetGeminiClient.mockReturnValueOnce(null as any);
+        mockGetGeminiClient.mockReturnValueOnce(null);
 
         const result = await suggestMetadata(
             "Buy milk",

@@ -1,8 +1,8 @@
 import type React from "react";
-import { describe, it, expect, beforeEach, afterEach, mock } from "bun:test";
+import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { fireEvent, render, screen, waitFor, cleanup } from "@testing-library/react";
 import type { Task } from "@/lib/types";
-import { mockDispatch, mockUseOptionalSyncActions, mockUseSync, mockUseSyncActions } from "@/test/mocks";
+import { mockDispatch, mockUseOptionalSyncActions } from "@/test/mocks";
 
 // Re-apply mock.module locally using global mocks to ensure it takes effect
 // This avoids creating new mock instances (leakage) while fixing module resolution
