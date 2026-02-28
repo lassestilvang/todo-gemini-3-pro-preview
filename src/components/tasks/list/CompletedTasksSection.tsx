@@ -17,7 +17,7 @@ interface CompletedTasksSectionProps {
     userPreferences?: { use24HourClock: boolean, weekStartsOnMonday: boolean };
 }
 
-export function CompletedTasksSection({
+export const CompletedTasksSection = React.memo(function CompletedTasksSection({
     tasks, listId, userId, onEdit, dispatch, now, isClient, performanceMode, userPreferences
 }: CompletedTasksSectionProps) {
     if (tasks.length === 0) return null;
@@ -49,4 +49,4 @@ export function CompletedTasksSection({
             )}
         </div>
     );
-}
+});
