@@ -18,6 +18,10 @@ interface FilterSectionProps {
     onUpdate: <K extends keyof ViewSettings>(key: K, value: ViewSettings[K]) => void;
 }
 
+type FilterPriorityValue = NonNullable<ViewSettings["filterPriority"]>;
+type FilterEnergyValue = NonNullable<ViewSettings["filterEnergyLevel"]>;
+type FilterContextValue = NonNullable<ViewSettings["filterContext"]>;
+
 export function FilterSection({
     settings, labels, expanded, onToggle, onUpdate
 }: FilterSectionProps) {
@@ -58,8 +62,7 @@ export function FilterSection({
                         <span className="text-sm text-muted-foreground">Priority</span>
                         <Select
                             value={settings.filterPriority || "all"}
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            onValueChange={(value) => onUpdate("filterPriority", value === "all" ? null : value as any)}
+                            onValueChange={(value) => onUpdate("filterPriority", value === "all" ? null : (value as FilterPriorityValue))}
                         >
                             <SelectTrigger className="w-[140px]" size="sm">
                                 <SelectValue />
@@ -96,8 +99,7 @@ export function FilterSection({
                         <span className="text-sm text-muted-foreground">Energy</span>
                         <Select
                             value={settings.filterEnergyLevel || "all"}
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            onValueChange={(value) => onUpdate("filterEnergyLevel", value === "all" ? null : value as any)}
+                            onValueChange={(value) => onUpdate("filterEnergyLevel", value === "all" ? null : (value as FilterEnergyValue))}
                         >
                             <SelectTrigger className="w-[140px]" size="sm">
                                 <SelectValue />
@@ -114,8 +116,7 @@ export function FilterSection({
                         <span className="text-sm text-muted-foreground">Context</span>
                         <Select
                             value={settings.filterContext || "all"}
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            onValueChange={(value) => onUpdate("filterContext", value === "all" ? null : value as any)}
+                            onValueChange={(value) => onUpdate("filterContext", value === "all" ? null : (value as FilterContextValue))}
                         >
                             <SelectTrigger className="w-[140px]" size="sm">
                                 <SelectValue />
