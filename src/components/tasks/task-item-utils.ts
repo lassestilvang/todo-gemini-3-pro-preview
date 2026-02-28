@@ -1,7 +1,4 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { Task } from "@/lib/types";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { TaskItemProps } from "./TaskItem";
+import type { TaskItemProps } from "./TaskItem";
 
 /**
  * Format minutes to human-readable duration
@@ -53,8 +50,7 @@ export const contextEmojis = {
 /**
  * Custom comparison for TaskItem memoization.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function areTaskPropsEqual(prev: any, next: any) {
+export function areTaskPropsEqual(prev: Readonly<TaskItemProps>, next: Readonly<TaskItemProps>) {
     if (prev.userId !== next.userId) return false;
     if (prev.showListInfo !== next.showListInfo) return false;
     if (prev.disableAnimations !== next.disableAnimations) return false;
