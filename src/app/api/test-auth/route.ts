@@ -36,6 +36,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const secret = request.headers.get('x-e2e-secret');
+  if (!process.env.E2E_TEST_SECRET || secret !== process.env.E2E_TEST_SECRET) {
+    return NextResponse.json(
+      { error: 'Invalid or missing E2E test secret' },
+      { status: 401 }
+    );
+  }
+
   try {
     // Parse custom user data from body if provided
     const body = await request.json().catch(() => ({}));
@@ -94,7 +102,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
   if (process.env.NODE_ENV === 'production') {
     return NextResponse.json(
       { error: 'Test auth is disabled in production' },
@@ -106,6 +114,14 @@ export async function DELETE() {
     return NextResponse.json(
       { error: 'Test auth is only available in E2E test mode' },
       { status: 403 }
+    );
+  }
+
+  const secret = request.headers.get('x-e2e-secret');
+  if (!process.env.E2E_TEST_SECRET || secret !== process.env.E2E_TEST_SECRET) {
+    return NextResponse.json(
+      { error: 'Invalid or missing E2E test secret' },
+      { status: 401 }
     );
   }
 
