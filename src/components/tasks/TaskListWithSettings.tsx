@@ -141,7 +141,7 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
         []
     );
     const handleDragStart = useCallback(
-        (event: DragStartEvent) => dispatchUI({ type: "SET_ACTIVE_ID", payload: event.active.id }),
+        (event: DragStartEvent) => dispatchUI({ type: "SET_ACTIVE_ID", payload: Number(event.active.id) }),
         []
     );
     const handleDragCancel = useCallback(

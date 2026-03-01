@@ -29,9 +29,11 @@ test.describe('Search Latency: Search Results', () => {
     const searchInput = page.getByPlaceholder(/search tasks\.\.\./i).first();
     await expect(searchInput).toBeVisible();
     await searchInput.fill(taskTitle);
-    await searchInput.press('Enter');
 
-    await page.waitForURL(/\/search\?q=/);
+    await Promise.all([
+      page.waitForURL(/\/search\?q=/),
+      searchInput.press('Enter')
+    ]);
 
     const resultItem = page.getByTestId('task-item').filter({ hasText: taskTitle }).first();
     await expect(resultItem).toBeVisible({ timeout: 30000 });
