@@ -60,17 +60,17 @@ export function useTaskListView({
                 if (!task.dueDate) continue;
                 const precision = task.dueDatePrecision ?? "day";
                 if (precision === "day") {
-                    const dueTime = (task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate)).getTime();
+                    const dueTime = typeof task.dueDate === "string" ? Date.parse(task.dueDate) : task.dueDate.getTime();
                     if (dueTime > todayEndTime) continue;
                     if (dueTime < todayStartTime && task.isCompleted) continue;
                 } else {
                     const inPeriod = getDueRange(task.dueDate, precision as DuePrecision, weekStartsOnMonday ?? false);
-                    if (!(todayStart.getTime() >= inPeriod.start.getTime() && todayStart.getTime() < inPeriod.endExclusive.getTime())) continue;
+                    if (!(todayStartTime >= inPeriod.start.getTime() && todayStartTime < inPeriod.endExclusive.getTime())) continue;
                 }
             } else if (filterType === "upcoming") {
                 if (!task.dueDate) continue;
                 const precision = task.dueDatePrecision ?? "day";
-                const dueTime = (task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate)).getTime();
+                const dueTime = typeof task.dueDate === "string" ? Date.parse(task.dueDate) : task.dueDate.getTime();
                 if (precision === "day") {
                     if (dueTime <= nowTime) continue;
                 } else if (precision === "week") {
@@ -136,7 +136,9 @@ export function useTaskListView({
     }, [processedTasks, filterType, settings.layout, weekStartsOnMonday]);
 
     const { overdueTasks, activeTasks, completedTasks } = useMemo(() => {
-        const todayStart = startOfDay(new Date());
+        const now = new Date();
+        const nowTime = now.getTime();
+        const todayStart = startOfDay(now);
         const todayStartTime = todayStart.getTime();
 
         const overdue: Task[] = [];
@@ -151,12 +153,12 @@ export function useTaskListView({
                 let isOverdue = false;
 
                 if (precision === "day") {
-                    isOverdue = (task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate)).getTime() < todayStartTime;
+                    const dueTime = typeof task.dueDate === "string" ? Date.parse(task.dueDate) : task.dueDate.getTime();
+                    isOverdue = dueTime < todayStartTime;
                 } else {
                     const dueData = { dueDate: task.dueDate, dueDatePrecision: precision as DuePrecision };
-                    const now = new Date();
                     const period = getDueRange(dueData.dueDate, dueData.dueDatePrecision, weekStartsOnMonday ?? false);
-                    isOverdue = now.getTime() >= period.endExclusive.getTime();
+                    isOverdue = nowTime >= period.endExclusive.getTime();
                 }
 
                 if (isOverdue) overdue.push(task);
