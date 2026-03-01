@@ -1,13 +1,11 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { MobileNav } from "./MobileNav";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 describe("MobileNav", () => {
     it("should render and have accessible tooltip", async () => {
-        const user = userEvent.setup();
         render(
             <TooltipProvider>
                 <MobileNav>
