@@ -364,7 +364,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
       - name: Upload Blob Report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: blob-report-${{ strategy.job-index }}
@@ -408,7 +408,7 @@ jobs:
 
       - name: Upload HTML Report
         if: steps.blob-check.outputs.has_blob_reports == 'true'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: playwright-report
