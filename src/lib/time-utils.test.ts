@@ -1,7 +1,7 @@
 
 import { describe, it, expect } from "bun:test";
-import { formatFriendlyDate, formatDateShort, formatTimeManual, formatTimePreference } from "./time-utils";
-import { addDays, subDays } from "date-fns";
+import { formatFriendlyDate, formatDateShort, formatDateLong, formatTimeManual, formatTimePreference } from "./time-utils";
+import { addDays, subDays, format } from "date-fns";
 
 describe("formatFriendlyDate", () => {
     it("formats today as 'Today'", () => {
@@ -56,6 +56,27 @@ describe("formatDateShort (manual)", () => {
         const date = new Date("2023-01-05T12:00:00");
         expect(formatDateShort(date)).toBe("Jan 5");
     });
+    });
+
+    describe("formatDateLong", () => {
+        it("should match format() output for complex dates", () => {
+            const dates = [
+                new Date(2025, 0, 1), // Jan 1st
+                new Date(2025, 1, 2), // Feb 2nd
+                new Date(2025, 2, 3), // Mar 3rd
+                new Date(2025, 3, 4), // Apr 4th
+                new Date(2025, 4, 11), // May 11th
+                new Date(2025, 5, 21), // Jun 21st
+                new Date(2025, 6, 22), // Jul 22nd
+                new Date(2025, 7, 23), // Aug 23rd
+                new Date(2025, 8, 30), // Sep 30th
+                new Date(2025, 11, 25), // Dec 25th
+            ];
+
+            for (const date of dates) {
+                expect(formatDateLong(date)).toBe(format(date, "eeee, MMMM do, yyyy"));
+            }
+        });
 });
 
 describe("formatTimeManual", () => {
