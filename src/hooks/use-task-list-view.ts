@@ -70,7 +70,7 @@ export function useTaskListView({
             } else if (filterType === "upcoming") {
                 if (!task.dueDate) continue;
                 const precision = task.dueDatePrecision ?? "day";
-                const dueTime = typeof task.dueDate === "string" ? Date.parse(task.dueDate) : task.dueDate.getTime();
+                const dueTime = typeof task.dueDate === 'number' ? task.dueDate : (typeof task.dueDate === 'string' ? Date.parse(task.dueDate) : task.dueDate.getTime());
                 if (precision === "day") {
                     if (dueTime <= nowTime) continue;
                 } else if (precision === "week") {
