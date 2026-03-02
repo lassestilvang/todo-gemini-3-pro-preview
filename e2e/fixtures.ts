@@ -38,6 +38,9 @@ export async function authenticateTestUser(page: Page): Promise<boolean> {
 
     // Use Playwright's API request context to avoid browser origin issues
     const response = await page.request.post('/api/test-auth', {
+      headers: {
+        'x-e2e-secret': process.env.E2E_TEST_SECRET || 'local-e2e-secret',
+      },
       data: {
         id: user.id,
         email: user.email,
@@ -102,7 +105,11 @@ export async function clearTestSession(page: Page): Promise<boolean> {
     // Always clear local cookies first to guarantee unauthenticated state.
     await page.context().clearCookies();
 
-    const response = await page.request.delete('/api/test-auth');
+    const response = await page.request.delete('/api/test-auth', {
+      headers: {
+        'x-e2e-secret': process.env.E2E_TEST_SECRET || 'local-e2e-secret',
+      }
+    });
     const data = await response.json();
     return data.success === true;
   } catch (error) {
