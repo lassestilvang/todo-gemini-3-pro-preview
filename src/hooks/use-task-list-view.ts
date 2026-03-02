@@ -153,7 +153,7 @@ export function useTaskListView({
                 let isOverdue = false;
 
                 if (precision === "day") {
-                    const dueTime = typeof task.dueDate === "string" ? Date.parse(task.dueDate) : task.dueDate.getTime();
+                    const dueTime = typeof task.dueDate === 'number' ? task.dueDate : (typeof task.dueDate === 'string' ? Date.parse(task.dueDate) : task.dueDate.getTime());
                     isOverdue = dueTime < todayStartTime;
                 } else {
                     const dueData = { dueDate: task.dueDate, dueDatePrecision: precision as DuePrecision };
