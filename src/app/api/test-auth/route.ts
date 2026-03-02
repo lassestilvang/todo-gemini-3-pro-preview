@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
   }
 
   const secret = request.headers.get('x-e2e-secret');
-  if (!process.env.E2E_TEST_SECRET || secret !== process.env.E2E_TEST_SECRET) {
+  if (!process.env.E2E_TEST_SECRET || !secret || !constantTimeEqual(secret, process.env.E2E_TEST_SECRET)) {
     return NextResponse.json(
       { error: 'Invalid or missing E2E test secret' },
       { status: 401 }
