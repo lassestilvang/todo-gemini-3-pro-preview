@@ -60,7 +60,7 @@ export function useTaskListView({
                 if (!task.dueDate) continue;
                 const precision = task.dueDatePrecision ?? "day";
                 if (precision === "day") {
-                    const dueTime = typeof task.dueDate === "string" ? Date.parse(task.dueDate) : task.dueDate.getTime();
+                    const dueTime = typeof task.dueDate === 'number' ? task.dueDate : (typeof task.dueDate === 'string' ? Date.parse(task.dueDate) : task.dueDate.getTime());
                     if (dueTime > todayEndTime) continue;
                     if (dueTime < todayStartTime && task.isCompleted) continue;
                 } else {
