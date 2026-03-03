@@ -1,0 +1,3 @@
+## 2024-05-24 - Subtask Row Clickability
+**Learning:** A classic UX improvement is making entire rows clickable (Fitts's Law), not just the small checkbox. However, when using Radix UI Checkboxes inside a clickable row container, the `Checkbox` `onClick` handler must call `e.stopPropagation()` and explicitly `onCheckedChange()` to prevent the row's `onClick` from firing and causing a double-toggle. Also, the row text should use `select-none` so fast clicks don't highlight text accidentally.
+**Action:** Always add `cursor-pointer`, `onClick`, and `select-none` to list rows, and ensure inner interactive elements stop propagation. Mock Radix Checkbox in tests if `happy-dom` acts up.
