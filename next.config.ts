@@ -51,6 +51,10 @@ const nextConfig: NextConfig = {
         key: "Permissions-Policy",
         value: "camera=(), geolocation=(), browsing-topics=()",
       },
+      {
+        key: "X-XSS-Protection",
+        value: "1; mode=block",
+      }
     ];
 
     if (process.env.NODE_ENV === "production") {
