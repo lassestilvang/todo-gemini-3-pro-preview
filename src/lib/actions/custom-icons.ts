@@ -15,6 +15,30 @@ import { cache } from "react";
 import { unstable_cache, revalidateTag } from "next/cache";
 
 /**
+ * Validates the icon URL to prevent XSS (no javascript: or data:text/html)
+ */
+function isValidIconUrl(url: string): boolean {
+    try {
+        const parsed = new URL(url);
+
+        // Allow http and https
+        if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+            return true;
+        }
+
+        // Allow data URIs only if they are images
+        if (parsed.protocol === "data:") {
+            const mimeType = parsed.pathname.split(";")[0];
+            return mimeType.startsWith("image/");
+        }
+
+        return false;
+    } catch {
+        return false;
+    }
+}
+
+/**
  * Retrieves all custom icons for a specific user.
  */
 export const getCustomIcons = cache(async function getCustomIcons(userId: string) {
@@ -55,6 +79,9 @@ async function createCustomIconImpl(data: typeof customIcons.$inferInsert) {
     }
     if (data.url.length > 1048576) {
         throw new ValidationError("Icon URL is too large", { url: "URL must be less than 1MB" });
+    }
+    if (!isValidIconUrl(data.url)) {
+        throw new ValidationError("Invalid icon URL. Only HTTP/HTTPS or image Data URIs are allowed.", { url: "Invalid protocol or MIME type" });
     }
     if (!data.userId) {
         throw new ValidationError("User ID is required", { userId: "User ID cannot be empty" });
