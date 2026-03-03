@@ -71,6 +71,10 @@ async function reorderLabelsImpl(userId: string, items: { id: number; position: 
     return;
   }
 
+  if (items.length > 1000) {
+    throw new ValidationError("Too many labels to reorder at once. Limit is 1000.");
+  }
+
   // ⚡ Bolt Opt: batch label reorder in a single CASE/WHEN update to avoid N roundtrips.
   // For typical reorder sizes (5-50 labels), this cuts latency by ~80-95%.
   const caseWhen = sql.join(
