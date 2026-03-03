@@ -67,6 +67,7 @@ export function areTaskPropsEqual(prev: any, next: any) {
     if (prev.isClient !== next.isClient) return false;
     if (prev.performanceMode !== next.performanceMode) return false;
     if (prev.now?.getTime() !== next.now?.getTime()) return false;
+    if (prev.today?.getTime() !== next.today?.getTime()) return false;
 
     // Compare userPreferences (shallow)
     if (prev.userPreferences !== next.userPreferences) {
