@@ -29,11 +29,8 @@ export const SubtaskRow = memo(function SubtaskRow({ subtask, isCompleted, onTog
                 className="rounded-full h-4 w-4"
                 onClick={(e) => {
                     e.stopPropagation();
-                    // We don't preventDefault here because it stops the checkbox from toggling visually
-                    // However, since we have an onClick on the parent, we must ensure we don't trigger double toggles.
-                    // But standard Checkbox behavior is to toggle on click.
-                    // If we click checkbox, it fires onClick (stopPropagation) AND onCheckedChange.
-                    // If we click div, it fires div onClick.
+                    // Stop propagation to prevent the parent row's onClick from firing as well,
+                    // which would cause a double-toggle effect.
                 }}
                 aria-label={isCompleted ? "Mark subtask as incomplete" : "Mark subtask as complete"}
             />
