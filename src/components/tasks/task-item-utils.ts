@@ -1,8 +1,4 @@
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { Task } from "@/lib/types";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { TaskItemProps } from "./TaskItem";
+import type { TaskItemProps } from "./TaskItem";
 
 /**
  * Format minutes to human-readable duration
@@ -27,6 +23,12 @@ export const energyLabels = {
     low: "Low Energy",
 } as const;
 
+export const energyEmojis = {
+    high: "⚡",
+    medium: "🔋",
+    low: "🪫",
+} as const;
+
 export const contextLabels = {
     computer: "Computer",
     phone: "Phone",
@@ -34,12 +36,6 @@ export const contextLabels = {
     meeting: "Meeting",
     home: "Home",
     anywhere: "Anywhere",
-} as const;
-
-export const energyEmojis = {
-    high: "⚡",
-    medium: "🔋",
-    low: "🪫",
 } as const;
 
 export const contextEmojis = {
@@ -54,19 +50,20 @@ export const contextEmojis = {
 /**
  * Custom comparison for TaskItem memoization.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function areTaskPropsEqual(prev: any, next: any) {
+export function areTaskPropsEqual(prev: Readonly<TaskItemProps>, next: Readonly<TaskItemProps>) {
     if (prev.userId !== next.userId) return false;
     if (prev.showListInfo !== next.showListInfo) return false;
     if (prev.disableAnimations !== next.disableAnimations) return false;
     if (prev.onEdit !== next.onEdit) return false;
     if (prev.dispatch !== next.dispatch) return false;
     if (prev.dragHandleProps !== next.dragHandleProps) return false;
+    if (prev.dragAttributes !== next.dragAttributes) return false;
 
     // Compare new props
     if (prev.isClient !== next.isClient) return false;
     if (prev.performanceMode !== next.performanceMode) return false;
     if (prev.now?.getTime() !== next.now?.getTime()) return false;
+    if (prev.today?.getTime() !== next.today?.getTime()) return false;
 
     // Compare userPreferences (shallow)
     if (prev.userPreferences !== next.userPreferences) {
@@ -101,7 +98,6 @@ export function areTaskPropsEqual(prev: any, next: any) {
     if (p.actualMinutes !== n.actualMinutes) return false;
     if (p.isRecurring !== n.isRecurring) return false;
 
-    // Check if energyLevel or context changed (Fix for memoization bug)
     if (p.energyLevel !== n.energyLevel) return false;
     if (p.context !== n.context) return false;
 

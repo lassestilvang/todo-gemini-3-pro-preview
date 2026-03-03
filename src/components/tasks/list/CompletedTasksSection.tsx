@@ -3,21 +3,23 @@ import React from "react";
 import { Virtuoso } from "react-virtuoso";
 import { TaskItem } from "../TaskItem";
 import { Task } from "@/lib/types";
+import { ActionType, actionRegistry } from "@/lib/sync/registry";
+
+type SyncDispatch = <T extends ActionType>(type: T, ...args: Parameters<typeof actionRegistry[T]>) => Promise<{ success: boolean; data: unknown }>;
 
 interface CompletedTasksSectionProps {
     tasks: Task[];
     listId?: number | null;
     userId?: string;
     onEdit: (task: Task) => void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    dispatch: any;
+    dispatch: SyncDispatch;
     now?: Date;
     isClient?: boolean;
     performanceMode?: boolean;
     userPreferences?: { use24HourClock: boolean, weekStartsOnMonday: boolean };
 }
 
-export function CompletedTasksSection({
+export const CompletedTasksSection = React.memo(function CompletedTasksSection({
     tasks, listId, userId, onEdit, dispatch, now, isClient, performanceMode, userPreferences
 }: CompletedTasksSectionProps) {
     if (tasks.length === 0) return null;
@@ -49,4 +51,4 @@ export function CompletedTasksSection({
             )}
         </div>
     );
-}
+});

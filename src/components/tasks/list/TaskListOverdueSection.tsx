@@ -21,7 +21,7 @@ interface TaskListOverdueSectionProps {
     userPreferences?: { use24HourClock: boolean, weekStartsOnMonday: boolean };
 }
 
-export function TaskListOverdueSection({
+export const TaskListOverdueSection = React.memo(function TaskListOverdueSection({
     overdueTasks,
     overdueCollapsed,
     onToggle,
@@ -97,4 +97,4 @@ export function TaskListOverdueSection({
             )}
         </div>
     );
-}
+});

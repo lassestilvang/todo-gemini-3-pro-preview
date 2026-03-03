@@ -243,99 +243,115 @@ async function pullRemoteTasks(params: {
 
     const taskExternalToLocal = new Map(taskMappings.map((mapping) => [mapping.externalId, mapping.localId]));
 
-    for (const [externalId, entry] of remoteTasks.entries()) {
-        const { task, tasklistId } = entry;
-        const listId = listExternalToLocal.get(tasklistId) ?? null;
-        if (!listId) continue;
+    await Promise.all(
+        Array.from(remoteTasks.entries()).map(async ([externalId, entry]) => {
+            const { task, tasklistId } = entry;
+            const listId = listExternalToLocal.get(tasklistId) ?? null;
+            if (!listId) return;
 
-        const mappedLocalId = taskExternalToLocal.get(externalId) ?? null;
-        const remoteUpdatedAt = task.updated ? new Date(task.updated) : null;
+            const mappedLocalId = taskExternalToLocal.get(externalId) ?? null;
+            const remoteUpdatedAt = task.updated ? new Date(task.updated) : null;
 
-        if (task.deleted) {
-            if (mappedLocalId) {
-                await db.delete(tasks).where(and(eq(tasks.id, mappedLocalId), eq(tasks.userId, userId)));
-                await db
-                    .delete(externalEntityMap)
-                    .where(and(eq(externalEntityMap.userId, userId), eq(externalEntityMap.provider, "google_tasks"), eq(externalEntityMap.entityType, "task"), eq(externalEntityMap.externalId, externalId)));
-            }
-            continue;
-        }
-
-        if (mappedLocalId && localTaskMap.has(mappedLocalId)) {
-            const localTask = localTaskMap.get(mappedLocalId)!;
-            if (shouldCreateConflict(localTask, task, listId, lastSyncedAt, conflictKeys)) {
-                await createConflict({
-                    userId,
-                    localTask,
-                    task,
-                    tasklistId,
-                    listId,
-                    conflictKeys,
-                });
-                continue;
+            if (task.deleted) {
+                if (mappedLocalId) {
+                    await db.delete(tasks).where(and(eq(tasks.id, mappedLocalId), eq(tasks.userId, userId)));
+                    await db
+                        .delete(externalEntityMap)
+                        .where(
+                            and(
+                                eq(externalEntityMap.userId, userId),
+                                eq(externalEntityMap.provider, "google_tasks"),
+                                eq(externalEntityMap.entityType, "task"),
+                                eq(externalEntityMap.externalId, externalId)
+                            )
+                        );
+                }
+                return;
             }
 
-            if (remoteUpdatedAt && (!lastSyncedAt || remoteUpdatedAt > lastSyncedAt)) {
-                const updates = mapGoogleTaskToLocal(task, listId);
+            if (mappedLocalId && localTaskMap.has(mappedLocalId)) {
+                const localTask = localTaskMap.get(mappedLocalId)!;
+                if (shouldCreateConflict(localTask, task, listId, lastSyncedAt, conflictKeys)) {
+                    await createConflict({
+                        userId,
+                        localTask,
+                        task,
+                        tasklistId,
+                        listId,
+                        conflictKeys,
+                    });
+                    return;
+                }
+
+                if (remoteUpdatedAt && (!lastSyncedAt || remoteUpdatedAt > lastSyncedAt)) {
+                    const updates = mapGoogleTaskToLocal(task, listId);
+                    await db
+                        .update(tasks)
+                        .set({
+                            title: updates.title ?? localTask.title,
+                            description: updates.description ?? localTask.description,
+                            isCompleted: updates.isCompleted ?? localTask.isCompleted,
+                            completedAt: updates.completedAt ?? localTask.completedAt,
+                            dueDate: updates.dueDate ?? localTask.dueDate,
+                            dueDatePrecision: updates.dueDatePrecision ?? localTask.dueDatePrecision,
+                            listId: updates.listId ?? localTask.listId,
+                            updatedAt: new Date(),
+                        })
+                        .where(and(eq(tasks.id, localTask.id), eq(tasks.userId, userId)));
+                }
+
                 await db
-                    .update(tasks)
+                    .update(externalEntityMap)
                     .set({
-                        title: updates.title ?? localTask.title,
-                        description: updates.description ?? localTask.description,
-                        isCompleted: updates.isCompleted ?? localTask.isCompleted,
-                        completedAt: updates.completedAt ?? localTask.completedAt,
-                        dueDate: updates.dueDate ?? localTask.dueDate,
-                        dueDatePrecision: updates.dueDatePrecision ?? localTask.dueDatePrecision,
-                        listId: updates.listId ?? localTask.listId,
+                        externalParentId: task.parent ?? null,
+                        externalEtag: task.etag ?? null,
+                        externalUpdatedAt: remoteUpdatedAt,
                         updatedAt: new Date(),
                     })
-                    .where(and(eq(tasks.id, localTask.id), eq(tasks.userId, userId)));
+                    .where(
+                        and(
+                            eq(externalEntityMap.userId, userId),
+                            eq(externalEntityMap.provider, "google_tasks"),
+                            eq(externalEntityMap.entityType, "task"),
+                            eq(externalEntityMap.externalId, externalId)
+                        )
+                    );
+
+                return;
             }
 
-            await db
-                .update(externalEntityMap)
-                .set({
+            const payload = mapGoogleTaskToLocal(task, listId);
+            const created = await db
+                .insert(tasks)
+                .values({
+                    userId,
+                    title: payload.title ?? task.title,
+                    description: payload.description ?? null,
+                    isCompleted: payload.isCompleted ?? false,
+                    completedAt: payload.completedAt ?? null,
+                    dueDate: payload.dueDate ?? null,
+                    dueDatePrecision: payload.dueDatePrecision ?? null,
+                    listId,
+                    isRecurring: false,
+                    recurringRule: null,
+                })
+                .returning();
+
+            const localId = created[0]?.id ?? null;
+            if (localId) {
+                await db.insert(externalEntityMap).values({
+                    userId,
+                    provider: "google_tasks" as const,
+                    entityType: "task" as const,
+                    localId,
+                    externalId,
                     externalParentId: task.parent ?? null,
                     externalEtag: task.etag ?? null,
                     externalUpdatedAt: remoteUpdatedAt,
-                    updatedAt: new Date(),
-                })
-                .where(and(eq(externalEntityMap.userId, userId), eq(externalEntityMap.provider, "google_tasks"), eq(externalEntityMap.entityType, "task"), eq(externalEntityMap.externalId, externalId)));
-
-            continue;
-        }
-
-        const payload = mapGoogleTaskToLocal(task, listId);
-        const created = await db
-            .insert(tasks)
-            .values({
-                userId,
-                title: payload.title ?? task.title,
-                description: payload.description ?? null,
-                isCompleted: payload.isCompleted ?? false,
-                completedAt: payload.completedAt ?? null,
-                dueDate: payload.dueDate ?? null,
-                dueDatePrecision: payload.dueDatePrecision ?? null,
-                listId,
-                isRecurring: false,
-                recurringRule: null,
-            })
-            .returning();
-
-        const localId = created[0]?.id ?? null;
-        if (localId) {
-            await db.insert(externalEntityMap).values({
-                userId,
-                provider: "google_tasks" as const,
-                entityType: "task" as const,
-                localId,
-                externalId,
-                externalParentId: task.parent ?? null,
-                externalEtag: task.etag ?? null,
-                externalUpdatedAt: remoteUpdatedAt,
-            });
-        }
-    }
+                });
+            }
+        })
+    );
 }
 
 async function pushLocalTasks(params: {
@@ -350,75 +366,91 @@ async function pushLocalTasks(params: {
 }) {
     const { userId, client, localTasks, taskLocalToExternal, listLocalToExternal, remoteTasks, lastSyncedAt, conflictKeys } = params;
 
-    for (const localTask of localTasks) {
-        if (!localTask.listId) continue;
-        const tasklistId = listLocalToExternal.get(localTask.listId) ?? null;
-        if (!tasklistId) continue;
+    await Promise.all(
+        localTasks.map(async (localTask) => {
+            if (!localTask.listId) return;
+            const tasklistId = listLocalToExternal.get(localTask.listId) ?? null;
+            if (!tasklistId) return;
 
-        const externalId = taskLocalToExternal.get(localTask.id) ?? null;
-        if (!externalId) {
-            const created = await client.createTask(tasklistId, mapLocalTaskToGoogle(localTask));
-            await db.insert(externalEntityMap).values({
-                userId,
-                provider: "google_tasks" as const,
-                entityType: "task" as const,
-                localId: localTask.id,
-                externalId: created.id,
-                externalParentId: created.parent ?? null,
-                externalEtag: created.etag ?? null,
-                externalUpdatedAt: created.updated ? new Date(created.updated) : null,
-            });
-            continue;
-        }
-
-        const remoteEntry = remoteTasks.get(externalId);
-        const remoteUpdatedAt = remoteEntry?.task.updated ? new Date(remoteEntry.task.updated) : null;
-
-        if (remoteEntry && shouldCreateConflict(localTask, remoteEntry.task, localTask.listId, lastSyncedAt, conflictKeys)) {
-            await createConflict({
-                userId,
-                localTask,
-                task: remoteEntry.task,
-                tasklistId: remoteEntry.tasklistId,
-                listId: localTask.listId,
-                conflictKeys,
-            });
-            continue;
-        }
-
-        if (lastSyncedAt && localTask.updatedAt <= lastSyncedAt) {
-            continue;
-        }
-
-        if (remoteUpdatedAt && lastSyncedAt && remoteUpdatedAt > lastSyncedAt) {
-            continue;
-        }
-
-        if (remoteEntry) {
-            const updated = await client.updateTask(tasklistId, externalId, mapLocalTaskToGoogle(localTask));
-            await db
-                .update(externalEntityMap)
-                .set({
-                    externalParentId: updated.parent ?? null,
-                    externalEtag: updated.etag ?? null,
-                    externalUpdatedAt: updated.updated ? new Date(updated.updated) : null,
-                    updatedAt: new Date(),
-                })
-                .where(and(eq(externalEntityMap.userId, userId), eq(externalEntityMap.provider, "google_tasks"), eq(externalEntityMap.entityType, "task"), eq(externalEntityMap.externalId, externalId)));
-        } else {
-            const created = await client.createTask(tasklistId, mapLocalTaskToGoogle(localTask));
-            await db
-                .update(externalEntityMap)
-                .set({
+            const externalId = taskLocalToExternal.get(localTask.id) ?? null;
+            if (!externalId) {
+                const created = await client.createTask(tasklistId, mapLocalTaskToGoogle(localTask));
+                await db.insert(externalEntityMap).values({
+                    userId,
+                    provider: "google_tasks" as const,
+                    entityType: "task" as const,
+                    localId: localTask.id,
                     externalId: created.id,
                     externalParentId: created.parent ?? null,
                     externalEtag: created.etag ?? null,
                     externalUpdatedAt: created.updated ? new Date(created.updated) : null,
-                    updatedAt: new Date(),
-                })
-                .where(and(eq(externalEntityMap.userId, userId), eq(externalEntityMap.provider, "google_tasks"), eq(externalEntityMap.entityType, "task"), eq(externalEntityMap.localId, localTask.id)));
-        }
-    }
+                });
+                return;
+            }
+
+            const remoteEntry = remoteTasks.get(externalId);
+            const remoteUpdatedAt = remoteEntry?.task.updated ? new Date(remoteEntry.task.updated) : null;
+
+            if (remoteEntry && shouldCreateConflict(localTask, remoteEntry.task, localTask.listId, lastSyncedAt, conflictKeys)) {
+                await createConflict({
+                    userId,
+                    localTask,
+                    task: remoteEntry.task,
+                    tasklistId: remoteEntry.tasklistId,
+                    listId: localTask.listId,
+                    conflictKeys,
+                });
+                return;
+            }
+
+            if (lastSyncedAt && localTask.updatedAt <= lastSyncedAt) {
+                return;
+            }
+
+            if (remoteUpdatedAt && lastSyncedAt && remoteUpdatedAt > lastSyncedAt) {
+                return;
+            }
+
+            if (remoteEntry) {
+                const updated = await client.updateTask(tasklistId, externalId, mapLocalTaskToGoogle(localTask));
+                await db
+                    .update(externalEntityMap)
+                    .set({
+                        externalParentId: updated.parent ?? null,
+                        externalEtag: updated.etag ?? null,
+                        externalUpdatedAt: updated.updated ? new Date(updated.updated) : null,
+                        updatedAt: new Date(),
+                    })
+                    .where(
+                        and(
+                            eq(externalEntityMap.userId, userId),
+                            eq(externalEntityMap.provider, "google_tasks"),
+                            eq(externalEntityMap.entityType, "task"),
+                            eq(externalEntityMap.externalId, externalId)
+                        )
+                    );
+            } else {
+                const created = await client.createTask(tasklistId, mapLocalTaskToGoogle(localTask));
+                await db
+                    .update(externalEntityMap)
+                    .set({
+                        externalId: created.id,
+                        externalParentId: created.parent ?? null,
+                        externalEtag: created.etag ?? null,
+                        externalUpdatedAt: created.updated ? new Date(created.updated) : null,
+                        updatedAt: new Date(),
+                    })
+                    .where(
+                        and(
+                            eq(externalEntityMap.userId, userId),
+                            eq(externalEntityMap.provider, "google_tasks"),
+                            eq(externalEntityMap.entityType, "task"),
+                            eq(externalEntityMap.localId, localTask.id)
+                        )
+                    );
+            }
+        })
+    );
 }
 
 async function getExistingConflictKeys(userId: string) {

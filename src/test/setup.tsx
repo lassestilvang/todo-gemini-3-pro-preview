@@ -369,6 +369,7 @@ export async function setupTestDb() {
 
     // Add indexes manually since we're not running migrations in test setup
     sqliteConnection.run("CREATE INDEX IF NOT EXISTS tasks_all_view_idx ON tasks(user_id, is_completed, position);");
+    sqliteConnection.run("CREATE INDEX IF NOT EXISTS tasks_smart_schedule_idx ON tasks(user_id, is_completed, due_date, deadline);");
 }
 
 /**

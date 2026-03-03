@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Plus, GripVertical, ArrowUpDown } from "lucide-react";
 import { ManageLabelDialog } from "@/components/tasks/ManageLabelDialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ResolvedIcon } from "@/components/ui/resolved-icon";
 import {
     DndContext,
@@ -192,19 +193,25 @@ export function SidebarLabels({ labels: ssrLabels, userId }: SidebarLabelsProps)
                     Labels
                 </h2>
                 <div className="flex items-center gap-1">
-                    <Button
-                        variant={isReordering ? "secondary" : "ghost"}
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => setIsReordering(!isReordering)}
-                        title={isReordering ? "Done reordering" : "Reorder labels"}
-                        aria-label={isReordering ? "Done reordering" : "Reorder labels"}
-                    >
-                        <ArrowUpDown className="h-3.5 w-3.5" />
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant={isReordering ? "secondary" : "ghost"}
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => setIsReordering(!isReordering)}
+                                aria-label={isReordering ? "Done reordering" : "Reorder labels"}
+                            >
+                                <ArrowUpDown className="h-3.5 w-3.5" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{isReordering ? "Done reordering" : "Reorder labels"}</p>
+                        </TooltipContent>
+                    </Tooltip>
                     <ManageLabelDialog
                         trigger={
-                            <Button variant="ghost" size="icon" className="h-7 w-7" data-testid="add-label-button">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" title="Add Label" data-testid="add-label-button">
                                 <Plus className="h-4 w-4" />
                                 <span className="sr-only">Add Label</span>
                             </Button>
