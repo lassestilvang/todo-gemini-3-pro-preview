@@ -47,7 +47,7 @@ describe("SubtaskRow Interaction", () => {
         fireEvent.click(textElement);
 
         // Expect onToggle to be called
-        expect(onToggle).toHaveBeenCalled();
+        expect(onToggle).toHaveBeenCalledTimes(1);
         expect(onToggle).toHaveBeenCalledWith(1, true);
     });
 
