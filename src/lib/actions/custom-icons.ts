@@ -29,7 +29,7 @@ function isValidIconUrl(url: string): boolean {
         // Allow data URIs only if they are images
         if (parsed.protocol === "data:") {
             const mimeType = parsed.pathname.split(";")[0];
-            return mimeType.startsWith("image/");
+            return ["image/png", "image/jpeg", "image/gif", "image/webp", "image/bmp", "image/x-icon"].includes(mimeType);
         }
 
         return false;
