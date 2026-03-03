@@ -57,6 +57,7 @@ export function areTaskPropsEqual(prev: Readonly<TaskItemProps>, next: Readonly<
     if (prev.onEdit !== next.onEdit) return false;
     if (prev.dispatch !== next.dispatch) return false;
     if (prev.dragHandleProps !== next.dragHandleProps) return false;
+    if (prev.dragAttributes !== next.dragAttributes) return false;
 
     // Compare new props
     if (prev.isClient !== next.isClient) return false;
@@ -96,7 +97,6 @@ export function areTaskPropsEqual(prev: Readonly<TaskItemProps>, next: Readonly<
     if (p.actualMinutes !== n.actualMinutes) return false;
     if (p.isRecurring !== n.isRecurring) return false;
 
-    // Check if energyLevel or context changed (Fix for memoization bug)
     if (p.energyLevel !== n.energyLevel) return false;
     if (p.context !== n.context) return false;
 
