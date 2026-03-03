@@ -71,7 +71,7 @@ export function SearchFiltersPanel({
                     <Badge variant="secondary" className="gap-1">
                         <FolderOpen className="h-3 w-3" />
                         {allLists.find((l) => l.id === filters.listId)?.name ?? "List"}
-                        <button onClick={() => onUpdateFilter("listId", undefined)} className="ml-1 hover:text-foreground">
+                        <button onClick={() => onUpdateFilter("listId", undefined)} className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full" aria-label="Remove list filter">
                             <X className="h-3 w-3" />
                         </button>
                     </Badge>
@@ -80,7 +80,7 @@ export function SearchFiltersPanel({
                     <Badge variant="secondary" className="gap-1">
                         <Tag className="h-3 w-3" />
                         {allLabels.find((l) => l.id === filters.labelId)?.name ?? "Label"}
-                        <button onClick={() => onUpdateFilter("labelId", undefined)} className="ml-1 hover:text-foreground">
+                        <button onClick={() => onUpdateFilter("labelId", undefined)} className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full" aria-label="Remove label filter">
                             <X className="h-3 w-3" />
                         </button>
                     </Badge>
@@ -89,7 +89,7 @@ export function SearchFiltersPanel({
                     <Badge variant="secondary" className="gap-1">
                         <AlertCircle className="h-3 w-3" />
                         {filters.priority}
-                        <button onClick={() => onUpdateFilter("priority", undefined)} className="ml-1 hover:text-foreground">
+                        <button onClick={() => onUpdateFilter("priority", undefined)} className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full" aria-label="Remove priority filter">
                             <X className="h-3 w-3" />
                         </button>
                     </Badge>
@@ -98,7 +98,7 @@ export function SearchFiltersPanel({
                     <Badge variant="secondary" className="gap-1">
                         {filters.status === "completed" ? <CheckCircle className="h-3 w-3" /> : <Circle className="h-3 w-3" />}
                         {filters.status}
-                        <button onClick={() => onUpdateFilter("status", undefined)} className="ml-1 hover:text-foreground">
+                        <button onClick={() => onUpdateFilter("status", undefined)} className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full" aria-label="Remove status filter">
                             <X className="h-3 w-3" />
                         </button>
                     </Badge>

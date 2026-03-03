@@ -22,7 +22,7 @@ interface TaskListPeriodSectionProps {
     userPreferences?: { use24HourClock: boolean, weekStartsOnMonday: boolean };
 }
 
-export function TaskListPeriodSection({
+export const TaskListPeriodSection = React.memo(function TaskListPeriodSection({
     precision,
     label,
     tasks,
@@ -82,4 +82,4 @@ export function TaskListPeriodSection({
             )}
         </div>
     );
-}
+});

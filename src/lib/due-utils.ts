@@ -93,16 +93,22 @@ export function formatDuePeriod(task: {
 export function isDueOverdue(
     task: { dueDate?: Date | null; dueDatePrecision?: DuePrecision | null },
     now: Date,
-    weekStartsOnMonday: boolean
+    weekStartsOnMonday: boolean,
+    options?: { isAlreadyStartOfDay?: boolean }
 ): boolean {
     if (!task.dueDate) return false;
     const precision = task.dueDatePrecision ?? "day";
+
+    const nowStartOfDayTime = options?.isAlreadyStartOfDay
+        ? now.getTime()
+        : startOfDay(now).getTime();
+
     if (precision === "day") {
-        return task.dueDate.getTime() < startOfDay(now).getTime();
+        return task.dueDate.getTime() < nowStartOfDayTime;
     }
 
     const { endExclusive } = getDueRange(task.dueDate, precision, weekStartsOnMonday);
-    return endExclusive.getTime() <= startOfDay(now).getTime();
+    return endExclusive.getTime() <= nowStartOfDayTime;
 }
 
 export function isInCurrentPeriod(

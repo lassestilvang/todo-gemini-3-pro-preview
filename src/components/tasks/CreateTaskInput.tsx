@@ -13,8 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { TaskDialog } from "@/components/tasks/TaskDialog";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { reducer, State, Action } from "@/lib/tasks/create-task-reducer";
+import { reducer } from "@/lib/tasks/create-task-reducer";
 import { CreateTaskFooter } from "./create-task/CreateTaskFooter";
 import { TaskBadges } from "./create-task/TaskBadges";
 
@@ -24,6 +23,8 @@ const PLACEHOLDERS = [
     "Add a task... (try 'Deep work session @energy:high')",
     "Add a task... (try 'Review quarterly goals next week')",
 ] as const;
+
+type Placeholder = (typeof PLACEHOLDERS)[number];
 
 export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelIds }: { listId?: number, defaultDueDate?: Date | string, userId: string, defaultLabelIds?: number[] }) {
     const { dispatch } = useSync();
@@ -54,7 +55,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
     const isClient = useIsClient();
     const inputRef = useRef<HTMLInputElement>(null);
 
-    const [placeholder, setPlaceholder] = useState(PLACEHOLDERS[0]);
+    const [placeholder, setPlaceholder] = useState<Placeholder>(PLACEHOLDERS[0]);
 
     useEffect(() => {
         const interval = setInterval(() => {

@@ -25,6 +25,10 @@ interface TaskClassificationSectionProps {
     setEstimateMinutes: (v: number | null) => void;
 }
 
+type TaskPriorityValue = TaskClassificationSectionProps["priority"];
+type TaskEnergyValue = TaskClassificationSectionProps["energyLevel"];
+type TaskContextValue = TaskClassificationSectionProps["context"];
+
 export function TaskClassificationSection({
     listId, setListId, lists,
     priority, setPriority,
@@ -86,8 +90,7 @@ export function TaskClassificationSection({
 
                 <div className="space-y-2">
                     <Label>Priority</Label>
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    <Select value={priority} onValueChange={(value) => setPriority(value as any)}>
+                    <Select value={priority} onValueChange={(value) => setPriority(value as TaskPriorityValue)}>
                         <SelectTrigger>
                             <SelectValue placeholder="Select Priority" />
                         </SelectTrigger>
@@ -104,8 +107,7 @@ export function TaskClassificationSection({
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label>Energy Level</Label>
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    <Select value={energyLevel} onValueChange={(value) => setEnergyLevel(value as any)}>
+                    <Select value={energyLevel} onValueChange={(value) => setEnergyLevel(value as TaskEnergyValue)}>
                         <SelectTrigger>
                             <SelectValue placeholder="Select Energy" />
                         </SelectTrigger>
@@ -120,8 +122,7 @@ export function TaskClassificationSection({
 
                 <div className="space-y-2">
                     <Label>Context</Label>
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    <Select value={context} onValueChange={(value) => setContext(value as any)}>
+                    <Select value={context} onValueChange={(value) => setContext(value as TaskContextValue)}>
                         <SelectTrigger>
                             <SelectValue placeholder="Select Context" />
                         </SelectTrigger>

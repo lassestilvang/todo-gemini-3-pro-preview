@@ -249,7 +249,7 @@ export async function analyzePriorities(): Promise<Array<{
     try {
         const user = await requireAuth();
 
-        // Get incomplete tasks (limited for performance)
+        // Get incomplete tasks (limited to 100 for performance and strictly filtered by user)
         const incompleteTasks = await db
             .select()
             .from(tasks)

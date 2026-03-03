@@ -2,7 +2,7 @@ import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
 import { render, screen, waitFor, fireEvent, cleanup } from "@testing-library/react";
 import React from "react";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
-import { setMockAuthUser } from "@/test/mocks";
+import { clearMockAuthUser, setMockAuthUser } from "@/test/mocks";
 import { eq } from "drizzle-orm";
 
 // Mock UI components are now handled globally in src/test/setup.tsx via src/test/mocks-ui.tsx
@@ -20,17 +20,6 @@ describe("TemplateManager", () => {
     // Reset DB for each test to ensure clean state
     await setupTestDb();
     await resetTestDb();
-
-    // Ensure element pointer methods are mocked (defensive programming for CI)
-    if (!Element.prototype.setPointerCapture) {
-      Element.prototype.setPointerCapture = () => { };
-    }
-    if (!Element.prototype.releasePointerCapture) {
-      Element.prototype.releasePointerCapture = () => { };
-    }
-    if (!Element.prototype.hasPointerCapture) {
-      Element.prototype.hasPointerCapture = () => false;
-    }
 
     await createTestUser(testUserId, `${testUserId}@example.com`);
 
@@ -73,19 +62,18 @@ describe("TemplateManager", () => {
 
   afterEach(() => {
     globalThis.confirm = originalConfirm;
+    clearMockAuthUser();
     mock.restore();
     cleanup();
   });
 
   describe("template list dialog", () => {
     it("should render Templates button", () => {
-      setMockAuthUser({ id: testUserId, email: "test@example.com", firstName: "Test", lastName: "User", profilePictureUrl: null });
       render(<TemplateManager userId="test_user_123" />);
       expect(screen.getByText("Templates")).toBeInTheDocument();
     });
 
     it("should open template list dialog when Templates button is clicked", async () => {
-      setMockAuthUser({ id: testUserId, email: "test@example.com", firstName: "Test", lastName: "User", profilePictureUrl: null });
       render(<TemplateManager userId="test_user_123" />);
 
       // Ensure button is present and click it

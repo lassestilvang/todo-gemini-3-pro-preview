@@ -28,7 +28,7 @@ export function LayoutSection({ layout, onUpdate }: LayoutSectionProps) {
                         aria-checked={layout === id}
                         aria-label={`${label} layout`}
                         className={cn(
-                            "flex-1 flex flex-col items-center gap-1 p-3 rounded-lg border transition-colors",
+                            "flex-1 flex flex-col items-center gap-1 p-3 rounded-lg border transition-colors focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-ring",
                             layout === id
                                 ? "border-primary bg-primary/5"
                                 : "border-border hover:bg-accent"
