@@ -32,4 +32,26 @@ describe("due-utils", () => {
         const weekAnchor = normalizeDueAnchor(today, "week", false);
         expect(isInCurrentPeriod({ dueDate: weekAnchor, dueDatePrecision: "week" }, today, false)).toBe(true);
     });
+
+    it("uses isAlreadyStartOfDay option correctly", () => {
+        const today = new Date("2025-01-15T00:00:00Z"); // Wednesday, start of day
+        const yesterdayTask = new Date("2025-01-14T12:00:00Z");
+
+        // Should be overdue
+        expect(isDueOverdue(
+            { dueDate: yesterdayTask, dueDatePrecision: "day" },
+            today,
+            false,
+            { isAlreadyStartOfDay: true }
+        )).toBe(true);
+
+        const tomorrowTask = new Date("2025-01-16T12:00:00Z");
+        // Should not be overdue
+        expect(isDueOverdue(
+            { dueDate: tomorrowTask, dueDatePrecision: "day" },
+            today,
+            false,
+            { isAlreadyStartOfDay: true }
+        )).toBe(false);
+    });
 });
