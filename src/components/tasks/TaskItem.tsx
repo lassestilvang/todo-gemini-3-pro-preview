@@ -34,6 +34,7 @@ export interface TaskItemProps {
     onEdit?: (task: Task) => void;
     // Perf: Pass these as props to avoid hooks and context consumption in every item
     now?: Date;
+    today?: Date;
     isClient?: boolean;
     performanceMode?: boolean;
     userPreferences?: { use24HourClock: boolean, weekStartsOnMonday: boolean };
@@ -49,6 +50,7 @@ export const TaskItem = memo(function TaskItem({
     dispatch: dispatchProp,
     onEdit,
     now: propNow,
+    today,
     isClient: propIsClient,
     performanceMode: propPerformanceMode,
     userPreferences
@@ -102,8 +104,9 @@ export const TaskItem = memo(function TaskItem({
     if (task.dueDate && !isCompleted) {
         isOverdue = isDueOverdue(
             { dueDate: task.dueDate, dueDatePrecision: task.dueDatePrecision ?? null },
-            now,
-            weekStartsOnMonday ?? false
+            today ?? now,
+            weekStartsOnMonday ?? false,
+            { isAlreadyStartOfDay: !!today }
         );
     }
 
