@@ -59,11 +59,11 @@ describe("areTaskPropsEqual", () => {
     it("returns false when dragAttributes change", () => {
         const prevProps = {
             ...baseProps,
-            dragAttributes: { role: "button", tabIndex: 0 } as any
+            dragAttributes: { role: "button", tabIndex: 0 } as TaskItemProps["dragAttributes"]
         };
         const nextProps = {
             ...baseProps,
-            dragAttributes: { role: "button", tabIndex: -1 } as any
+            dragAttributes: { role: "button", tabIndex: -1 } as TaskItemProps["dragAttributes"]
         };
         expect(areTaskPropsEqual(prevProps, nextProps)).toBe(false);
     });
@@ -71,11 +71,11 @@ describe("areTaskPropsEqual", () => {
     it("returns false when dragHandleProps change", () => {
         const prevProps = {
             ...baseProps,
-            dragHandleProps: { onPointerDown: () => {} } as any
+            dragHandleProps: { onPointerDown: () => { } } as unknown as TaskItemProps["dragHandleProps"]
         };
         const nextProps = {
             ...baseProps,
-            dragHandleProps: { onPointerDown: () => {} } as any // New function reference
+            dragHandleProps: { onPointerDown: () => { } } as unknown as TaskItemProps["dragHandleProps"] // New function reference
         };
         expect(areTaskPropsEqual(prevProps, nextProps)).toBe(false);
     });
