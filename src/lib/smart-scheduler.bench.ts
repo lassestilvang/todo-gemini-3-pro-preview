@@ -1,11 +1,11 @@
 import { describe, test, beforeAll, expect } from "bun:test";
 import { db, tasks, sqliteConnection, users } from "@/db";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, sql, asc } from "drizzle-orm";
 
 describe("Smart Scheduler Performance Benchmark", () => {
     const targetUserId = "target-user";
     const noiseTaskCount = 10000;
-    const targetTaskCount = 100;
+    const targetTaskCount = 1000;
 
     beforeAll(async () => {
         // Ensure index exists for fair comparison (mimic production)
@@ -53,22 +53,28 @@ describe("Smart Scheduler Performance Benchmark", () => {
         const startOriginal = performance.now();
         const originalResults = await db.select().from(tasks).where(
             and(
-                isNull(tasks.dueDate),
+                isNull(tasks.parentId),
                 eq(tasks.isCompleted, false)
             )
         );
         const endOriginal = performance.now();
         const timeOriginal = endOriginal - startOriginal;
 
-        // Measure Optimized Query (Filtered by userId)
+        // Measure Optimized Query (Filtered by userId and limited)
         const startOptimized = performance.now();
         const optimizedResults = await db.select().from(tasks).where(
             and(
-                isNull(tasks.dueDate),
+                isNull(tasks.parentId),
                 eq(tasks.isCompleted, false),
                 eq(tasks.userId, targetUserId)
             )
-        );
+        )
+        .orderBy(
+            sql`${tasks.deadline} ASC NULLS LAST`,
+            sql`${tasks.dueDate} ASC NULLS LAST`,
+            asc(tasks.createdAt)
+        )
+        .limit(100);
         const endOptimized = performance.now();
         const timeOptimized = endOptimized - startOptimized;
 
@@ -83,7 +89,7 @@ Improvement: ${(timeOriginal / timeOptimized).toFixed(1)}x faster
 
         // Verify correctness of results
         expect(originalResults.length).toBeGreaterThanOrEqual(noiseTaskCount + targetTaskCount);
-        expect(optimizedResults.length).toBe(targetTaskCount);
+        expect(optimizedResults.length).toBe(100); // Should be limited
         expect(timeOptimized).toBeLessThan(timeOriginal);
     });
 });

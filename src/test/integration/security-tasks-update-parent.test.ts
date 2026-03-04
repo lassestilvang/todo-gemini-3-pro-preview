@@ -23,31 +23,31 @@ describe("Integration: Security Task Parent IDOR", () => {
 
     it("should prevent setting a parent task that belongs to another user", async () => {
         // 1. Create a task for the victim
-        let victimTask: any;
+        let victimTaskId: number;
         await runInAuthContext({ id: victimId, email: "victim@target.com" }, async () => {
             const victimTaskResult = await createTask({
                 userId: victimId,
                 title: "Victim Task",
             });
             if (isFailure(victimTaskResult)) throw new Error("Failed to create victim task");
-            victimTask = victimTaskResult.data;
+            victimTaskId = victimTaskResult.data.id;
         });
 
         // 2. Create a task for the attacker
-        let attackerTask: any;
+        let attackerTaskId: number;
         await runInAuthContext({ id: attackerId, email: "attacker@evil.com" }, async () => {
             const attackerTaskResult = await createTask({
                 userId: attackerId,
                 title: "Attacker Task",
             });
             if (isFailure(attackerTaskResult)) throw new Error("Failed to create attacker task");
-            attackerTask = attackerTaskResult.data;
+            attackerTaskId = attackerTaskResult.data.id;
         });
 
         // 3. Try to update attacker's task to be a child of victim's task
         await runInAuthContext({ id: attackerId, email: "attacker@evil.com" }, async () => {
-            const updateResult = await updateTask(attackerTask.id, attackerId, {
-                parentId: victimTask.id
+            const updateResult = await updateTask(attackerTaskId, attackerId, {
+                parentId: victimTaskId
             });
 
             // 4. Expect failure or verify if it succeeded (vulnerability check)

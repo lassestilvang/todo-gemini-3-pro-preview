@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { render, screen, act, cleanup } from "@testing-library/react";
 import { LevelUpWatcher } from "./LevelUpWatcher";
-import * as audio from "@/lib/audio";
 
 describe("LevelUpWatcher", () => {
     beforeEach(() => {

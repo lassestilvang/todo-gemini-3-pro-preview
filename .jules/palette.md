@@ -35,3 +35,7 @@
 ## 2025-02-19 - Destructive Confirmation UX
 **Learning:** Using native `window.confirm()` for destructive actions (like delete) creates a jarring experience and blocks the UI thread. It also fails to match the application's design language.
 **Action:** Replace `confirm()` with a lightweight `Popover` or `AlertDialog` component containing a confirmation message and a secondary confirm button, ensuring the destructive action is deliberate and visually integrated.
+
+## 2025-03-04 - Accessible Close Buttons
+**Learning:** Icon-only close buttons (like the `X` icon on quick capture forms) are completely invisible to screen readers without an `aria-label` or `sr-only` text. This prevents users from understanding how to dismiss temporary UI elements.
+**Action:** Always verify that buttons containing only an icon component (e.g., `<X className="h-4 w-4" />`) have a descriptive `aria-label` attribute (e.g., `aria-label="Close"`).

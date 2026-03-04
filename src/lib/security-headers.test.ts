@@ -25,6 +25,7 @@ describe("Security Headers", () => {
     // Basic headers should be present
     expect(headerMap.get("X-Content-Type-Options")).toBe("nosniff");
     expect(headerMap.get("X-Frame-Options")).toBe("SAMEORIGIN");
+    expect(headerMap.get("X-XSS-Protection")).toBe("0");
     expect(headerMap.get("Referrer-Policy")).toBe("strict-origin-when-cross-origin");
     expect(headerMap.get("Permissions-Policy")).toContain("camera=()");
     expect(headerMap.get("Permissions-Policy")).not.toContain("microphone=()");

@@ -1,8 +1,8 @@
-import { describe, it, expect, mock, beforeEach } from "bun:test";
+import { describe, it, expect, beforeEach } from "bun:test";
 import { render, screen, fireEvent } from "@testing-library/react";
 import React from "react";
 import Fuse from "fuse.js";
-import { setMockAuthUser, mockPush } from "@/test/mocks";
+import { setMockAuthUser } from "@/test/mocks";
 
 // Wrapper replicating the Client-Side Search Logic with Fuse.js
 // In a real integration test, we would test SearchDialog itself.

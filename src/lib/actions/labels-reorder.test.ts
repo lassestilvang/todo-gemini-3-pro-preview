@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeAll, beforeEach, mock } from "bun:test";
+import { describe, expect, it, beforeAll, beforeEach } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { setMockAuthUser } from "@/test/mocks";
 import { reorderLabels } from "./labels";

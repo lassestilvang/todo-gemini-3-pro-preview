@@ -5,6 +5,8 @@ import { createTask, updateTask } from "@/lib/actions/tasks";
 import { setTodoistProjectMappings, setTodoistLabelMappings } from "@/lib/actions/todoist";
 import { runInAuthContext } from "@/test/mocks";
 
+type ListRow = typeof lists.$inferSelect;
+
 describe("Security: List IDOR in Task Operations", () => {
     const userAId = "user-a";
     const userBId = "user-b";
@@ -18,7 +20,7 @@ describe("Security: List IDOR in Task Operations", () => {
 
     it("should prevent creating a task in another user's list", async () => {
         // User A creates a list
-        let listA: any;
+        let listA: ListRow;
         await runInAuthContext({ id: userAId, email: "a@example.com" }, async () => {
             listA = await db.insert(lists).values({
                 userId: userAId,
@@ -56,7 +58,7 @@ describe("Security: List IDOR in Task Operations", () => {
 
     it("should prevent moving a task to another user's list", async () => {
         // User A creates a list
-        let listA: any;
+        let listA: ListRow;
         await runInAuthContext({ id: userAId, email: "a@example.com" }, async () => {
             listA = await db.insert(lists).values({
                 userId: userAId,
@@ -100,7 +102,7 @@ describe("Security: List IDOR in Task Operations", () => {
 
     it("should prevent Todoist project mappings with another user's list", async () => {
         // User A creates a list
-        let listA: any;
+        let listA: ListRow;
         await runInAuthContext({ id: userAId, email: "a@example.com" }, async () => {
             listA = await db.insert(lists).values({
                 userId: userAId,
@@ -126,7 +128,7 @@ describe("Security: List IDOR in Task Operations", () => {
 
     it("should prevent Todoist label mappings with another user's list", async () => {
         // User A creates a list
-        let listA: any;
+        let listA: ListRow;
         await runInAuthContext({ id: userAId, email: "a@example.com" }, async () => {
             listA = await db.insert(lists).values({
                 userId: userAId,

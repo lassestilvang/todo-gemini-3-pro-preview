@@ -3,6 +3,11 @@ import React, { useEffect, useCallback, useRef } from "react";
 import { PendingAction } from "./types";
 import { addToQueueBatch } from "./db";
 
+type IdleWindow = Window & {
+    requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+    cancelIdleCallback?: (handle: number) => void;
+};
+
 export function useQueueFlush(params: {
     setPendingActions: React.Dispatch<React.SetStateAction<PendingAction[]>>;
     flushActionsRef: React.MutableRefObject<(() => Promise<void>) | undefined>;
@@ -11,10 +16,8 @@ export function useQueueFlush(params: {
 }) {
     const { setPendingActions, flushActionsRef, maxPendingQueue, flushIdleTimeoutMs } = params;
     const pendingQueueRef = useRef<PendingAction[]>([]);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const flushTimerRef = useRef<any>(null);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const flushIdleRef = useRef<any>(null);
+    const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const flushIdleRef = useRef<number | null>(null);
 
     const flushQueuedActions = useCallback(async () => {
         const queued = pendingQueueRef.current;
@@ -25,9 +28,9 @@ export function useQueueFlush(params: {
             clearTimeout(flushTimerRef.current);
             flushTimerRef.current = null;
         }
-        if (flushIdleRef.current !== null && 'cancelIdleCallback' in window) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (window as any).cancelIdleCallback(flushIdleRef.current);
+        const idleWindow = window as IdleWindow;
+        if (flushIdleRef.current !== null && idleWindow.cancelIdleCallback) {
+            idleWindow.cancelIdleCallback(flushIdleRef.current);
             flushIdleRef.current = null;
         }
 
@@ -47,9 +50,9 @@ export function useQueueFlush(params: {
 
         if (flushTimerRef.current !== null || flushIdleRef.current !== null) return;
 
-        if ('requestIdleCallback' in window) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            flushIdleRef.current = (window as any).requestIdleCallback(() => {
+        const idleWindow = window as IdleWindow;
+        if (idleWindow.requestIdleCallback) {
+            flushIdleRef.current = idleWindow.requestIdleCallback(() => {
                 flushIdleRef.current = null;
                 void flushQueuedActions();
             }, { timeout: flushIdleTimeoutMs });

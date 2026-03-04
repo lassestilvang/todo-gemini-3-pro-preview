@@ -139,7 +139,7 @@ describe("Integration: Todoist Sync", () => {
             })),
         };
 
-        spyOn(todoistService, "createTodoistClient").mockImplementation(() => serviceState.client as any);
+        spyOn(todoistService, "createTodoistClient").mockImplementation(() => serviceState.client as unknown as ReturnType<typeof todoistService.createTodoistClient>);
         spyOn(todoistService, "fetchTodoistSnapshot").mockImplementation(async () => serviceState.snapshot);
     });
 

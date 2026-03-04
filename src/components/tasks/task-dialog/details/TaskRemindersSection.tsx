@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 import { format, subDays } from "date-fns";
-import { getDueRange } from "@/lib/due-utils";
+import { getDueRange, type DuePrecision } from "@/lib/due-utils";
 
 interface TaskRemindersSectionProps {
     isEdit: boolean;
     dueDate: Date | undefined;
-    dueDatePrecision: string;
+    dueDatePrecision: DuePrecision;
     weekStartsOnMonday?: boolean;
     reminders: Array<{ id: number; remindAt: Date; }>;
     newReminderDate: Date | undefined;
@@ -26,8 +26,7 @@ export function TaskRemindersSection({
 }: TaskRemindersSectionProps) {
     const reminderRange = useMemo(() => {
         if (!dueDate || dueDatePrecision === "day") return null;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return getDueRange(dueDate, dueDatePrecision as any, weekStartsOnMonday ?? false);
+        return getDueRange(dueDate, dueDatePrecision, weekStartsOnMonday ?? false);
     }, [dueDate, dueDatePrecision, weekStartsOnMonday]);
 
     const effectiveReminderDate = useMemo(() => {

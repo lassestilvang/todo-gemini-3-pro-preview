@@ -1,8 +1,7 @@
 
 "use client";
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, addMonths, subMonths, startOfDay } from "date-fns";
 import { useUser } from "@/components/providers/UserProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";

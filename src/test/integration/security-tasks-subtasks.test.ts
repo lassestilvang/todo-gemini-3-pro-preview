@@ -4,9 +4,11 @@ import { setMockAuthUser, clearMockAuthUser, runInAuthContext } from "@/test/moc
 import { createTask, createSubtask, getTasks } from "@/lib/actions/tasks";
 import { isSuccess } from "@/lib/action-result";
 
+type TestUser = Awaited<ReturnType<typeof createTestUser>>;
+
 describe("Integration: Security Subtask IDOR", () => {
-    let victim: any;
-    let attacker: any;
+    let victim: TestUser;
+    let attacker: TestUser;
     let victimId: string;
     let attackerId: string;
     let victimTaskId: number;

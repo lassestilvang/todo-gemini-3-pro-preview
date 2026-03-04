@@ -164,6 +164,10 @@ export class TodoistClient {
         return this.callWithRetry(() => this.api.getLabels(args));
     }
 
+    getLabel(labelId: string) {
+        return this.callWithRetry(() => this.api.getLabel(labelId));
+    }
+
     getTasks(args?: GetTasksArgs) {
         return this.callWithRetry(() => this.api.getTasks(args));
     }

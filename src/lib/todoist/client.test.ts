@@ -12,17 +12,17 @@ describe("TodoistClient retry handling", () => {
         
         // Mock TodoistApi prototype methods
         spyOn(TodoistApi.prototype, "getProjects").mockImplementation((args) => apiState.getProjects(args));
-        spyOn(TodoistApi.prototype, "getLabels").mockResolvedValue({ results: [], nextCursor: null } as any);
-        spyOn(TodoistApi.prototype, "getTasks").mockResolvedValue({ results: [], nextCursor: null } as any);
-        spyOn(TodoistApi.prototype, "getCompletedTasksByCompletionDate").mockResolvedValue({ items: [], nextCursor: null } as any);
-        spyOn(TodoistApi.prototype, "addTask").mockResolvedValue({} as any);
-        spyOn(TodoistApi.prototype, "addLabel").mockResolvedValue({} as any);
-        spyOn(TodoistApi.prototype, "updateLabel").mockResolvedValue({} as any);
-        spyOn(TodoistApi.prototype, "updateTask").mockResolvedValue({} as any);
-        spyOn(TodoistApi.prototype, "moveTask").mockResolvedValue({} as any);
-        spyOn(TodoistApi.prototype, "closeTask").mockResolvedValue({} as any);
-        spyOn(TodoistApi.prototype, "reopenTask").mockResolvedValue({} as any);
-        spyOn(TodoistApi.prototype, "deleteTask").mockResolvedValue({} as any);
+        spyOn(TodoistApi.prototype, "getLabels").mockResolvedValue({ results: [], nextCursor: null } as unknown);
+        spyOn(TodoistApi.prototype, "getTasks").mockResolvedValue({ results: [], nextCursor: null } as unknown);
+        spyOn(TodoistApi.prototype, "getCompletedTasksByCompletionDate").mockResolvedValue({ items: [], nextCursor: null } as unknown);
+        spyOn(TodoistApi.prototype, "addTask").mockResolvedValue({} as unknown);
+        spyOn(TodoistApi.prototype, "addLabel").mockResolvedValue({} as unknown);
+        spyOn(TodoistApi.prototype, "updateLabel").mockResolvedValue({} as unknown);
+        spyOn(TodoistApi.prototype, "updateTask").mockResolvedValue({} as unknown);
+        spyOn(TodoistApi.prototype, "moveTask").mockResolvedValue({} as unknown);
+        spyOn(TodoistApi.prototype, "closeTask").mockResolvedValue({} as unknown);
+        spyOn(TodoistApi.prototype, "reopenTask").mockResolvedValue({} as unknown);
+        spyOn(TodoistApi.prototype, "deleteTask").mockResolvedValue({} as unknown);
     });
 
     afterEach(() => {

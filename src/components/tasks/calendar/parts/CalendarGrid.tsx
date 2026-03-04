@@ -6,10 +6,17 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Task } from "@/lib/types";
 import { getEffectiveCalendarDenseTooltipThreshold } from "@/components/providers/UserProvider";
 
+interface CalendarDayMeta {
+    day: Date;
+    key: number;
+    isCurrentMonth: boolean;
+    isTodayDate: boolean;
+    label: number;
+}
+
 interface CalendarGridProps {
     weekdayHeaders: string[];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    daysWithMeta: any[];
+    daysWithMeta: CalendarDayMeta[];
     tasksByDate: Map<number, { tasks: Task[]; completedCount: number }>;
     calendarDenseTooltipThreshold?: number | null;
     calendarUseNativeTooltipsOnDenseDays?: boolean;
@@ -51,6 +58,7 @@ export function CalendarGrid({
                                         type="button"
                                         onClick={(e) => { e.stopPropagation(); onDateClick(day); }}
                                         className="h-5 w-5 flex items-center justify-center rounded text-muted-foreground/0 group-hover:text-muted-foreground/60 hover:!text-primary hover:bg-primary/10 transition-colors"
+                                        aria-label="Add task"
                                     >
                                         <Plus className="h-3 w-3" />
                                     </button>

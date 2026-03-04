@@ -11,6 +11,8 @@ type Snapshot = {
     tasksByList: Map<string, GoogleTask[]>;
 };
 
+type AccessTokenResult = Awaited<ReturnType<typeof googleTasksService.getGoogleTasksAccessToken>>;
+
 const serviceState: { snapshot: Snapshot; client: Record<string, unknown> } = {
     snapshot: { tasklists: [], tasksByList: new Map() },
     client: {},
@@ -28,11 +30,11 @@ describe("Integration: Google Tasks Sync", () => {
         await resetTestDb();
         
         // Mock service methods using spyOn
-        spyOn(googleTasksService, "createGoogleTasksClient").mockImplementation(() => serviceState.client as any);
+        spyOn(googleTasksService, "createGoogleTasksClient").mockImplementation(() => serviceState.client as unknown as ReturnType<typeof googleTasksService.createGoogleTasksClient>);
         spyOn(googleTasksService, "fetchGoogleTasksSnapshot").mockImplementation(async () => serviceState.snapshot);
         spyOn(googleTasksService, "getGoogleTasksAccessToken").mockImplementation(async (userId: string) => ({
             accessToken: "token",
-            integration: { userId } as any,
+            integration: { userId } as AccessTokenResult["integration"],
         }));
     });
 
