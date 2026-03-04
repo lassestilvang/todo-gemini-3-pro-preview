@@ -11,6 +11,7 @@ import { applyListLabelMapping, resolveTodoistTaskListId } from "@/lib/todoist/m
 import { updateTask } from "@/lib/actions/tasks";
 import { unstable_cache } from "next/cache";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type UnstableCache = <T extends (...args: any[]) => Promise<any>>(
     fn: T,
     keyParts?: string[],
