@@ -9,6 +9,58 @@ import { createTodoistClient } from "@/lib/todoist/service";
 import { mapLocalTaskToTodoist, mapTodoistTaskToLocal } from "@/lib/todoist/mapper";
 import { applyListLabelMapping, resolveTodoistTaskListId } from "@/lib/todoist/mapping";
 import { updateTask } from "@/lib/actions/tasks";
+import { unstable_cache } from "next/cache";
+
+type UnstableCache = <T extends (...args: unknown[]) => Promise<unknown>>(
+    fn: T,
+    keyParts?: string[],
+    options?: { tags?: string[]; revalidate?: number | false }
+) => T;
+
+const cache: UnstableCache =
+    typeof unstable_cache === "function"
+        ? unstable_cache
+        : ((fn) => fn);
+
+async function fetchProjectsFromApi(accessToken: string) {
+    const client = createTodoistClient(accessToken);
+    const rows: Awaited<ReturnType<typeof client.getProjects>>["results"] = [];
+    let cursor: string | null = null;
+
+    do {
+        const page = await client.getProjects({ cursor, limit: 200 });
+        rows.push(...(page.results ?? []));
+        cursor = page.nextCursor ?? null;
+    } while (cursor);
+
+    return rows;
+}
+
+async function fetchLabelsFromApi(accessToken: string) {
+    const client = createTodoistClient(accessToken);
+    const rows: Awaited<ReturnType<typeof client.getLabels>>["results"] = [];
+    let cursor: string | null = null;
+
+    do {
+        const page = await client.getLabels({ cursor, limit: 200 });
+        rows.push(...(page.results ?? []));
+        cursor = page.nextCursor ?? null;
+    } while (cursor);
+
+    return rows;
+}
+
+const getCachedProjects = cache(
+    fetchProjectsFromApi,
+    ["todoist-projects"],
+    { revalidate: 60 }
+);
+
+const getCachedLabels = cache(
+    fetchLabelsFromApi,
+    ["todoist-labels"],
+    { revalidate: 60 }
+);
 
 function hasDuplicateStrings(values: string[]) {
     const seen = new Set<string>();
@@ -350,34 +402,9 @@ export async function getTodoistMappingData() {
         keyId: integration.accessTokenKeyId,
     });
 
-    const client = createTodoistClient(accessToken);
-    const fetchAllProjects = async () => {
-        const rows: Awaited<ReturnType<typeof client.getProjects>>["results"] = [];
-        let cursor: string | null = null;
-
-        do {
-            const page = await client.getProjects({ cursor, limit: 200 });
-            rows.push(...(page.results ?? []));
-            cursor = page.nextCursor ?? null;
-        } while (cursor);
-
-        return rows;
-    };
-    const fetchAllLabels = async () => {
-        const rows: Awaited<ReturnType<typeof client.getLabels>>["results"] = [];
-        let cursor: string | null = null;
-
-        do {
-            const page = await client.getLabels({ cursor, limit: 200 });
-            rows.push(...(page.results ?? []));
-            cursor = page.nextCursor ?? null;
-        } while (cursor);
-
-        return rows;
-    };
     const [projects, labels, userLists, mappings] = await Promise.all([
-        fetchAllProjects(),
-        fetchAllLabels(),
+        getCachedProjects(accessToken),
+        getCachedLabels(accessToken),
         db.select().from(lists).where(eq(lists.userId, user.id)),
         db
             .select()
