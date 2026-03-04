@@ -17,8 +17,9 @@ interface SubtaskRowProps {
 export const SubtaskRow = memo(function SubtaskRow({ subtask, isCompleted, onToggle }: SubtaskRowProps) {
     return (
         <div
+            onClick={() => onToggle(subtask.id, !isCompleted)}
             className={cn(
-                "flex items-center gap-3 py-2 px-3 rounded-md hover:bg-muted/50 transition-colors",
+                "flex items-center gap-3 py-2 px-3 rounded-md hover:bg-muted/50 transition-colors cursor-pointer",
                 isCompleted && "opacity-60"
             )}
         >
@@ -28,13 +29,14 @@ export const SubtaskRow = memo(function SubtaskRow({ subtask, isCompleted, onTog
                 className="rounded-full h-4 w-4"
                 onClick={(e) => {
                     e.stopPropagation();
-                    e.preventDefault();
+                    // Stop propagation to prevent the parent row's onClick from firing as well,
+                    // which would cause a double-toggle effect.
                 }}
                 aria-label={isCompleted ? "Mark subtask as incomplete" : "Mark subtask as complete"}
             />
             <span
                 className={cn(
-                    "text-sm",
+                    "text-sm select-none",
                     isCompleted && "line-through text-muted-foreground"
                 )}
             >

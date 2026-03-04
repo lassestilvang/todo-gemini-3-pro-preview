@@ -49,6 +49,8 @@ export function TodayColumn({ tasks, doneTasks, onEditTask }: TodayColumnProps) 
                     <div className="border-t mt-1">
                         <button
                             onClick={() => setShowDone(!showDone)}
+                            aria-expanded={showDone}
+                            aria-controls="done-tasks-list"
                             className="flex items-center gap-2 px-4 py-2.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full"
                         >
                             <ChevronDown
@@ -65,7 +67,7 @@ export function TodayColumn({ tasks, doneTasks, onEditTask }: TodayColumnProps) 
                         </button>
 
                         {showDone && (
-                            <div className="px-1.5 pb-1.5 space-y-px">
+                            <div id="done-tasks-list" className="px-1.5 pb-1.5 space-y-px">
                                 {doneTasks.map((task) => (
                                     <DraggableTaskRow key={task.id} task={task} showTime onEdit={onEditTask} />
                                 ))}

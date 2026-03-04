@@ -1,4 +1,5 @@
 import type { TaskItemProps } from "./TaskItem";
+import { isDueOverdue } from "@/lib/due-utils";
 
 /**
  * Format minutes to human-readable duration
@@ -57,11 +58,30 @@ export function areTaskPropsEqual(prev: Readonly<TaskItemProps>, next: Readonly<
     if (prev.onEdit !== next.onEdit) return false;
     if (prev.dispatch !== next.dispatch) return false;
     if (prev.dragHandleProps !== next.dragHandleProps) return false;
+    if (prev.dragAttributes !== next.dragAttributes) return false;
 
     // Compare new props
     if (prev.isClient !== next.isClient) return false;
     if (prev.performanceMode !== next.performanceMode) return false;
-    if (prev.now?.getTime() !== next.now?.getTime()) return false;
+
+    const p = prev.task;
+    const n = next.task;
+
+    if (prev.now?.getTime() !== next.now?.getTime()) {
+        const pOverdue = p.dueDate && !p.isCompleted ? isDueOverdue(
+            { dueDate: p.dueDate, dueDatePrecision: p.dueDatePrecision ?? null },
+            prev.now || new Date(),
+            prev.userPreferences?.weekStartsOnMonday ?? false
+        ) : false;
+
+        const nOverdue = n.dueDate && !n.isCompleted ? isDueOverdue(
+            { dueDate: n.dueDate, dueDatePrecision: n.dueDatePrecision ?? null },
+            next.now || new Date(),
+            next.userPreferences?.weekStartsOnMonday ?? false
+        ) : false;
+
+        if (pOverdue !== nOverdue) return false;
+    }
 
     // Compare userPreferences (shallow)
     if (prev.userPreferences !== next.userPreferences) {
@@ -69,9 +89,6 @@ export function areTaskPropsEqual(prev: Readonly<TaskItemProps>, next: Readonly<
         if (prev.userPreferences.use24HourClock !== next.userPreferences.use24HourClock) return false;
         if (prev.userPreferences.weekStartsOnMonday !== next.userPreferences.weekStartsOnMonday) return false;
     }
-
-    const p = prev.task;
-    const n = next.task;
 
     if (p === n) return true;
     if (p.id !== n.id) return false;
@@ -96,7 +113,6 @@ export function areTaskPropsEqual(prev: Readonly<TaskItemProps>, next: Readonly<
     if (p.actualMinutes !== n.actualMinutes) return false;
     if (p.isRecurring !== n.isRecurring) return false;
 
-    // Check if energyLevel or context changed (Fix for memoization bug)
     if (p.energyLevel !== n.energyLevel) return false;
     if (p.context !== n.context) return false;
 

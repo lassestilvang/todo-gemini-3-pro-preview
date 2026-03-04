@@ -70,7 +70,7 @@ export function QuickCapture({ userId }: { userId: string }) {
                                     <Zap className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                                     Quick Capture
                                 </h3>
-                                <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={() => setIsOpen(false)}>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={() => setIsOpen(false)} aria-label="Close Quick Capture">
                                     <X className="h-4 w-4" />
                                 </Button>
                             </div>
@@ -108,7 +108,7 @@ export function QuickCapture({ userId }: { userId: string }) {
                                 <Zap className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                                 Quick Capture
                             </h3>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={() => setIsOpen(false)}>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={() => setIsOpen(false)} aria-label="Close Quick Capture">
                                 <X className="h-4 w-4" />
                             </Button>
                         </div>

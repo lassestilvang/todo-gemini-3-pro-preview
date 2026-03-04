@@ -4,6 +4,7 @@ import { TaskItem } from "./TaskItem";
 import { Task } from "@/lib/types";
 import { TaskDialog } from "./TaskDialog";
 import { useState, useCallback, useEffect, useMemo } from "react";
+import { startOfDay } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useIsClient } from "@/hooks/use-is-client";
@@ -32,6 +33,7 @@ export function TaskList({ tasks, title, listId, labelId, defaultDueDate, userId
     // Optimize "now" to be stable and update once per minute
     // This prevents re-renders of all TaskItems every second/millisecond
     const [now, setNow] = useState<Date | undefined>(undefined);
+    const today = useMemo(() => now ? startOfDay(now) : undefined, [now]);
 
     useEffect(() => {
         setNow(new Date());
@@ -88,6 +90,7 @@ export function TaskList({ tasks, title, listId, labelId, defaultDueDate, userId
                             onEdit={handleEdit}
                             userId={userId}
                             now={now}
+                            today={today}
                             isClient={isClient}
                             performanceMode={isPerformanceMode}
                             userPreferences={userPreferences}
