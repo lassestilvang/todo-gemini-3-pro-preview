@@ -103,7 +103,15 @@ export function TodoistMappingForm() {
     const { loading, status, projects, labels, lists, projectMappings, labelMappings, isSaving } = uiState;
 
     const loadMappings = React.useCallback(async () => {
-        const result = await getTodoistMappingData();
+        type MappingResult = {
+            success: true;
+            projects: { id: string; name: string }[];
+            labels: { id: string; name: string }[];
+            lists: { id: number; name: string }[];
+            projectMappings: { projectId: string; listId: number }[];
+            labelMappings: { labelId: string; listId: number }[];
+        };
+        const result = (await getTodoistMappingData()) as MappingResult | { success: false; error: string };
         if (!result.success) {
             return { success: false as const, error: result.error ?? "Failed to load Todoist mapping data." };
         }
