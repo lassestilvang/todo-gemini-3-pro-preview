@@ -87,3 +87,8 @@
 **Vulnerability:** `createList` and `createLabel` server actions lacked rate limiting, allowing a malicious or buggy client to create unlimited resources (lists/labels) and exhaust database storage or degrade performance (DoS).
 **Learning:** While `withErrorHandling` sanitizes errors, it masks the specific cause of failure (e.g. rate limit vs DB error). Throwing `ValidationError` allows the client to receive the specific error message, which is necessary for rate limit feedback.
 **Prevention:** Enforce `rateLimit(userId, limit, window)` on all resource creation actions. Use `ValidationError` to communicate policy violations like rate limits to the client.
+
+## 2026-10-31 - [High] Environment Bypasses Masking Authentication Vulnerabilities
+**Vulnerability:** `src/lib/actions/google-tasks.ts` and `src/lib/actions/todoist.ts` had early return bypasses (`if (process.env.NODE_ENV === "test") { return; }`) *before* validating the user session via `getCurrentUser()`. This allowed unauthenticated requests to succeed in test environments, masking potential missing authentication vulnerabilities and breaking the principle that tests should validate security boundaries.
+**Learning:** Security checks must ALWAYS be the first operation in a Server Action. Test environment bypasses (or any other bypasses) must only occur after the user has been fully authenticated and authorized.
+**Prevention:** Audit all Server Actions to ensure `requireUser()` or `getCurrentUser()` is called before any `process.env.NODE_ENV` checks or early returns. Tests should explicitly mock the authenticated user rather than relying on global environment bypasses for authentication.
