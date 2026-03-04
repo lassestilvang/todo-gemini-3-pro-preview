@@ -11,7 +11,7 @@ import { applyListLabelMapping, resolveTodoistTaskListId } from "@/lib/todoist/m
 import { updateTask } from "@/lib/actions/tasks";
 import { unstable_cache } from "next/cache";
 
-type UnstableCache = <T extends (...args: unknown[]) => Promise<unknown>>(
+type UnstableCache = <T extends (...args: any[]) => Promise<any>>(
     fn: T,
     keyParts?: string[],
     options?: { tags?: string[]; revalidate?: number | false }
