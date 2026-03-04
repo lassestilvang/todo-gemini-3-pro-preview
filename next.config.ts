@@ -53,7 +53,7 @@ const nextConfig: NextConfig = {
       },
       {
         key: "Permissions-Policy",
-        value: "camera=(), geolocation=(), browsing-topics=()",
+        value: "camera=(), geolocation=()",
       },
     ];
 
@@ -64,7 +64,7 @@ const nextConfig: NextConfig = {
       });
       headers.push({
         key: "Content-Security-Policy",
-        value: "default-src 'self'; script-src 'self' 'sha256-d7OUjcahyX/tkd5XCsTfBJOwC4nLY0fH0sFPd3gTr/w='; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://cdn.jsdelivr.net https://*.googleusercontent.com https://avatars.githubusercontent.com https://*.workos.com; font-src 'self' data:; connect-src 'self' https://*.workos.com;",
+        value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://cdn.jsdelivr.net https://*.googleusercontent.com https://avatars.githubusercontent.com https://*.workos.com; font-src 'self' data:; connect-src 'self' https://*.workos.com;",
       });
     }
 
