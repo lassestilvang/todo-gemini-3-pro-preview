@@ -825,22 +825,27 @@ html.synthwave textarea:focus {
   opacity: 0.7;
   z-index: 9999;
 }
+
 /* Sidebar mode switching — driven by blocking script setting data-sidebar-mode on <html> */
 /* Default: normal visible, slim/hidden hidden */
 @media (min-width: 768px) {
+
   [data-sidebar-mode="slim"] .sidebar-normal,
   [data-sidebar-mode="hidden"] .sidebar-normal {
     display: none !important;
   }
+
   [data-sidebar-mode="slim"] .sidebar-slim {
     display: flex !important;
   }
+
   [data-sidebar-mode="hidden"] .sidebar-hidden {
     display: block !important;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -856,10 +861,19 @@ html.synthwave textarea:focus {
 /* -------------------------------------------------------------------------- */
 
 /* Fix calendarkit-pro hardcoded hexadecimal colors for dark mode */
-.dark .bg-\[\#F9F9FB\] {
+:is(.dark, .glassmorphism-dark, .performance-dark, .synthwave, .minimalist) .calendar-v5-wrapper .bg-\[\#F9F9FB\],
+:is(.dark, .glassmorphism-dark, .performance-dark, .synthwave, .minimalist) .calendar-v5-wrapper .bg-white,
+:is(.dark, .glassmorphism-dark, .performance-dark, .synthwave, .minimalist) .calendar-v5-wrapper .bg-background {
   background-color: var(--background) !important;
+  color: var(--foreground) !important;
 }
 
-.dark .bg-\[\#14141705\] {
-  background-color: var(--card) !important;
+:is(.dark, .glassmorphism-dark, .performance-dark, .synthwave, .minimalist) .calendar-v5-wrapper .bg-\[\#14141705\],
+:is(.dark, .glassmorphism-dark, .performance-dark, .synthwave, .minimalist) .calendar-v5-wrapper .bg-\[\#EEEFF5\] {
+  background-color: var(--muted) !important;
+  color: var(--foreground) !important;
+}
+
+:is(.dark, .glassmorphism-dark, .performance-dark, .synthwave, .minimalist) .calendar-v5-wrapper [class*="border"] {
+  border-color: var(--border) !important;
 }
