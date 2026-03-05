@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { addMinutes } from "date-fns";
 import { Scheduler, type CalendarEvent, type CalendarFilterItem, type ViewType } from "calendarkit-pro";
 import type { Task } from "@/lib/types";
@@ -12,6 +12,7 @@ import { TaskDialog } from "@/components/tasks/TaskDialog";
 
 const UNASSIGNED_CALENDAR_ID = "unassigned";
 const FALLBACK_COLOR = "#71717a";
+const VIEW_STORAGE_KEY = "calendar5:view";
 
 type CalendarList = {
   id: number;
@@ -46,12 +47,35 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
   const { dispatch } = useSync();
   const { userId } = useUser();
 
-  const [view, setView] = useState<ViewType>("week");
+  const [view, setView] = useState<ViewType>("month");
   const [date, setDate] = useState<Date>(new Date());
+  const [timezone, setTimezone] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [createDefaultDueDate, setCreateDefaultDueDate] = useState<Date | undefined>(undefined);
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [activeCalendarIds, setActiveCalendarIds] = useState<Set<string>>(
     () => new Set([UNASSIGNED_CALENDAR_ID, ...initialLists.map((list) => String(list.id))])
   );
+  const seenCalendarIdsRef = useRef<Set<string>>(
+    new Set([UNASSIGNED_CALENDAR_ID, ...initialLists.map((list) => String(list.id))])
+  );
+
+  useEffect(() => {
+    const storedView = window.localStorage.getItem(VIEW_STORAGE_KEY);
+    if (
+      storedView === "month" ||
+      storedView === "week" ||
+      storedView === "day" ||
+      storedView === "agenda" ||
+      storedView === "resource"
+    ) {
+      setView(storedView);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(VIEW_STORAGE_KEY, view);
+  }, [view]);
 
   useEffect(() => {
     if (Object.keys(taskMap).length === 0 && initialTasks.length > 0) {
@@ -82,21 +106,17 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
 
   useEffect(() => {
     setActiveCalendarIds((prev) => {
-      if (prev.size === 0) {
-        return new Set(availableCalendarIds);
-      }
-
       const next = new Set<string>();
       for (const id of availableCalendarIds) {
-        if (prev.has(id)) {
+        const seen = seenCalendarIdsRef.current.has(id);
+        if (prev.has(id) || !seen) {
           next.add(id);
         }
+        seenCalendarIdsRef.current.add(id);
       }
 
-      for (const id of availableCalendarIds) {
-        if (!prev.has(id)) {
-          next.add(id);
-        }
+      if (next.size === 0 && availableCalendarIds.length > 0) {
+        next.add(availableCalendarIds[0]);
       }
 
       return next;
@@ -171,8 +191,27 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
     return taskMap[editingTaskId] ?? tasks.find((task) => task.id === editingTaskId) ?? null;
   }, [editingTaskId, taskMap, tasks]);
 
+  const defaultCreateListId = useMemo(() => {
+    const activeListIds = Array.from(activeCalendarIds).filter((id) => id !== UNASSIGNED_CALENDAR_ID);
+    if (activeListIds.length !== 1) {
+      return undefined;
+    }
+
+    const parsed = Number(activeListIds[0]);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  }, [activeCalendarIds]);
+
+  const handleCreateTask = useCallback(() => {
+    setCreateDefaultDueDate(new Date(date));
+    setCreateDialogOpen(true);
+  }, [date]);
+
   const handleCalendarToggle = useCallback((calendarId: string, active: boolean) => {
     setActiveCalendarIds((prev) => {
+      if (!active && prev.size === 1 && prev.has(calendarId)) {
+        return prev;
+      }
+
       const next = new Set(prev);
       if (active) {
         next.add(calendarId);
@@ -186,6 +225,7 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
   const handleEventClick = useCallback((event: CalendarEvent) => {
     const taskId = Number(event.id);
     if (!Number.isNaN(taskId)) {
+      setCreateDialogOpen(false);
       setEditingTaskId(taskId);
     }
   }, []);
@@ -230,15 +270,29 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
           onViewChange={setView}
           date={date}
           onDateChange={setDate}
+          timezone={timezone}
+          onTimezoneChange={setTimezone}
           onEventClick={handleEventClick}
           onEventDrop={handleEventDrop}
           onCalendarToggle={handleCalendarToggle}
+          newEventButton={{
+            label: "New Task",
+            onClick: handleCreateTask,
+          }}
           hideLanguageSelector
           hideDarkModeToggle
           language="en"
           className="h-full"
         />
       </div>
+
+      <TaskDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        defaultDueDate={createDefaultDueDate}
+        defaultListId={defaultCreateListId}
+        userId={userId}
+      />
 
       <TaskDialog
         task={
