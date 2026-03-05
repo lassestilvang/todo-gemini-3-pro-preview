@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { createTestUser } from "@/test/setup";
 import { setMockAuthUser, resetMockAuthUser } from "@/test/mocks";
-import { createCustomIcon, deleteCustomIcon } from "./custom-icons";
+import { createCustomIcon } from "./custom-icons";
 import { db, customIcons, eq } from "./shared";
 
 describe("Security: Custom Icons (XSS Prevention)", () => {

@@ -1,6 +1,0 @@
-## 2024-05-24 - Subtask Row Clickability
-**Learning:** A classic UX improvement is making entire rows clickable (Fitts's Law), not just the small checkbox. However, when using Radix UI Checkboxes inside a clickable row container, the `Checkbox` `onClick` handler must call `e.stopPropagation()` and explicitly `onCheckedChange()` to prevent the row's `onClick` from firing and causing a double-toggle. Also, the row text should use `select-none` so fast clicks don't highlight text accidentally.
-**Action:** Always add `cursor-pointer`, `onClick`, and `select-none` to list rows, and ensure inner interactive elements stop propagation. Mock Radix Checkbox in tests if `happy-dom` acts up.
-## 2025-03-02 - Added ARIA labels and focus states to filter clear buttons
-**Learning:** Found that secondary/inline UI elements (like the 'X' button in filter badges) often lack `aria-label` text and visual focus indicators, especially when built manually rather than relying on standard Button components.
-**Action:** When inspecting or adding icon-only inline controls (like delete, remove, close), proactively add a descriptive `aria-label` and `focus-visible` ring utilities (with `rounded-full` if circular) to ensure screen reader users have context and keyboard users can see where focus is.

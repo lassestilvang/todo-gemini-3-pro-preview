@@ -76,9 +76,19 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
         return tasks.filter(t => t.isCompleted && t.dueDate && isSameDay(normalizeDate(t.dueDate)!, now));
     }, [tasks]);
 
+    // ⚡ Bolt Opt: Replaced O(N*M) lists.find inside map with an O(1) Map lookup
+    // This reduces the complexity from O(events * lists) to O(events + lists)
+    const listMapById = useMemo(() => {
+        const map = new Map<number, typeof lists[0]>();
+        for (const list of lists) {
+            map.set(list.id, list);
+        }
+        return map;
+    }, [lists]);
+
     const events = useMemo(() => tasks.filter(t => !t.isCompleted && visibleListIds.has(t.listId ?? null) && t.dueDate).map(t => {
         const start = normalizeDate(t.dueDate)!;
-        const color = lists.find(l => l.id === t.listId)?.color ?? "#71717a";
+        const color = t.listId != null ? (listMapById.get(t.listId)?.color ?? "#71717a") : "#71717a";
         return {
             id: String(t.id),
             title: t.title,
@@ -89,7 +99,7 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
             extendedProps: { taskId: t.id },
             allDay: !t.estimateMinutes,
         };
-    }), [tasks, visibleListIds, lists]);
+    }), [tasks, visibleListIds, listMapById]);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleEventAction = useCallback((id: number, updates: any) => {
@@ -107,7 +117,7 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
         handleEventAction(Number(info.event.extendedProps.taskId), { estimateMinutes: mins });
     }, [handleEventAction]);
 
-    const selectedListName = useMemo(() => selectedListId === null ? "Unplanned" : lists.find(l => l.id === selectedListId)?.name || "Unplanned", [selectedListId, lists]);
+    const selectedListName = useMemo(() => selectedListId === null ? "Unplanned" : listMapById.get(selectedListId)?.name || "Unplanned", [selectedListId, listMapById]);
 
     return (
         <div className="flex h-screen bg-background overflow-hidden relative">

@@ -68,6 +68,10 @@ async function reorderListsImpl(userId: string, items: { id: number; position: n
     return;
   }
 
+  if (items.length > 1000) {
+    throw new ValidationError("Too many lists to reorder at once. Limit is 1000.");
+  }
+
   // ⚡ Bolt Opt: Uses batched SQL CASE/WHEN for O(1) queries instead of O(N) individual updates.
   // This reduces N database roundtrips to 1, improving latency by ~80-95%
   // for typical reorder operations (5-50 items).

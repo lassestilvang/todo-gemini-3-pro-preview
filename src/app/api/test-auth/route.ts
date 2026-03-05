@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { syncUser } from '@/lib/auth';
 import { db, tasks, labels, lists, userStats, viewSettings, templates, users } from '@/db';
 import { eq } from 'drizzle-orm';
+import { constantTimeEqual } from '@/lib/auth-bypass';
 
 /**
  * Test authentication endpoint for E2E testing.

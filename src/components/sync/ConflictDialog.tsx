@@ -123,6 +123,8 @@ export function ConflictDialog({ conflict, onResolve, onClose }: ConflictDialogP
                 <button
                   type="button"
                   onClick={() => setSelectedFields(prev => ({ ...prev, [diff.field]: 'local' }))}
+                  aria-pressed={selectedFields[diff.field] === 'local'}
+                  aria-label={`Select local ${formatFieldName(diff.field)}`}
                   className={`text-left p-2 rounded border transition-colors ${selectedFields[diff.field] === 'local'
                       ? 'border-primary bg-primary/10'
                       : 'border-border hover:border-primary/50'
@@ -138,6 +140,8 @@ export function ConflictDialog({ conflict, onResolve, onClose }: ConflictDialogP
                 <button
                   type="button"
                   onClick={() => setSelectedFields(prev => ({ ...prev, [diff.field]: 'server' }))}
+                  aria-pressed={selectedFields[diff.field] === 'server'}
+                  aria-label={`Select server ${formatFieldName(diff.field)}`}
                   className={`text-left p-2 rounded border transition-colors ${selectedFields[diff.field] === 'server'
                       ? 'border-primary bg-primary/10'
                       : 'border-border hover:border-primary/50'
