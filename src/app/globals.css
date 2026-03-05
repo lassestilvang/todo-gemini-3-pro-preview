@@ -850,3 +850,16 @@ html.synthwave textarea:focus {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/*                     Calendar V5 Dark Mode Overrides                        */
+/* -------------------------------------------------------------------------- */
+
+/* Fix calendarkit-pro hardcoded hexadecimal colors for dark mode */
+.dark .bg-\[\#F9F9FB\] {
+  background-color: var(--background) !important;
+}
+
+.dark .bg-\[\#14141705\] {
+  background-color: var(--card) !important;
+}
