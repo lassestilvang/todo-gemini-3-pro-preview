@@ -153,13 +153,13 @@ export async function createTodoistMappingList(name: string) {
 }
 
 export async function connectTodoist(token: string) {
-    if (process.env.NODE_ENV === "test") {
-        return { success: true };
-    }
-
     const user = await getCurrentUser();
     if (!user) {
         return { success: false, error: "Not authenticated" };
+    }
+
+    if (process.env.NODE_ENV === "test") {
+        return { success: true };
     }
 
     const sanitizedToken = token.trim();
@@ -201,13 +201,13 @@ export async function connectTodoist(token: string) {
 }
 
 export async function getTodoistStatus() {
-    if (process.env.NODE_ENV === "test") {
-        return { success: true, connected: false };
-    }
-
     const user = await getCurrentUser();
     if (!user) {
         return { success: false, error: "Not authenticated" };
+    }
+
+    if (process.env.NODE_ENV === "test") {
+        return { success: true, connected: false };
     }
 
     const integration = await db.query.externalIntegrations.findFirst({
@@ -218,6 +218,11 @@ export async function getTodoistStatus() {
 }
 
 export async function getTodoistSyncInfo() {
+    const user = await getCurrentUser();
+    if (!user) {
+        return { success: false, error: "Not authenticated" };
+    }
+
     if (process.env.NODE_ENV === "test") {
         return {
             success: true,
@@ -228,11 +233,6 @@ export async function getTodoistSyncInfo() {
             error: null as string | null,
             conflictCount: 0,
         };
-    }
-
-    const user = await getCurrentUser();
-    if (!user) {
-        return { success: false, error: "Not authenticated" };
     }
 
     const integration = await db.query.externalIntegrations.findFirst({
@@ -279,13 +279,13 @@ export async function getTodoistSyncInfo() {
 }
 
 export async function disconnectTodoist() {
-    if (process.env.NODE_ENV === "test") {
-        return { success: true };
-    }
-
     const user = await getCurrentUser();
     if (!user) {
         return { success: false, error: "Not authenticated" };
+    }
+
+    if (process.env.NODE_ENV === "test") {
+        return { success: true };
     }
 
     await db
@@ -308,13 +308,13 @@ export async function disconnectTodoist() {
 }
 
 export async function rotateTodoistTokens() {
-    if (process.env.NODE_ENV === "test") {
-        return { success: true };
-    }
-
     const user = await getCurrentUser();
     if (!user) {
         return { success: false, error: "Not authenticated" };
+    }
+
+    if (process.env.NODE_ENV === "test") {
+        return { success: true };
     }
 
     const integration = await db.query.externalIntegrations.findFirst({
@@ -364,13 +364,13 @@ export async function rotateTodoistTokens() {
 }
 
 export async function syncTodoistNow() {
-    if (process.env.NODE_ENV === "test") {
-        return { success: true };
-    }
-
     const user = await getCurrentUser();
     if (!user) {
         return { success: false, error: "Not authenticated" };
+    }
+
+    if (process.env.NODE_ENV === "test") {
+        return { success: true };
     }
 
     const result = await syncTodoistForUser(user.id);
@@ -378,13 +378,13 @@ export async function syncTodoistNow() {
 }
 
 export async function getTodoistMappingData() {
-    if (process.env.NODE_ENV === "test") {
-        return { success: false, error: "Todoist sync disabled in tests." };
-    }
-
     const user = await getCurrentUser();
     if (!user) {
         return { success: false, error: "Not authenticated" };
+    }
+
+    if (process.env.NODE_ENV === "test") {
+        return { success: false, error: "Todoist sync disabled in tests." };
     }
 
     const integration = await db.query.externalIntegrations.findFirst({
@@ -602,13 +602,13 @@ export async function setTodoistLabelMappings(mappings: { labelId: string; listI
 }
 
 export async function getTodoistConflicts() {
-    if (process.env.NODE_ENV === "test") {
-        return { success: true, conflicts: [] };
-    }
-
     const user = await getCurrentUser();
     if (!user) {
         return { success: false, error: "Not authenticated" };
+    }
+
+    if (process.env.NODE_ENV === "test") {
+        return { success: true, conflicts: [] };
     }
 
     const conflicts = await db
@@ -627,13 +627,13 @@ export async function getTodoistConflicts() {
 }
 
 export async function resolveTodoistConflict(conflictId: number, resolution: "local" | "remote") {
-    if (process.env.NODE_ENV === "test") {
-        return { success: true };
-    }
-
     const user = await getCurrentUser();
     if (!user) {
         return { success: false, error: "Not authenticated" };
+    }
+
+    if (process.env.NODE_ENV === "test") {
+        return { success: true };
     }
 
     const conflict = await db.query.externalSyncConflicts.findFirst({

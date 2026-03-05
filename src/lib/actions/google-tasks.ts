@@ -9,13 +9,13 @@ import { syncGoogleTasksForUser } from "@/lib/google-tasks/sync";
 import { updateTask } from "@/lib/actions/tasks";
 
 export async function syncGoogleTasksNow() {
-    if (process.env.NODE_ENV === "test") {
-        return { success: true };
-    }
-
     const user = await getCurrentUser();
     if (!user) {
         return { success: false, error: "Not authenticated" };
+    }
+
+    if (process.env.NODE_ENV === "test") {
+        return { success: true };
     }
 
     const result = await syncGoogleTasksForUser(user.id);
@@ -23,13 +23,13 @@ export async function syncGoogleTasksNow() {
 }
 
 export async function disconnectGoogleTasks() {
-    if (process.env.NODE_ENV === "test") {
-        return { success: true };
-    }
-
     const user = await getCurrentUser();
     if (!user) {
         return { success: false, error: "Not authenticated" };
+    }
+
+    if (process.env.NODE_ENV === "test") {
+        return { success: true };
     }
 
     await db
@@ -40,13 +40,13 @@ export async function disconnectGoogleTasks() {
 }
 
 export async function getGoogleTasksStatus() {
-    if (process.env.NODE_ENV === "test") {
-        return { success: true, connected: false };
-    }
-
     const user = await getCurrentUser();
     if (!user) {
         return { success: false, error: "Not authenticated" };
+    }
+
+    if (process.env.NODE_ENV === "test") {
+        return { success: true, connected: false };
     }
 
     const integration = await db.query.externalIntegrations.findFirst({
@@ -57,13 +57,13 @@ export async function getGoogleTasksStatus() {
 }
 
 export async function getGoogleTasksConflicts() {
-    if (process.env.NODE_ENV === "test") {
-        return { success: true, conflicts: [] };
-    }
-
     const user = await getCurrentUser();
     if (!user) {
         return { success: false, error: "Not authenticated" };
+    }
+
+    if (process.env.NODE_ENV === "test") {
+        return { success: true, conflicts: [] };
     }
 
     const conflicts = await db
@@ -82,13 +82,13 @@ export async function getGoogleTasksConflicts() {
 }
 
 export async function getGoogleTasksMappingData() {
-    if (process.env.NODE_ENV === "test") {
-        return { success: false, error: "Google Tasks sync disabled in tests." };
-    }
-
     const user = await getCurrentUser();
     if (!user) {
         return { success: false, error: "Not authenticated" };
+    }
+
+    if (process.env.NODE_ENV === "test") {
+        return { success: false, error: "Google Tasks sync disabled in tests." };
     }
 
     const integration = await db.query.externalIntegrations.findFirst({
@@ -178,13 +178,13 @@ export async function setGoogleTasksListMappings(mappings: { tasklistId: string;
 }
 
 export async function resolveGoogleTasksConflict(conflictId: number, resolution: "local" | "remote") {
-    if (process.env.NODE_ENV === "test") {
-        return { success: true };
-    }
-
     const user = await getCurrentUser();
     if (!user) {
         return { success: false, error: "Not authenticated" };
+    }
+
+    if (process.env.NODE_ENV === "test") {
+        return { success: true };
     }
 
     const conflict = await db.query.externalSyncConflicts.findFirst({
