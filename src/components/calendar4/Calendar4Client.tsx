@@ -67,13 +67,25 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
     const { visibleListIds, selectedListId, quickCreateOpen, quickCreateDate, editingTask } = uiState;
 
     const unplannedTasks = useMemo(() => tasks.filter(t => !t.isCompleted && !t.dueDate && (selectedListId === null || t.listId === selectedListId)), [tasks, selectedListId]);
-    const todayTasks = useMemo(() => {
+    // ⚡ Bolt Opt: Consolidated 2 separate O(N) filters into a single O(N) pass.
+    // Both share the same dependency array `[tasks]` and identical date conditions.
+    const { todayTasks, todayDoneTasks } = useMemo(() => {
         const now = new Date();
-        return tasks.filter(t => !t.isCompleted && t.dueDate && isSameDay(normalizeDate(t.dueDate)!, now));
-    }, [tasks]);
-    const todayDoneTasks = useMemo(() => {
-        const now = new Date();
-        return tasks.filter(t => t.isCompleted && t.dueDate && isSameDay(normalizeDate(t.dueDate)!, now));
+        const active: Task[] = [];
+        const done: Task[] = [];
+
+        for (let i = 0; i < tasks.length; i++) {
+            const t = tasks[i];
+            if (t.dueDate && isSameDay(normalizeDate(t.dueDate)!, now)) {
+                if (t.isCompleted) {
+                    done.push(t);
+                } else {
+                    active.push(t);
+                }
+            }
+        }
+
+        return { todayTasks: active, todayDoneTasks: done };
     }, [tasks]);
 
     // ⚡ Bolt Opt: Replaced O(N*M) lists.find inside map with an O(1) Map lookup
