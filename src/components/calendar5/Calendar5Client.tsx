@@ -10,6 +10,7 @@ import { useListStore } from "@/lib/store/list-store";
 import { useSync } from "@/components/providers/sync-provider";
 import { useUser } from "@/components/providers/UserProvider";
 import { TaskDialog } from "@/components/tasks/TaskDialog";
+import { Calendar5UnscheduledColumn } from "./Calendar5UnscheduledColumn";
 
 const UNASSIGNED_CALENDAR_ID = "unassigned";
 const FALLBACK_COLOR = "#71717a";
@@ -227,11 +228,6 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
     setCreateDialogOpen(true);
   }, [date]);
 
-  const handleTimeSlotClick = useCallback((slotDate: Date) => {
-    setCreateDefaultDueDate(slotDate);
-    setCreateDialogOpen(true);
-  }, []);
-
   const handleCalendarToggle = useCallback((calendarId: string, active: boolean) => {
     setActiveCalendarIds((prev) => {
       if (!active && prev.size === 1 && prev.has(calendarId)) {
@@ -286,61 +282,134 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
     [dispatch, taskMap, upsertTask, userId]
   );
 
+  const handleExternalDrop = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      setIsDraggingOver(false);
+
+      try {
+        const dataStr = e.dataTransfer.getData("application/json");
+        if (!dataStr) return;
+
+        const data = JSON.parse(dataStr);
+        const taskId = Number(data.taskId);
+
+        if (Number.isNaN(taskId) || !userId) return;
+
+        const existing = taskMap[taskId];
+        if (!existing) return;
+
+        // Try to derive the dropped time from the DroppableCell element under the mouse
+        // In calendarkit-pro, the droppable cells have IDs which are the ISO timestamps they represent
+        const elementUnderMouse = document.elementFromPoint(e.clientX, e.clientY);
+        let dropDate: Date | null = null;
+
+        if (elementUnderMouse) {
+          // Traverse up to find the closest element with a valid date-like ID or specific attribute
+          const cell = elementUnderMouse.closest('[id*="T"][id*="Z"]');
+          if (cell && cell.id) {
+            const parsedDate = new Date(cell.id);
+            if (!Number.isNaN(parsedDate.getTime())) {
+              dropDate = parsedDate;
+            }
+          }
+        }
+
+        // If we couldn't resolve a precise time slot, just use current time or round down
+        if (!dropDate) {
+          const now = new Date();
+          now.setMinutes(Math.floor(now.getMinutes() / 15) * 15, 0, 0); // round to nearest 15
+          dropDate = now;
+        }
+
+        const updates: { dueDate: Date; estimateMinutes?: number } = {
+          dueDate: dropDate,
+        };
+
+        upsertTask({ ...existing, ...updates });
+        dispatch("updateTask", taskId, userId, {
+          ...updates,
+          expectedUpdatedAt: existing.updatedAt ?? null,
+        });
+
+      } catch (err) {
+        console.error("Failed to parse drop data", err);
+      }
+    },
+    [dispatch, taskMap, upsertTask, userId]
+  );
+
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+
   return (
-    <>
-      <div className="h-full min-h-0 overflow-hidden rounded-xl border bg-background">
-        <Scheduler
-          events={events}
-          calendars={calendarFilters}
-          view={view}
-          onViewChange={setView}
-          date={date}
-          onDateChange={setDate}
-          timezone={timezone}
-          onTimezoneChange={setTimezone}
-          onEventClick={handleEventClick}
-          onEventDrop={handleEventDrop}
-          onCalendarToggle={handleCalendarToggle}
-          onTimeSlotClick={handleTimeSlotClick}
-          newEventButton={{
-            label: "New Task",
-            onClick: handleCreateTask,
+    <div className="flex h-full min-h-0 bg-background">
+      {/* Unscheduled Sidebar */}
+      <Calendar5UnscheduledColumn
+        tasks={tasks}
+        onEditTask={(t) => setEditingTaskId(t.id)}
+        selectedListId={defaultCreateListId}
+      />
+
+      {/* Main Calendar Window */}
+      <div
+        className="flex-1 min-w-0 flex flex-col p-4 pl-0"
+        onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
+        onDragLeave={() => setIsDraggingOver(false)}
+        onDrop={handleExternalDrop}
+      >
+        <div className={`h-full min-h-0 overflow-hidden rounded-2xl border transition-colors ${isDraggingOver ? "border-primary ring-2 ring-primary/20 bg-primary/5" : "border-border shadow-sm"}`}>
+          <Scheduler
+            events={events}
+            calendars={calendarFilters}
+            view={view}
+            onViewChange={setView}
+            date={date}
+            onDateChange={setDate}
+            timezone={timezone}
+            onTimezoneChange={setTimezone}
+            onEventClick={handleEventClick}
+            onEventDrop={handleEventDrop}
+            onCalendarToggle={handleCalendarToggle}
+            newEventButton={{
+              label: "New Task",
+              onClick: handleCreateTask,
+            }}
+            isDarkMode={resolvedTheme === "dark"}
+            hideLanguageSelector
+            hideDarkModeToggle
+            language="en"
+            className="h-full"
+          />
+        </div>
+
+        <TaskDialog
+          open={createDialogOpen}
+          onOpenChange={setCreateDialogOpen}
+          defaultDueDate={createDefaultDueDate}
+          defaultListId={defaultCreateListId}
+          userId={userId}
+        />
+
+        <TaskDialog
+          task={
+            editingTask
+              ? {
+                ...editingTask,
+                icon: editingTask.icon ?? null,
+                dueDate: normalizeDate(editingTask.dueDate),
+                deadline: normalizeDate(editingTask.deadline),
+              }
+              : undefined
+          }
+          open={!!editingTask}
+          onOpenChange={(isOpen) => {
+            if (!isOpen) {
+              setEditingTaskId(null);
+            }
           }}
-          isDarkMode={resolvedTheme === "dark"}
-          hideLanguageSelector
-          hideDarkModeToggle
-          language="en"
-          className="h-full"
+          userId={userId}
         />
       </div>
-
-      <TaskDialog
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
-        defaultDueDate={createDefaultDueDate}
-        defaultListId={defaultCreateListId}
-        userId={userId}
-      />
-
-      <TaskDialog
-        task={
-          editingTask
-            ? {
-              ...editingTask,
-              icon: editingTask.icon ?? null,
-              dueDate: normalizeDate(editingTask.dueDate),
-              deadline: normalizeDate(editingTask.deadline),
-            }
-            : undefined
-        }
-        open={!!editingTask}
-        onOpenChange={(isOpen) => {
-          if (!isOpen) {
-            setEditingTaskId(null);
-          }
-        }}
-        userId={userId}
-      />
-    </>
+    </div>
   );
 }
