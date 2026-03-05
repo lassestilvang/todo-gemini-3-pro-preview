@@ -46,3 +46,7 @@
 ## 2025-03-02 - Added ARIA labels and focus states to filter clear buttons
 **Learning:** Found that secondary/inline UI elements (like the 'X' button in filter badges) often lack `aria-label` text and visual focus indicators, especially when built manually rather than relying on standard Button components.
 **Action:** When inspecting or adding icon-only inline controls (like delete, remove, close), proactively add a descriptive `aria-label` and `focus-visible` ring utilities (with `rounded-full` if circular) to ensure screen reader users have context and keyboard users can see where focus is.
+
+## 2025-03-05 - Invisible Focus States
+**Learning:** Elements styled with `opacity-0` that rely purely on `group-hover:opacity-100` remain invisible when focused by keyboard users, creating a frustrating experience.
+**Action:** Consistently pair hover opacity classes with focus alternatives: use `focus:opacity-100 focus-visible:opacity-100` for the focusable element itself, or `group-focus-within:opacity-100` on the wrapper if you want siblings to appear on focus.

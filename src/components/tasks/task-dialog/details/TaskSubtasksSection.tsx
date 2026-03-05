@@ -43,7 +43,7 @@ export function TaskSubtasksSection({
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                            className="h-6 w-6 opacity-0 group-hover:opacity-100 focus:opacity-100 focus-visible:opacity-100"
                             onClick={() => handleDeleteSubtask(sub.id)}
                             aria-label={`Delete subtask ${sub.title}`}
                         >

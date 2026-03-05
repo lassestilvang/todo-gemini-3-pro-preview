@@ -102,7 +102,7 @@ export const DraggableTaskRow = memo(function DraggableTaskRow({
       aria-label={onEdit ? `Edit task ${task.title}` : task.title}
     >
       <div className="flex items-center gap-2 pt-0.5 shrink-0">
-        <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity" />
         <Checkbox
           checked={isCompleted}
           onCheckedChange={handleToggle}

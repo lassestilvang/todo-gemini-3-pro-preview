@@ -74,7 +74,7 @@ export function ActivityLogItem({ log, use24h }: ActivityLogItemProps) {
                             >
                                 <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground group-hover/link:text-primary transition-colors" />
                                 <span className="font-medium">{log.taskTitle}</span>
-                                <ArrowUpRight className="h-3 w-3 opacity-0 group-hover/link:opacity-100 transition-opacity" />
+                                <ArrowUpRight className="h-3 w-3 opacity-0 group-hover/link:opacity-100 group-focus/link:opacity-100 group-focus-visible/link:opacity-100 transition-opacity" />
                             </Link>
                         )}
                         {log.listName && (
@@ -84,7 +84,7 @@ export function ActivityLogItem({ log, use24h }: ActivityLogItemProps) {
                             >
                                 <List className="h-3.5 w-3.5 text-muted-foreground group-hover/link:text-primary transition-colors" />
                                 <span className="font-medium">{log.listName}</span>
-                                <ArrowUpRight className="h-3 w-3 opacity-0 group-hover/link:opacity-100 transition-opacity" />
+                                <ArrowUpRight className="h-3 w-3 opacity-0 group-hover/link:opacity-100 group-focus/link:opacity-100 group-focus-visible/link:opacity-100 transition-opacity" />
                             </Link>
                         )}
                         {log.labelName && (
@@ -94,7 +94,7 @@ export function ActivityLogItem({ log, use24h }: ActivityLogItemProps) {
                             >
                                 <Tag className="h-3.5 w-3.5 text-muted-foreground group-hover/link:text-primary transition-colors" />
                                 <span className="font-medium">{log.labelName}</span>
-                                <ArrowUpRight className="h-3 w-3 opacity-0 group-hover/link:opacity-100 transition-opacity" />
+                                <ArrowUpRight className="h-3 w-3 opacity-0 group-hover/link:opacity-100 group-focus/link:opacity-100 group-focus-visible/link:opacity-100 transition-opacity" />
                             </Link>
                         )}
                     </div>

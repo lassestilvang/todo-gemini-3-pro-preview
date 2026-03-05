@@ -129,7 +129,7 @@ export function SidebarWrapper({ children, className, lists, labels }: SidebarWr
                     {children}
                 </div>
 
-                <div className="absolute top-2 right-2 z-10 flex items-center gap-0.5 opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200 bg-card/90 backdrop-blur-sm border border-border/60 rounded-lg p-0.5 shadow-sm">
+                <div className="absolute top-2 right-2 z-10 flex items-center gap-0.5 opacity-0 group-hover/sidebar:opacity-100 group-focus-within/sidebar:opacity-100 transition-opacity duration-200 bg-card/90 backdrop-blur-sm border border-border/60 rounded-lg p-0.5 shadow-sm">
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <button
@@ -177,7 +177,7 @@ export function SidebarWrapper({ children, className, lists, labels }: SidebarWr
                 >
                     <div className={cn(
                         "absolute top-1/2 -translate-y-1/2 right-0 w-1 h-8 rounded-full transition-all duration-200",
-                        isResizing ? "bg-primary scale-y-150" : "bg-border opacity-0 group-hover/sidebar:opacity-100"
+                        isResizing ? "bg-primary scale-y-150" : "bg-border opacity-0 group-hover/sidebar:opacity-100 group-focus-within/sidebar:opacity-100"
                     )} />
                 </div>
             </aside>

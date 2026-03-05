@@ -79,7 +79,7 @@ export function IconPickerLibraryTab({ state, theme, userId, handleSelectIcon, l
                                                     loadCustomIcons();
                                                 }
                                             }}
-                                            className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                                            className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 focus:opacity-100 focus-visible:opacity-100 transition-opacity z-20"
                                         >
                                             <X className="h-2 w-2" />
                                         </button>
