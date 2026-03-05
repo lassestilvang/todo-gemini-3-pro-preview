@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { addMinutes } from "date-fns";
+import { addMinutes, addDays, startOfWeek } from "date-fns";
+import { enUS, enGB } from "date-fns/locale";
 import { Scheduler, type CalendarEvent, type CalendarFilterItem, type ViewType } from "calendarkit-pro";
 import { useTheme } from "next-themes";
 import type { Task } from "@/lib/types";
@@ -48,7 +49,18 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
   const { tasks: taskMap, setTasks, upsertTask } = useTaskStore();
   const { lists: listMap, setLists } = useListStore();
   const { dispatch } = useSync();
-  const { userId } = useUser();
+  const { userId, getWeekStartDay, use24HourClock } = useUser();
+
+  const calendarLocale = useMemo(() => {
+    const baseLocale = use24HourClock ? enGB : enUS;
+    return {
+      ...baseLocale,
+      options: {
+        ...baseLocale.options,
+        weekStartsOn: getWeekStartDay(),
+      },
+    };
+  }, [use24HourClock, getWeekStartDay]);
 
   const { resolvedTheme } = useTheme();
 
@@ -228,6 +240,11 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
     setCreateDialogOpen(true);
   }, [date]);
 
+  const handleTimeSlotClick = useCallback((slotDate: Date) => {
+    setCreateDefaultDueDate(slotDate);
+    setCreateDialogOpen(true);
+  }, []);
+
   const handleCalendarToggle = useCallback((calendarId: string, active: boolean) => {
     setActiveCalendarIds((prev) => {
       if (!active && prev.size === 1 && prev.has(calendarId)) {
@@ -299,18 +316,51 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
         const existing = taskMap[taskId];
         if (!existing) return;
 
-        // Try to derive the dropped time from the DroppableCell element under the mouse
-        // In calendarkit-pro, the droppable cells have IDs which are the ISO timestamps they represent
+        // Try to derive the dropped time from the cell in Month View
         const elementUnderMouse = document.elementFromPoint(e.clientX, e.clientY);
         let dropDate: Date | null = null;
 
         if (elementUnderMouse) {
-          // Traverse up to find the closest element with a valid date-like ID or specific attribute
+          // Attempt 1: Month View uses DroppableCell with ID
           const cell = elementUnderMouse.closest('[id*="T"][id*="Z"]');
           if (cell && cell.id) {
             const parsedDate = new Date(cell.id);
             if (!Number.isNaN(parsedDate.getTime())) {
               dropDate = parsedDate;
+            }
+          }
+
+          // Attempt 2: Geographic math for Week and Day views
+          if (!dropDate) {
+            if (view === "week") {
+              const weekGrid = elementUnderMouse.closest('.grid-cols-7');
+              const timeLabels = weekGrid?.previousElementSibling;
+              if (weekGrid && timeLabels && timeLabels.classList.contains('w-16')) {
+                const rect = weekGrid.getBoundingClientRect();
+                const dayIndex = Math.floor((e.clientX - rect.left) / (rect.width / 7));
+                const hourHeight = 60; // 60px per hour in WeekView.tsx
+                const yPos = e.clientY - rect.top;
+                const hours = yPos / hourHeight;
+
+                const start = startOfWeek(date, { weekStartsOn: getWeekStartDay() });
+                const dropDay = addDays(start, Math.max(0, Math.min(6, dayIndex)));
+
+                const dropMinutes = Math.floor(hours * 60);
+                dropDate = new Date(dropDay);
+                dropDate.setHours(0, Math.floor(dropMinutes / 15) * 15, 0, 0);
+              }
+            } else if (view === "day") {
+              // The day column contains the events and has no grid-cols-7
+              const dayGrid = elementUnderMouse.closest('.relative.flex-1');
+              if (dayGrid) {
+                const rect = dayGrid.getBoundingClientRect();
+                const hourHeight = 80; // 80px per hour in DayView.tsx
+                const yPos = e.clientY - rect.top;
+                const hours = yPos / hourHeight;
+                const dropMinutes = Math.floor(hours * 60);
+                dropDate = new Date(date);
+                dropDate.setHours(0, Math.floor(dropMinutes / 15) * 15, 0, 0);
+              }
             }
           }
         }
@@ -370,6 +420,10 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
             onEventClick={handleEventClick}
             onEventDrop={handleEventDrop}
             onCalendarToggle={handleCalendarToggle}
+            // @ts-ignore - 'onTimeSlotClick' is supported internally by calendarkit-pro but missing from types
+            onTimeSlotClick={handleTimeSlotClick}
+            // @ts-ignore - 'locale' is supported but may conflict if types are outdated
+            locale={calendarLocale}
             newEventButton={{
               label: "New Task",
               onClick: handleCreateTask,
