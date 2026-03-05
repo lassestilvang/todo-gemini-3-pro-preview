@@ -392,7 +392,7 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
   const [isDraggingOver, setIsDraggingOver] = useState(false);
 
   return (
-    <div className="flex h-full min-h-0 bg-background">
+    <div className="calendar-v5-wrapper flex h-full min-h-0 bg-background">
       {/* Unscheduled Sidebar */}
       <Calendar5UnscheduledColumn
         tasks={tasks}
