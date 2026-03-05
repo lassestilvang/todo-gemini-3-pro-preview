@@ -23,8 +23,10 @@ test.describe('Search Latency: Search Results', () => {
       await expect(taskItem.first()).toBeVisible({ timeout: 10000 });
     }
 
-    // Shorter grace period for search indexing
-    await page.waitForTimeout(250);
+    // Wait until the sync indicator shows that changes are saved to avoid race conditions
+    // where search query happens before the database has the task
+    const syncStatus = page.getByTestId('sync-status-indicator');
+    await expect(syncStatus).toHaveAttribute('data-sync-state', 'synced', { timeout: 15000 });
 
     const searchInput = page.getByPlaceholder(/search tasks\.\.\./i).first();
     await expect(searchInput).toBeVisible();

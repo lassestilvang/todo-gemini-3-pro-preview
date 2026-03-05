@@ -338,6 +338,8 @@ export function SyncStatus() {
                     )}
                     role="status"
                     aria-label={`${label}: Click to view sync details`}
+                    data-testid="sync-status-indicator"
+                    data-sync-state={status}
                 >
                     <Icon className={cn("h-3.5 w-3.5", className)} />
                     <span className="hidden sm:inline">{label}</span>

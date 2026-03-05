@@ -1,0 +1,533 @@
+$ bun run --bun next dev
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.2:3000
+
+✓ Starting...
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+✓ Ready in 7.8s
+○ Compiling / ...
+[bun] Warning: async_hooks.createHook is not implemented in Bun. Hooks can still be created but will never be called.
+[bun] Warning: async_hooks.executionAsyncId/triggerAsyncId are not implemented in Bun. It will return 0 every time.
+⨯ Error: DATABASE_URL environment variable is required
+    at <anonymous> (file:/app/src/db/index.ts:34:15)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:30)
+    at <anonymous> (file:/app/src/lib/actions/shared.ts:7:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:30)
+    at <anonymous> (file:/app/src/lib/actions/lists.ts:9:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:30)
+    at <anonymous> (file:/app/src/lib/actions.ts:6:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:30)
+    at <anonymous> (file:/app/src/components/layout/SidebarDataLoader.tsx:1:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:30)
+    at <anonymous> (file:/app/src/components/layout/MainLayout.tsx:8:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:30)
+    at <anonymous> (file:/app/src/app/layout.tsx:5:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:30)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__9309aefa._.js:14:47)
+  32 |     // Use Neon PostgreSQL for development and production
+  33 |     if (!process.env.DATABASE_URL) {
+> 34 |         throw new Error("DATABASE_URL environment variable is required");
+     |               ^
+  35 |     }
+  36 |     const sql = neon(process.env.DATABASE_URL);
+  37 |     db = drizzleNeon(sql, { schema: pgSchema });
+⨯ Error: DATABASE_URL environment variable is required
+    at <anonymous> (file:/app/src/db/index.ts:34:15)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:30)
+    at <anonymous> (file:/app/src/lib/actions/shared.ts:7:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:30)
+    at <anonymous> (file:/app/src/lib/actions/lists.ts:9:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:30)
+    at <anonymous> (file:/app/src/lib/actions.ts:6:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:30)
+    at <anonymous> (file:/app/src/components/layout/SidebarDataLoader.tsx:1:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:30)
+    at <anonymous> (file:/app/src/components/layout/MainLayout.tsx:8:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:30)
+    at <anonymous> (file:/app/src/app/layout.tsx:5:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:30)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__9309aefa._.js:14:47)
+  32 |     // Use Neon PostgreSQL for development and production
+  33 |     if (!process.env.DATABASE_URL) {
+> 34 |         throw new Error("DATABASE_URL environment variable is required");
+     |               ^
+  35 |     }
+  36 |     const sql = neon(process.env.DATABASE_URL);
+  37 |     db = drizzleNeon(sql, { schema: pgSchema }); {
+  page: '/'
+}
+ GET / 500 in 42s (compile: 42s, render: 436ms)
+⨯ Error: DATABASE_URL environment variable is required
+    at <anonymous> (file:/app/src/db/index.ts:34:15)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:30)
+    at <anonymous> (file:/app/src/lib/actions/shared.ts:7:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:30)
+    at <anonymous> (file:/app/src/lib/actions/lists.ts:9:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:30)
+    at <anonymous> (file:/app/src/lib/actions.ts:6:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:30)
+    at <anonymous> (file:/app/src/components/layout/SidebarDataLoader.tsx:1:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:30)
+    at <anonymous> (file:/app/src/components/layout/MainLayout.tsx:8:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:30)
+    at <anonymous> (file:/app/src/app/layout.tsx:5:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:30)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__9309aefa._.js:14:47)
+  32 |     // Use Neon PostgreSQL for development and production
+  33 |     if (!process.env.DATABASE_URL) {
+> 34 |         throw new Error("DATABASE_URL environment variable is required");
+     |               ^
+  35 |     }
+  36 |     const sql = neon(process.env.DATABASE_URL);
+  37 |     db = drizzleNeon(sql, { schema: pgSchema }); {
+  page: '/'
+}
+⨯ Error: DATABASE_URL environment variable is required
+    at <anonymous> (file:/app/src/db/index.ts:34:15)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:30)
+    at <anonymous> (file:/app/src/lib/actions/shared.ts:7:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:30)
+    at <anonymous> (file:/app/src/lib/actions/lists.ts:9:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:30)
+    at <anonymous> (file:/app/src/lib/actions.ts:6:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:30)
+    at <anonymous> (file:/app/src/components/layout/SidebarDataLoader.tsx:1:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:30)
+    at <anonymous> (file:/app/src/components/layout/MainLayout.tsx:8:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:30)
+    at <anonymous> (file:/app/src/app/layout.tsx:5:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:30)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__9309aefa._.js:14:47)
+  32 |     // Use Neon PostgreSQL for development and production
+  33 |     if (!process.env.DATABASE_URL) {
+> 34 |         throw new Error("DATABASE_URL environment variable is required");
+     |               ^
+  35 |     }
+  36 |     const sql = neon(process.env.DATABASE_URL);
+  37 |     db = drizzleNeon(sql, { schema: pgSchema }); {
+  page: '/'
+}
+ GET / 500 in 227ms (compile: 149ms, render: 78ms)
+⨯ Error: DATABASE_URL environment variable is required
+    at <anonymous> (file:/app/src/db/index.ts:34:15)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:30)
+    at <anonymous> (file:/app/src/lib/actions/shared.ts:7:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:30)
+    at <anonymous> (file:/app/src/lib/actions/lists.ts:9:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:30)
+    at <anonymous> (file:/app/src/lib/actions.ts:6:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:30)
+    at <anonymous> (file:/app/src/components/layout/SidebarDataLoader.tsx:1:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:30)
+    at <anonymous> (file:/app/src/components/layout/MainLayout.tsx:8:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:30)
+    at <anonymous> (file:/app/src/app/layout.tsx:5:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:30)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__9309aefa._.js:14:47)
+  32 |     // Use Neon PostgreSQL for development and production
+  33 |     if (!process.env.DATABASE_URL) {
+> 34 |         throw new Error("DATABASE_URL environment variable is required");
+     |               ^
+  35 |     }
+  36 |     const sql = neon(process.env.DATABASE_URL);
+  37 |     db = drizzleNeon(sql, { schema: pgSchema }); {
+  page: '/'
+}
+⨯ Error: DATABASE_URL environment variable is required
+    at <anonymous> (file:/app/src/db/index.ts:34:15)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:30)
+    at <anonymous> (file:/app/src/lib/actions/shared.ts:7:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:30)
+    at <anonymous> (file:/app/src/lib/actions/lists.ts:9:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:30)
+    at <anonymous> (file:/app/src/lib/actions.ts:6:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:30)
+    at <anonymous> (file:/app/src/components/layout/SidebarDataLoader.tsx:1:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:30)
+    at <anonymous> (file:/app/src/components/layout/MainLayout.tsx:8:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:30)
+    at <anonymous> (file:/app/src/app/layout.tsx:5:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:30)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__9309aefa._.js:14:47)
+  32 |     // Use Neon PostgreSQL for development and production
+  33 |     if (!process.env.DATABASE_URL) {
+> 34 |         throw new Error("DATABASE_URL environment variable is required");
+     |               ^
+  35 |     }
+  36 |     const sql = neon(process.env.DATABASE_URL);
+  37 |     db = drizzleNeon(sql, { schema: pgSchema }); {
+  page: '/'
+}
+ GET / 500 in 161ms (compile: 83ms, render: 77ms)
+⨯ Error: DATABASE_URL environment variable is required
+    at <anonymous> (file:/app/src/db/index.ts:34:15)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:30)
+    at <anonymous> (file:/app/src/lib/actions/shared.ts:7:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:30)
+    at <anonymous> (file:/app/src/lib/actions/lists.ts:9:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:30)
+    at <anonymous> (file:/app/src/lib/actions.ts:6:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:30)
+    at <anonymous> (file:/app/src/components/layout/SidebarDataLoader.tsx:1:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:30)
+    at <anonymous> (file:/app/src/components/layout/MainLayout.tsx:8:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:30)
+    at <anonymous> (file:/app/src/app/layout.tsx:5:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:30)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__9309aefa._.js:14:47)
+  32 |     // Use Neon PostgreSQL for development and production
+  33 |     if (!process.env.DATABASE_URL) {
+> 34 |         throw new Error("DATABASE_URL environment variable is required");
+     |               ^
+  35 |     }
+  36 |     const sql = neon(process.env.DATABASE_URL);
+  37 |     db = drizzleNeon(sql, { schema: pgSchema }); {
+  page: '/'
+}
+⨯ Error: DATABASE_URL environment variable is required
+    at <anonymous> (file:/app/src/db/index.ts:34:15)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:30)
+    at <anonymous> (file:/app/src/lib/actions/shared.ts:7:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:30)
+    at <anonymous> (file:/app/src/lib/actions/lists.ts:9:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:30)
+    at <anonymous> (file:/app/src/lib/actions.ts:6:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:30)
+    at <anonymous> (file:/app/src/components/layout/SidebarDataLoader.tsx:1:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:30)
+    at <anonymous> (file:/app/src/components/layout/MainLayout.tsx:8:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:30)
+    at <anonymous> (file:/app/src/app/layout.tsx:5:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:30)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__9309aefa._.js:14:47)
+  32 |     // Use Neon PostgreSQL for development and production
+  33 |     if (!process.env.DATABASE_URL) {
+> 34 |         throw new Error("DATABASE_URL environment variable is required");
+     |               ^
+  35 |     }
+  36 |     const sql = neon(process.env.DATABASE_URL);
+  37 |     db = drizzleNeon(sql, { schema: pgSchema }); {
+  page: '/'
+}
+ GET / 500 in 180ms (compile: 100ms, render: 80ms)
+⨯ Error: DATABASE_URL environment variable is required
+    at <anonymous> (file:/app/src/db/index.ts:34:15)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:30)
+    at <anonymous> (file:/app/src/lib/actions/shared.ts:7:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:30)
+    at <anonymous> (file:/app/src/lib/actions/lists.ts:9:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:30)
+    at <anonymous> (file:/app/src/lib/actions.ts:6:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:30)
+    at <anonymous> (file:/app/src/components/layout/SidebarDataLoader.tsx:1:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:30)
+    at <anonymous> (file:/app/src/components/layout/MainLayout.tsx:8:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:30)
+    at <anonymous> (file:/app/src/app/layout.tsx:5:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:30)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__9309aefa._.js:14:47)
+  32 |     // Use Neon PostgreSQL for development and production
+  33 |     if (!process.env.DATABASE_URL) {
+> 34 |         throw new Error("DATABASE_URL environment variable is required");
+     |               ^
+  35 |     }
+  36 |     const sql = neon(process.env.DATABASE_URL);
+  37 |     db = drizzleNeon(sql, { schema: pgSchema }); {
+  page: '/'
+}
+⨯ Error: DATABASE_URL environment variable is required
+    at <anonymous> (file:/app/src/db/index.ts:34:15)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:30)
+    at <anonymous> (file:/app/src/lib/actions/shared.ts:7:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:30)
+    at <anonymous> (file:/app/src/lib/actions/lists.ts:9:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:30)
+    at <anonymous> (file:/app/src/lib/actions.ts:6:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:30)
+    at <anonymous> (file:/app/src/components/layout/SidebarDataLoader.tsx:1:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:30)
+    at <anonymous> (file:/app/src/components/layout/MainLayout.tsx:8:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:30)
+    at <anonymous> (file:/app/src/app/layout.tsx:5:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:30)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__9309aefa._.js:14:47)
+  32 |     // Use Neon PostgreSQL for development and production
+  33 |     if (!process.env.DATABASE_URL) {
+> 34 |         throw new Error("DATABASE_URL environment variable is required");
+     |               ^
+  35 |     }
+  36 |     const sql = neon(process.env.DATABASE_URL);
+  37 |     db = drizzleNeon(sql, { schema: pgSchema }); {
+  page: '/'
+}
+ GET / 500 in 184ms (compile: 103ms, render: 81ms)
+⨯ Error: DATABASE_URL environment variable is required
+    at <anonymous> (file:/app/src/db/index.ts:34:15)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:30)
+    at <anonymous> (file:/app/src/lib/actions/shared.ts:7:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:30)
+    at <anonymous> (file:/app/src/lib/actions/lists.ts:9:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:30)
+    at <anonymous> (file:/app/src/lib/actions.ts:6:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:30)
+    at <anonymous> (file:/app/src/components/layout/SidebarDataLoader.tsx:1:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:30)
+    at <anonymous> (file:/app/src/components/layout/MainLayout.tsx:8:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:30)
+    at <anonymous> (file:/app/src/app/layout.tsx:5:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:30)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__9309aefa._.js:14:47)
+  32 |     // Use Neon PostgreSQL for development and production
+  33 |     if (!process.env.DATABASE_URL) {
+> 34 |         throw new Error("DATABASE_URL environment variable is required");
+     |               ^
+  35 |     }
+  36 |     const sql = neon(process.env.DATABASE_URL);
+  37 |     db = drizzleNeon(sql, { schema: pgSchema }); {
+  page: '/'
+}
+⨯ Error: DATABASE_URL environment variable is required
+    at <anonymous> (file:/app/src/db/index.ts:34:15)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:30)
+    at <anonymous> (file:/app/src/lib/actions/shared.ts:7:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:30)
+    at <anonymous> (file:/app/src/lib/actions/lists.ts:9:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:30)
+    at <anonymous> (file:/app/src/lib/actions.ts:6:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:30)
+    at <anonymous> (file:/app/src/components/layout/SidebarDataLoader.tsx:1:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:30)
+    at <anonymous> (file:/app/src/components/layout/MainLayout.tsx:8:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:30)
+    at <anonymous> (file:/app/src/app/layout.tsx:5:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:30)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__9309aefa._.js:14:47)
+  32 |     // Use Neon PostgreSQL for development and production
+  33 |     if (!process.env.DATABASE_URL) {
+> 34 |         throw new Error("DATABASE_URL environment variable is required");
+     |               ^
+  35 |     }
+  36 |     const sql = neon(process.env.DATABASE_URL);
+  37 |     db = drizzleNeon(sql, { schema: pgSchema }); {
+  page: '/'
+}
+ GET / 500 in 233ms (compile: 156ms, render: 77ms)
+⨯ Error: DATABASE_URL environment variable is required
+    at <anonymous> (file:/app/src/db/index.ts:34:15)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:30)
+    at <anonymous> (file:/app/src/lib/actions/shared.ts:7:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:30)
+    at <anonymous> (file:/app/src/lib/actions/lists.ts:9:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:30)
+    at <anonymous> (file:/app/src/lib/actions.ts:6:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:30)
+    at <anonymous> (file:/app/src/components/layout/SidebarDataLoader.tsx:1:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:30)
+    at <anonymous> (file:/app/src/components/layout/MainLayout.tsx:8:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:30)
+    at <anonymous> (file:/app/src/app/layout.tsx:5:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:30)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__9309aefa._.js:14:47)
+  32 |     // Use Neon PostgreSQL for development and production
+  33 |     if (!process.env.DATABASE_URL) {
+> 34 |         throw new Error("DATABASE_URL environment variable is required");
+     |               ^
+  35 |     }
+  36 |     const sql = neon(process.env.DATABASE_URL);
+  37 |     db = drizzleNeon(sql, { schema: pgSchema }); {
+  page: '/'
+}
+⨯ Error: DATABASE_URL environment variable is required
+    at <anonymous> (file:/app/src/db/index.ts:34:15)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:30)
+    at <anonymous> (file:/app/src/lib/actions/shared.ts:7:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:30)
+    at <anonymous> (file:/app/src/lib/actions/lists.ts:9:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:30)
+    at <anonymous> (file:/app/src/lib/actions.ts:6:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:30)
+    at <anonymous> (file:/app/src/components/layout/SidebarDataLoader.tsx:1:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:30)
+    at <anonymous> (file:/app/src/components/layout/MainLayout.tsx:8:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:30)
+    at <anonymous> (file:/app/src/app/layout.tsx:5:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:30)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__9309aefa._.js:14:47)
+  32 |     // Use Neon PostgreSQL for development and production
+  33 |     if (!process.env.DATABASE_URL) {
+> 34 |         throw new Error("DATABASE_URL environment variable is required");
+     |               ^
+  35 |     }
+  36 |     const sql = neon(process.env.DATABASE_URL);
+  37 |     db = drizzleNeon(sql, { schema: pgSchema }); {
+  page: '/'
+}
+ GET / 500 in 223ms (compile: 143ms, render: 80ms)
+⨯ Error: DATABASE_URL environment variable is required
+    at <anonymous> (file:/app/src/db/index.ts:34:15)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:30)
+    at <anonymous> (file:/app/src/lib/actions/shared.ts:7:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:30)
+    at <anonymous> (file:/app/src/lib/actions/lists.ts:9:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:30)
+    at <anonymous> (file:/app/src/lib/actions.ts:6:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:30)
+    at <anonymous> (file:/app/src/components/layout/SidebarDataLoader.tsx:1:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:30)
+    at <anonymous> (file:/app/src/components/layout/MainLayout.tsx:8:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:30)
+    at <anonymous> (file:/app/src/app/layout.tsx:5:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:30)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__9309aefa._.js:14:47)
+  32 |     // Use Neon PostgreSQL for development and production
+  33 |     if (!process.env.DATABASE_URL) {
+> 34 |         throw new Error("DATABASE_URL environment variable is required");
+     |               ^
+  35 |     }
+  36 |     const sql = neon(process.env.DATABASE_URL);
+  37 |     db = drizzleNeon(sql, { schema: pgSchema }); {
+  page: '/'
+}
+⨯ Error: DATABASE_URL environment variable is required
+    at <anonymous> (file:/app/src/db/index.ts:34:15)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:1629:30)
+    at <anonymous> (file:/app/src/lib/actions/shared.ts:7:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2230:30)
+    at <anonymous> (file:/app/src/lib/actions/lists.ts:9:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:2872:30)
+    at <anonymous> (file:/app/src/lib/actions.ts:6:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6668:30)
+    at <anonymous> (file:/app/src/components/layout/SidebarDataLoader.tsx:1:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:6817:30)
+    at <anonymous> (file:/app/src/components/layout/MainLayout.tsx:8:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7016:30)
+    at <anonymous> (file:/app/src/app/layout.tsx:5:1)
+    at <anonymous> (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:39)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__c3c9d578._.js:7937:30)
+    at module evaluation (.next/dev/server/chunks/ssr/[root-of-the-server]__9309aefa._.js:14:47)
+  32 |     // Use Neon PostgreSQL for development and production
+  33 |     if (!process.env.DATABASE_URL) {
+> 34 |         throw new Error("DATABASE_URL environment variable is required");
+     |               ^
+  35 |     }
+  36 |     const sql = neon(process.env.DATABASE_URL);
+  37 |     db = drizzleNeon(sql, { schema: pgSchema }); {
+  page: '/'
+}
+[?25h

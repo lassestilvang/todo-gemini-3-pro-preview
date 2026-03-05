@@ -21,7 +21,9 @@ export function FloatingSearchInput({ sidebarMode }: { sidebarMode: SidebarMode 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
-      const trimmed = value.trim();
+      // Read directly from inputRef to avoid stale state on rapid Enter press
+      const currentValue = inputRef.current?.value || value;
+      const trimmed = currentValue.trim();
       if (!trimmed) return;
       router.push(`/search?q=${encodeURIComponent(trimmed)}`);
       close();
