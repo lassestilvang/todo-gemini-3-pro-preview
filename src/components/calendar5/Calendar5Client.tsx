@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { addMinutes } from "date-fns";
 import { Scheduler, type CalendarEvent, type CalendarFilterItem, type ViewType } from "calendarkit-pro";
+import { useTheme } from "next-themes";
 import type { Task } from "@/lib/types";
 import { useTaskStore } from "@/lib/store/task-store";
 import { useListStore } from "@/lib/store/list-store";
@@ -13,6 +14,7 @@ import { TaskDialog } from "@/components/tasks/TaskDialog";
 const UNASSIGNED_CALENDAR_ID = "unassigned";
 const FALLBACK_COLOR = "#71717a";
 const VIEW_STORAGE_KEY = "calendar5:view";
+const LISTS_STORAGE_KEY = "calendar5:lists";
 
 type CalendarList = {
   id: number;
@@ -47,15 +49,30 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
   const { dispatch } = useSync();
   const { userId } = useUser();
 
+  const { resolvedTheme } = useTheme();
+
   const [view, setView] = useState<ViewType>("month");
   const [date, setDate] = useState<Date>(new Date());
   const [timezone, setTimezone] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [createDefaultDueDate, setCreateDefaultDueDate] = useState<Date | undefined>(undefined);
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
-  const [activeCalendarIds, setActiveCalendarIds] = useState<Set<string>>(
-    () => new Set([UNASSIGNED_CALENDAR_ID, ...initialLists.map((list) => String(list.id))])
-  );
+
+  const [activeCalendarIds, setActiveCalendarIds] = useState<Set<string>>(() => {
+    try {
+      const stored = window.localStorage.getItem(LISTS_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          return new Set(parsed);
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return new Set([UNASSIGNED_CALENDAR_ID, ...initialLists.map((list) => String(list.id))]);
+  });
+
   const seenCalendarIdsRef = useRef<Set<string>>(
     new Set([UNASSIGNED_CALENDAR_ID, ...initialLists.map((list) => String(list.id))])
   );
@@ -76,6 +93,10 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
   useEffect(() => {
     window.localStorage.setItem(VIEW_STORAGE_KEY, view);
   }, [view]);
+
+  useEffect(() => {
+    window.localStorage.setItem(LISTS_STORAGE_KEY, JSON.stringify(Array.from(activeCalendarIds)));
+  }, [activeCalendarIds]);
 
   useEffect(() => {
     if (Object.keys(taskMap).length === 0 && initialTasks.length > 0) {
@@ -206,6 +227,11 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
     setCreateDialogOpen(true);
   }, [date]);
 
+  const handleTimeSlotClick = useCallback((slotDate: Date) => {
+    setCreateDefaultDueDate(slotDate);
+    setCreateDialogOpen(true);
+  }, []);
+
   const handleCalendarToggle = useCallback((calendarId: string, active: boolean) => {
     setActiveCalendarIds((prev) => {
       if (!active && prev.size === 1 && prev.has(calendarId)) {
@@ -275,10 +301,12 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
           onEventClick={handleEventClick}
           onEventDrop={handleEventDrop}
           onCalendarToggle={handleCalendarToggle}
+          onTimeSlotClick={handleTimeSlotClick}
           newEventButton={{
             label: "New Task",
             onClick: handleCreateTask,
           }}
+          isDarkMode={resolvedTheme === "dark"}
           hideLanguageSelector
           hideDarkModeToggle
           language="en"
@@ -298,11 +326,11 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
         task={
           editingTask
             ? {
-                ...editingTask,
-                icon: editingTask.icon ?? null,
-                dueDate: normalizeDate(editingTask.dueDate),
-                deadline: normalizeDate(editingTask.deadline),
-              }
+              ...editingTask,
+              icon: editingTask.icon ?? null,
+              dueDate: normalizeDate(editingTask.dueDate),
+              deadline: normalizeDate(editingTask.deadline),
+            }
             : undefined
         }
         open={!!editingTask}
