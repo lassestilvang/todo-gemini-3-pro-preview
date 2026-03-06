@@ -862,18 +862,18 @@ html.synthwave textarea:focus {
 
 /* Fix calendarkit-pro hardcoded hexadecimal colors for dark mode */
 :is(.dark, .glassmorphism-dark, .performance-dark, .synthwave, .minimalist) .calendar-v5-wrapper .bg-\[\#F9F9FB\],
-:is(.dark, .glassmorphism-dark, .performance-dark, .synthwave, .minimalist) .calendar-v5-wrapper .bg-white,
-:is(.dark, .glassmorphism-dark, .performance-dark, .synthwave, .minimalist) .calendar-v5-wrapper .bg-background {
-  background-color: var(--background) !important;
+:is(.dark, .glassmorphism-dark, .performance-dark, .synthwave, .minimalist) .calendar-v5-wrapper .bg-white {
+  background-color: var(--card) !important;
   color: var(--foreground) !important;
 }
 
 :is(.dark, .glassmorphism-dark, .performance-dark, .synthwave, .minimalist) .calendar-v5-wrapper .bg-\[\#14141705\],
-:is(.dark, .glassmorphism-dark, .performance-dark, .synthwave, .minimalist) .calendar-v5-wrapper .bg-\[\#EEEFF5\] {
+:is(.dark, .glassmorphism-dark, .performance-dark, .synthwave, .minimalist) .calendar-v5-wrapper .bg-\[\#EEEFF5\],
+:is(.dark, .glassmorphism-dark, .performance-dark, .synthwave, .minimalist) .calendar-v5-wrapper .bg-muted\/50 {
   background-color: var(--muted) !important;
   color: var(--foreground) !important;
 }
 
-:is(.dark, .glassmorphism-dark, .performance-dark, .synthwave, .minimalist) .calendar-v5-wrapper [class*="border"] {
-  border-color: var(--border) !important;
+:is(.dark, .glassmorphism-dark, .performance-dark, .synthwave, .minimalist) .calendar-v5-wrapper .bg-background {
+  background-color: var(--background) !important;
 }

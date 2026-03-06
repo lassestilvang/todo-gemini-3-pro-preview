@@ -321,12 +321,15 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
         let dropDate: Date | null = null;
 
         if (elementUnderMouse) {
-          // Attempt 1: Month View uses DroppableCell with ID
-          const cell = elementUnderMouse.closest('[id*="T"][id*="Z"]');
-          if (cell && cell.id) {
-            const parsedDate = new Date(cell.id);
-            if (!Number.isNaN(parsedDate.getTime())) {
-              dropDate = parsedDate;
+          // Attempt 1: Month View uses DroppableCell with ID or data-date
+          const cell = elementUnderMouse.closest('[id*="T"][id*="Z"], [data-date]');
+          if (cell) {
+            const dateStr = cell.getAttribute('data-date') || cell.id;
+            if (dateStr) {
+              const parsedDate = new Date(dateStr);
+              if (!Number.isNaN(parsedDate.getTime())) {
+                dropDate = parsedDate;
+              }
             }
           }
 
