@@ -116,3 +116,6 @@
 ## 2026-03-05 - Consolidating `useMemo` hooks
 **Learning:** Combining multiple O(N) `.filter()` passes into a single loop using `useMemo` is a powerful optimization. However, doing so is an anti-pattern if the original `useMemo` hooks had different dependency arrays (e.g. `[tasks]` vs `[tasks, visibleListIds]`). Coupling them forces the combined logic to re-run on any dependency change, degrading performance.
 **Action:** When consolidating loop passes, strictly verify that the new `useMemo` logic shares the exact same dependencies as the original separate blocks. Do not combine loops that evaluate different UI state conditions.
+## 2026-03-05 - Consolidating `useMemo` hooks
+**Learning:** Combining multiple O(N) `.filter()` passes into a single loop using `useMemo` is a powerful optimization. However, doing so is an anti-pattern if the original `useMemo` hooks had different dependency arrays (e.g. `[tasks]` vs `[tasks, visibleListIds]`). Coupling them forces the combined logic to re-run on any dependency change, degrading performance.
+**Action:** When consolidating loop passes, strictly verify that the new `useMemo` logic shares the exact same dependencies as the original separate blocks. Do not combine loops that evaluate different UI state conditions.
