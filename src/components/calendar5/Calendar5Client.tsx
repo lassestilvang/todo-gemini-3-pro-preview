@@ -326,7 +326,7 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
         if (!existing) return;
 
         // Try to derive the dropped time from the cell in Month View
-        const elementUnderMouse = document.elementFromPoint(e.clientX, e.clientY);
+        const elementUnderMouse = e.target as Element;
         let dropDate: Date | null = null;
 
         if (elementUnderMouse) {
@@ -407,7 +407,7 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
     e.preventDefault();
     setIsDraggingOver(true);
 
-    const elementUnderMouse = document.elementFromPoint(e.clientX, e.clientY);
+    const elementUnderMouse = e.target as Element;
     if (!elementUnderMouse) return;
 
     const targetCell = elementUnderMouse.closest('[data-date]');
