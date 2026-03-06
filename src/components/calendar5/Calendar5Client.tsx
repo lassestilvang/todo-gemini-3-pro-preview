@@ -478,7 +478,6 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
             onCalendarToggle={handleCalendarToggle}
             // @ts-expect-error - 'onTimeSlotClick' is supported internally by calendarkit-pro but missing from types
             onTimeSlotClick={handleTimeSlotClick}
-            // @ts-expect-error - 'locale' is supported but may conflict if types are outdated
             locale={calendarLocale}
             newEventButton={{
               label: "New Task",
