@@ -269,6 +269,14 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
     }
   }, []);
 
+  const clearExternalDragHighlights = () => {
+    if (typeof document !== 'undefined') {
+      document.querySelectorAll('.external-drag-highlight').forEach(el => {
+        el.classList.remove('external-drag-highlight', 'bg-blue-50/50', 'dark:bg-blue-900/10', 'ring-2', 'ring-primary', 'ring-inset');
+      });
+    }
+  };
+
   const handleEventDrop = useCallback(
     (event: CalendarEvent, start: Date, end: Date) => {
       const taskId = Number(event.id);
@@ -303,6 +311,7 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
     (e: React.DragEvent<HTMLDivElement>) => {
       e.preventDefault();
       setIsDraggingOver(false);
+      clearExternalDragHighlights();
 
       try {
         const dataStr = e.dataTransfer.getData("application/json");
@@ -394,6 +403,33 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
 
   const [isDraggingOver, setIsDraggingOver] = useState(false);
 
+  const handleExternalDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDraggingOver(true);
+
+    const elementUnderMouse = document.elementFromPoint(e.clientX, e.clientY);
+    if (!elementUnderMouse) return;
+
+    const targetCell = elementUnderMouse.closest('[data-date]');
+
+    // Clear previous highlights that aren't the current target
+    document.querySelectorAll('.external-drag-highlight').forEach(el => {
+      if (el !== targetCell) {
+        el.classList.remove('external-drag-highlight', 'bg-blue-50/50', 'dark:bg-blue-900/10', 'ring-2', 'ring-primary', 'ring-inset');
+      }
+    });
+
+    // Highlight new target
+    if (targetCell && !targetCell.classList.contains('external-drag-highlight')) {
+      targetCell.classList.add('external-drag-highlight', 'bg-blue-50/50', 'dark:bg-blue-900/10', 'ring-2', 'ring-primary', 'ring-inset');
+    }
+  }, []);
+
+  const handleExternalDragLeave = useCallback(() => {
+    setIsDraggingOver(false);
+    clearExternalDragHighlights();
+  }, []);
+
   return (
     <div className="calendar-v5-wrapper flex h-full min-h-0 bg-background">
       {/* Unscheduled Sidebar */}
@@ -406,8 +442,8 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
       {/* Main Calendar Window */}
       <div
         className="flex-1 min-w-0 flex flex-col p-4 pl-0"
-        onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
-        onDragLeave={() => setIsDraggingOver(false)}
+        onDragOver={handleExternalDragOver}
+        onDragLeave={handleExternalDragLeave}
         onDrop={handleExternalDrop}
       >
         <div className={`h-full min-h-0 overflow-hidden rounded-2xl border transition-colors ${isDraggingOver ? "border-primary ring-2 ring-primary/20 bg-primary/5" : "border-border shadow-sm"}`}>
