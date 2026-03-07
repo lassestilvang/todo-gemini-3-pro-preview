@@ -898,23 +898,42 @@ html.synthwave textarea:focus {
 /*                     Calendar5 Dark Mode Contrast Fixes                     */
 /* -------------------------------------------------------------------------- */
 
-html.dark .calendar-v5-wrapper .calendar-main-wrapper :is(.bg-primary, [class*="bg-primary"]) {
-  color: oklch(0.12 0.02 260) !important;
-  /* Force dark text on light primary */
-}
-
-html.dark .calendar-v5-wrapper .calendar-main-wrapper :is(.bg-\\[\\#7FDDF0\\], [class*="bg-[#7FDDF0]"]) {
-  color: oklch(0.12 0.02 260) !important;
-  /* Force dark text on cyan primary */
-}
-
-/* Ensure the text inside the current day active circle is dark */
-html.dark .calendar-v5-wrapper .calendar-main-wrapper :is(.text-white) {
+/* Active Date Circle in Sidebar and Grid */
+html.dark .calendar-v5-wrapper .bg-primary {
   color: oklch(0.12 0.02 260) !important;
 }
 
-/* New Event button inside header */
-html.dark .calendar-v5-wrapper .calendar-main-wrapper button[title="New Task"],
-html.dark .calendar-v5-wrapper .calendar-main-wrapper button:has(svg.lucide-plus) {
+html.dark .calendar-v5-wrapper [class*="bg-primary"] {
+  color: oklch(0.12 0.02 260) !important;
+}
+
+html.dark .calendar-v5-wrapper .text-white {
+  color: oklch(0.12 0.02 260) !important;
+}
+
+/* Time Indicator Label */
+html.dark .calendar-v5-wrapper span.bg-primary {
+  color: oklch(0.12 0.02 260) !important;
+  background-color: var(--primary) !important;
+}
+
+/* "New Task" Button */
+html.dark .calendar-v5-wrapper button.bg-\\[\\#7FDDF0\\] {
+  color: oklch(0.12 0.02 260) !important;
+  background-color: #7FDDF0 !important;
+}
+
+html.dark .calendar-v5-wrapper button[class*="bg-[#7FDDF0]"] {
+  color: oklch(0.12 0.02 260) !important;
+  background-color: #7FDDF0 !important;
+}
+
+html.dark .calendar-v5-wrapper button[class*="bg-[#7fddf0]" i] {
+  color: oklch(0.12 0.02 260) !important;
+  background-color: #7FDDF0 !important;
+}
+
+html.dark .calendar-v5-wrapper button[title="New Task"],
+html.dark .calendar-v5-wrapper button:has(svg.lucide-plus) {
   color: oklch(0.12 0.02 260) !important;
 }
