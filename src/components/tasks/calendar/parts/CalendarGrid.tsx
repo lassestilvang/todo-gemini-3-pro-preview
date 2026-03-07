@@ -104,6 +104,7 @@ export function CalendarGrid({
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); onDateClick(day); }}
                                     className="absolute bottom-1 right-1 h-4 w-4 flex items-center justify-center rounded text-muted-foreground/0 group-hover:text-muted-foreground/60 hover:!text-primary hover:bg-primary/10 transition-colors"
+                                    aria-label="Add task"
                                 >
                                     <Plus className="h-2.5 w-2.5" />
                                 </button>
