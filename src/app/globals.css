@@ -918,11 +918,6 @@ html.dark .calendar-v5-wrapper span.bg-primary {
 }
 
 /* "New Task" Button */
-html.dark .calendar-v5-wrapper button.bg-\\[\\#7FDDF0\\] {
-  color: oklch(0.12 0.02 260) !important;
-  background-color: #7FDDF0 !important;
-}
-
 html.dark .calendar-v5-wrapper button[class*="bg-[#7FDDF0]"] {
   color: oklch(0.12 0.02 260) !important;
   background-color: #7FDDF0 !important;
