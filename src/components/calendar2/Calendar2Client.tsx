@@ -129,24 +129,34 @@ export function Calendar2Client({ initialTasks, initialLists }: Calendar2ClientP
     });
   }, [tasks, selectedListId]);
 
-  const todayTasks = useMemo(() => {
-    return tasks
-      .filter((t) => {
-        const d = normalizeDate(t.dueDate);
-        return d && isToday(d) && !t.isCompleted;
-      })
-      .sort((a, b) => {
-        const da = normalizeDate(a.dueDate)!;
-        const db = normalizeDate(b.dueDate)!;
-        return da.getTime() - db.getTime();
-      });
-  }, [tasks]);
+  const { todayTasks, todayDoneTasks } = useMemo(() => {
+    const today: Task[] = [];
+    const todayDone: Task[] = [];
 
-  const todayDoneTasks = useMemo(() => {
-    return tasks.filter((t) => {
+    // ⚡ Bolt: Consolidate 2 O(N) array filter iterations into a single O(N) pass.
+    for (const t of tasks) {
       const d = normalizeDate(t.dueDate);
-      return d && isToday(d) && t.isCompleted;
+      const isDueToday = d && isToday(d);
+
+      if (isDueToday) {
+        if (t.isCompleted) {
+          todayDone.push(t);
+        } else {
+          today.push(t);
+        }
+      }
+    }
+
+    today.sort((a, b) => {
+      const da = normalizeDate(a.dueDate)!;
+      const db = normalizeDate(b.dueDate)!;
+      return da.getTime() - db.getTime();
     });
+
+    return {
+      todayTasks: today,
+      todayDoneTasks: todayDone,
+    };
   }, [tasks]);
 
   // --- Quick create dialog ---

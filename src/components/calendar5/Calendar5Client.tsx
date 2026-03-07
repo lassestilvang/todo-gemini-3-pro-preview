@@ -403,7 +403,7 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
         console.error("Failed to parse drop data", err);
       }
     },
-    [dispatch, taskMap, upsertTask, userId]
+    [dispatch, taskMap, upsertTask, userId, date, getWeekStartDay, view]
   );
 
   const handleExternalDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
@@ -476,9 +476,8 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
             onEventClick={handleEventClick}
             onEventDrop={handleEventDrop}
             onCalendarToggle={handleCalendarToggle}
-            // @ts-ignore - 'onTimeSlotClick' is supported internally by calendarkit-pro but missing from types
+            // @ts-expect-error - 'onTimeSlotClick' is supported internally by calendarkit-pro but missing from types
             onTimeSlotClick={handleTimeSlotClick}
-            // @ts-ignore - 'locale' is supported but may conflict if types are outdated
             locale={calendarLocale}
             newEventButton={{
               label: "New Task",

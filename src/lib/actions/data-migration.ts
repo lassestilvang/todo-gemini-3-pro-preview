@@ -304,20 +304,24 @@ export async function importUserData(jsonData: unknown) {
 
         if (parentUpdates.length > 0) {
             // ⚡ Bolt Opt: Single batched UPDATE replaces N per-task updates.
-            const taskIds = parentUpdates.map((update) => update.id)
-            const caseWhen = sql.join(
-                parentUpdates.map(
-                    (update) => sql`WHEN ${tasks.id} = ${update.id} THEN ${update.parentId}`
-                ),
-                sql` `
-            )
-
-            await db
-                .update(tasks)
-                .set({
-                    parentId: sql`CASE ${caseWhen} ELSE ${tasks.parentId} END`,
-                })
-                .where(and(inArray(tasks.id, taskIds), eq(tasks.userId, userId)))
+            // 🛡️ Sentinel: Chunk into max 1000 items to prevent DoS via unbounded SQL CASE/WHEN statement.
+            const BATCH_SIZE = 1000;
+            for (let i = 0; i < parentUpdates.length; i += BATCH_SIZE) {
+                const batch = parentUpdates.slice(i, i + BATCH_SIZE);
+                const taskIds = batch.map((update) => update.id);
+                const caseWhen = sql.join(
+                    batch.map(
+                        (update) => sql`WHEN ${tasks.id} = ${update.id} THEN ${update.parentId}`
+                    ),
+                    sql` `
+                );
+                await db
+                    .update(tasks)
+                    .set({
+                        parentId: sql`CASE ${caseWhen} ELSE ${tasks.parentId} END`,
+                    })
+                    .where(and(inArray(tasks.id, taskIds), eq(tasks.userId, userId)));
+            }
         }
 
         // 4. Import Task Labels
