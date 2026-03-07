@@ -473,7 +473,7 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
             onTimezoneChange={setTimezone}
             onEventClick={handleEventClick}
             onEventDrop={handleEventDrop}
-            onEventResize={(event, newStart, newEnd) => handleEventDrop(event, newStart, newEnd)}
+            onEventResize={(event: CalendarEvent, newStart: Date, newEnd: Date) => handleEventDrop(event, newStart, newEnd)}
             onCalendarToggle={handleCalendarToggle}
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore - 'onTimeSlotClick' is supported internally by calendarkit-pro but missing from types
