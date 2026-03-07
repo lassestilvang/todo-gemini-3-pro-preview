@@ -292,11 +292,8 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
       const durationMinutes = Math.max(1, Math.round((end.getTime() - start.getTime()) / 60000));
       const updates: { dueDate: Date; estimateMinutes?: number } = {
         dueDate: start,
+        estimateMinutes: durationMinutes,
       };
-
-      if (existing.estimateMinutes != null) {
-        updates.estimateMinutes = durationMinutes;
-      }
 
       upsertTask({ ...existing, ...updates });
       dispatch("updateTask", taskId, userId, {
