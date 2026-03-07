@@ -19,13 +19,13 @@ export function CalendarHeader({ currentMonth, onPrev, onNext, onToday }: Calend
                     {format(currentMonth, "MMMM yyyy")}
                 </h3>
                 <div className="flex items-center rounded-md border bg-background shadow-sm">
-                    <Button variant="ghost" size="icon" onClick={onPrev} className="h-7 w-7">
+                    <Button variant="ghost" size="icon" onClick={onPrev} className="h-7 w-7" aria-label="Previous month">
                         <ChevronLeft className="h-3.5 w-3.5" />
                     </Button>
                     <Button variant="ghost" size="sm" onClick={onToday} className="h-7 px-2 text-xs font-medium">
                         Today
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={onNext} className="h-7 w-7">
+                    <Button variant="ghost" size="icon" onClick={onNext} className="h-7 w-7" aria-label="Next month">
                         <ChevronRight className="h-3.5 w-3.5" />
                     </Button>
                 </div>

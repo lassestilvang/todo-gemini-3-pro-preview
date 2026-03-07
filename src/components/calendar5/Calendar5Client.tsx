@@ -55,6 +55,7 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
     const baseLocale = use24HourClock ? enGB : enUS;
     return {
       ...baseLocale,
+      is24Hour: use24HourClock,
       options: {
         ...baseLocale.options,
         weekStartsOn: getWeekStartDay(),
@@ -472,9 +473,8 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
             onTimezoneChange={setTimezone}
             onEventClick={handleEventClick}
             onEventDrop={handleEventDrop}
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore - 'onEventResize' is supported internally by calendarkit-pro but missing from types
-            onEventResize={(event, newEnd) => handleEventDrop(event, event.start, newEnd)}
+            // @ts-ignore - 'onEventResize' is supported by calendarkit-pro but missing from types
+            onEventResize={(event: CalendarEvent, newStart: Date, newEnd: Date) => handleEventDrop(event, newStart, newEnd)}
             onCalendarToggle={handleCalendarToggle}
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore - 'onTimeSlotClick' is supported internally by calendarkit-pro but missing from types
