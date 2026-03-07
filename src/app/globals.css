@@ -893,19 +893,28 @@ html.synthwave textarea:focus {
   box-shadow: inset 0 0 0 2px var(--primary) !important;
   background-color: hsl(var(--primary) / 0.1) !important;
 }
+
 /* -------------------------------------------------------------------------- */
 /*                     Calendar5 Dark Mode Contrast Fixes                     */
 /* -------------------------------------------------------------------------- */
 
-html.dark .calendar-main-wrapper .bg-primary,
-html.dark .calendar-main-wrapper [class*="bg-primary"] {
-  color: var(--primary-foreground) !important;
+html.dark .calendar-v5-wrapper .calendar-main-wrapper :is(.bg-primary, [class*="bg-primary"]) {
+  color: oklch(0.12 0.02 260) !important;
+  /* Force dark text on light primary */
 }
 
-html.dark .calendar-main-wrapper .bg-\\[\\#7FDDF0\\] {
-  color: #000 !important;
+html.dark .calendar-v5-wrapper .calendar-main-wrapper :is(.bg-\\[\\#7FDDF0\\], [class*="bg-[#7FDDF0]"]) {
+  color: oklch(0.12 0.02 260) !important;
+  /* Force dark text on cyan primary */
 }
 
-html.dark .calendar-main-wrapper .text-white {
-  color: var(--primary-foreground) !important;
+/* Ensure the text inside the current day active circle is dark */
+html.dark .calendar-v5-wrapper .calendar-main-wrapper :is(.text-white) {
+  color: oklch(0.12 0.02 260) !important;
+}
+
+/* New Event button inside header */
+html.dark .calendar-v5-wrapper .calendar-main-wrapper button[title="New Task"],
+html.dark .calendar-v5-wrapper .calendar-main-wrapper button:has(svg.lucide-plus) {
+  color: oklch(0.12 0.02 260) !important;
 }
