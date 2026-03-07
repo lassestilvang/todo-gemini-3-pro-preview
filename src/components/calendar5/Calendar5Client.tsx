@@ -55,6 +55,7 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
     const baseLocale = use24HourClock ? enGB : enUS;
     return {
       ...baseLocale,
+      code: use24HourClock ? "fr" : baseLocale.code,
       options: {
         ...baseLocale.options,
         weekStartsOn: getWeekStartDay(),
