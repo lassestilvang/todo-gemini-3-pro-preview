@@ -293,6 +293,18 @@ export function SyncStatus() {
         };
     }, [status, todoistIsSyncing, isOnline, failedCount, todoistHasIssues, pendingCount, processingCount]);
 
+    // ⚡ Bolt Opt: Consolidated 2 separate O(N) filters into a single O(N) pass.
+    // Both share the exact same dependency array `[pendingActions]`.
+    const { failedActions, pendingActionsList } = useMemo(() => {
+        const failed: PendingAction[] = [];
+        const pending: PendingAction[] = [];
+        for (const action of pendingActions) {
+            if (action.status === 'failed') failed.push(action);
+            else if (action.status === 'pending' || action.status === 'processing') pending.push(action);
+        }
+        return { failedActions: failed, pendingActionsList: pending };
+    }, [pendingActions]);
+
     if (!mounted) {
         return null;
     }
@@ -311,9 +323,6 @@ export function SyncStatus() {
     ) {
         return null;
     }
-
-    const failedActions = pendingActions.filter(a => a.status === 'failed');
-    const pendingActionsList = pendingActions.filter(a => a.status === 'pending' || a.status === 'processing');
     const todoistQueryError = todoistQuery.error instanceof Error ? todoistQuery.error.message : null;
     const todoistMutationError = todoistSyncMutation.error instanceof Error ? todoistSyncMutation.error.message : null;
     const todoistStatusLabel = todoistQuery.isError
