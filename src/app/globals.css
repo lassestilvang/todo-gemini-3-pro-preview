@@ -878,6 +878,16 @@ html.synthwave textarea:focus {
   background-color: var(--background) !important;
 }
 
+/* Fix text contrast */
+:is(.dark, .glassmorphism-dark, .performance-dark, .synthwave, .minimalist) .calendar-v5-wrapper .text-\[\#4C4C56\] {
+  color: var(--muted-foreground) !important;
+}
+
+/* Fix border contrast */
+:is(.dark, .glassmorphism-dark, .performance-dark, .synthwave, .minimalist) .calendar-v5-wrapper .border-\[\#E4E4EB\] {
+  border-color: var(--border) !important;
+}
+
 /* External Drag Highlight */
 .calendar-v5-wrapper [data-drag-over="true"] {
   box-shadow: inset 0 0 0 2px var(--primary) !important;
