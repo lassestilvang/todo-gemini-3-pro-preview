@@ -476,8 +476,11 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
             onEventClick={handleEventClick}
             onEventDrop={handleEventDrop}
             onCalendarToggle={handleCalendarToggle}
-            // @ts-expect-error - 'onTimeSlotClick' is supported internally by calendarkit-pro but missing from types
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore - 'onTimeSlotClick' is supported internally by calendarkit-pro but missing from types
             onTimeSlotClick={handleTimeSlotClick}
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore - 'locale' is supported but may conflict if types are outdated
             locale={calendarLocale}
             newEventButton={{
               label: "New Task",
