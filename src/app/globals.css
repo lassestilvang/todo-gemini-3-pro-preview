@@ -893,3 +893,35 @@ html.synthwave textarea:focus {
   box-shadow: inset 0 0 0 2px var(--primary) !important;
   background-color: hsl(var(--primary) / 0.1) !important;
 }
+
+/* -------------------------------------------------------------------------- */
+/*                     Calendar5 Dark Mode Contrast Fixes                     */
+/* -------------------------------------------------------------------------- */
+
+/* Active Date Circle in Sidebar and Grid */
+html.dark .calendar-v5-wrapper .bg-primary {
+  color: oklch(0.12 0.02 260) !important;
+}
+
+html.dark .calendar-v5-wrapper [class*="bg-primary"] {
+  color: oklch(0.12 0.02 260) !important;
+}
+
+/* Calendar V5 Dark Mode Contrast Overrides */
+html.dark .calendar-v5-wrapper [class*="bg-primary"],
+html.dark .calendar-v5-wrapper [class*="bg-[#"],
+html.dark .calendar-v5-wrapper .text-white {
+  color: oklch(0.12 0.02 260) !important;
+  /* Force dark text on light backgrounds */
+}
+
+/* Ensure current time indicator label keeps its background but correct text */
+html.dark .calendar-v5-wrapper .calendar-main-wrapper .bg-primary {
+  background-color: var(--primary) !important;
+}
+
+/* Fix New Task button specifically */
+html.dark .calendar-v5-wrapper button[class*="bg-primary"],
+html.dark .calendar-v5-wrapper button[class*="bg-[#"] {
+  color: oklch(0.12 0.02 260) !important;
+}
