@@ -907,28 +907,21 @@ html.dark .calendar-v5-wrapper [class*="bg-primary"] {
   color: oklch(0.12 0.02 260) !important;
 }
 
+/* Calendar V5 Dark Mode Contrast Overrides */
+html.dark .calendar-v5-wrapper [class*="bg-primary"],
+html.dark .calendar-v5-wrapper [class*="bg-[#"],
 html.dark .calendar-v5-wrapper .text-white {
   color: oklch(0.12 0.02 260) !important;
+  /* Force dark text on light backgrounds */
 }
 
-/* Time Indicator Label */
-html.dark .calendar-v5-wrapper span.bg-primary {
-  color: oklch(0.12 0.02 260) !important;
+/* Ensure current time indicator label keeps its background but correct text */
+html.dark .calendar-v5-wrapper .calendar-main-wrapper .bg-primary {
   background-color: var(--primary) !important;
 }
 
-/* "New Task" Button */
-html.dark .calendar-v5-wrapper button[class*="bg-[#7FDDF0]"] {
-  color: oklch(0.12 0.02 260) !important;
-  background-color: #7FDDF0 !important;
-}
-
-html.dark .calendar-v5-wrapper button[class*="bg-[#7fddf0]" i] {
-  color: oklch(0.12 0.02 260) !important;
-  background-color: #7FDDF0 !important;
-}
-
-html.dark .calendar-v5-wrapper button[title="New Task"],
-html.dark .calendar-v5-wrapper button:has(svg.lucide-plus) {
+/* Fix New Task button specifically */
+html.dark .calendar-v5-wrapper button[class*="bg-primary"],
+html.dark .calendar-v5-wrapper button[class*="bg-[#"] {
   color: oklch(0.12 0.02 260) !important;
 }
