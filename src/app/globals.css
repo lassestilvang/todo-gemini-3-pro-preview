@@ -893,3 +893,19 @@ html.synthwave textarea:focus {
   box-shadow: inset 0 0 0 2px var(--primary) !important;
   background-color: hsl(var(--primary) / 0.1) !important;
 }
+/* -------------------------------------------------------------------------- */
+/*                     Calendar5 Dark Mode Contrast Fixes                     */
+/* -------------------------------------------------------------------------- */
+
+html.dark .calendar-main-wrapper .bg-primary,
+html.dark .calendar-main-wrapper [class*="bg-primary"] {
+  color: var(--primary-foreground) !important;
+}
+
+html.dark .calendar-main-wrapper .bg-\\[\\#7FDDF0\\] {
+  color: #000 !important;
+}
+
+html.dark .calendar-main-wrapper .text-white {
+  color: var(--primary-foreground) !important;
+}
