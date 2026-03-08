@@ -51,6 +51,6 @@
 **Learning:** Elements styled with `opacity-0` that rely purely on `group-hover:opacity-100` remain invisible when focused by keyboard users, creating a frustrating experience.
 **Action:** Consistently pair hover opacity classes with focus alternatives: use `focus:opacity-100 focus-visible:opacity-100` for the focusable element itself, or `group-focus-within:opacity-100` on the wrapper if you want siblings to appear on focus.
 
-## 2025-03-07 - Pagination Button Accessibility
-**Learning:** Found that pagination-style icon buttons (like 'Previous month' / 'Next month' in calendars) often lack accessible names, making it impossible for screen reader users to understand their function since they only contain decorative icons.
+## 2025-03-08 - Pagination Button Accessibility
+**Learning:** Pagination-style icon buttons (like 'Previous month' / 'Next month' in calendars) often lack accessible names, making it impossible for screen reader users to understand their function since they only contain decorative icons.
 **Action:** When inspecting or adding navigation/pagination controls that only use icons (like `<ChevronLeft />` or `<ChevronRight />`), proactively add descriptive `aria-label` attributes to the wrapping `<Button>` component to provide clear semantic context.

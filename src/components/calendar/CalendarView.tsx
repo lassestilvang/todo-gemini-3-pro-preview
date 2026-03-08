@@ -180,6 +180,7 @@ export function CalendarView({ tasks }: CalendarViewProps) {
               size="icon"
               onClick={prevMonth}
               className="h-8 w-8"
+              aria-label="Previous month"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -196,6 +197,7 @@ export function CalendarView({ tasks }: CalendarViewProps) {
               size="icon"
               onClick={nextMonth}
               className="h-8 w-8"
+              aria-label="Next month"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
