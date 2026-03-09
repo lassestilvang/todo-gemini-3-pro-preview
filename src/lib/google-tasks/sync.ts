@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import {
     db,
     externalEntityMap,
@@ -204,13 +204,25 @@ async function syncTasklists(params: {
     }
 
     const remoteListIds = new Set(tasklists.map((list) => list.id));
+    const listIdsToDelete: number[] = [];
     for (const [localId, externalId] of listLocalToExternal.entries()) {
         if (!remoteListIds.has(externalId)) {
-            await db.delete(lists).where(and(eq(lists.id, localId), eq(lists.userId, userId)));
-            await db
-                .delete(externalEntityMap)
-                .where(and(eq(externalEntityMap.userId, userId), eq(externalEntityMap.provider, "google_tasks"), eq(externalEntityMap.entityType, "list"), eq(externalEntityMap.localId, localId)));
+            listIdsToDelete.push(localId);
         }
+    }
+
+    if (listIdsToDelete.length > 0) {
+        await db.delete(lists).where(and(eq(lists.userId, userId), inArray(lists.id, listIdsToDelete)));
+        await db
+            .delete(externalEntityMap)
+            .where(
+                and(
+                    eq(externalEntityMap.userId, userId),
+                    eq(externalEntityMap.provider, "google_tasks"),
+                    eq(externalEntityMap.entityType, "list"),
+                    inArray(externalEntityMap.localId, listIdsToDelete)
+                )
+            );
     }
 
     if (useUserMappings) {
