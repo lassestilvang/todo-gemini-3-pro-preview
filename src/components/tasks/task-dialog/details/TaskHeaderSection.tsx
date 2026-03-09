@@ -34,7 +34,7 @@ export function TaskHeaderSection({
                         onChange={setIcon}
                         userId={userId}
                         trigger={
-                            <Button variant="outline" size="icon" className="shrink-0 h-10 w-10" type="button">
+                            <Button variant="outline" size="icon-lg" type="button" aria-label="Pick an icon">
                                 {icon ? (
                                     <ResolvedIcon icon={icon} className="h-4 w-4" />
                                 ) : (
