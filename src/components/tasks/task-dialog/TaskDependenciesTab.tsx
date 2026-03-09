@@ -86,9 +86,8 @@ export function TaskDependenciesTab({
                             <Button
                                 type="button"
                                 variant="ghost"
-                                size="icon"
+                                size="icon-sm"
                                 onClick={() => handleRemoveBlocker(blocker.id)}
-                                className="h-8 w-8"
                                 aria-label={`Remove blocker ${blocker.title}`}
                             >
                                 <X className="h-4 w-4" />
