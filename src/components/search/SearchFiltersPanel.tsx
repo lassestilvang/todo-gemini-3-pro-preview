@@ -48,6 +48,24 @@ export function SearchFiltersPanel({
         (filters.status && filters.status !== "all") ||
         (filters.sort && filters.sort !== "relevance");
 
+    // ⚡ Bolt Opt: Replaced O(N) Array.find() inside render with O(1) Map lookups.
+    // This reduces the complexity of re-renders when interacting with filter badges or typing in search.
+    const listMap = React.useMemo(() => {
+        const map = new Map<number, string>();
+        for (let i = 0; i < allLists.length; i++) {
+            map.set(allLists[i].id, allLists[i].name);
+        }
+        return map;
+    }, [allLists]);
+
+    const labelMap = React.useMemo(() => {
+        const map = new Map<number, string>();
+        for (let i = 0; i < allLabels.length; i++) {
+            map.set(allLabels[i].id, allLabels[i].name);
+        }
+        return map;
+    }, [allLabels]);
+
     return (
         <div className="space-y-4">
             <div className="flex items-center gap-2 flex-wrap">
@@ -70,7 +88,7 @@ export function SearchFiltersPanel({
                 {filters.listId !== undefined && filters.listId !== null && (
                     <Badge variant="secondary" className="gap-1">
                         <FolderOpen className="h-3 w-3" />
-                        {allLists.find((l) => l.id === filters.listId)?.name ?? "List"}
+                        {listMap.get(filters.listId) ?? "List"}
                         <button onClick={() => onUpdateFilter("listId", undefined)} className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full" aria-label="Remove list filter">
                             <X className="h-3 w-3" />
                         </button>
@@ -79,7 +97,7 @@ export function SearchFiltersPanel({
                 {filters.labelId && (
                     <Badge variant="secondary" className="gap-1">
                         <Tag className="h-3 w-3" />
-                        {allLabels.find((l) => l.id === filters.labelId)?.name ?? "Label"}
+                        {labelMap.get(filters.labelId) ?? "Label"}
                         <button onClick={() => onUpdateFilter("labelId", undefined)} className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full" aria-label="Remove label filter">
                             <X className="h-3 w-3" />
                         </button>
