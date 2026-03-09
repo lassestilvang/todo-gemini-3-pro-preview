@@ -193,9 +193,8 @@ export function CalendarView({ tasks }: CalendarViewProps) {
             </Button>
             <Button
               variant="ghost"
-              size="icon"
+              size="icon-sm"
               onClick={nextMonth}
-              className="h-8 w-8"
               aria-label="Next month"
             >
               <ChevronRight className="h-4 w-4" />
