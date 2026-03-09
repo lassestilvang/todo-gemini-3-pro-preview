@@ -177,9 +177,8 @@ export function CalendarView({ tasks }: CalendarViewProps) {
           <div className="flex items-center rounded-md border bg-background shadow-sm">
             <Button
               variant="ghost"
-              size="icon"
+              size="icon-sm"
               onClick={prevMonth}
-              className="h-8 w-8"
               aria-label="Previous month"
             >
               <ChevronLeft className="h-4 w-4" />
