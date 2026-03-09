@@ -252,6 +252,7 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: neondatabase/create-branch-action@v6
         id: neon-branch
+        continue-on-error: true
         with:
           project_id: ${{ secrets.NEON_PROJECT_ID }}
           api_key: ${{ secrets.NEON_API_KEY }}
@@ -334,6 +335,7 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: neondatabase/create-branch-action@v6
         id: neon-branch
+        continue-on-error: true
         with:
           project_id: ${{ secrets.NEON_PROJECT_ID }}
           api_key: ${{ secrets.NEON_API_KEY }}
