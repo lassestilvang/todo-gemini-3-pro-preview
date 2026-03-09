@@ -38,7 +38,16 @@ function AiBreakdownDialogContent({ open, onOpenChange, taskTitle, onConfirm }: 
     const suggestions = shouldLoad ? (suggestionsQuery.data ?? EMPTY_SUGGESTIONS) : EMPTY_SUGGESTIONS;
     const isLoading = shouldLoad && suggestionsQuery.isLoading;
     const selectedCount = useMemo(
-        () => suggestions.reduce((count, _, i) => (excluded.has(i) ? count : count + 1), 0),
+        () => {
+            const excludedInCurrentSuggestions = Array.from(excluded).reduce((count, index) => {
+                if (index >= 0 && index < suggestions.length) {
+                    return count + 1;
+                }
+                return count;
+            }, 0);
+
+            return suggestions.length - excludedInCurrentSuggestions;
+        },
         [excluded, suggestions]
     );
 
