@@ -29,18 +29,6 @@ interface Calendar3ClientProps {
   initialLists: Array<{ id: number; name: string; color: string | null; icon: string | null; slug: string; position?: number }>;
 }
 
-function partitionTasks(tasks: Task[]) {
-  const active: Task[] = [];
-  const completed: Task[] = [];
-
-  for (const task of tasks) {
-    if (task.isCompleted) completed.push(task);
-    else active.push(task);
-  }
-
-  return { active, completed };
-}
-
 export default function Calendar3Client(props: Calendar3ClientProps) {
   return (
     <Suspense fallback={<div className="h-full flex items-center justify-center p-8">Loading calendar...</div>}>
@@ -111,42 +99,56 @@ function Calendar3ClientActual({ initialTasks, initialLists }: Calendar3ClientPr
 
   const [unscheduledOnly, setUnscheduledOnly] = useState(false);
 
-  const selectedListTasks = useMemo(() => {
-    return tasks.filter((task) => {
+  // ⚡ Bolt Opt: Consolidated O(N) tasks.filter passes and O(N) partitionTasks
+  // passes into a single O(N) pass, avoiding intermediate array allocations.
+  const { listActive, listCompleted } = useMemo(() => {
+    const active: Task[] = [];
+    const completed: Task[] = [];
+
+    for (let i = 0; i < tasks.length; i++) {
+      const task = tasks[i];
       const listId = task.listId ?? null;
+
+      let include = true;
       if (selectedListId === null) {
-        if (listId !== null) return false;
+        if (listId !== null) include = false;
       } else if (listId !== selectedListId) {
-        return false;
+        include = false;
       }
 
-      if (unscheduledOnly) {
-        return getTaskDueDate(task) === null;
+      if (include && unscheduledOnly) {
+        if (getTaskDueDate(task) !== null) include = false;
       }
 
-      return true;
-    });
+      if (include) {
+        if (task.isCompleted) completed.push(task);
+        else active.push(task);
+      }
+    }
+
+    return { listActive: active, listCompleted: completed };
   }, [tasks, selectedListId, unscheduledOnly]);
 
-  const todayTasks = useMemo(() => {
+  const { todayActive, todayCompleted } = useMemo(() => {
     const now = new Date();
     const todayStart = startOfDay(now);
     const todayEnd = endOfDay(now);
-    return tasks.filter((task) => {
-      const dueDate = getTaskDueDate(task);
-      if (!dueDate) return false;
-      return dueDate >= todayStart && dueDate <= todayEnd;
-    });
-  }, [tasks]);
 
-  const { active: listActive, completed: listCompleted } = useMemo(
-    () => partitionTasks(selectedListTasks),
-    [selectedListTasks]
-  );
-  const { active: todayActive, completed: todayCompleted } = useMemo(
-    () => partitionTasks(todayTasks),
-    [todayTasks]
-  );
+    const active: Task[] = [];
+    const completed: Task[] = [];
+
+    for (let i = 0; i < tasks.length; i++) {
+      const task = tasks[i];
+      const dueDate = getTaskDueDate(task);
+
+      if (dueDate && dueDate >= todayStart && dueDate <= todayEnd) {
+        if (task.isCompleted) completed.push(task);
+        else active.push(task);
+      }
+    }
+
+    return { todayActive: active, todayCompleted: completed };
+  }, [tasks]);
 
   const listDragContainerRef = useRef<HTMLDivElement | null>(null);
   const todayDragContainerRef = useRef<HTMLDivElement | null>(null);
