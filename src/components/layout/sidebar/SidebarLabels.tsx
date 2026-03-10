@@ -211,9 +211,8 @@ export function SidebarLabels({ labels: ssrLabels, userId }: SidebarLabelsProps)
                     </Tooltip>
                     <ManageLabelDialog
                         trigger={
-                            <Button variant="ghost" size="icon" className="h-7 w-7" title="Add Label" data-testid="add-label-button">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" title="Add Label" aria-label="Add Label" data-testid="add-label-button">
                                 <Plus className="h-4 w-4" />
-                                <span className="sr-only">Add Label</span>
                             </Button>
                         }
                         userId={userId}
