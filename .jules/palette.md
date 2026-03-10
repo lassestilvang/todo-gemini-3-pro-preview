@@ -58,3 +58,6 @@
 ## 2025-03-07 - Pagination Button Accessibility
 **Learning:** Found that pagination-style icon buttons (like 'Previous month' / 'Next month' in calendars) often lack accessible names, making it impossible for screen reader users to understand their function since they only contain decorative icons.
 **Action:** When inspecting or adding navigation/pagination controls that only use icons (like `<ChevronLeft />` or `<ChevronRight />`), proactively add descriptive `aria-label` attributes to the wrapping `<Button>` component to provide clear semantic context.
+## 2024-03-10 - Prefer aria-label on icon buttons over nested sr-only spans
+**Learning:** Using `aria-label` directly on icon-only interactive elements (like `<Button size="icon">`) is generally cleaner and provides a stronger accessible name than nesting a `<span className="sr-only">`. Also, ensure consistency when `title` is used for sighted users, `aria-label` should also be present for screen readers.
+**Action:** When creating icon-only buttons, directly use `aria-label` on the component and ensure it matches the `title` if present, instead of relying on a hidden span child.

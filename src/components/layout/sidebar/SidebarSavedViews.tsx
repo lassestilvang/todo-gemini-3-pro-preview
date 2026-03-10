@@ -21,7 +21,7 @@ function AddViewHelpDialog() {
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7" title="How to add a view">
+                <Button variant="ghost" size="icon" className="h-7 w-7" title="How to add a view" aria-label="How to add a view">
                     <Plus className="h-4 w-4" />
                 </Button>
             </DialogTrigger>
