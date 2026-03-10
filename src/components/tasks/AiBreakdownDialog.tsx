@@ -39,16 +39,18 @@ function AiBreakdownDialogContent({ open, onOpenChange, taskTitle, onConfirm }: 
     const isLoading = shouldLoad && suggestionsQuery.isLoading;
     const selectedCount = useMemo(
         () => {
-            const excludedInCurrentSuggestions = Array.from(excluded).reduce((count, index) => {
+            // ⚡ Bolt Opt: Replaced O(N) Array.from(set).reduce() with an O(1) set iteration logic.
+            // When suggestions change, stale excluded indices might persist. Instead of map/reduce array
+            // copies, we just count valid excluded indices using a simple iterator.
+            let validExcludedCount = 0;
+            for (const index of excluded) {
                 if (index >= 0 && index < suggestions.length) {
-                    return count + 1;
+                    validExcludedCount++;
                 }
-                return count;
-            }, 0);
-
-            return suggestions.length - excludedInCurrentSuggestions;
+            }
+            return suggestions.length - validExcludedCount;
         },
-        [excluded, suggestions]
+        [excluded, suggestions.length]
     );
 
     const handleToggle = (index: number) => {
