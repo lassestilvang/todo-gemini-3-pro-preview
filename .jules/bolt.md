@@ -116,3 +116,7 @@
 ## 2026-03-05 - Consolidating `useMemo` hooks
 **Learning:** Combining multiple O(N) `.filter()` passes into a single loop using `useMemo` is a powerful optimization. However, doing so is an anti-pattern if the original `useMemo` hooks had different dependency arrays (e.g. `[tasks]` vs `[tasks, visibleListIds]`). Coupling them forces the combined logic to re-run on any dependency change, degrading performance.
 **Action:** When consolidating loop passes, strictly verify that the new `useMemo` logic shares the exact same dependencies as the original separate blocks. Do not combine loops that evaluate different UI state conditions.
+
+## 2026-03-05 - O(N) Array.from().reduce() in useMemo
+**Learning:** Using `Array.from(set).reduce()` to calculate a remainder count is $O(N)$ and incurs unnecessary memory allocation for the intermediate array. For a set representing excluded items from an array, it's an $O(1)$ calculation.
+**Action:** Replace `Array.from(set).reduce()` with `Math.max(0, array.length - set.size)` if all set elements are guaranteed to be in-bounds, or simply iterate the set via `for...of` if bounds-checking is required, avoiding intermediate array allocations.
