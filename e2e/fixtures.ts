@@ -65,7 +65,7 @@ export async function authenticateTestUser(page: Page): Promise<boolean> {
     const cookieUrl = new URL(page.url());
     const setCookieHeader = response.headers()['set-cookie'];
     const headerValueMatch = setCookieHeader?.match(/wos-session-test=([^;]+)/);
-    const cookieValue = headerValueMatch?.[1] ?? sessionValue;
+    const cookieValue = headerValueMatch?.[1] ?? encodeURIComponent(sessionValue);
 
     const origins = new Set<string>([cookieUrl.origin]);
     const port = cookieUrl.port ? `:${cookieUrl.port}` : "";

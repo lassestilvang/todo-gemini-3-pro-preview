@@ -15,7 +15,7 @@ export async function suggestMetadata(
     userId: string
 ): Promise<SuggestionResult> {
     // 1. Check environment & client availability FIRST to avoid any DB calls if feature is disabled
-    if (process.env.E2E_TEST_MODE === 'true') {
+    if (process.env.NEXT_PUBLIC_E2E_TEST_MODE === 'true' || process.env.E2E_TEST_MODE === 'true') {
         return { listId: null, labelIds: [] };
     }
 

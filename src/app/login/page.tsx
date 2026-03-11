@@ -14,7 +14,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   let signUpUrl: string;
 
   // In E2E test mode, use placeholder URLs since we bypass WorkOS OAuth
-  if (process.env.E2E_TEST_MODE === 'true') {
+  if (process.env.NEXT_PUBLIC_E2E_TEST_MODE === 'true' || process.env.E2E_TEST_MODE === 'true') {
     signInUrl = '/api/test-auth';
     signUpUrl = '/api/test-auth';
   } else {

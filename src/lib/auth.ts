@@ -53,7 +53,7 @@ async function getTestUser(): Promise<AuthUser | null> {
     return null;
   }
 
-  if (process.env.E2E_TEST_MODE !== 'true') {
+  if (process.env.NEXT_PUBLIC_E2E_TEST_MODE !== 'true' && process.env.E2E_TEST_MODE !== 'true') {
     return null;
   }
 
@@ -61,8 +61,13 @@ async function getTestUser(): Promise<AuthUser | null> {
     const cookieStore = await cookies();
     const testSession = cookieStore.get('wos-session-test');
 
-    if (testSession) {
+    if (!testSession) {
+      console.log(`[AUTH] getTestUser: No wos-session-test cookie found. All cookies: ${cookieStore.getAll().map(c => c.name).join(', ')}`);
+    } else {
       const session = JSON.parse(testSession.value);
+      if (!session.user) console.log(`[AUTH] getTestUser: No user in session data.`);
+      if (!(session.expiresAt > Date.now())) console.log(`[AUTH] getTestUser: Session expired.`);
+
       if (session.user && session.expiresAt > Date.now()) {
         return {
           id: session.user.id,
@@ -128,7 +133,7 @@ async function getOrCreateBypassUser(
 }
 
 async function getBypassUser(): Promise<AuthUser | null> {
-  if (process.env.E2E_TEST_MODE === "true") {
+  if (process.env.NEXT_PUBLIC_E2E_TEST_MODE === "true" || process.env.E2E_TEST_MODE === "true") {
     return null;
   }
 
@@ -185,7 +190,7 @@ async function getBypassUser(): Promise<AuthUser | null> {
  */
 async function getCurrentUserImpl(): Promise<AuthUser | null> {
   // In E2E test mode, only use test session (skip WorkOS entirely)
-  if (process.env.NODE_ENV !== "production" && process.env.E2E_TEST_MODE === 'true') {
+  if (process.env.NODE_ENV !== "production" && (process.env.NEXT_PUBLIC_E2E_TEST_MODE === 'true' || process.env.E2E_TEST_MODE === 'true')) {
     return getTestUser();
   }
 
@@ -274,7 +279,7 @@ async function getCurrentUserImpl(): Promise<AuthUser | null> {
 }
 
 export const getCurrentUser =
-  isTestEnv || process.env.E2E_TEST_MODE === "true"
+  isTestEnv || process.env.NEXT_PUBLIC_E2E_TEST_MODE === "true" || process.env.E2E_TEST_MODE === "true"
     ? getCurrentUserImpl
     : cache(getCurrentUserImpl);
 

@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (process.env.E2E_TEST_MODE !== 'true') {
+  if (process.env.NEXT_PUBLIC_E2E_TEST_MODE !== 'true' && process.env.E2E_TEST_MODE !== 'true') {
     return NextResponse.json(
       { error: 'Test auth is only available in E2E test mode' },
       { status: 403 }
@@ -38,7 +38,8 @@ export async function POST(request: NextRequest) {
   }
 
   const secret = request.headers.get('x-e2e-secret');
-  if (!process.env.E2E_TEST_SECRET || !secret || !constantTimeEqual(secret, process.env.E2E_TEST_SECRET)) {
+  const expectedSecret = process.env.NEXT_PUBLIC_E2E_TEST_SECRET || process.env.E2E_TEST_SECRET;
+  if (!expectedSecret || !secret || !constantTimeEqual(secret, expectedSecret)) {
     return NextResponse.json(
       { error: 'Invalid or missing E2E test secret' },
       { status: 401 }
@@ -111,7 +112,7 @@ export async function DELETE(request: NextRequest) {
     );
   }
 
-  if (process.env.E2E_TEST_MODE !== 'true') {
+  if (process.env.NEXT_PUBLIC_E2E_TEST_MODE !== 'true' && process.env.E2E_TEST_MODE !== 'true') {
     return NextResponse.json(
       { error: 'Test auth is only available in E2E test mode' },
       { status: 403 }
@@ -119,7 +120,8 @@ export async function DELETE(request: NextRequest) {
   }
 
   const secret = request.headers.get('x-e2e-secret');
-  if (!process.env.E2E_TEST_SECRET || !secret || !constantTimeEqual(secret, process.env.E2E_TEST_SECRET)) {
+  const expectedSecret = process.env.NEXT_PUBLIC_E2E_TEST_SECRET || process.env.E2E_TEST_SECRET;
+  if (!expectedSecret || !secret || !constantTimeEqual(secret, expectedSecret)) {
     return NextResponse.json(
       { error: 'Invalid or missing E2E test secret' },
       { status: 401 }

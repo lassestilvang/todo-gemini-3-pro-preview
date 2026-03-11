@@ -43,7 +43,7 @@ export const TaskListPeriodSection = React.memo(function TaskListPeriodSection({
         <div className="rounded-lg border bg-muted/5">
             <button
                 type="button"
-                className="flex w-full items-center justify-between px-4 py-3"
+                className="flex w-full items-center justify-between px-4 py-3 rounded-lg focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-ring"
                 aria-expanded={!collapsed}
                 aria-controls={sectionId}
                 onClick={onToggle}
