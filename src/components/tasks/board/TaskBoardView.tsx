@@ -46,7 +46,7 @@ export function TaskBoardView({ tasks, userId, onEdit }: TaskBoardViewProps) {
   );
 
   const columnTasks = useMemo(
-    () => groupTasksByColumn(tasks, boardGroupMode, columns),
+    () => groupTasksByColumn(tasks, boardGroupMode, columns), // now uses default new Date() internally per call
     [tasks, boardGroupMode, columns]
   );
 
