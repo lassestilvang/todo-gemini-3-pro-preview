@@ -10,6 +10,8 @@ import { and, eq, inArray, sql } from "drizzle-orm"
 import type { NeonHttpQueryResult } from "drizzle-orm/neon-http"
 import { z } from "zod"
 import { revalidatePath, revalidateTag } from "next/cache"
+import { rateLimit } from "@/lib/rate-limit"
+import { ValidationError } from "@/lib/action-result"
 
 // Schema for validation
 const BackupSchema = z.object({
@@ -34,6 +36,12 @@ export async function exportUserData() {
     if (!user) throw new Error("Unauthorized")
 
     const userId = user.id
+
+    // Rate limit exports to prevent DoS (5 requests per hour)
+    const limit = await rateLimit(`data-migration:export:${userId}`, 5, 3600);
+    if (!limit.success) {
+        throw new ValidationError("Rate limit exceeded. Please try again later.");
+    }
 
     // Fetch all user data
     const [
@@ -132,6 +140,12 @@ export async function importUserData(jsonData: unknown) {
     if (!user) throw new Error("Unauthorized")
 
     const userId = user.id
+
+    // Rate limit imports to prevent DoS (5 requests per hour)
+    const limit = await rateLimit(`data-migration:import:${userId}`, 5, 3600);
+    if (!limit.success) {
+        throw new ValidationError("Rate limit exceeded. Please try again later.");
+    }
 
     // Validate Schema
     const result = BackupSchema.safeParse(jsonData)
