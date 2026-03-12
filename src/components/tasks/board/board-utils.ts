@@ -4,9 +4,8 @@ import {
   addDays,
   endOfWeek,
   addWeeks,
-  isToday as isTodayFn,
-  isTomorrow as isTomorrowFn,
-  isThisWeek,
+  isSameDay,
+  isSameWeek,
 } from "date-fns";
 import { isDueOverdue } from "@/lib/due-utils";
 
@@ -44,7 +43,12 @@ export function getBoardColumns(mode: BoardGroupMode): BoardColumn[] {
   }
 }
 
-export function getTaskColumnId(task: Task, mode: BoardGroupMode): string {
+export function getTaskColumnId(
+  task: Task,
+  mode: BoardGroupMode,
+  now: Date = new Date(),
+  tomorrow?: Date
+): string {
   switch (mode) {
     case "priority":
       return task.priority || "none";
@@ -52,11 +56,13 @@ export function getTaskColumnId(task: Task, mode: BoardGroupMode): string {
       if (!task.dueDate) return "no_date";
       const date =
         task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate);
-      const now = new Date();
+      // Use hoisted now parameter to prevent O(N) object allocations
       if (isDueOverdue({ dueDate: date, dueDatePrecision: task.dueDatePrecision ?? null }, now, false)) return "overdue";
-      if (isTodayFn(date)) return "today";
-      if (isTomorrowFn(date)) return "tomorrow";
-      if (isThisWeek(date, { weekStartsOn: 1 })) return "this_week";
+
+      if (isSameDay(date, now)) return "today";
+      const tm = tomorrow || addDays(now, 1);
+      if (isSameDay(date, tm)) return "tomorrow";
+      if (isSameWeek(date, now, { weekStartsOn: 1 })) return "this_week";
       return "later";
     }
     case "status":
@@ -102,14 +108,20 @@ export function getPatchForDrop(
 export function groupTasksByColumn(
   tasks: Task[],
   mode: BoardGroupMode,
-  columns: BoardColumn[]
+  columns: BoardColumn[],
+  now: Date = new Date()
 ): Map<string, Task[]> {
+  // ⚡ Bolt Opt: Hoist date-fns date boundaries to prevent recalculation inside the loop
+  const isDueDate = mode === "dueDate";
+  const tomorrow = isDueDate ? addDays(now, 1) : undefined;
+
   const groups = new Map<string, Task[]>();
   for (const col of columns) {
     groups.set(col.id, []);
   }
+
   for (const task of tasks) {
-    const colId = getTaskColumnId(task, mode);
+    const colId = getTaskColumnId(task, mode, now, tomorrow);
     const group = groups.get(colId);
     if (group) {
       group.push(task);
