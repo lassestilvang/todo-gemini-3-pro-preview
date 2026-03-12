@@ -59,8 +59,8 @@ export function getTaskColumnId(
       // Use hoisted now parameter to prevent O(N) object allocations
       if (isDueOverdue({ dueDate: date, dueDatePrecision: task.dueDatePrecision ?? null }, now, false)) return "overdue";
 
-      const tm = tomorrow || addDays(now, 1);
       if (isSameDay(date, now)) return "today";
+      const tm = tomorrow || addDays(now, 1);
       if (isSameDay(date, tm)) return "tomorrow";
       if (isSameWeek(date, now, { weekStartsOn: 1 })) return "this_week";
       return "later";
