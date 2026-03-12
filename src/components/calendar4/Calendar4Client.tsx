@@ -98,20 +98,29 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
         return map;
     }, [lists]);
 
-    const events = useMemo(() => tasks.filter(t => !t.isCompleted && visibleListIds.has(t.listId ?? null) && t.dueDate).map(t => {
-        const start = normalizeDate(t.dueDate)!;
-        const color = t.listId != null ? (listMapById.get(t.listId)?.color ?? "#71717a") : "#71717a";
-        return {
-            id: String(t.id),
-            title: t.title,
-            start: start.toISOString(),
-            end: t.estimateMinutes ? addMinutes(start, t.estimateMinutes).toISOString() : undefined,
-            backgroundColor: color,
-            borderColor: color,
-            extendedProps: { taskId: t.id },
-            allDay: !t.estimateMinutes,
-        };
-    }), [tasks, visibleListIds, listMapById]);
+    const events = useMemo(() => {
+        // ⚡ Bolt Opt: Replaced .filter().map() chain with a single O(N) loop
+        // Reduces object allocations and garbage collection overhead
+        const result = [];
+        for (let i = 0; i < tasks.length; i++) {
+            const t = tasks[i];
+            if (t.isCompleted || !t.dueDate || !visibleListIds.has(t.listId ?? null)) continue;
+
+            const start = normalizeDate(t.dueDate)!;
+            const color = t.listId != null ? (listMapById.get(t.listId)?.color ?? "#71717a") : "#71717a";
+            result.push({
+                id: String(t.id),
+                title: t.title,
+                start: start.toISOString(),
+                end: t.estimateMinutes ? addMinutes(start, t.estimateMinutes).toISOString() : undefined,
+                backgroundColor: color,
+                borderColor: color,
+                extendedProps: { taskId: t.id },
+                allDay: !t.estimateMinutes,
+            });
+        }
+        return result;
+    }, [tasks, visibleListIds, listMapById]);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleEventAction = useCallback((id: number, updates: any) => {
