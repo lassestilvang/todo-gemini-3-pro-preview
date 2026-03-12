@@ -107,7 +107,7 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
             if (t.isCompleted || !t.dueDate || !visibleListIds.has(t.listId ?? null)) continue;
 
             const start = normalizeDate(t.dueDate)!;
-            const color = t.listId != null ? (listMapById.get(t.listId)?.color ?? "#71717a") : "#71717a";
+const color = (t.listId != null ? listMapById.get(t.listId)?.color : undefined) ?? "#71717a";
             result.push({
                 id: String(t.id),
                 title: t.title,
