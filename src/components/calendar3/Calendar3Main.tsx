@@ -39,10 +39,19 @@ export function Calendar3Main({
   const use24h = use24HourClock ?? isSystem24Hour();
 
   const events = useMemo(() => {
-    return tasks
-      .filter((task) => Boolean(getTaskDueDate(task)))
-      .map(taskToEvent)
-      .filter(Boolean);
+    // ⚡ Bolt Opt: Replaced .filter().map().filter() chain with a single O(N) loop
+    // Reduces multiple array passes, object allocations, and GC overhead.
+    const result = [];
+    for (let i = 0; i < tasks.length; i++) {
+      const task = tasks[i];
+      if (getTaskDueDate(task)) {
+        const event = taskToEvent(task);
+        if (event) {
+          result.push(event);
+        }
+      }
+    }
+    return result;
   }, [tasks]);
 
   return (
