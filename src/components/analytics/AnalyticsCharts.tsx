@@ -59,7 +59,9 @@ const YAxis = dynamic<YAxisProps>(
   () => import("recharts").then((m) => m.YAxis),
   { ssr: false },
 );
-const Tooltip = dynamic<TooltipProps<unknown, string>>(
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const Tooltip = dynamic<TooltipProps<any, any>>(
+
   () => import("recharts").then((m) => m.Tooltip),
   { ssr: false },
 );
