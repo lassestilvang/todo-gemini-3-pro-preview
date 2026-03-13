@@ -72,4 +72,4 @@
 **Action:** When implementing expandable/collapsible sections, always pair `aria-expanded` on the button with `aria-controls` pointing to a unique `id` on the target container. Added `subtasks-${task.id}` to properly associate them.
 ## 2024-03-13 - Added ARIA label to IconPicker Shuffle button
 **Learning:** Found an accessibility issue pattern where icon-only buttons (`<Button size="icon">`) without text content lack explicit `aria-label` attributes for screen readers, such as the Shuffle ("Random Icon") button in `src/components/ui/icon-picker.tsx`.
-**Action:** Always ensure any `<Button>` variant designed solely for icon display (like `size="icon"`) includes an appropriate `aria-label` to provide semantic context for assistive technologies.
+**Action:** Always provide an `aria-label` on icon-only buttons. When a tooltip is also required, use a `Tooltip` component instead of the `title` attribute to ensure a consistent and accessible experience.
