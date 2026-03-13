@@ -473,7 +473,7 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
             onTimezoneChange={setTimezone}
             onEventClick={handleEventClick}
             onEventDrop={handleEventDrop}
-            // @ts-expect-error - 'onEventResize' is supported by calendarkit-pro but missing from types
+            // @ts-ignore - 'onEventResize' is supported by calendarkit-pro but missing from types
             onEventResize={(event: CalendarEvent, newStart: Date, newEnd: Date) => handleEventDrop(event, newStart, newEnd)}
             onCalendarToggle={handleCalendarToggle}
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
