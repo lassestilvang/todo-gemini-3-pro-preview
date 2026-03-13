@@ -159,7 +159,7 @@ export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps
                             <TabsTrigger value="icons" className="text-xs h-7">Icons</TabsTrigger>
                             <TabsTrigger value="upload" className="text-xs h-7">Upload</TabsTrigger>
                         </TabsList>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleShuffle} title="Random Icon"><Shuffle className="h-3.5 w-3.5" /></Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleShuffle} title="Random Icon" aria-label="Random Icon"><Shuffle className="h-3.5 w-3.5" /></Button>
                     </div>
 
                     {activeTab === "icons" && (
