@@ -58,6 +58,15 @@
 ## 2025-03-07 - Pagination Button Accessibility
 **Learning:** Found that pagination-style icon buttons (like 'Previous month' / 'Next month' in calendars) often lack accessible names, making it impossible for screen reader users to understand their function since they only contain decorative icons.
 **Action:** When inspecting or adding navigation/pagination controls that only use icons (like `<ChevronLeft />` or `<ChevronRight />`), proactively add descriptive `aria-label` attributes to the wrapping `<Button>` component to provide clear semantic context.
+
 ## 2024-03-10 - Prefer aria-label on icon buttons over nested sr-only spans
 **Learning:** Using `aria-label` directly on icon-only interactive elements (like `<Button size="icon">`) is generally cleaner and provides a stronger accessible name than nesting a `<span className="sr-only">`. Also, ensure consistency when `title` is used for sighted users, `aria-label` should also be present for screen readers.
 **Action:** When creating icon-only buttons, directly use `aria-label` on the component and ensure it matches the `title` if present, instead of relying on a hidden span child.
+
+## 2025-03-10 - Missing Focus Outlines on Custom Toggle Buttons
+**Learning:** Custom interactive elements designed from scratch (like the custom task list period toggle section `<button>`) often lack explicit focus indicators, creating severe accessibility barriers for keyboard users who cannot see where their focus is. Standard UI components usually provide this out-of-the-box, but custom implementations require manual `focus-visible` classes.
+**Action:** Always ensure custom `<button>` or interactive `<div>` implementations include standard focus-visible classes like `focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-ring` and an appropriate `rounded` utility so the focus ring aligns with the element's shape.
+
+## 2024-03-12 - Missing aria-controls on subtask expand button
+**Learning:** Found an accessibility issue pattern in the app where state-toggling buttons (like expanding/collapsing subtasks) had `aria-expanded` but were missing the corresponding `aria-controls` attribute linking them to the toggled container. This prevents screen readers from properly understanding what section is being controlled.
+**Action:** When implementing expandable/collapsible sections, always pair `aria-expanded` on the button with `aria-controls` pointing to a unique `id` on the target container. Added `subtasks-${task.id}` to properly associate them.

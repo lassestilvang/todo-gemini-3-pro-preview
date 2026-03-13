@@ -20,6 +20,7 @@ import {
 } from "./shared";
 
 import { requireUser } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
 
 // Import createTask for template instantiation
 import { createTask } from "./tasks";
@@ -67,6 +68,11 @@ async function createTemplateImpl(userId: string, name: string, content: string)
   }
   if (content.length > 100000) {
     throw new ValidationError("Template content is too large", { content: "Content must be 100,000 characters or less" });
+  }
+
+  const limit = await rateLimit(`template:create:${userId}`, 50, 3600);
+  if (!limit.success) {
+    throw new ValidationError("Rate limit exceeded. Please try again later.");
   }
 
   await db.insert(templates).values({
@@ -238,6 +244,11 @@ async function instantiateTemplateImpl(
 
   if (template.length === 0) {
     throw new NotFoundError("Template not found");
+  }
+
+  const limit = await rateLimit(`template:instantiate:${userId}`, 50, 3600);
+  if (!limit.success) {
+    throw new ValidationError("Rate limit exceeded. Please try again later.");
   }
 
   const data = JSON.parse(template[0].content);
