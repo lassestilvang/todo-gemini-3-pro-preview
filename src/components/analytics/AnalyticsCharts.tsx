@@ -59,7 +59,7 @@ const YAxis = dynamic<YAxisProps>(
   () => import("recharts").then((m) => m.YAxis),
   { ssr: false },
 );
-const Tooltip = dynamic<TooltipProps<any, any>>(
+const Tooltip = dynamic<TooltipProps<unknown, string>>(
   () => import("recharts").then((m) => m.Tooltip),
   { ssr: false },
 );
