@@ -70,3 +70,6 @@
 ## 2024-03-12 - Missing aria-controls on subtask expand button
 **Learning:** Found an accessibility issue pattern in the app where state-toggling buttons (like expanding/collapsing subtasks) had `aria-expanded` but were missing the corresponding `aria-controls` attribute linking them to the toggled container. This prevents screen readers from properly understanding what section is being controlled.
 **Action:** When implementing expandable/collapsible sections, always pair `aria-expanded` on the button with `aria-controls` pointing to a unique `id` on the target container. Added `subtasks-${task.id}` to properly associate them.
+## 2024-03-13 - Added ARIA label to IconPicker Shuffle button
+**Learning:** Found an accessibility issue pattern where icon-only buttons (`<Button size="icon">`) without text content lack explicit `aria-label` attributes for screen readers, such as the Shuffle ("Random Icon") button in `src/components/ui/icon-picker.tsx`.
+**Action:** Always ensure any `<Button>` variant designed solely for icon display (like `size="icon"`) includes an appropriate `aria-label` to provide semantic context for assistive technologies.
