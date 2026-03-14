@@ -52,6 +52,7 @@ export function SubtaskForm({ subtasks, onAdd, onRemove, onUpdate }: SubtaskForm
                   size="icon-sm"
                   onClick={() => onRemove(subtask.id)}
                   className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  aria-label="Delete subtask"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
