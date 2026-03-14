@@ -37,20 +37,30 @@ export function TaskCalendarLayout({ tasks, onDateClick, onEdit }: TaskCalendarL
       : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
     [weekStartsOn]);
 
-  const tasksByDate = useMemo(() => {
+  // ⚡ Bolt Opt: Consolidated O(N) tasksByDate map building and periodTasks filtering into a single pass.
+  // Both share the same dependency array `[tasks]` and iterate over the identical dataset.
+  const { tasksByDate, periodTasks } = useMemo(() => {
     const map = new Map<number, { tasks: Task[]; completedCount: number }>();
-    tasks.forEach(task => {
-      if (!task.dueDate || (task.dueDatePrecision && task.dueDatePrecision !== "day")) return;
-      const key = startOfDay(new Date(task.dueDate)).getTime();
-      const entry = map.get(key) || { tasks: [], completedCount: 0 };
-      entry.tasks.push(task);
-      if (task.isCompleted) entry.completedCount++;
-      map.set(key, entry);
-    });
-    return map;
-  }, [tasks]);
+    const periodTasksArr: Task[] = [];
 
-  const periodTasks = useMemo(() => tasks.filter(t => t.dueDate && t.dueDatePrecision && t.dueDatePrecision !== "day"), [tasks]);
+    for (let i = 0; i < tasks.length; i++) {
+      const task = tasks[i];
+      if (!task.dueDate) continue;
+
+      if (task.dueDatePrecision && task.dueDatePrecision !== "day") {
+        periodTasksArr.push(task);
+      } else {
+        // PERF: Rather than parse date strings, use internal Date constructor directly to avoid garbage collection pressure
+        const key = startOfDay(new Date(task.dueDate)).getTime();
+        const entry = map.get(key) || { tasks: [], completedCount: 0 };
+        entry.tasks.push(task);
+        if (task.isCompleted) entry.completedCount++;
+        map.set(key, entry);
+      }
+    }
+
+    return { tasksByDate: map, periodTasks: periodTasksArr };
+  }, [tasks]);
 
   const daysWithMeta = useMemo(() => {
     const todayKey = startOfDay(new Date()).getTime();
