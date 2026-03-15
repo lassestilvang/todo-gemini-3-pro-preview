@@ -73,3 +73,6 @@
 ## 2024-03-13 - Added ARIA label to IconPicker Shuffle button
 **Learning:** Found an accessibility issue pattern where icon-only buttons (`<Button size="icon">`) without text content lack explicit `aria-label` attributes for screen readers, such as the Shuffle ("Random Icon") button in `src/components/ui/icon-picker.tsx`.
 **Action:** Always provide an `aria-label` on icon-only buttons. When a tooltip is also required, use a `Tooltip` component instead of the `title` attribute to ensure a consistent and accessible experience.
+## 2024-05-28 - Clean up sr-only Spans within Buttons
+**Learning:** Adding a `span` with `sr-only` class inside a `<Button size="icon">` combined with other content (like icons) can sometimes be redundant or cause layout quirks, and is less semantic than applying the `aria-label` attribute directly to the parent interactive element. The standard accessibility pattern for icon-only buttons in this codebase should be to provide a direct `aria-label`.
+**Action:** Replace `sr-only` text spans within buttons with an explicit `aria-label` attribute directly on the `Button` or `button` tag itself to provide robust context for screen readers and cleaner markup.

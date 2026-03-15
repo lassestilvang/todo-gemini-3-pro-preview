@@ -80,9 +80,8 @@ export default async function LabelPage({ params }: LabelPageProps) {
                             label={label}
                             userId={user.id}
                             trigger={
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-foreground">
+                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-foreground" aria-label="Edit Label">
                                     <Settings2 className="h-4 w-4" />
-                                    <span className="sr-only">Edit Label</span>
                                 </Button>
                             }
                         />
