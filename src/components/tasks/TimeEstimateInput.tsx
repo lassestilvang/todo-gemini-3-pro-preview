@@ -188,6 +188,7 @@ export function TimeEstimateInput({ value, onChange, className }: TimeEstimateIn
                                 size="icon"
                                 className="h-6 w-6 shrink-0"
                                 onClick={() => onChange(null)}
+                                aria-label="Clear time estimate"
                             >
                                 <X className="h-3 w-3" />
                             </Button>
@@ -233,6 +234,7 @@ export function TimeEstimateInput({ value, onChange, className }: TimeEstimateIn
                                     size="icon"
                                     className="h-6 w-6 shrink-0"
                                     onClick={() => onChange(null)}
+                                    aria-label="Clear time estimate"
                                 >
                                     <X className="h-3 w-3" />
                                 </Button>
