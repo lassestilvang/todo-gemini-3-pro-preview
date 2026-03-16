@@ -5,3 +5,7 @@
 ## 2025-03-12 - Replaced Chained Array Methods with Single For Loops in Event Processing
 **Learning:** Chained array methods (e.g., `.filter().map()`, `.filter().flatMap()`, `.filter().map().filter()`) when processing large arrays of objects in performance critical areas like calendar `useMemo` hooks significantly increase object allocations, iteration overhead, and garbage collection pauses. Converting these chains to a single native `for` loop reduces time spent from ~1.9ms per 10k items to ~1.7ms and avoids creating multiple intermediate arrays.
 **Action:** When a `useMemo` processes a large list (like tasks) through multiple iterations (filter, map, flatMap), combine them into a single O(N) `for` loop to minimize intermediate allocations and redundant passes.
+
+## 2024-03-16 - [Replace O(N*M) Array.find with O(N+M) Map lookups]
+**Learning:** Found multiple instances where an array was being iterated, and for each item, `Array.find()` was called on another array to perform a join-like operation (e.g., matching mappings to projects/labels). This produces O(N*M) time complexity, and can cause observable delay in the UI when the arrays grow large.
+**Action:** When performing cross-references between two arrays, always precompute a `Map` from the secondary array before iterating over the primary array. This reduces the time complexity to O(N+M) using O(1) hash map lookups.
