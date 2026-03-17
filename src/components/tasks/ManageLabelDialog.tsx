@@ -173,6 +173,7 @@ function LabelForm({ label, userId, onClose }: { label?: { id: number; name: str
                         <button
                             key={c}
                             type="button"
+                            aria-label={`Select color ${c}`}
                             className={cn(
                                 "h-6 w-6 rounded-full border border-muted transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
                                 color === c ? "ring-2 ring-ring ring-offset-2 scale-110" : ""
