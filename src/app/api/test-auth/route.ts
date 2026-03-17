@@ -58,15 +58,14 @@ export async function POST(request: NextRequest) {
 
     // 1. Clear existing data for this specific test user for perfect isolation
     // Everything references users.id with onDelete: "cascade"
-    // ⚡ Bolt Opt: Parallelize deletes to reduce test reset latency.
-    await Promise.all([
-      db.delete(tasks).where(eq(tasks.userId, userToSync.id)),
-      db.delete(labels).where(eq(labels.userId, userToSync.id)),
-      db.delete(lists).where(eq(lists.userId, userToSync.id)),
-      db.delete(userStats).where(eq(userStats.userId, userToSync.id)),
-      db.delete(viewSettings).where(eq(viewSettings.userId, userToSync.id)),
-      db.delete(templates).where(eq(templates.userId, userToSync.id)),
-    ]);
+    // Note: Delete sequentially instead of concurrently via Promise.all
+    // to avoid database lock contention issues in SQLite tests
+    await db.delete(tasks).where(eq(tasks.userId, userToSync.id));
+    await db.delete(labels).where(eq(labels.userId, userToSync.id));
+    await db.delete(lists).where(eq(lists.userId, userToSync.id));
+    await db.delete(userStats).where(eq(userStats.userId, userToSync.id));
+    await db.delete(viewSettings).where(eq(viewSettings.userId, userToSync.id));
+    await db.delete(templates).where(eq(templates.userId, userToSync.id));
 
     // Reset initialization flag so syncUser recreates Inbox and Stats
     await db.update(users)

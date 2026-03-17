@@ -5,3 +5,6 @@
 ## 2025-03-12 - Replaced Chained Array Methods with Single For Loops in Event Processing
 **Learning:** Chained array methods (e.g., `.filter().map()`, `.filter().flatMap()`, `.filter().map().filter()`) when processing large arrays of objects in performance critical areas like calendar `useMemo` hooks significantly increase object allocations, iteration overhead, and garbage collection pauses. Converting these chains to a single native `for` loop reduces time spent from ~1.9ms per 10k items to ~1.7ms and avoids creating multiple intermediate arrays.
 **Action:** When a `useMemo` processes a large list (like tasks) through multiple iterations (filter, map, flatMap), combine them into a single O(N) `for` loop to minimize intermediate allocations and redundant passes.
+## 2025-03-15 - [Refactored formattedGroupNames to Hoist Dates]
+**Learning:** `date-fns` functions like `isToday`, `isTomorrow`, and `isThisYear` internally instantiate `new Date()` (`Date.now()`). When used in loops mapping over items, this creates hidden object allocations and garbage collection pressure.
+**Action:** Replaced `groupedEntries.forEach` with a native `for...of` loop, hoisted `today = new Date()` and `tomorrow = addDays(today, 1)` outside the loop, and replaced the date-fns calls with their allocation-free counterparts `isSameDay` and `isSameYear`.
