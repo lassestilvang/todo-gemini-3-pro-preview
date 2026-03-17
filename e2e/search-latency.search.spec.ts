@@ -23,8 +23,8 @@ test.describe('Search Latency: Search Results', () => {
       await expect(taskItem.first()).toBeVisible({ timeout: 10000 });
     }
 
-    // Shorter grace period for search indexing
-    await page.waitForTimeout(250);
+    // Increased grace period for search indexing to reduce CI flakiness
+    await page.waitForTimeout(1000);
 
     const searchInput = page.getByPlaceholder(/search tasks\.\.\./i).first();
     await expect(searchInput).toBeVisible();

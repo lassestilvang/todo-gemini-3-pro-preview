@@ -314,6 +314,8 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
                 : new Set(mappedLabelIds)
             : null;
 
+        const labelsToCreate = [];
+        const externalLabelIdsToCreate = [];
         for (const label of remoteLabelsById.values()) {
             if (scopedRemoteLabelIds && !scopedRemoteLabelIds.has(label.id)) {
                 continue;
@@ -322,25 +324,30 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
                 continue;
             }
 
-            const created = await db.insert(labels).values({
+            labelsToCreate.push({
                 userId,
                 name: label.name,
                 position: label.order ?? 0,
-            }).returning();
-
-            const localLabel = created[0];
-            if (!localLabel) {
-                continue;
-            }
-
-            await db.insert(externalEntityMap).values({
-                userId,
-                provider: "todoist" as const,
-                entityType: "label" as const,
-                localId: localLabel.id,
-                externalId: label.id,
             });
-            labelIdMap.set(label.id, localLabel.id);
+            externalLabelIdsToCreate.push(label.id);
+        }
+
+        if (labelsToCreate.length > 0) {
+            const createdLabels = await db.insert(labels).values(labelsToCreate).returning();
+
+            const mappingValues = createdLabels.map((localLabel, index) => {
+                const externalId = externalLabelIdsToCreate[index];
+                labelIdMap.set(externalId, localLabel.id);
+                return {
+                    userId,
+                    provider: "todoist" as const,
+                    entityType: "label" as const,
+                    localId: localLabel.id,
+                    externalId,
+                };
+            });
+
+            await db.insert(externalEntityMap).values(mappingValues);
         }
 
         const remoteLabelIdSet = new Set<string>();
