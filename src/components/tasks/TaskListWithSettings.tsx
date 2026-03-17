@@ -199,8 +199,7 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
             map.set(groupName, format(new Date(iso), formatStr));
         }
         return map;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [groupedEntries, settings.groupBy, now.toISOString().slice(0, 10)]);
+    }, [groupedEntries, settings.groupBy]);
 
     const groupedVirtualSections = useMemo<GroupedVirtualSection[]>(() => settings.groupBy === "none" ? [] : groupedEntries.map(([groupName, gTasks]) => {
         const active: Task[] = [], completed: Task[] = [];
