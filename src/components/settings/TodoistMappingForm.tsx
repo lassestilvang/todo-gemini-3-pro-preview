@@ -118,10 +118,10 @@ export function TodoistMappingForm() {
 
         // ⚡ Bolt Opt: Precompute maps to replace O(N*M) Array.find() inside loops with O(1) Map lookups
         const projectMappingsByProjectId = new Map(
-            (result.projectMappings ?? []).map(m => [m.projectId, m.listId])
+            (result.projectMappings ?? []).map((mapping) => [mapping.projectId, mapping.listId])
         );
         const labelMappingsByLabelId = new Map(
-            (result.labelMappings ?? []).map(m => [m.labelId, m.listId])
+            (result.labelMappings ?? []).map((mapping) => [mapping.labelId, mapping.listId])
         );
 
         const projectMap: Record<string, MappingSelection> = {};
