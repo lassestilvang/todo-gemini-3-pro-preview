@@ -61,7 +61,6 @@ export function UserProfile({ user }: UserProfileProps) {
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="w-full h-14 justify-between px-3 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground" data-testid="user-profile-button" aria-label="User Profile">
                     <div className="flex items-center gap-3 overflow-hidden">
-                        <span className="sr-only">User Profile</span>
                         <Avatar className="h-9 w-9 border border-border">
                             <AvatarImage src={user.avatarUrl || undefined} alt={displayName} />
                             <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
