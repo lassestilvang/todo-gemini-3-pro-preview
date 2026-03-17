@@ -41,8 +41,7 @@ export function TaskCalendarLayout({ tasks, onDateClick, onEdit }: TaskCalendarL
     const map = new Map<number, { tasks: Task[]; completedCount: number }>();
     const period: Task[] = [];
 
-    for (let i = 0; i < tasks.length; i++) {
-      const task = tasks[i];
+    for (const task of tasks) {
       if (!task.dueDate) continue;
 
       if (task.dueDatePrecision && task.dueDatePrecision !== "day") {
@@ -50,7 +49,7 @@ export function TaskCalendarLayout({ tasks, onDateClick, onEdit }: TaskCalendarL
         continue;
       }
 
-      const key = startOfDay(new Date(task.dueDate)).getTime();
+      const key = startOfDay(task.dueDate).getTime();
       const entry = map.get(key) || { tasks: [], completedCount: 0 };
       entry.tasks.push(task);
       if (task.isCompleted) entry.completedCount++;
