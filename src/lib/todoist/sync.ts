@@ -347,9 +347,7 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
                 };
             });
 
-            if (mappingValues.length > 0) {
-                await db.insert(externalEntityMap).values(mappingValues);
-            }
+            await db.insert(externalEntityMap).values(mappingValues);
         }
 
         const remoteLabelIdSet = new Set<string>();

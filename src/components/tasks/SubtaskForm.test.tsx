@@ -114,16 +114,12 @@ describe("SubtaskForm", () => {
     );
 
     // Find delete buttons (there should be 2)
-    const deleteButtons = screen.getAllByRole("button", { name: "" });
-    // Filter to only the delete buttons (they have the Trash2 icon)
-    const trashButtons = deleteButtons.filter(btn => 
-      btn.querySelector("svg") && btn.classList.contains("text-destructive")
-    );
+    const deleteButtons = screen.getAllByRole("button", { name: "Delete subtask" });
     
-    expect(trashButtons).toHaveLength(2);
+    expect(deleteButtons).toHaveLength(2);
     
     // Click the first delete button
-    fireEvent.click(trashButtons[0]);
+    fireEvent.click(deleteButtons[0]);
     expect(onRemove).toHaveBeenCalledWith("subtask-1");
   });
 
