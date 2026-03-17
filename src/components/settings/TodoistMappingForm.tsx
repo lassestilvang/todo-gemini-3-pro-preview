@@ -116,16 +116,22 @@ export function TodoistMappingForm() {
             return { success: false as const, error: result.error ?? "Failed to load Todoist mapping data." };
         }
 
+        // ⚡ Bolt Opt: Precompute maps to replace O(N*M) Array.find() inside loops with O(1) Map lookups
+        const projectMappingsByProjectId = new Map(
+            (result.projectMappings ?? []).map((mapping) => [mapping.projectId, mapping.listId])
+        );
+        const labelMappingsByLabelId = new Map(
+            (result.labelMappings ?? []).map((mapping) => [mapping.labelId, mapping.listId])
+        );
+
         const projectMap: Record<string, MappingSelection> = {};
         for (const project of result.projects ?? []) {
-            const match = result.projectMappings?.find((mapping) => mapping.projectId === project.id);
-            projectMap[project.id] = match?.listId ?? null;
+            projectMap[project.id] = projectMappingsByProjectId.get(project.id) ?? null;
         }
 
         const labelMap: Record<string, MappingSelection> = {};
         for (const label of result.labels ?? []) {
-            const match = result.labelMappings?.find((mapping) => mapping.labelId === label.id);
-            labelMap[label.id] = match?.listId ?? null;
+            labelMap[label.id] = labelMappingsByLabelId.get(label.id) ?? null;
         }
 
         return {

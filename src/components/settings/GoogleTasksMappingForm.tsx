@@ -73,10 +73,14 @@ export function GoogleTasksMappingForm() {
                 return;
             }
 
+            // ⚡ Bolt Opt: Precompute map to replace O(N*M) Array.find() inside loop with O(1) Map lookup
+            const listMappingsByTasklistId = new Map(
+                (result.listMappings ?? []).map((item) => [item.tasklistId, item.listId])
+            );
+
             const mapping: Record<string, number | null> = {};
             for (const tasklist of result.tasklists ?? []) {
-                const match = result.listMappings?.find((item) => item.tasklistId === tasklist.id);
-                mapping[tasklist.id] = match?.listId ?? null;
+                mapping[tasklist.id] = listMappingsByTasklistId.get(tasklist.id) ?? null;
             }
 
             dispatchUI({
