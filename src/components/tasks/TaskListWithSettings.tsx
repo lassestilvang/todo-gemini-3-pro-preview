@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback, Suspense, useReducer } from "react";
 import dynamic from "next/dynamic";
-import { format, isToday, isTomorrow, isThisYear } from "date-fns";
+import { format, isSameDay, isSameYear, addDays } from "date-fns";
 
 import { Task } from "@/lib/types";
 import { ViewSettings, defaultViewSettings } from "@/lib/view-settings";
@@ -174,11 +174,20 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
     const formattedGroupNames = useMemo(() => {
         const map = new Map<string, string>();
         if (settings.groupBy !== "dueDate") return map;
-        groupedEntries.forEach(([groupName]) => {
-            if (groupName === "No Date") return map.set(groupName, groupName);
+
+        // ⚡ Bolt Opt: Hoist dates outside loop and use allocation-free checks
+        const today = new Date();
+        const tomorrow = addDays(today, 1);
+
+        for (const [groupName] of groupedEntries) {
+            if (groupName === "No Date") {
+                map.set(groupName, groupName);
+                continue;
+            }
             if (!groupName.includes(":")) {
                 const d = new Date(groupName);
-                return map.set(groupName, isToday(d) ? "Today" : isTomorrow(d) ? "Tomorrow" : format(d, isThisYear(d) ? "EEEE, MMM do" : "EEEE, MMM do, yyyy"));
+                map.set(groupName, isSameDay(d, today) ? "Today" : isSameDay(d, tomorrow) ? "Tomorrow" : format(d, isSameYear(d, today) ? "EEEE, MMM do" : "EEEE, MMM do, yyyy"));
+                continue;
             }
             const [p, iso] = groupName.split(":");
             const periodFormatByPrecision: Partial<Record<PeriodPrecision, string>> = {
@@ -188,9 +197,9 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
             };
             const formatStr = periodFormatByPrecision[p as PeriodPrecision] ?? "MMM d";
             map.set(groupName, format(new Date(iso), formatStr));
-        });
+        }
         return map;
-    }, [groupedEntries, settings.groupBy]);
+    }, [groupedEntries, settings.groupBy, now.toISOString().slice(0, 10)]);
 
     const groupedVirtualSections = useMemo<GroupedVirtualSection[]>(() => settings.groupBy === "none" ? [] : groupedEntries.map(([groupName, gTasks]) => {
         const active: Task[] = [], completed: Task[] = [];

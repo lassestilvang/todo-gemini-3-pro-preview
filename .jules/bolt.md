@@ -9,3 +9,6 @@
 ## 2025-03-16 - Replace O(N*M) Array.find with O(N+M) Map lookups
 **Learning:** Found multiple instances where an array was being iterated, and for each item, `Array.find()` was called on another array to perform a join-like operation (e.g., matching mappings to projects/labels). This produces O(N*M) time complexity, and can cause observable delay in the UI when the arrays grow large.
 **Action:** When performing cross-references between two arrays, always precompute a `Map` from the secondary array before iterating over the primary array. This reduces the time complexity to O(N+M) using O(1) hash map lookups.
+## 2025-03-15 - [Refactored formattedGroupNames to Hoist Dates]
+**Learning:** `date-fns` functions like `isToday`, `isTomorrow`, and `isThisYear` internally instantiate `new Date()` (`Date.now()`). When used in loops mapping over items, this creates hidden object allocations and garbage collection pressure.
+**Action:** Replaced `groupedEntries.forEach` with a native `for...of` loop, hoisted `today = new Date()` and `tomorrow = addDays(today, 1)` outside the loop, and replaced the date-fns calls with their allocation-free counterparts `isSameDay` and `isSameYear`.

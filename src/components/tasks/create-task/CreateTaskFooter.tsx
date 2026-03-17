@@ -53,13 +53,13 @@ export function CreateTaskFooter({
                             onClick={onAiEnhance}
                             disabled={isAiLoading || !title.trim()}
                             className="text-purple-500 hover:text-purple-600 hover:bg-purple-50"
+                            aria-label="Auto-detect details from text"
                         >
                             {isAiLoading ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
                                 <Sparkles className="h-4 w-4" />
                             )}
-                            <span className="ml-2 sr-only">AI Detect</span>
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
