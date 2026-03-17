@@ -37,20 +37,27 @@ export function TaskCalendarLayout({ tasks, onDateClick, onEdit }: TaskCalendarL
       : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
     [weekStartsOn]);
 
-  const tasksByDate = useMemo(() => {
+  const { tasksByDate, periodTasks } = useMemo(() => {
     const map = new Map<number, { tasks: Task[]; completedCount: number }>();
-    tasks.forEach(task => {
-      if (!task.dueDate || (task.dueDatePrecision && task.dueDatePrecision !== "day")) return;
+    const period: Task[] = [];
+
+    for (let i = 0; i < tasks.length; i++) {
+      const task = tasks[i];
+      if (!task.dueDate) continue;
+
+      if (task.dueDatePrecision && task.dueDatePrecision !== "day") {
+        period.push(task);
+        continue;
+      }
+
       const key = startOfDay(new Date(task.dueDate)).getTime();
       const entry = map.get(key) || { tasks: [], completedCount: 0 };
       entry.tasks.push(task);
       if (task.isCompleted) entry.completedCount++;
       map.set(key, entry);
-    });
-    return map;
+    }
+    return { tasksByDate: map, periodTasks: period };
   }, [tasks]);
-
-  const periodTasks = useMemo(() => tasks.filter(t => t.dueDate && t.dueDatePrecision && t.dueDatePrecision !== "day"), [tasks]);
 
   const daysWithMeta = useMemo(() => {
     const todayKey = startOfDay(new Date()).getTime();
