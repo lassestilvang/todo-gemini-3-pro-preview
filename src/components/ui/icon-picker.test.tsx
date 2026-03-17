@@ -48,13 +48,13 @@ describe("IconPickerIconsTab", () => {
 
         // Check color buttons
         COMMON_COLORS.forEach((color) => {
-            const button = screen.getByLabelText(`Select ${color} color`);
+            const button = screen.getByRole("button", { name: `Select ${color} color` });
             expect(button).toBeInTheDocument();
             expect(button.getAttribute("aria-pressed")).toBe("false");
         });
 
         // Check "None" button
-        const noneButton = screen.getByLabelText("Clear color selection");
+        const noneButton = screen.getByRole("button", { name: "Clear color selection" });
         expect(noneButton).toBeInTheDocument();
         expect(noneButton.getAttribute("aria-pressed")).toBe("true"); // selectedColor is null
     });
@@ -72,7 +72,7 @@ describe("IconPickerIconsTab", () => {
         );
 
         filteredStandardIcons.forEach((icon) => {
-            const button = screen.getByLabelText(`Select ${icon.name} icon`);
+            const button = screen.getByRole("button", { name: `Select ${icon.name} icon` });
             expect(button).toBeInTheDocument();
         });
     });
@@ -92,10 +92,10 @@ describe("IconPickerIconsTab", () => {
             </Tabs>
         );
 
-        const selectedButton = screen.getByLabelText(`Select ${selectedColor} color`);
+        const selectedButton = screen.getByRole("button", { name: `Select ${selectedColor} color` });
         expect(selectedButton.getAttribute("aria-pressed")).toBe("true");
 
-        const noneButton = screen.getByLabelText("Clear color selection");
+        const noneButton = screen.getByRole("button", { name: "Clear color selection" });
         expect(noneButton.getAttribute("aria-pressed")).toBe("false");
     });
 });
