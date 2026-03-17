@@ -199,7 +199,7 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
             map.set(groupName, format(new Date(iso), formatStr));
         }
         return map;
-    }, [groupedEntries, settings.groupBy]);
+    }, [groupedEntries, settings.groupBy, now.toISOString().slice(0, 10)]);
 
     const groupedVirtualSections = useMemo<GroupedVirtualSection[]>(() => settings.groupBy === "none" ? [] : groupedEntries.map(([groupName, gTasks]) => {
         const active: Task[] = [], completed: Task[] = [];
