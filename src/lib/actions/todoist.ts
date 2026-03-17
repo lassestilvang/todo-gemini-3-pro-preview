@@ -439,6 +439,10 @@ export async function setTodoistProjectMappings(mappings: { projectId: string; l
         return { success: false, error: "Not authenticated" };
     }
 
+    if (mappings.length > 1000) {
+        return { success: false, error: "Too many mappings. Limit is 1000." };
+    }
+
     if (hasDuplicateStrings(mappings.map((m) => m.projectId))) {
         return { success: false, error: "Duplicate Todoist project mappings are not allowed." };
     }
@@ -521,6 +525,10 @@ export async function setTodoistLabelMappings(mappings: { labelId: string; listI
     const user = await getCurrentUser();
     if (!user) {
         return { success: false, error: "Not authenticated" };
+    }
+
+    if (mappings.length > 1000) {
+        return { success: false, error: "Too many mappings. Limit is 1000." };
     }
 
     if (hasDuplicateStrings(mappings.map((m) => m.labelId))) {

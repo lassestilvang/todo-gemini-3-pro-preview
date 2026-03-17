@@ -134,6 +134,10 @@ export async function setGoogleTasksListMappings(mappings: { tasklistId: string;
         return { success: false, error: "Not authenticated" };
     }
 
+    if (mappings.length > 1000) {
+        return { success: false, error: "Too many mappings. Limit is 1000." };
+    }
+
     const listIds = mappings
         .map((m) => m.listId)
         .filter((id): id is number => id !== null);
