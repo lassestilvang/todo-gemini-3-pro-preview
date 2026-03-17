@@ -29,7 +29,7 @@ export function IconPickerIconsTab({ state, dispatch, filteredStandardIcons, han
                             )}
                             style={{ backgroundColor: c }}
                             title={c}
-                            aria-label={`Select ${c} color`}
+                            aria-label={`Select color ${c}`}
                             aria-pressed={selectedColor === c}
                         />
                     ))}

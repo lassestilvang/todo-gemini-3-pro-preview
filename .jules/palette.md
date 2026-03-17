@@ -76,3 +76,6 @@
 ## 2024-05-28 - Clean up sr-only Spans within Buttons
 **Learning:** Adding a `span` with `sr-only` class inside a `<Button size="icon">` combined with other content (like icons) can sometimes be redundant or cause layout quirks, and is less semantic than applying the `aria-label` attribute directly to the parent interactive element. The standard accessibility pattern for icon-only buttons in this codebase should be to provide a direct `aria-label`.
 **Action:** Replace `sr-only` text spans within buttons with an explicit `aria-label` attribute directly on the `Button` or `button` tag itself to provide robust context for screen readers and cleaner markup.
+## 2024-05-17 - Color Picker Accessibility
+**Learning:** Found that custom color picker components using raw `<button>` elements with `style={{ backgroundColor: c }}` lacked any accessible name, making them completely invisible to screen readers since they have no inner text or SVG with a title.
+**Action:** Always add an explicit `aria-label` (e.g., `aria-label={\`Select color ${c}\`}`) to buttons that rely solely on CSS backgrounds or colors to convey their purpose.
