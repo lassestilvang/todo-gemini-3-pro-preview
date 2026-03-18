@@ -48,7 +48,7 @@ describe("IconPickerIconsTab", () => {
 
         // Check color buttons
         COMMON_COLORS.forEach((color) => {
-            const button = screen.getByRole("button", { name: `Select ${color} color` });
+            const button = screen.getByRole("button", { name: `Select color ${color}` });
             expect(button).toBeInTheDocument();
             expect(button.getAttribute("aria-pressed")).toBe("false");
         });
@@ -92,7 +92,7 @@ describe("IconPickerIconsTab", () => {
             </Tabs>
         );
 
-        const selectedButton = screen.getByRole("button", { name: `Select ${selectedColor} color` });
+        const selectedButton = screen.getByRole("button", { name: `Select color ${selectedColor}` });
         expect(selectedButton.getAttribute("aria-pressed")).toBe("true");
 
         const noneButton = screen.getByRole("button", { name: "Clear color selection" });

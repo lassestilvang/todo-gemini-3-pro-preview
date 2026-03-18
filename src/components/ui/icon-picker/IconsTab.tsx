@@ -30,7 +30,7 @@ export function IconPickerIconsTab({ state, dispatch, filteredStandardIcons, han
                             style={{ backgroundColor: c }}
                             title={c}
                             aria-label={`Select color ${c}`}
-                            aria-pressed={selectedColor === c}
+                            aria-pressed={selectedColor === c ? "true" : "false"}
                         />
                     ))}
                     <button
@@ -41,7 +41,7 @@ export function IconPickerIconsTab({ state, dispatch, filteredStandardIcons, han
                         )}
                         title="None"
                         aria-label="Clear color selection"
-                        aria-pressed={!selectedColor}
+                        aria-pressed={!selectedColor ? "true" : "false"}
                     >
                         <X className="h-3 w-3" />
                     </button>
