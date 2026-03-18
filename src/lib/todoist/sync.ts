@@ -315,7 +315,7 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
             : null;
 
         const labelsToCreate = [];
-        const externalLabelIdsToCreate = [];
+        const externalLabelIdsToCreate: string[] = [];
         for (const label of remoteLabelsById.values()) {
             if (scopedRemoteLabelIds && !scopedRemoteLabelIds.has(label.id)) {
                 continue;

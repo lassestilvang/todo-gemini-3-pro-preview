@@ -13,7 +13,7 @@ import { useTaskStore } from "@/lib/store/task-store";
 import { useListStore } from "@/lib/store/list-store";
 import { useSync } from "@/components/providers/sync-provider";
 import { useUser } from "@/components/providers/UserProvider";
-import { startOfDay, isToday } from "date-fns";
+import { startOfDay, isSameDay } from "date-fns";
 import type { Task } from "@/lib/types";
 
 interface Calendar2ClientProps {
@@ -133,10 +133,11 @@ export function Calendar2Client({ initialTasks, initialLists }: Calendar2ClientP
     const today: Task[] = [];
     const todayDone: Task[] = [];
 
-    // ⚡ Bolt: Consolidate 2 O(N) array filter iterations into a single O(N) pass.
+    const now = new Date(); // Hoisted Date object
+    // ⚡ Bolt Opt: Avoid O(N) internal Date allocations by hoisting `now`
     for (const t of tasks) {
       const d = normalizeDate(t.dueDate);
-      const isDueToday = d && isToday(d);
+      const isDueToday = d && isSameDay(d, now);
 
       if (isDueToday) {
         if (t.isCompleted) {
