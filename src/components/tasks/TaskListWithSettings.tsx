@@ -171,6 +171,7 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
         }
     };
 
+    const nowIsoDate = now.toISOString().slice(0, 10);
     const formattedGroupNames = useMemo(() => {
         const map = new Map<string, string>();
         if (settings.groupBy !== "dueDate") return map;
@@ -199,7 +200,8 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
             map.set(groupName, format(new Date(iso), formatStr));
         }
         return map;
-    }, [groupedEntries, settings.groupBy]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [groupedEntries, settings.groupBy, nowIsoDate]);
 
     const groupedVirtualSections = useMemo<GroupedVirtualSection[]>(() => settings.groupBy === "none" ? [] : groupedEntries.map(([groupName, gTasks]) => {
         const active: Task[] = [], completed: Task[] = [];
