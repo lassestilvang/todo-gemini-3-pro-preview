@@ -18,14 +18,14 @@ const BackupSchema = z.object({
     version: z.number(),
     timestamp: z.string(),
     data: z.object({
-        lists: z.array(z.any()),
-        labels: z.array(z.any()),
-        tasks: z.array(z.any()),
-        taskLabels: z.array(z.any()),
-        reminders: z.array(z.any()),
-        templates: z.array(z.any()),
-        savedViews: z.array(z.any()),
-        viewSettings: z.array(z.any()),
+        lists: z.array(z.any()).max(10000),
+        labels: z.array(z.any()).max(10000),
+        tasks: z.array(z.any()).max(100000),
+        taskLabels: z.array(z.any()).max(200000),
+        reminders: z.array(z.any()).max(10000),
+        templates: z.array(z.any()).max(10000),
+        savedViews: z.array(z.any()).max(10000),
+        viewSettings: z.array(z.any()).max(10000),
     })
 })
 
