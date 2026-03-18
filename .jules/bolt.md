@@ -12,3 +12,7 @@
 ## 2025-03-15 - [Refactored formattedGroupNames to Hoist Dates]
 **Learning:** `date-fns` functions like `isToday`, `isTomorrow`, and `isThisYear` internally instantiate `new Date()` (`Date.now()`). When used in loops mapping over items, this creates hidden object allocations and garbage collection pressure.
 **Action:** Replaced `groupedEntries.forEach` with a native `for...of` loop, hoisted `today = new Date()` and `tomorrow = addDays(today, 1)` outside the loop, and replaced the date-fns calls with their allocation-free counterparts `isSameDay` and `isSameYear`.
+
+## 2025-03-22 - Consolidate Multiple Iterations into a Single Pass in useMemo
+**Learning:** Having multiple sequential iterations over the same large array within or across different `useMemo` hooks (e.g., using `forEach` to build a map, then `.filter` to extract a sub-list) causes redundant O(N) operations and object allocations. Consolidating these passes into a single native `for` loop significantly reduces overhead during render, especially for large datasets like tasks.
+**Action:** When deriving multiple state structures from a single large array, merge the logic into a single native `for` loop within a shared `useMemo` that returns an object containing the derived structures.

@@ -1,0 +1,102 @@
+src/components/calendar/CalendarView.tsx-179-              variant="ghost"
+src/components/calendar/CalendarView.tsx-187-              variant="ghost"
+src/components/calendar/CalendarView.tsx-195-              variant="ghost"
+src/components/search/SearchFiltersPanel.tsx:83:                    <Button variant="ghost" size="sm" onClick={onClearFilters} className="text-muted-foreground">
+src/components/search/SearchPageClient.tsx:153:                    <Button type="button" variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0" onClick={() => { dispatch({ type: 'SET_QUERY', payload: "" }); inputRef.current?.focus(); }}>
+src/components/calendar3/Calendar3TaskColumn.tsx-121-              variant="ghost"
+src/components/tasks/calendar/parts/CalendarHeader.tsx:22:                    <Button variant="ghost" size="icon" onClick={onPrev} className="h-7 w-7" aria-label="Previous month">
+src/components/tasks/calendar/parts/CalendarHeader.tsx:25:                    <Button variant="ghost" size="sm" onClick={onToday} className="h-7 px-2 text-xs font-medium">
+src/components/tasks/calendar/parts/CalendarHeader.tsx:28:                    <Button variant="ghost" size="icon" onClick={onNext} className="h-7 w-7" aria-label="Next month">
+src/components/tasks/SubtaskForm.tsx-51-                  variant="ghost"
+src/components/tasks/PomodoroTimer.tsx-164-                            size="icon"
+src/components/tasks/PomodoroTimer.tsx-180-                            size="icon"
+src/components/tasks/FocusMode.tsx-96-                variant="ghost"
+src/components/tasks/FocusMode.tsx-97-                size="icon"
+src/components/tasks/QuickCapture.tsx:73:                                <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={() => setIsOpen(false)} aria-label="Close Quick Capture">
+src/components/tasks/QuickCapture.tsx:111:                            <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={() => setIsOpen(false)} aria-label="Close Quick Capture">
+src/components/tasks/QuickCapture.tsx-144-                size="icon"
+src/components/tasks/TaskList.tsx:70:                <Button onClick={handleAdd} size="sm" variant="ghost">
+src/components/tasks/CreateTaskInput.tsx-184-                                variant="ghost"
+src/components/tasks/VoiceInput.tsx-91-                    variant="ghost"
+src/components/tasks/VoiceInput.tsx-92-                    size="icon"
+src/components/tasks/TimeEstimateInput.tsx-187-                                variant="ghost"
+src/components/tasks/TimeEstimateInput.tsx-188-                                size="icon"
+src/components/tasks/TimeEstimateInput.tsx-233-                                    variant="ghost"
+src/components/tasks/TimeEstimateInput.tsx-234-                                    size="icon"
+src/components/tasks/TimeTrackerWidget.tsx-187-                                    size="icon"
+src/components/tasks/TimeTrackerWidget.tsx-188-                                    variant="ghost"
+src/components/tasks/TimeTrackerWidget.tsx-204-                                        size="icon"
+src/components/tasks/TimeTrackerWidget.tsx-205-                                        variant="ghost"
+src/components/tasks/TimeTrackerWidget.tsx-291-                                size="icon"
+src/components/tasks/TimeTrackerWidget.tsx-292-                                variant="ghost"
+src/components/tasks/TimeTrackerWidget.tsx-310-                                size="icon"
+src/components/tasks/TimeTrackerWidget.tsx-311-                                variant="ghost"
+src/components/tasks/TemplateManager.tsx:98:                    <Button variant="ghost" size="sm" className="w-full justify-start">
+src/components/tasks/TemplateManager.tsx:138:                                        <Button size="icon" variant="ghost" onClick={() => handleOpenEditDialog(template)} data-testid={`edit-template-${template.id}`} aria-label="Edit template">
+src/components/tasks/TemplateManager.tsx:141:                                        <Button size="icon" variant="ghost" onClick={() => handleDelete(template.id)} data-testid={`delete-template-${template.id}`} aria-label="Delete template">
+src/components/tasks/TaskItem.tsx:310:                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); onEdit(task); }} type="button" aria-label="Edit task" data-testid="edit-task-button">
+src/components/tasks/TaskItem.tsx:319:                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowFocusMode(true); }} type="button" aria-label="Start focus mode" data-testid="start-focus-button">
+src/components/tasks/task-dialog/TaskDependenciesTab.tsx-88-                                variant="ghost"
+src/components/tasks/task-dialog/details/TaskRemindersSection.tsx-91-                            variant="ghost"
+src/components/tasks/task-dialog/details/TaskRemindersSection.tsx-92-                            size="icon"
+src/components/tasks/task-dialog/details/TaskSubtasksSection.tsx-44-                            variant="ghost"
+src/components/tasks/task-dialog/details/TaskSubtasksSection.tsx-45-                            size="icon"
+src/components/tasks/task-dialog/details/TaskSubtasksSection.tsx-70-                        size="icon"
+src/components/tasks/task-dialog/details/TaskSubtasksSection.tsx-71-                        variant="ghost"
+src/components/tasks/RescheduleButton.tsx-87-                            variant="ghost"
+src/components/tasks/ZenOverlay.tsx-36-                                variant="ghost"
+src/components/tasks/ZenOverlay.tsx-37-                                size="icon"
+src/components/tasks/ZenOverlay.tsx-46-                                variant="ghost"
+src/components/tasks/ZenOverlay.tsx-47-                                size="icon"
+src/components/tasks/ZenOverlay.tsx:89:                                            <Button variant="ghost" size="icon" onClick={() => setTimerOpen(false)} className="h-8 w-8 rounded-full" aria-label="Close timer panel" title="Close timer panel">
+src/components/tasks/ZenOverlay.tsx:112:                                        <Button variant="ghost" size="sm" onClick={() => setTimerOpen(false)}>Close</Button>
+src/components/tasks/ZenOverlay.tsx-132-                            variant="ghost"
+src/components/tasks/ZenOverlay.tsx-133-                            size="icon"
+src/components/tasks/ZenOverlay.tsx-142-                            variant="ghost"
+src/components/tasks/ZenOverlay.tsx-143-                            size="icon"
+src/components/tasks/ZenOverlay.tsx:172:                                    <Button variant="ghost" size="icon" onClick={() => setTimerOpen(false)} className="h-8 w-8 rounded-full" aria-label="Close timer panel" title="Close timer panel">
+src/components/tasks/ZenOverlay.tsx:188:                                <Button variant="ghost" size="sm" onClick={() => setTimerOpen(false)}>Close</Button>
+src/components/tasks/ViewOptionsPopover.tsx:155:                    <Button variant="ghost" className="w-full text-destructive hover:text-destructive" onClick={handleReset} disabled={isPending}>
+src/components/tasks/create-task/SmartSyntaxPopover.tsx-21-                            variant="ghost"
+src/components/tasks/create-task/SmartSyntaxPopover.tsx-22-                            size="icon"
+src/components/tasks/create-task/CreateTaskFooter.tsx-51-                            variant="ghost"
+src/components/tasks/create-task/CreateTaskFooter.tsx-80-                    variant="ghost"
+src/components/tasks/create-task/CreateTaskFooter.tsx-92-                    variant="ghost"
+src/components/tasks/create-task/TaskMetadataBar.tsx:31:                        <Button variant="ghost" size="sm" className={cn(dueDate && "text-primary")}>
+src/components/tasks/create-task/TaskMetadataBar.tsx:51:                        <Button variant="ghost" size="sm" className={cn(priority !== "none" && "text-primary")}>
+src/components/tasks/create-task/TaskMetadataBar.tsx-61-                                    variant="ghost"
+src/components/tasks/create-task/TaskMetadataBar.tsx-85-                            variant="ghost"
+src/components/tasks/create-task/TaskMetadataBar.tsx-100-                        variant="ghost"
+src/components/tasks/create-task/TaskMetadataBar.tsx-101-                        size="icon"
+src/components/activity/ActivityLogEmpty.tsx-26-                    variant="ghost"
+src/components/activity/ActivityLogFilters.tsx:105:                                <Button size="sm" variant="ghost" className="text-xs h-7" onClick={() => setDatePreset("today")}>Today</Button>
+src/components/activity/ActivityLogFilters.tsx:106:                                <Button size="sm" variant="ghost" className="text-xs h-7" onClick={() => setDatePreset("yesterday")}>Yesterday</Button>
+src/components/activity/ActivityLogFilters.tsx:107:                                <Button size="sm" variant="ghost" className="text-xs h-7" onClick={() => setDatePreset("week")}>7 days</Button>
+src/components/activity/ActivityLogFilters.tsx:108:                                <Button size="sm" variant="ghost" className="text-xs h-7" onClick={() => setDatePreset("month")}>30 days</Button>
+src/components/activity/ActivityLogFilters.tsx:109:                                <Button size="sm" variant="ghost" className="text-xs h-7" onClick={() => setDatePreset("all")}>All</Button>
+src/components/ui/delete-confirm-popover.tsx:54:                        <Button variant="ghost" size="sm" onClick={() => setOpen(false)} disabled={isConfirming}>
+src/components/ui/time-picker.tsx-271-                                    variant="ghost"
+src/components/ui/time-picker.tsx-295-                            variant="ghost"
+src/components/ui/icon-picker.tsx:162:                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleShuffle} title="Random Icon" aria-label="Random Icon"><Shuffle className="h-3.5 w-3.5" /></Button>
+src/components/ui/calendar.tsx-202-      variant="ghost"
+src/components/ui/calendar.tsx-203-      size="icon"
+src/components/sync/SyncStatus.tsx-117-                            variant="ghost"
+src/components/sync/SyncStatus.tsx-385-                                            variant="ghost"
+src/components/sync/SyncStatus.tsx-394-                                            variant="ghost"
+src/components/sync/SyncStatus.tsx-422-                                            variant="ghost"
+src/components/sync/SyncStatus.tsx-494-                                    variant="ghost"
+src/components/sync/SyncStatus.tsx-504-                                        variant="ghost"
+src/components/sync/SyncStatus.tsx:514:                                <Button variant="ghost" size="sm" className="ml-auto h-6 px-1.5 text-xs" asChild>
+src/components/layout/sidebar/SidebarRituals.tsx-22-                variant="ghost"
+src/components/layout/sidebar/SidebarRituals.tsx-35-                variant="ghost"
+src/components/layout/sidebar/SidebarRituals.tsx-49-                variant="ghost"
+src/components/layout/sidebar/SidebarRituals.tsx-58-                variant="ghost"
+src/components/layout/sidebar/SidebarLists.tsx-102-                variant="ghost"
+src/components/layout/sidebar/SidebarLists.tsx-225-                                size="icon"
+src/components/layout/sidebar/SidebarLists.tsx:239:                            <Button variant="ghost" size="icon" className="h-7 w-7" title="Add List" aria-label="Add List" data-testid="add-list-button">
+src/components/layout/sidebar/SidebarLabels.tsx-99-                variant="ghost"
+src/components/layout/sidebar/SidebarLabels.tsx-200-                                size="icon"
+src/components/layout/sidebar/SidebarLabels.tsx:214:                            <Button variant="ghost" size="icon" className="h-7 w-7" title="Add Label" aria-label="Add Label" data-testid="add-label-button">
+src/components/layout/sidebar/SidebarSavedViews.tsx:24:                <Button variant="ghost" size="icon" className="h-7 w-7" title="How to add a view" aria-label="How to add a view">
+src/components/layout/UserProfile.tsx:62:                <Button variant="ghost" className="w-full h-14 justify-between px-3 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground" data-testid="user-profile-button" aria-label="User Profile">
+src/components/layout/MobileNav.tsx:21:                        <Button variant="ghost" size="icon" className="md:hidden" aria-label="Toggle menu">
