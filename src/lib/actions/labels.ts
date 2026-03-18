@@ -62,9 +62,6 @@ export async function getLabels(userId: string) {
  * @param items - Array of label IDs and their new positions
  */
 async function reorderLabelsImpl(userId: string, items: { id: number; position: number }[]) {
-  if (items.length === 0) return;
-
-  const ids = items.map((i) => i.id);
   await requireUser(userId);
 
   if (items.length === 0) {
@@ -74,6 +71,8 @@ async function reorderLabelsImpl(userId: string, items: { id: number; position: 
   if (items.length > 1000) {
     throw new ValidationError("Too many labels to reorder at once. Limit is 1000.");
   }
+
+  const ids = items.map((i) => i.id);
 
   // ⚡ Bolt Opt: batch label reorder in a single CASE/WHEN update to avoid N roundtrips.
   // For typical reorder sizes (5-50 labels), this cuts latency by ~80-95%.

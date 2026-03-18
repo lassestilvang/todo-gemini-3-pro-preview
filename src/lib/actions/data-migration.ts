@@ -18,14 +18,76 @@ const BackupSchema = z.object({
     version: z.number(),
     timestamp: z.string(),
     data: z.object({
-        lists: z.array(z.any()),
-        labels: z.array(z.any()),
-        tasks: z.array(z.any()),
-        taskLabels: z.array(z.any()),
-        reminders: z.array(z.any()),
-        templates: z.array(z.any()),
-        savedViews: z.array(z.any()),
-        viewSettings: z.array(z.any()),
+        lists: z.array(z.object({
+            id: z.number(),
+            name: z.string(),
+            color: z.string().nullable().optional(),
+            icon: z.string().nullable().optional(),
+            slug: z.string(),
+            description: z.string().nullable().optional(),
+            position: z.number().optional(),
+            createdAt: z.string().or(z.date()),
+            updatedAt: z.string().or(z.date()),
+        }).passthrough()).max(10000),
+        labels: z.array(z.object({
+            id: z.number(),
+            name: z.string(),
+            color: z.string().nullable().optional(),
+            icon: z.string().nullable().optional(),
+            description: z.string().nullable().optional(),
+            position: z.number().optional(),
+        }).passthrough()).max(10000),
+        tasks: z.array(z.object({
+            id: z.number(),
+            listId: z.number().nullable().optional(),
+            title: z.string(),
+            description: z.string().nullable().optional(),
+            icon: z.string().nullable().optional(),
+            priority: z.enum(["none", "low", "medium", "high"]).nullable().optional(),
+            dueDate: z.string().or(z.date()).nullable().optional(),
+            dueDatePrecision: z.enum(["day", "week", "month", "year"]).nullable().optional(),
+            isCompleted: z.boolean().nullable().optional(),
+            completedAt: z.string().or(z.date()).nullable().optional(),
+            isRecurring: z.boolean().nullable().optional(),
+            recurringRule: z.string().nullable().optional(),
+            parentId: z.number().nullable().optional(),
+            estimateMinutes: z.number().nullable().optional(),
+            position: z.number().optional(),
+            actualMinutes: z.number().nullable().optional(),
+            energyLevel: z.enum(["high", "medium", "low"]).nullable().optional(),
+            deadline: z.string().or(z.date()).nullable().optional(),
+            createdAt: z.string().or(z.date()),
+            updatedAt: z.string().or(z.date()),
+        }).passthrough()).max(100000),
+        taskLabels: z.array(z.object({
+            taskId: z.number(),
+            labelId: z.number(),
+        }).passthrough()).max(200000),
+        reminders: z.array(z.object({
+            id: z.number(),
+            taskId: z.number(),
+            remindAt: z.string().or(z.date()),
+            type: z.string().optional(),
+            message: z.string().nullable().optional(),
+            isSent: z.boolean().optional(),
+            createdAt: z.string().or(z.date()),
+        }).passthrough()).max(10000),
+        templates: z.array(z.object({
+            id: z.number(),
+            name: z.string(),
+            content: z.string(),
+            createdAt: z.string().or(z.date()),
+            updatedAt: z.string().or(z.date()),
+        }).passthrough()).max(10000),
+        savedViews: z.array(z.object({
+            id: z.number(),
+            name: z.string(),
+            icon: z.string().nullable().optional(),
+            query: z.string().optional(), // Used by older views, or maybe missing
+            settings: z.string().optional(), // Based on the error msg
+            createdAt: z.string().or(z.date()),
+        }).passthrough()).max(10000),
+        viewSettings: z.array(z.any()).max(10000), // currently unused in import
     })
 })
 
@@ -64,7 +126,7 @@ export async function exportUserData() {
     const taskIds = userTasks.map(t => t.id)
 
     let userTaskLabels: { taskId: number; labelId: number }[] = []
-    let userReminders: unknown[] = []
+    let userReminders: any[] = []
 
     if (taskIds.length > 0) {
         // Fetch task-related data
@@ -369,7 +431,15 @@ export async function importUserData(jsonData: unknown) {
                     createdAt: new Date(r.createdAt),
                 }
             })
-            .filter((value): value is typeof data.reminders[number] & { taskId: number } => value !== null)
+            .filter((value) => value !== null) as {
+                id: undefined;
+                taskId: number;
+                remindAt: Date;
+                createdAt: Date;
+                type?: string | undefined;
+                message?: string | null | undefined;
+                isSent?: boolean | undefined;
+            }[]
 
         if (reminderValues.length > 0) {
             // ⚡ Bolt Opt: Batch reminder inserts to avoid per-row roundtrips.
@@ -396,6 +466,7 @@ export async function importUserData(jsonData: unknown) {
             id: undefined,
             userId: userId,
             createdAt: new Date(sv.createdAt),
+            settings: sv.settings || sv.query || "{}", // ensure backward compatibility
         }))
 
         if (savedViewValues.length > 0) {
