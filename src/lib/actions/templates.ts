@@ -253,9 +253,20 @@ async function instantiateTemplateImpl(
 
   const data = JSON.parse(template[0].content);
 
+  // Sentinel Opt: Prevent DoS by enforcing a maximum number of tasks per template instantiation.
+  let taskCount = 0;
+  const MAX_TASKS_PER_TEMPLATE = 100;
+
   // Helper to recursively create tasks
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async function createRecursive(taskData: any, parentId: number | null = null) {
+    taskCount++;
+    if (taskCount > MAX_TASKS_PER_TEMPLATE) {
+      throw new ValidationError(
+        `Template exceeds maximum allowed complexity of ${MAX_TASKS_PER_TEMPLATE} tasks.`
+      );
+    }
+
     const { subtasks, ...rest } = taskData;
 
     // Process string fields for variables
