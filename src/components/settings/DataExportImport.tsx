@@ -129,13 +129,14 @@ export function DataExportImport() {
 
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pt-4 border-t">
                     <div className="space-y-1">
-                        <Label>Import Data</Label>
+                        <Label htmlFor="import-file">Import Data</Label>
                         <p className="text-sm text-muted-foreground">
                             Restore data from a backup file.
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
                         <Input
+                            id="import-file"
                             type="file"
                             accept=".json"
                             onChange={handleImport}
