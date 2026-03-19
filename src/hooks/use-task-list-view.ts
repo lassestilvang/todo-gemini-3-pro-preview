@@ -90,86 +90,86 @@ export function useTaskListView({
         return applyViewSettings(derivedTasks, settings);
     }, [derivedTasks, settings]);
 
-    const { listTasks, periodSections } = useMemo(() => {
-        if (filterType !== "today" || settings.layout !== "list") {
-            return { listTasks: processedTasks, periodSections: [] };
-        }
-
-        const sectionsMap = new Map<PeriodPrecision, Task[]>();
+    // ⚡ Bolt Opt: Consolidate multiple O(N) array passes (listTasks, periodSections, overdueTasks, activeTasks, completedTasks) into a single iteration
+    const { listTasks, periodSections, overdueTasks, activeTasks, completedTasks } = useMemo(() => {
         const listTasks: Task[] = [];
-        const today = new Date();
+        const overdue: Task[] = [];
+        const active: Task[] = [];
+        const completed: Task[] = [];
+        const sectionsMap = new Map<PeriodPrecision, Task[]>();
+
+        const now = new Date();
+        const nowTime = now.getTime();
+        const todayStart = startOfDay(now);
+        const todayStartTime = todayStart.getTime();
+
+        const isTodayList = filterType === "today" && settings.layout === "list";
 
         for (const task of processedTasks) {
+            let isOverdue = false;
+            let addedToList = false;
             const precision = (task.dueDatePrecision ?? "day") as DuePrecision;
-            if (precision === "day" || !task.dueDate) {
+
+            // 1. Process for Today List and Period Sections
+            if (isTodayList) {
+                if (precision === "day" || !task.dueDate) {
+                    listTasks.push(task);
+                    addedToList = true;
+                } else {
+                    const inPeriod = isInCurrentPeriod(
+                        { dueDate: task.dueDate, dueDatePrecision: precision },
+                        now,
+                        weekStartsOnMonday ?? false
+                    );
+
+                    if (!inPeriod) {
+                        listTasks.push(task);
+                        addedToList = true;
+                    } else {
+                        const key = precision as PeriodPrecision;
+                        const existing = sectionsMap.get(key) ?? [];
+                        existing.push(task);
+                        sectionsMap.set(key, existing);
+                    }
+                }
+            } else {
                 listTasks.push(task);
-                continue;
+                addedToList = true;
             }
 
-            const inPeriod = isInCurrentPeriod(
-                { dueDate: task.dueDate, dueDatePrecision: precision },
-                today,
-                weekStartsOnMonday ?? false
-            );
+            // 2. Process for Overdue, Active, and Completed (only from what makes it into the list)
+            if (addedToList) {
+                if (task.isCompleted) {
+                    if (settings.showCompleted) completed.push(task);
+                } else if (task.dueDate) {
+                    if (precision === "day") {
+                        const dueTime = typeof task.dueDate === 'number' ? task.dueDate : (typeof task.dueDate === 'string' ? Date.parse(task.dueDate) : task.dueDate.getTime());
+                        isOverdue = dueTime < todayStartTime;
+                    } else {
+                        const dueData = { dueDate: task.dueDate, dueDatePrecision: precision as DuePrecision };
+                        const period = getDueRange(dueData.dueDate, dueData.dueDatePrecision, weekStartsOnMonday ?? false);
+                        isOverdue = nowTime >= period.endExclusive.getTime();
+                    }
 
-            if (!inPeriod) {
-                listTasks.push(task);
-                continue;
+                    if (isOverdue) overdue.push(task);
+                    else active.push(task);
+                } else {
+                    active.push(task);
+                }
             }
-
-            const key = precision as PeriodPrecision;
-            const existing = sectionsMap.get(key) ?? [];
-            existing.push(task);
-            sectionsMap.set(key, existing);
         }
 
-        const periodSections = (["week", "month", "year"] as PeriodPrecision[])
+        const periodSections = isTodayList ? (["week", "month", "year"] as PeriodPrecision[])
             .map((precision) => {
                 const tasks = sectionsMap.get(precision);
                 if (!tasks || tasks.length === 0) return null;
                 const labels = { week: "This Week", month: "This Month", year: "This Year" };
                 return { precision, label: labels[precision], tasks };
             })
-            .filter(Boolean) as Array<{ precision: PeriodPrecision; label: string; tasks: Task[] }>;
+            .filter(Boolean) as Array<{ precision: PeriodPrecision; label: string; tasks: Task[] }> : [];
 
-        return { listTasks, periodSections };
-    }, [processedTasks, filterType, settings.layout, weekStartsOnMonday]);
-
-    const { overdueTasks, activeTasks, completedTasks } = useMemo(() => {
-        const now = new Date();
-        const nowTime = now.getTime();
-        const todayStart = startOfDay(now);
-        const todayStartTime = todayStart.getTime();
-
-        const overdue: Task[] = [];
-        const active: Task[] = [];
-        const completed: Task[] = [];
-
-        for (const task of listTasks) {
-            if (task.isCompleted) {
-                if (settings.showCompleted) completed.push(task);
-            } else if (task.dueDate) {
-                const precision = task.dueDatePrecision ?? "day";
-                let isOverdue = false;
-
-                if (precision === "day") {
-                    const dueTime = typeof task.dueDate === 'number' ? task.dueDate : (typeof task.dueDate === 'string' ? Date.parse(task.dueDate) : task.dueDate.getTime());
-                    isOverdue = dueTime < todayStartTime;
-                } else {
-                    const dueData = { dueDate: task.dueDate, dueDatePrecision: precision as DuePrecision };
-                    const period = getDueRange(dueData.dueDate, dueData.dueDatePrecision, weekStartsOnMonday ?? false);
-                    isOverdue = nowTime >= period.endExclusive.getTime();
-                }
-
-                if (isOverdue) overdue.push(task);
-                else active.push(task);
-            } else {
-                active.push(task);
-            }
-        }
-
-        return { overdueTasks: overdue, activeTasks: active, completedTasks: completed };
-    }, [listTasks, settings.showCompleted, weekStartsOnMonday]);
+        return { listTasks, periodSections, overdueTasks: overdue, activeTasks: active, completedTasks: completed };
+    }, [processedTasks, filterType, settings.layout, weekStartsOnMonday, settings.showCompleted]);
 
     const nonOverdueTasks = useMemo(() => {
         return [...activeTasks, ...(settings.showCompleted ? completedTasks : [])];
