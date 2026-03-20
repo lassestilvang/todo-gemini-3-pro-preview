@@ -1,3 +1,6 @@
+## 2026-03-20 - Optimize N+1 Query in Todoist Task Creation
+**Learning:** During synchronization of incoming Todoist tasks, sequential insert operations inside loops (e.g., `tasks`, `externalEntityMap`, `taskLabels`) can cause significant I/O wait and N+1 query problems. Extracting mapping and resolution logic into intermediate arrays and resolving dependencies (like local/external IDs) allows for bulk insertions using `.values([...]).returning()`. Drizzle correctly returns inserted rows so we can zip them against our local array to fulfill downstream relations like `externalEntityMap` and `taskLabels` seamlessly.
+**Action:** Refactored `createTodoistTasks` in `src/lib/todoist/sync.ts` from a sequential insert approach to using bulk `insert().values().returning()`, saving potentially hundreds of I/O round trips during first syncs.
 ## 2024-05-15 - [Date Allocations in Tight UI Loops]
 **Learning:** `date-fns` functions like `isToday`, `isTomorrow`, and `isThisWeek` internally instantiate `new Date()` (`Date.now()`). When used in tight O(N) grouping or rendering loops (like grouping a large task board), they cause massive hidden object allocations and garbage collection pressure, leading to UI micro-stutters.
 **Action:** In O(N) iterative functions or loops, replace these helpers with their allocation-free counterparts (`isSameDay`, `isSameWeek`) and explicitly pass down a single hoisted `now = new Date()` reference. Similarly, hoist any relative offset dates (like `tomorrow = addDays(now, 1)`) so they are computed only once per loop.
@@ -16,3 +19,7 @@
 ## 2025-03-22 - Consolidate Multiple Iterations into a Single Pass in useMemo
 **Learning:** Having multiple sequential iterations over the same large array within or across different `useMemo` hooks (e.g., using `forEach` to build a map, then `.filter` to extract a sub-list) causes redundant O(N) operations and object allocations. Consolidating these passes into a single native `for` loop significantly reduces overhead during render, especially for large datasets like tasks.
 **Action:** When deriving multiple state structures from a single large array, merge the logic into a single native `for` loop within a shared `useMemo` that returns an object containing the derived structures.
+
+## 2025-02-17 - Optimize unmapped Google Tasklists sync with Promise.all and bulk inserts
+**Learning:** Sequential external API calls combined with sequential DB inserts (N+1) cause major delays. Drizzle's `db.insert().values()` throws errors on empty arrays, so always verify length first.
+**Action:** Replaced a sequential loop of API calls and DB inserts with concurrent API calls via `Promise.all` and a single batched DB insert. This significantly reduces wall-clock time by parallelizing network requests and batching database writes. Wrapped the DB insert safely with an `if (unmappedLists.length > 0)` check.

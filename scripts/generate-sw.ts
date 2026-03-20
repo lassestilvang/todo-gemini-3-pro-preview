@@ -19,7 +19,7 @@ async function buildSW() {
         // Ignore maps and middleware
         globIgnores: ['**/node_modules/**/*', '**/*.map', 'server/middleware*', 'server/**'],
 
-        // Fix path prefix for Next.js static assets
+        // Adjust path prefix for Next.js static assets
         modifyURLPrefix: {
             'static/': '/_next/static/',
         },

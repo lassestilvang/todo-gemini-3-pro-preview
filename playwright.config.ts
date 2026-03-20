@@ -83,6 +83,7 @@ export default defineConfig({
       E2E_TEST_MODE: 'true',
       NEXT_PUBLIC_E2E_TEST_MODE: 'true',
       E2E_TEST_SECRET: process.env.E2E_TEST_SECRET || 'local-e2e-secret',
+      DATABASE_URL: process.env.DATABASE_URL || '',
     },
   },
 });
