@@ -55,12 +55,12 @@ export async function authenticateTestUser(page: Page): Promise<boolean> {
       return false;
     }
 
-    const sessionValue = JSON.stringify({
+    const sessionValue = encodeURIComponent(JSON.stringify({
       user,
       accessToken: 'test-access-token',
       refreshToken: 'test-refresh-token',
       expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-    });
+    }));
 
     const cookieUrl = new URL(page.url());
     const setCookieHeader = response.headers()['set-cookie'];
