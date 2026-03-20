@@ -81,7 +81,7 @@ export function useTaskCounts(enabled: boolean = true): TaskCounts {
                     } else if (dueTime > nowTime) {
                         // Note: 'Upcoming' typically means everything in the future,
                         // or sometimes specifically "next 7 days".
-                        // Based on typical todo apps, Upcoming usually means "Scheduled for future".
+                        // Based on typical task apps, Upcoming usually means "Scheduled for future".
                         // Let's count strictly future dates.
                         counts.upcoming++;
                     }
