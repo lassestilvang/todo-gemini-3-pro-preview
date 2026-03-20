@@ -60,17 +60,21 @@ export async function POST(request: NextRequest) {
     // Everything references users.id with onDelete: "cascade"
     // Note: Delete sequentially instead of concurrently via Promise.all
     // to avoid database lock contention issues in SQLite tests
-    await db.delete(tasks).where(eq(tasks.userId, userToSync.id));
-    await db.delete(labels).where(eq(labels.userId, userToSync.id));
-    await db.delete(lists).where(eq(lists.userId, userToSync.id));
-    await db.delete(userStats).where(eq(userStats.userId, userToSync.id));
-    await db.delete(viewSettings).where(eq(viewSettings.userId, userToSync.id));
-    await db.delete(templates).where(eq(templates.userId, userToSync.id));
+    try {
+      await db.delete(tasks).where(eq(tasks.userId, userToSync.id));
+      await db.delete(labels).where(eq(labels.userId, userToSync.id));
+      await db.delete(lists).where(eq(lists.userId, userToSync.id));
+      await db.delete(userStats).where(eq(userStats.userId, userToSync.id));
+      await db.delete(viewSettings).where(eq(viewSettings.userId, userToSync.id));
+      await db.delete(templates).where(eq(templates.userId, userToSync.id));
 
-    // Reset initialization flag so syncUser recreates Inbox and Stats
-    await db.update(users)
-      .set({ isInitialized: false })
-      .where(eq(users.id, userToSync.id));
+      // Reset initialization flag so syncUser recreates Inbox and Stats
+      await db.update(users)
+        .set({ isInitialized: false })
+        .where(eq(users.id, userToSync.id));
+    } catch (cleanupError) {
+      console.warn('Non-fatal error clearing test user data:', cleanupError);
+    }
 
     // 2. Sync the test user to the database
     await syncUser(userToSync);
