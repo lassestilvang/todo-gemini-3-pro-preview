@@ -571,6 +571,13 @@ async function ensureProjectAssignments(params: {
     projectId: string;
     listId: number | null;
   }[];
+  const listsToCreate: {
+    userId: string;
+    name: string;
+    slug: string;
+    position: number;
+  }[] = [];
+  const projectsToCreate: { projectId: string; index: number }[] = [];
 
   for (const project of projects) {
     const existingMatch = lowerCaseListMap.get(project.name.toLowerCase());
@@ -582,21 +589,31 @@ async function ensureProjectAssignments(params: {
     }
 
     const slug = slugify(project.name);
-    const created = await db
-      .insert(lists)
-      .values({
-        userId,
-        name: project.name,
-        slug,
-        position: maxPosition + 1,
-      })
-      .returning();
-    maxPosition += 1;
-
-    hydratedAssignments.push({
-      projectId: project.id,
-      listId: created[0]?.id ?? null,
+    listsToCreate.push({
+      userId,
+      name: project.name,
+      slug,
+      position: maxPosition + 1,
     });
+    projectsToCreate.push({
+      projectId: project.id,
+      index: listsToCreate.length - 1,
+    });
+    maxPosition += 1;
+  }
+
+  if (listsToCreate.length > 0) {
+    const createdLists = await db
+      .insert(lists)
+      .values(listsToCreate)
+      .returning();
+
+    for (const ptc of projectsToCreate) {
+      hydratedAssignments.push({
+        projectId: ptc.projectId,
+        listId: createdLists[ptc.index]?.id ?? null,
+      });
+    }
   }
 
   if (hydratedAssignments.length > 0) {
@@ -1231,6 +1248,8 @@ async function updateRemoteTasks(params: {
     if (conflictKeys.has(conflictKey)) {
       continue;
     }
+  }
+  const managedLocalLabelIds = Array.from(externalToLocalLabel.values());
 
     const resolvedExternalLabelIds = resolveTaskLabelExternalIds(
       remoteTask,
