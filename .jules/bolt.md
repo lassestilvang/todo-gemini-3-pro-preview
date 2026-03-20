@@ -16,3 +16,7 @@
 ## 2025-03-22 - Consolidate Multiple Iterations into a Single Pass in useMemo
 **Learning:** Having multiple sequential iterations over the same large array within or across different `useMemo` hooks (e.g., using `forEach` to build a map, then `.filter` to extract a sub-list) causes redundant O(N) operations and object allocations. Consolidating these passes into a single native `for` loop significantly reduces overhead during render, especially for large datasets like tasks.
 **Action:** When deriving multiple state structures from a single large array, merge the logic into a single native `for` loop within a shared `useMemo` that returns an object containing the derived structures.
+
+## 2025-02-17 - Optimize unmapped Google Tasklists sync with Promise.all and bulk inserts
+**Learning:** Sequential external API calls combined with sequential DB inserts (N+1) cause major delays. Drizzle's `db.insert().values()` throws errors on empty arrays, so always verify length first.
+**Action:** Replaced a sequential loop of API calls and DB inserts with concurrent API calls via `Promise.all` and a single batched DB insert. This significantly reduces wall-clock time by parallelizing network requests and batching database writes. Wrapped the DB insert safely with an `if (unmappedLists.length > 0)` check.
