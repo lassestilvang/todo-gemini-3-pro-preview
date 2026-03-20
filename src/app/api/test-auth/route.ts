@@ -68,9 +68,7 @@ export async function POST(request: NextRequest) {
     try { await db.delete(templates).where(eq(templates.userId, userToSync.id)); } catch (e) { console.warn('Failed to cleanup templates:', e); }
 
     // Reset initialization flag so syncUser recreates Inbox and Stats
-    await db.update(users)
-      .set({ isInitialized: false })
-      .where(eq(users.id, userToSync.id));
+    try { await db.update(users).set({ isInitialized: false }).where(eq(users.id, userToSync.id)); } catch {}
 
     // 2. Sync the test user to the database
     await syncUser(userToSync);
