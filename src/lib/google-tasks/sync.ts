@@ -164,6 +164,8 @@ async function syncTasklists(params: {
     const { userId, client, tasklists, existingLists, listExternalToLocal, listLocalToExternal, localListMap, useUserMappings } = params;
     let maxPosition = Math.max(0, ...existingLists.map((list) => list.position ?? 0));
 
+    const listsToInsert: { userId: string; name: string; slug: string; position: number; externalId: string }[] = [];
+
     for (const remoteList of tasklists) {
         const hasMapping = listExternalToLocal.has(remoteList.id);
         const mappedLocalId = listExternalToLocal.get(remoteList.id) ?? null;
@@ -185,21 +187,36 @@ async function syncTasklists(params: {
         }
 
         const slug = slugify(remoteList.title);
-        const created = await db
-            .insert(lists)
-            .values({ userId, name: remoteList.title, slug, position: maxPosition + 1 })
-            .returning();
+        listsToInsert.push({
+            userId,
+            name: remoteList.title,
+            slug,
+            position: maxPosition + 1,
+            externalId: remoteList.id,
+        });
         maxPosition += 1;
-        const localId = created[0]?.id ?? null;
+    }
 
-        if (localId) {
-            await db.insert(externalEntityMap).values({
-                userId,
-                provider: "google_tasks" as const,
-                entityType: "list" as const,
-                localId,
-                externalId: remoteList.id,
-            });
+    if (listsToInsert.length > 0) {
+        const insertPayload = listsToInsert.map(({ userId, name, slug, position }) => ({
+            userId,
+            name,
+            slug,
+            position,
+        }));
+
+        const created = await db.insert(lists).values(insertPayload).returning();
+
+        const entityMapPayload = created.map((localList, index) => ({
+            userId,
+            provider: "google_tasks" as const,
+            entityType: "list" as const,
+            localId: localList.id,
+            externalId: listsToInsert[index].externalId,
+        }));
+
+        if (entityMapPayload.length > 0) {
+            await db.insert(externalEntityMap).values(entityMapPayload);
         }
     }
 
