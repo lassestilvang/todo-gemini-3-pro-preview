@@ -230,15 +230,20 @@ async function syncTasklists(params: {
     }
 
     const unmappedLists = existingLists.filter((list) => !listLocalToExternal.has(list.id));
-    for (const list of unmappedLists) {
-        const created = await client.createTasklist({ title: list.name });
-        await db.insert(externalEntityMap).values({
-            userId,
-            provider: "google_tasks" as const,
-            entityType: "list" as const,
-            localId: list.id,
-            externalId: created.id,
-        });
+    if (unmappedLists.length > 0) {
+        const newMappings = await Promise.all(
+            unmappedLists.map(async (list) => {
+                const created = await client.createTasklist({ title: list.name });
+                return {
+                    userId,
+                    provider: "google_tasks" as const,
+                    entityType: "list" as const,
+                    localId: list.id,
+                    externalId: created.id,
+                };
+            })
+        );
+        await db.insert(externalEntityMap).values(newMappings);
     }
 }
 
