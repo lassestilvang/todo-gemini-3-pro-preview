@@ -963,8 +963,6 @@ async function createTodoistTasks(params: {
                 labelIds,
             });
         }
-      }
-    }
 
         if (tasksToCreate.length === 0) {
             break;
@@ -1009,7 +1007,6 @@ async function createTodoistTasks(params: {
 
         remainingTasks = nextRemaining;
     }
-  }
 }
 
 async function updateMappedTasks(params: {
@@ -1258,8 +1255,6 @@ async function updateRemoteTasks(params: {
     if (conflictKeys.has(conflictKey)) {
       continue;
     }
-  }
-  const managedLocalLabelIds = Array.from(externalToLocalLabel.values());
 
     const resolvedExternalLabelIds = resolveTaskLabelExternalIds(
       remoteTask,

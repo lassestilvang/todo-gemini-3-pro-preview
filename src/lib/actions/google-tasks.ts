@@ -128,6 +128,31 @@ export async function getGoogleTasksMappingData() {
     };
 }
 
+function hasDuplicateStrings(values: string[]) {
+    const seen = new Set<string>();
+    for (const value of values) {
+        const normalized = value.trim();
+        if (seen.has(normalized)) {
+            return true;
+        }
+        seen.add(normalized);
+    }
+    return false;
+}
+
+function hasDuplicateNonNullNumbers(values: Array<number | null>) {
+    const seen = new Set<number>();
+    for (const value of values) {
+        if (value !== null) {
+            if (seen.has(value)) {
+                return true;
+            }
+            seen.add(value);
+        }
+    }
+    return false;
+}
+
 export async function setGoogleTasksListMappings(mappings: { tasklistId: string; listId: number | null }[]) {
     const user = await getCurrentUser();
     if (!user) {
@@ -136,6 +161,13 @@ export async function setGoogleTasksListMappings(mappings: { tasklistId: string;
 
     if (mappings.length > 1000) {
         return { success: false, error: "Too many mappings. Limit is 1000." };
+    }
+
+    if (hasDuplicateStrings(mappings.map((m) => m.tasklistId))) {
+        return { success: false, error: "Duplicate Google Tasks list mappings are not allowed." };
+    }
+    if (hasDuplicateNonNullNumbers(mappings.map((m) => m.listId))) {
+        return { success: false, error: "A local list can only be mapped to one Google Tasks list." };
     }
 
     const listIds = mappings
