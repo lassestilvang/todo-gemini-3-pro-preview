@@ -64,13 +64,16 @@ export function QuickCapture({ userId }: { userId: string }) {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 20, scale: 0.95 }}
                             className="absolute bottom-16 right-0 w-[320px] bg-card p-4 rounded-xl border shadow-2xl space-y-3"
+                            id="quick-capture-panel"
+                            role="dialog"
+                            aria-labelledby="quick-capture-title"
                         >
                             <div className="flex items-center justify-between">
-                                <h3 className="text-sm font-semibold flex items-center gap-2">
+                                <h3 id="quick-capture-title" className="text-sm font-semibold flex items-center gap-2">
                                     <Zap className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                                     Quick Capture
                                 </h3>
-                                <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={() => setIsOpen(false)} aria-label="Close Quick Capture">
+                                <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={() => setIsOpen(false)} aria-label="Close Quick Capture" title="Close Quick Capture">
                                     <X className="h-4 w-4" />
                                 </Button>
                             </div>
@@ -102,13 +105,18 @@ export function QuickCapture({ userId }: { userId: string }) {
                 </AnimatePresence>
             ) : (
                 isOpen && (
-                    <div className="absolute bottom-16 right-0 w-[320px] bg-card p-4 rounded-xl border shadow-2xl space-y-3">
+                    <div
+                        className="absolute bottom-16 right-0 w-[320px] bg-card p-4 rounded-xl border shadow-2xl space-y-3"
+                        id="quick-capture-panel"
+                        role="dialog"
+                        aria-labelledby="quick-capture-title"
+                    >
                         <div className="flex items-center justify-between">
-                            <h3 className="text-sm font-semibold flex items-center gap-2">
+                            <h3 id="quick-capture-title" className="text-sm font-semibold flex items-center gap-2">
                                 <Zap className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                                 Quick Capture
                             </h3>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={() => setIsOpen(false)} aria-label="Close Quick Capture">
+                            <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={() => setIsOpen(false)} aria-label="Close Quick Capture" title="Close Quick Capture">
                                 <X className="h-4 w-4" />
                             </Button>
                         </div>
@@ -148,7 +156,9 @@ export function QuickCapture({ userId }: { userId: string }) {
                     resolvedPerformanceMode && "transition-none hover:scale-100 active:scale-100 shadow-none border-2 border-primary rotate-0"
                 )}
                 onClick={handleToggleOpen}
-                aria-label="Quick Capture"
+                aria-label={isOpen ? "Close Quick Capture" : "Open Quick Capture"}
+                aria-expanded={isOpen}
+                aria-controls="quick-capture-panel"
             >
                 <Plus className={cn("h-7 w-7 transition-transform", (isOpen && resolvedPerformanceMode) ? "rotate-45" : "rotate-0")} />
             </Button>

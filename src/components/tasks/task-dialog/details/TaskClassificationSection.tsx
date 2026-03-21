@@ -48,7 +48,7 @@ export function TaskClassificationSection({
                 <div className="space-y-2">
                     <Label>List</Label>
                     <Select value={listId} onValueChange={setListId}>
-                        <SelectTrigger>
+                        <SelectTrigger aria-label="Select List">
                             <SelectValue placeholder="Select List">
                                 {listId === "inbox" ? (
                                     <div className="flex items-center gap-2">
@@ -91,7 +91,7 @@ export function TaskClassificationSection({
                 <div className="space-y-2">
                     <Label>Priority</Label>
                     <Select value={priority} onValueChange={(value) => setPriority(value as TaskPriorityValue)}>
-                        <SelectTrigger>
+                        <SelectTrigger aria-label="Select Priority">
                             <SelectValue placeholder="Select Priority" />
                         </SelectTrigger>
                         <SelectContent>
@@ -108,7 +108,7 @@ export function TaskClassificationSection({
                 <div className="space-y-2">
                     <Label>Energy Level</Label>
                     <Select value={energyLevel} onValueChange={(value) => setEnergyLevel(value as TaskEnergyValue)}>
-                        <SelectTrigger>
+                        <SelectTrigger aria-label="Select Energy">
                             <SelectValue placeholder="Select Energy" />
                         </SelectTrigger>
                         <SelectContent>
@@ -123,7 +123,7 @@ export function TaskClassificationSection({
                 <div className="space-y-2">
                     <Label>Context</Label>
                     <Select value={context} onValueChange={(value) => setContext(value as TaskContextValue)}>
-                        <SelectTrigger>
+                        <SelectTrigger aria-label="Select Context">
                             <SelectValue placeholder="Select Context" />
                         </SelectTrigger>
                         <SelectContent>

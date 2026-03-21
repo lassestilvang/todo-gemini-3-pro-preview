@@ -48,7 +48,7 @@ export function FilterSection({
                             value={settings.filterDate}
                             onValueChange={(value) => onUpdate("filterDate", value as ViewSettings["filterDate"])}
                         >
-                            <SelectTrigger className="w-[140px]" size="sm">
+                            <SelectTrigger aria-label="Filter Date" className="w-[140px]" size="sm">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -64,7 +64,7 @@ export function FilterSection({
                             value={settings.filterPriority || "all"}
                             onValueChange={(value) => onUpdate("filterPriority", value === "all" ? null : (value as FilterPriorityValue))}
                         >
-                            <SelectTrigger className="w-[140px]" size="sm">
+                            <SelectTrigger aria-label="Filter Priority" className="w-[140px]" size="sm">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -82,7 +82,7 @@ export function FilterSection({
                             value={settings.filterLabelId?.toString() || "all"}
                             onValueChange={(value) => onUpdate("filterLabelId", value === "all" ? null : parseInt(value))}
                         >
-                            <SelectTrigger className="w-[140px]" size="sm">
+                            <SelectTrigger aria-label="Filter Label" className="w-[140px]" size="sm">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -101,7 +101,7 @@ export function FilterSection({
                             value={settings.filterEnergyLevel || "all"}
                             onValueChange={(value) => onUpdate("filterEnergyLevel", value === "all" ? null : (value as FilterEnergyValue))}
                         >
-                            <SelectTrigger className="w-[140px]" size="sm">
+                            <SelectTrigger aria-label="Filter Energy Level" className="w-[140px]" size="sm">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -118,7 +118,7 @@ export function FilterSection({
                             value={settings.filterContext || "all"}
                             onValueChange={(value) => onUpdate("filterContext", value === "all" ? null : (value as FilterContextValue))}
                         >
-                            <SelectTrigger className="w-[140px]" size="sm">
+                            <SelectTrigger aria-label="Filter Context" className="w-[140px]" size="sm">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
