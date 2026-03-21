@@ -1,3 +1,7 @@
+## 2024-05-18 - Replace O(N*M) Array.find with O(1) Map lookups in Todoist Sync
+**Learning:** Found multiple instances in `src/lib/todoist/sync.ts` where `mappingState.labels.find()` and `mappingState.projects.some()` were called inside loops iterating over tasks, resulting in O(N*M) time complexity during sync, which can severely impact performance for users with many mapped labels and tasks.
+**Action:** Precomputed `mappedListIds: Set<number>` and `listLabelMappingMap: Map<number, string>` before the O(N) loops. This reduced the time complexity to O(N+M) using O(1) Map/Set lookups inside `hasLocalListMapping` and `buildLocalTaskPayload`.
+
 ## 2026-03-20 - Optimize N+1 Query in Todoist Task Creation
 **Learning:** During synchronization of incoming Todoist tasks, sequential insert operations inside loops (e.g., `tasks`, `externalEntityMap`, `taskLabels`) can cause significant I/O wait and N+1 query problems. Extracting mapping and resolution logic into intermediate arrays and resolving dependencies (like local/external IDs) allows for bulk insertions using `.values([...]).returning()`. Drizzle correctly returns inserted rows so we can zip them against our local array to fulfill downstream relations like `externalEntityMap` and `taskLabels` seamlessly.
 **Action:** Refactored `createTodoistTasks` in `src/lib/todoist/sync.ts` from a sequential insert approach to using bulk `insert().values().returning()`, saving potentially hundreds of I/O round trips during first syncs.

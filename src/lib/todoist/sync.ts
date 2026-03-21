@@ -661,18 +661,26 @@ function isTodoistTaskInScope(
   return false;
 }
 
+// ⚡ Bolt Opt: Replaced O(N) array iteration with O(1) Set lookup
 function hasLocalListMapping(
   listId: number | null,
-  mappingState: MappingState,
+  mappedListIds: Set<number>,
 ) {
   if (!listId) {
     return false;
   }
+  return mappedListIds.has(listId);
+}
 
-  return (
-    mappingState.projects.some((mapping) => mapping.listId === listId) ||
-    mappingState.labels.some((mapping) => mapping.listId === listId)
-  );
+function buildMappedListIds(mappingState: MappingState): Set<number> {
+  const mappedListIds = new Set<number>();
+  for (const p of mappingState.projects) {
+    if (p.listId !== null) mappedListIds.add(p.listId);
+  }
+  for (const l of mappingState.labels) {
+    if (l.listId !== null) mappedListIds.add(l.listId);
+  }
+  return mappedListIds;
 }
 
 function collectScopedLocalLabelIds(params: {
@@ -684,11 +692,12 @@ function collectScopedLocalLabelIds(params: {
   const { localTasks, localTaskLabelMap, mappingState, hasScopedMappings } =
     params;
   const scopedLocalLabelIds = new Set<number>();
+  const mappedListIds = buildMappedListIds(mappingState);
 
   for (const task of localTasks) {
     if (
       hasScopedMappings &&
-      !hasLocalListMapping(task.listId ?? null, mappingState)
+      !hasLocalListMapping(task.listId ?? null, mappedListIds)
     ) {
       continue;
     }
@@ -895,120 +904,131 @@ async function createTodoistTasks(params: {
   remoteLabelIdSet: Set<string>;
   remoteLabelNameToId: Map<string, string>;
 }) {
-    const {
-        userId,
-        tasks: incomingTasks,
-        mappingState,
-        labelIdMap,
-        taskMappings,
-        remoteLabelIdSet,
-        remoteLabelNameToId,
-    } = params;
+  const {
+    userId,
+    tasks: incomingTasks,
+    mappingState,
+    labelIdMap,
+    taskMappings,
+    remoteLabelIdSet,
+    remoteLabelNameToId,
+  } = params;
 
-    let remainingTasks = incomingTasks.filter(task => !taskMappings.has(task.id));
+  let remainingTasks = incomingTasks.filter(
+    (task) => !taskMappings.has(task.id),
+  );
 
-    while (remainingTasks.length > 0) {
-        const batch = [];
-        const nextRemaining = [];
+  while (remainingTasks.length > 0) {
+    const batch = [];
+    const nextRemaining = [];
 
-        for (const task of remainingTasks) {
-            if (!task.parentId || taskMappings.has(task.parentId)) {
-                batch.push(task);
-            } else {
-                nextRemaining.push(task);
-            }
-        }
-
-        if (batch.length === 0) {
-            for (const task of nextRemaining) {
-                batch.push(task);
-            }
-            nextRemaining.length = 0;
-        }
-
-        const tasksToCreate = [];
-        const metaList = [];
-
-        for (const task of batch) {
-            const resolvedExternalLabelIds = resolveTaskLabelExternalIds(task, remoteLabelIdSet, remoteLabelNameToId);
-            const normalizedTask = { ...task, labels: resolvedExternalLabelIds } as Task;
-            const payload = mapTodoistTaskToLocal(normalizedTask, mappingState);
-            const labelIds = resolvedExternalLabelIds
-                .map((labelId) => labelIdMap.get(labelId))
-                .filter((id): id is number => Boolean(id));
-            const parentMapping = task.parentId ? taskMappings.get(task.parentId) : null;
-
-            tasksToCreate.push({
-                userId,
-                listId: payload.listId ?? null,
-                title: payload.title ?? task.content,
-                description: payload.description ?? null,
-                priority: payload.priority ?? "none",
-                isCompleted: payload.isCompleted ?? false,
-                completedAt: payload.completedAt ?? null,
-                dueDate: payload.dueDate ?? null,
-                dueDatePrecision: payload.dueDatePrecision ?? null,
-                deadline: payload.deadline ?? null,
-                estimateMinutes: payload.estimateMinutes ?? null,
-                isRecurring: payload.isRecurring ?? false,
-                recurringRule: payload.recurringRule ?? null,
-                parentId: parentMapping ?? null,
-                createdAt: payload.createdAt ?? undefined,
-                position: 0,
-            });
-
-            metaList.push({
-                externalId: task.id,
-                externalParentId: task.parentId ?? null,
-                labelIds,
-            });
-        }
+    for (const task of remainingTasks) {
+      if (!task.parentId || taskMappings.has(task.parentId)) {
+        batch.push(task);
+      } else {
+        nextRemaining.push(task);
       }
     }
 
-        if (tasksToCreate.length === 0) {
-            break;
-        }
-
-        const createdTasks = await db.insert(tasks).values(tasksToCreate).returning();
-
-        const entityMappingsToCreate = [];
-        const taskLabelsToCreate = [];
-
-        for (let index = 0; index < createdTasks.length; index += 1) {
-            const createdTask = createdTasks[index];
-            const meta = metaList[index];
-            if (!createdTask || !meta) continue;
-
-            taskMappings.set(meta.externalId, createdTask.id);
-
-            entityMappingsToCreate.push({
-                userId,
-                provider: "todoist" as const,
-                entityType: "task" as const,
-                localId: createdTask.id,
-                externalId: meta.externalId,
-                externalParentId: meta.externalParentId,
-            });
-
-            for (const labelId of meta.labelIds) {
-                taskLabelsToCreate.push({
-                    taskId: createdTask.id,
-                    labelId,
-                });
-            }
-        }
-
-        if (entityMappingsToCreate.length > 0) {
-            await db.insert(externalEntityMap).values(entityMappingsToCreate);
-        }
-
-        if (taskLabelsToCreate.length > 0) {
-            await db.insert(taskLabels).values(taskLabelsToCreate);
-        }
-
-        remainingTasks = nextRemaining;
+    if (batch.length === 0) {
+      for (const task of nextRemaining) {
+        batch.push(task);
+      }
+      nextRemaining.length = 0;
     }
+
+    const tasksToCreate = [];
+    const metaList = [];
+
+    for (const task of batch) {
+      const resolvedExternalLabelIds = resolveTaskLabelExternalIds(
+        task,
+        remoteLabelIdSet,
+        remoteLabelNameToId,
+      );
+      const normalizedTask = {
+        ...task,
+        labels: resolvedExternalLabelIds,
+      } as Task;
+      const payload = mapTodoistTaskToLocal(normalizedTask, mappingState);
+      const labelIds = resolvedExternalLabelIds
+        .map((labelId) => labelIdMap.get(labelId))
+        .filter((id): id is number => Boolean(id));
+      const parentMapping = task.parentId
+        ? taskMappings.get(task.parentId)
+        : null;
+
+      tasksToCreate.push({
+        userId,
+        listId: payload.listId ?? null,
+        title: payload.title ?? task.content,
+        description: payload.description ?? null,
+        priority: payload.priority ?? "none",
+        isCompleted: payload.isCompleted ?? false,
+        completedAt: payload.completedAt ?? null,
+        dueDate: payload.dueDate ?? null,
+        dueDatePrecision: payload.dueDatePrecision ?? null,
+        deadline: payload.deadline ?? null,
+        estimateMinutes: payload.estimateMinutes ?? null,
+        isRecurring: payload.isRecurring ?? false,
+        recurringRule: payload.recurringRule ?? null,
+        parentId: parentMapping ?? null,
+        createdAt: payload.createdAt ?? undefined,
+        position: 0,
+      });
+
+      metaList.push({
+        externalId: task.id,
+        externalParentId: task.parentId ?? null,
+        labelIds,
+      });
+    }
+
+    if (tasksToCreate.length === 0) {
+      break;
+    }
+
+    const createdTasks = await db
+      .insert(tasks)
+      .values(tasksToCreate)
+      .returning();
+
+    const entityMappingsToCreate = [];
+    const taskLabelsToCreate = [];
+
+    for (let index = 0; index < createdTasks.length; index += 1) {
+      const createdTask = createdTasks[index];
+      const meta = metaList[index];
+      if (!createdTask || !meta) continue;
+
+      taskMappings.set(meta.externalId, createdTask.id);
+
+      entityMappingsToCreate.push({
+        userId,
+        provider: "todoist" as const,
+        entityType: "task" as const,
+        localId: createdTask.id,
+        externalId: meta.externalId,
+        externalParentId: meta.externalParentId,
+      });
+
+      for (const labelId of meta.labelIds) {
+        taskLabelsToCreate.push({
+          taskId: createdTask.id,
+          labelId,
+        });
+      }
+    }
+
+    if (entityMappingsToCreate.length > 0) {
+      await db.insert(externalEntityMap).values(entityMappingsToCreate);
+    }
+
+    if (taskLabelsToCreate.length > 0) {
+      await db.insert(taskLabels).values(taskLabelsToCreate);
+    }
+
+    remainingTasks = nextRemaining;
   }
 }
 
@@ -1051,6 +1071,7 @@ async function updateMappedTasks(params: {
     localLabelToExternal,
     externalLabelToName,
   });
+  const mappedListIds = buildMappedListIds(mappingState);
 
   for (const mapping of mappedTasks) {
     const localTask = localTaskMap.get(mapping.localId as number);
@@ -1059,7 +1080,7 @@ async function updateMappedTasks(params: {
     }
     if (
       hasScopedMappings &&
-      !hasLocalListMapping(localTask.listId ?? null, mappingState)
+      !hasLocalListMapping(localTask.listId ?? null, mappedListIds)
     ) {
       continue;
     }
@@ -1222,6 +1243,7 @@ async function updateRemoteTasks(params: {
     }
   }
   const managedLocalLabelIds = Array.from(externalToLocalLabel.values());
+  const mappedListIds = buildMappedListIds(mappingState);
 
   for (const mapping of taskMappings) {
     if (!mapping.localId) {
@@ -1235,7 +1257,7 @@ async function updateRemoteTasks(params: {
     }
     if (
       hasScopedMappings &&
-      !hasLocalListMapping(localTask.listId ?? null, mappingState)
+      !hasLocalListMapping(localTask.listId ?? null, mappedListIds)
     ) {
       continue;
     }
@@ -1258,8 +1280,6 @@ async function updateRemoteTasks(params: {
     if (conflictKeys.has(conflictKey)) {
       continue;
     }
-  }
-  const managedLocalLabelIds = Array.from(externalToLocalLabel.values());
 
     const resolvedExternalLabelIds = resolveTaskLabelExternalIds(
       remoteTask,
@@ -1428,6 +1448,14 @@ async function detectTaskConflicts(params: {
     }
   }
 
+  const mappedListIds = buildMappedListIds(mappingState);
+  const listLabelMappingMap = new Map<number, string>();
+  for (const l of mappingState.labels) {
+    if (l.listId !== null) {
+      listLabelMappingMap.set(l.listId, l.labelId);
+    }
+  }
+
   for (const mapping of taskMappings) {
     const localTaskId = mapping.localId;
     if (!localTaskId) {
@@ -1441,7 +1469,7 @@ async function detectTaskConflicts(params: {
     }
     if (
       hasScopedMappings &&
-      !hasLocalListMapping(localTask.listId ?? null, mappingState)
+      !hasLocalListMapping(localTask.listId ?? null, mappedListIds)
     ) {
       continue;
     }
@@ -1468,7 +1496,7 @@ async function detectTaskConflicts(params: {
       localTaskLabelMap,
       localLabelToExternal,
       localTaskToExternal,
-      mappingState,
+      listLabelMappingMap,
     );
     const remotePayload = buildRemoteTaskPayload(
       todoistTask,
@@ -1500,7 +1528,7 @@ function buildLocalTaskPayload(
   localTaskLabelMap: Map<number, number[]>,
   localLabelToExternal: Map<number, string>,
   localTaskToExternal: Map<number, string>,
-  mappingState: MappingState,
+  listLabelMappingMap: Map<number, string>,
 ) {
   const labelIds = localTaskLabelMap.get(task.id) ?? [];
   const externalLabels = labelIds
@@ -1508,9 +1536,8 @@ function buildLocalTaskPayload(
     .filter((labelId): labelId is string => Boolean(labelId));
 
   if (task.listId) {
-    const listMappedLabel = mappingState.labels.find(
-      (l) => l.listId === task.listId,
-    )?.labelId;
+    // ⚡ Bolt Opt: Replaced O(N) Array.find() inside loop with O(1) Map lookup
+    const listMappedLabel = listLabelMappingMap.get(task.listId);
     if (listMappedLabel && !externalLabels.includes(listMappedLabel)) {
       externalLabels.push(listMappedLabel);
     }
@@ -1819,6 +1846,8 @@ async function pushLocalTasks(params: {
     }
   }
 
+  const mappedListIds = buildMappedListIds(mappingState);
+
   const pendingTasks = localTasks.filter((task) => {
     if (localMapping.has(task.id)) {
       return false;
@@ -1826,7 +1855,7 @@ async function pushLocalTasks(params: {
     if (!hasScopedMappings) {
       return true;
     }
-    return hasLocalListMapping(task.listId ?? null, mappingState);
+    return hasLocalListMapping(task.listId ?? null, mappedListIds);
   });
   const [rootTasks, childTasks] = splitLocalTasksByParent(pendingTasks);
 
