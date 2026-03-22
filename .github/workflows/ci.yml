@@ -286,8 +286,8 @@ jobs:
     name: E2E Tests (${{ matrix.shard }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [build]
-    if: always() && (needs.build.result == 'success' || needs.build.result == 'skipped')
+    needs: [cleanup-legacy]
+    if: always() && (needs.cleanup-legacy.result == 'success' || needs.cleanup-legacy.result == 'skipped')
     strategy:
       fail-fast: false
       matrix:
