@@ -27,3 +27,7 @@
 ## 2025-02-17 - Optimize unmapped Google Tasklists sync with Promise.all and bulk inserts
 **Learning:** Sequential external API calls combined with sequential DB inserts (N+1) cause major delays. Drizzle's `db.insert().values()` throws errors on empty arrays, so always verify length first.
 **Action:** Replaced a sequential loop of API calls and DB inserts with concurrent API calls via `Promise.all` and a single batched DB insert. This significantly reduces wall-clock time by parallelizing network requests and batching database writes. Wrapped the DB insert safely with an `if (unmappedLists.length > 0)` check.
+
+## 2025-02-14 - Optimize redundant JSON stringification in sync manager payload processing
+**Learning:** Structural sharing is crucial for fast comparisons in React state and general synchronization managers. If an update helper like `replaceIdsInPayload` always returns a new object even when no replacements occur, callers are forced to use expensive `JSON.stringify` comparisons to check if changes actually occurred.
+**Action:** Optimized `replaceIdsInPayload` to return original object/array references if no IDs are mutated during recursion. In `useSyncManager.ts`, the costly `JSON.stringify` checks inside the sync loop were completely eliminated and replaced with simple `newPayload !== action.payload` reference checks. This resulted in significant performance gains for payload processing during sync lock handling.
