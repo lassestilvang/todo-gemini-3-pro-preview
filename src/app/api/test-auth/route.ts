@@ -1,47 +1,60 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { syncUser } from '@/lib/auth';
-import { db, tasks, labels, lists, userStats, viewSettings, templates, users } from '@/db';
-import { eq } from 'drizzle-orm';
-import { constantTimeEqual } from '@/lib/auth-bypass';
+import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { syncUser } from "@/lib/auth";
+import {
+  db,
+  tasks,
+  labels,
+  lists,
+  userStats,
+  viewSettings,
+  templates,
+  users,
+} from "@/db";
+import { eq } from "drizzle-orm";
+import { constantTimeEqual } from "@/lib/auth-bypass";
 
 /**
  * Test authentication endpoint for E2E testing.
- * 
+ *
  * This endpoint is ONLY available when E2E_TEST_MODE=true.
  * It creates a mock authenticated session for testing purposes.
- * 
+ *
  * SECURITY: This should NEVER be enabled in production!
  */
 
 const TEST_USER = {
-  id: 'test-user-e2e-001',
-  email: 'e2e-test@example.com',
-  firstName: 'E2E',
-  lastName: 'Test User',
+  id: "test-user-e2e-001",
+  email: "e2e-test@example.com",
+  firstName: "E2E",
+  lastName: "Test User",
   profilePictureUrl: null,
 };
 
 export async function POST(request: NextRequest) {
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === "production") {
     return NextResponse.json(
-      { error: 'Test auth is disabled in production' },
-      { status: 404 }
+      { error: "Test auth is disabled in production" },
+      { status: 404 },
     );
   }
 
-  if (process.env.E2E_TEST_MODE !== 'true') {
+  if (process.env.E2E_TEST_MODE !== "true") {
     return NextResponse.json(
-      { error: 'Test auth is only available in E2E test mode' },
-      { status: 403 }
+      { error: "Test auth is only available in E2E test mode" },
+      { status: 403 },
     );
   }
 
-  const secret = request.headers.get('x-e2e-secret');
-  if (!process.env.E2E_TEST_SECRET || !secret || !constantTimeEqual(secret, process.env.E2E_TEST_SECRET)) {
+  const secret = request.headers.get("x-e2e-secret");
+  if (
+    !process.env.E2E_TEST_SECRET ||
+    !secret ||
+    !constantTimeEqual(secret, process.env.E2E_TEST_SECRET)
+  ) {
     return NextResponse.json(
-      { error: 'Invalid or missing E2E test secret' },
-      { status: 401 }
+      { error: "Invalid or missing E2E test secret" },
+      { status: 401 },
     );
   }
 
@@ -60,75 +73,129 @@ export async function POST(request: NextRequest) {
     // Everything references users.id with onDelete: "cascade"
     // Note: Delete sequentially instead of concurrently via Promise.all
     // to avoid database lock contention issues in SQLite tests
-    try { await db.delete(tasks).where(eq(tasks.userId, userToSync.id)); } catch (e) { console.warn('Failed to cleanup tasks:', e); }
-    try { await db.delete(labels).where(eq(labels.userId, userToSync.id)); } catch (e) { console.warn('Failed to cleanup labels:', e); }
-    try { await db.delete(lists).where(eq(lists.userId, userToSync.id)); } catch (e) { console.warn('Failed to cleanup lists:', e); }
-    try { await db.delete(userStats).where(eq(userStats.userId, userToSync.id)); } catch (e) { console.warn('Failed to cleanup stats:', e); }
-    try { await db.delete(viewSettings).where(eq(viewSettings.userId, userToSync.id)); } catch (e) { console.warn('Failed to cleanup viewSettings:', e); }
-    try { await db.delete(templates).where(eq(templates.userId, userToSync.id)); } catch (e) { console.warn('Failed to cleanup templates:', e); }
+    if (
+      process.env.DATABASE_URL &&
+      !process.env.DATABASE_URL.includes("dummy")
+    ) {
+      try {
+        await db.delete(tasks).where(eq(tasks.userId, userToSync.id));
+      } catch (e) {
+        console.warn("Failed to cleanup tasks:", e);
+      }
+      try {
+        await db.delete(labels).where(eq(labels.userId, userToSync.id));
+      } catch (e) {
+        console.warn("Failed to cleanup labels:", e);
+      }
+      try {
+        await db.delete(lists).where(eq(lists.userId, userToSync.id));
+      } catch (e) {
+        console.warn("Failed to cleanup lists:", e);
+      }
+      try {
+        await db.delete(userStats).where(eq(userStats.userId, userToSync.id));
+      } catch (e) {
+        console.warn("Failed to cleanup stats:", e);
+      }
+      try {
+        await db
+          .delete(viewSettings)
+          .where(eq(viewSettings.userId, userToSync.id));
+      } catch (e) {
+        console.warn("Failed to cleanup viewSettings:", e);
+      }
+      try {
+        await db.delete(templates).where(eq(templates.userId, userToSync.id));
+      } catch (e) {
+        console.warn("Failed to cleanup templates:", e);
+      }
+    }
 
     // Reset initialization flag so syncUser recreates Inbox and Stats
-    try { await db.update(users).set({ isInitialized: false }).where(eq(users.id, userToSync.id)); } catch {}
+    if (
+      process.env.DATABASE_URL &&
+      !process.env.DATABASE_URL.includes("dummy")
+    ) {
+      try {
+        await db
+          .update(users)
+          .set({ isInitialized: false })
+          .where(eq(users.id, userToSync.id));
+      } catch {}
+    }
 
     // 2. Sync the test user to the database
-    await syncUser(userToSync);
+    if (
+      process.env.DATABASE_URL &&
+      !process.env.DATABASE_URL.includes("dummy")
+    ) {
+      await syncUser(userToSync);
+    }
 
     // Set a test session cookie
     const cookieStore = await cookies();
-    cookieStore.set('wos-session-test', JSON.stringify({
-      user: userToSync,
-      expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
-    }), {
-      httpOnly: true,
-      secure: false, // Allow HTTP for local testing
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 24 * 60 * 60, // 24 hours
-    });
+    cookieStore.set(
+      "wos-session-test",
+      JSON.stringify({
+        user: userToSync,
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+      }),
+      {
+        httpOnly: true,
+        secure: false, // Allow HTTP for local testing
+        sameSite: "lax",
+        path: "/",
+        maxAge: 24 * 60 * 60, // 24 hours
+      },
+    );
 
     return NextResponse.json({
       success: true,
       user: userToSync,
-      message: 'Test session created'
+      message: "Test session created",
     });
   } catch (error) {
-    console.error('Test auth error:', error);
+    console.error("Test auth error:", error, (error as Error)?.stack);
     return NextResponse.json(
-      { error: 'Failed to create test session' },
-      { status: 500 }
+      { error: "Failed to create test session" },
+      { status: 500 },
     );
   }
 }
 
 export async function DELETE(request: NextRequest) {
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === "production") {
     return NextResponse.json(
-      { error: 'Test auth is disabled in production' },
-      { status: 404 }
+      { error: "Test auth is disabled in production" },
+      { status: 404 },
     );
   }
 
-  if (process.env.E2E_TEST_MODE !== 'true') {
+  if (process.env.E2E_TEST_MODE !== "true") {
     return NextResponse.json(
-      { error: 'Test auth is only available in E2E test mode' },
-      { status: 403 }
+      { error: "Test auth is only available in E2E test mode" },
+      { status: 403 },
     );
   }
 
-  const secret = request.headers.get('x-e2e-secret');
-  if (!process.env.E2E_TEST_SECRET || !secret || !constantTimeEqual(secret, process.env.E2E_TEST_SECRET)) {
+  const secret = request.headers.get("x-e2e-secret");
+  if (
+    !process.env.E2E_TEST_SECRET ||
+    !secret ||
+    !constantTimeEqual(secret, process.env.E2E_TEST_SECRET)
+  ) {
     return NextResponse.json(
-      { error: 'Invalid or missing E2E test secret' },
-      { status: 401 }
+      { error: "Invalid or missing E2E test secret" },
+      { status: 401 },
     );
   }
 
   // Clear the test session cookie
   const cookieStore = await cookies();
-  cookieStore.delete('wos-session-test');
+  cookieStore.delete("wos-session-test");
 
   return NextResponse.json({
     success: true,
-    message: 'Test session cleared'
+    message: "Test session cleared",
   });
 }
