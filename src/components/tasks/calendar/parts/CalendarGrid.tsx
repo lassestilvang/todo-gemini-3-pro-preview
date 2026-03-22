@@ -50,21 +50,24 @@ export function CalendarGrid({
       </div>
 
       <div className="grid grid-cols-7 flex-1 auto-rows-fr">
-        {daysWithMeta.map(
-          ({ day, key, isCurrentMonth, isTodayDate, label }, dayIdx) => {
-            const entry = tasksByDate.get(key);
-            const dayTasks = entry?.tasks ?? [];
-            const completedCount = entry?.completedCount ?? 0;
-            const tooltipThreshold = getEffectiveCalendarDenseTooltipThreshold(
-              calendarDenseTooltipThreshold ?? null,
-              6,
-            );
-            const useNativeTooltip =
-              calendarUseNativeTooltipsOnDenseDays === false
-                ? false
-                : dayTasks.length > tooltipThreshold;
+        {(() => {
+          // ⚡ Bolt Opt: Hoist tooltip threshold calculation out of the O(days) render loop
+          const tooltipThreshold = getEffectiveCalendarDenseTooltipThreshold(
+            calendarDenseTooltipThreshold ?? null,
+            6,
+          );
 
-            return (
+          return daysWithMeta.map(
+            ({ day, key, isCurrentMonth, isTodayDate, label }, dayIdx) => {
+              const entry = tasksByDate.get(key);
+              const dayTasks = entry?.tasks ?? [];
+              const completedCount = entry?.completedCount ?? 0;
+              const useNativeTooltip =
+                calendarUseNativeTooltipsOnDenseDays === false
+                  ? false
+                  : dayTasks.length > tooltipThreshold;
+
+              return (
               <div
                 key={day.toString()}
                 className={cn(
@@ -170,9 +173,10 @@ export function CalendarGrid({
                   </button>
                 )}
               </div>
-            );
-          },
-        )}
+              );
+            },
+          );
+        })()}
       </div>
     </div>
   );

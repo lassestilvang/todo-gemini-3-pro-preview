@@ -10,7 +10,6 @@ import {
   eachDayOfInterval,
   addMonths,
   subMonths,
-  startOfDay,
 } from "date-fns";
 import {
   ChevronLeft,
@@ -113,8 +112,9 @@ export function CalendarView({ tasks }: CalendarViewProps) {
     for (const task of displayTasks) {
       if (!task.dueDate) continue;
       // Perf: use start-of-day timestamp keys to avoid format() per task.
-      // This reduces string allocations and date formatting cost for large lists.
-      const dateKey = startOfDay(task.dueDate).getTime();
+      // ⚡ Bolt Opt: Manually calculate start-of-day timestamp without object allocation (date-fns startOfDay instantiates new Date)
+      const d = task.dueDate;
+      const dateKey = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
       const existing = map.get(dateKey);
       if (existing) {
         existing.tasks.push(task);
@@ -133,13 +133,15 @@ export function CalendarView({ tasks }: CalendarViewProps) {
 
   const daysWithMeta = useMemo(() => {
     // Perf: precompute all day metadata once to avoid repeated date-fns calls per cell.
-    const selectedKey = selectedDate ? startOfDay(selectedDate).getTime() : null;
-    const todayKey = startOfDay(new Date()).getTime();
+    // ⚡ Bolt Opt: Manually calculate timestamps without startOfDay (which allocates Dates)
+    const selectedKey = selectedDate ? new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate()).getTime() : null;
+    const now = new Date();
+    const todayKey = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     const currentMonthValue = currentMonth.getMonth();
     const currentMonthYear = currentMonth.getFullYear();
 
     return days.map(day => {
-      const key = startOfDay(day).getTime();
+      const key = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
       return {
         day,
         key,
@@ -233,19 +235,22 @@ export function CalendarView({ tasks }: CalendarViewProps) {
         <TooltipProvider>
           {/* Perf: single provider for the whole grid to avoid per-day context instantiation. */}
           <div className="grid grid-cols-7 flex-1 auto-rows-fr">
-            {daysWithMeta.map(({ day, key, isCurrentMonth, isSelected, isTodayDate, label }, dayIdx) => {
-              const { tasks: dayTasks, completedCount } =
-                getTaskSummaryForDayKey(key);
-              const isSelectedDay = isSelected;
-              // Perf: use native title tooltips on busy days to avoid mounting
-              // a Tooltip component for every task badge.
+            {(() => {
+              // Perf: hoist tooltip threshold calculation outside the per-day render loop
               const tooltipThreshold = getEffectiveCalendarDenseTooltipThreshold(calendarDenseTooltipThreshold, 6);
-              const useNativeTooltip =
-                calendarUseNativeTooltipsOnDenseDays === false
-                  ? false
-                  : dayTasks.length > tooltipThreshold;
 
-              return (
+              return daysWithMeta.map(({ day, key, isCurrentMonth, isSelected, isTodayDate, label }, dayIdx) => {
+                const { tasks: dayTasks, completedCount } =
+                  getTaskSummaryForDayKey(key);
+                const isSelectedDay = isSelected;
+                // Perf: use native title tooltips on busy days to avoid mounting
+                // a Tooltip component for every task badge.
+                const useNativeTooltip =
+                  calendarUseNativeTooltipsOnDenseDays === false
+                    ? false
+                    : dayTasks.length > tooltipThreshold;
+
+                return (
                 <div
                   key={day.toString()}
                   role="button"
@@ -339,8 +344,9 @@ export function CalendarView({ tasks }: CalendarViewProps) {
                     })}
                   </div>
                 </div>
-              );
-            })}
+                );
+              });
+            })()}
           </div>
         </TooltipProvider>
       </div>

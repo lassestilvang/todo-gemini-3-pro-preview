@@ -1,3 +1,6 @@
+## 2025-05-18 - Hoist O(N) allocations in Calendar Rendering
+**Learning:** Date-fns `startOfDay` creates a new Date instance and adds abstraction overhead. Inside O(N) rendering maps like `daysWithMeta` (which loops up to 42 times for calendar cells) and `tasksByDate` (looping over every task), using `startOfDay(date)` causes significant hidden garbage collection overhead.
+**Action:** Hoist the threshold calculations and manually calculate `new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()` to avoid invoking `startOfDay` and triggering redundant internal Date instantiations within loops.
 ## 2025-02-21 - Batch Drizzle ORM inserts to fix N+1 in Todoist Sync
 ## 2025-02-14 - Optimize label mapping creation in Todoist sync
 **Learning:** The Todoist sync process exhibited an N+1 query issue when saving newly created remote labels back to the database (`db.insert(externalEntityMap).values(...)` within a loop).
