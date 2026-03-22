@@ -234,6 +234,13 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
 
     const externalEntityMappingsToCreate: (typeof externalEntityMap.$inferInsert)[] =
       [];
+    const labelMappingsToCreate: {
+      userId: string;
+      provider: "todoist";
+      entityType: "label";
+      localId: number;
+      externalId: string;
+    }[] = [];
 
     for (const localLabel of localLabels) {
       if (hasScopedMappings && !scopedLocalLabelIds.has(localLabel.id)) {

@@ -10,7 +10,7 @@ import { useTheme } from "next-themes";
 import { useUser } from "@/components/providers/UserProvider";
 import { isSystem24Hour } from "@/lib/time-utils";
 import type { Task } from "@/lib/types";
-import { getTaskDueDate, taskToEvent } from "@/components/calendar2/utils/task-to-event";
+import { taskToEvent } from "@/components/calendar2/utils/task-to-event";
 
 import "@fullcalendar/react/skeleton.css";
 import "@fullcalendar/react/themes/classic/theme.css";
@@ -18,11 +18,31 @@ import "@fullcalendar/react/themes/classic/palette.css";
 
 interface Calendar3MainProps {
   tasks: Task[];
-  onEventDrop: (arg: Parameters<NonNullable<ComponentProps<typeof FullCalendar>["eventDrop"]>>[0]) => void;
-  onEventResize: (arg: Parameters<NonNullable<ComponentProps<typeof FullCalendar>["eventResize"]>>[0]) => void;
-  onDateClick: (arg: Parameters<NonNullable<ComponentProps<typeof FullCalendar>["dateClick"]>>[0]) => void;
-  onSelect: (arg: Parameters<NonNullable<ComponentProps<typeof FullCalendar>["select"]>>[0]) => void;
-  onEventReceive: (arg: Parameters<NonNullable<ComponentProps<typeof FullCalendar>["eventReceive"]>>[0]) => void;
+  onEventDrop: (
+    arg: Parameters<
+      NonNullable<ComponentProps<typeof FullCalendar>["eventDrop"]>
+    >[0],
+  ) => void;
+  onEventResize: (
+    arg: Parameters<
+      NonNullable<ComponentProps<typeof FullCalendar>["eventResize"]>
+    >[0],
+  ) => void;
+  onDateClick: (
+    arg: Parameters<
+      NonNullable<ComponentProps<typeof FullCalendar>["dateClick"]>
+    >[0],
+  ) => void;
+  onSelect: (
+    arg: Parameters<
+      NonNullable<ComponentProps<typeof FullCalendar>["select"]>
+    >[0],
+  ) => void;
+  onEventReceive: (
+    arg: Parameters<
+      NonNullable<ComponentProps<typeof FullCalendar>["eventReceive"]>
+    >[0],
+  ) => void;
 }
 
 export function Calendar3Main({
@@ -42,22 +62,27 @@ export function Calendar3Main({
     // ⚡ Bolt Opt: Replaced .filter().map().filter() chain with a single O(N) loop
     // Reduces multiple array passes, object allocations, and GC overhead.
     const result = [];
-    for (let i = 0; i < tasks.length; i++) {
-      const task = tasks[i];
-      if (getTaskDueDate(task)) {
-        const event = taskToEvent(task);
-        if (event) {
-          result.push(event);
-        }
+    for (const task of tasks) {
+      const event = taskToEvent(task);
+      if (event) {
+        result.push(event);
       }
     }
     return result;
   }, [tasks]);
 
   return (
-    <div className="flex-1 min-h-0" data-color-scheme={resolvedTheme === "dark" ? "dark" : "light"}>
+    <div
+      className="flex-1 min-h-0"
+      data-color-scheme={resolvedTheme === "dark" ? "dark" : "light"}
+    >
       <FullCalendar
-        plugins={[classicThemePlugin, dayGridPlugin, timeGridPlugin, interactionPlugin]}
+        plugins={[
+          classicThemePlugin,
+          dayGridPlugin,
+          timeGridPlugin,
+          interactionPlugin,
+        ]}
         initialView="dayGridMonth"
         headerToolbar={{
           left: "prev,next today",
@@ -85,9 +110,18 @@ export function Calendar3Main({
         eventDurationEditable
         eventResizableFromStart
         defaultTimedEventDuration="00:30:00"
-        eventTimeFormat={{ hour: "numeric", minute: "2-digit", hour12: !use24h }}
-
-        {...({ slotLabelFormat: { hour: "numeric", minute: "2-digit", hour12: !use24h } } as Record<string, unknown>)}
+        eventTimeFormat={{
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: !use24h,
+        }}
+        {...({
+          slotLabelFormat: {
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: !use24h,
+          },
+        } as Record<string, unknown>)}
       />
     </div>
   );

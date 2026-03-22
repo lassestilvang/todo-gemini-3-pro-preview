@@ -111,8 +111,22 @@
 **Vulnerability:** In `src/lib/actions/templates.ts`, the `instantiateTemplateImpl` function lacked a maximum limit on the total number of tasks that could be created from a single template payload. An attacker could craft a malicious JSON payload with excessive nested subtasks, triggering thousands of parallel `createTask` database calls in `createRecursive`. This caused a Denial of Service (DoS) by exhausting server memory, creating excessive DB connections, and blocking the Node.js event loop.
 **Learning:** Even if an endpoint is rate-limited (e.g., 50 template instantiations per hour), the payload *content* complexity must also be strictly bounded. Recursive or deeply nested user data is a prime vector for asymmetric resource exhaustion attacks.
 **Prevention:** Introduced a `taskCount` state variable within the instantiation function and enforced a hard limit (`MAX_TASKS_PER_TEMPLATE = 100`). Throws a `ValidationError` early in the recursion loop to halt execution if the payload attempts to exceed the maximum allowed complexity.
+## 2026-11-06 - [Medium] Logic Flaw / Data Corruption in Google Tasks Mapping
+**Vulnerability:** `setGoogleTasksListMappings` in `src/lib/actions/google-tasks.ts` lacked validation to prevent duplicate mappings (mapping multiple Google Tasks lists to the same local list or vice versa), unlike the Todoist implementation. This allowed users to map a local list to multiple external task lists, or map multiple local lists to the same external list.
+**Learning:** During sync, this many-to-one or one-to-many relationship causes unpredictable data conflicts, potential data overwrites (corruption), and infinite loop/DoS behaviors where tasks bounce back and forth during conflict resolution.
+**Prevention:** Added `hasDuplicateStrings` and `hasDuplicateNonNullNumbers` utility checks to validate uniqueness of external and local IDs in the mapping payload before proceeding with database updates.
+
+## 2026-03-01 - [DoS/Burst Rate Limiting in Cron Endpoints]
+**Vulnerability:** External integration sync endpoints (like `google-tasks-sync`) were processing all users concurrently using `Promise.all()`.
+**Learning:** This approach causes a massive, instantaneous burst of concurrent HTTP requests against third-party APIs (like Google Tasks) when the user base grows, leading to severe API rate-limiting penalties and potential server memory exhaustion (DoS).
+**Prevention:** Always process bulk external API synchronizations sequentially (e.g., using a `for...of` loop with `await`) to throttle outgoing requests and avoid triggering rate limits.
 
 ## 2026-11-06 - [Medium] Logic Flaw / Data Corruption in Google Tasks Mapping
 **Vulnerability:** \`setGoogleTasksListMappings\` in \`src/lib/actions/google-tasks.ts\` lacked validation to prevent duplicate mappings (mapping multiple Google Tasks lists to the same local list or vice versa), unlike the Todoist implementation. This allowed users to map a local list to multiple external task lists, or map multiple local lists to the same external list.
 **Learning:** During sync, this many-to-one or one-to-many relationship causes unpredictable data conflicts, potential data overwrites (corruption), and infinite loop/DoS behaviors where tasks bounce back and forth during conflict resolution.
 **Prevention:** Added \`hasDuplicateStrings\` and \`hasDuplicateNonNullNumbers\` utility checks to validate uniqueness of external and local IDs in the mapping payload before proceeding with database updates.
+
+## 2024-03-22 - [Medium] DoS / Rate Limiting via Concurrent External API Sync
+**Vulnerability:** In `src/app/api/google-tasks-sync/route.ts`, the cron job synchronized multiple user integrations concurrently using `Promise.all()`. As the user base grows, this causes sudden bursts of simultaneous requests to the Google Tasks API.
+**Learning:** Concurrent execution of external API calls for multiple users leads to rapid exhaustion of third-party rate limits, potentially resulting in IP bans or service degradation (DoS) for all users.
+**Prevention:** Replaced `Promise.all()` with a sequential `for...of` loop to stagger API requests and respect third-party rate limits.

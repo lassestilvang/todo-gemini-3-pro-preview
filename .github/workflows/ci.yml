@@ -286,8 +286,8 @@ jobs:
     name: E2E Tests (${{ matrix.shard }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [cleanup-legacy]
-    if: always() && (needs.cleanup-legacy.result == 'success' || needs.cleanup-legacy.result == 'skipped')
+    needs: [build]
+    if: always() && (needs.build.result == 'success' || needs.build.result == 'skipped')
     strategy:
       fail-fast: false
       matrix:
@@ -359,6 +359,7 @@ jobs:
         env:
           DATABASE_URL: ${{ github.event_name == 'pull_request' && steps.neon-branch.outputs.db_url || secrets.DATABASE_URL }}
           E2E_TEST_MODE: "true"
+          NEXT_PUBLIC_E2E_TEST_MODE: "true"
           E2E_TEST_SECRET: "ci-e2e-secret"
           CI: true
           WORKOS_API_KEY: ${{ secrets.WORKOS_API_KEY }}
