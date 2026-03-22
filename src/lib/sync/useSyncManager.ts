@@ -385,6 +385,7 @@ export function useSyncManager() {
     const retryAllFailed = useCallback(async () => {
         const failedIds = pendingActionsRef.current.filter(a => a.status === 'failed').map(a => a.id);
         if (failedIds.length === 0) return;
+        const failedIdsSet = new Set(failedIds);
         await updateActionStatusBatch(failedIds.map(id => ({ id, status: 'pending' as const })));
         const failedIdSet = new Set(failedIds);
         setPendingActions(prev => prev.map(a => failedIdSet.has(a.id) ? { ...a, status: 'pending' as const, error: undefined } : a));
@@ -394,6 +395,7 @@ export function useSyncManager() {
     const dismissAllFailed = useCallback(async () => {
         const failedIds = pendingActionsRef.current.filter(a => a.status === 'failed').map(a => a.id);
         if (failedIds.length === 0) return;
+        const failedIdsSet = new Set(failedIds);
         await removeFromQueueBatch(failedIds);
         const failedIdSet = new Set(failedIds);
         setPendingActions(prev => prev.filter(a => !failedIdSet.has(a.id)));
