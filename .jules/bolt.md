@@ -27,3 +27,7 @@
 ## 2025-02-17 - Optimize unmapped Google Tasklists sync with Promise.all and bulk inserts
 **Learning:** Sequential external API calls combined with sequential DB inserts (N+1) cause major delays. Drizzle's `db.insert().values()` throws errors on empty arrays, so always verify length first.
 **Action:** Replaced a sequential loop of API calls and DB inserts with concurrent API calls via `Promise.all` and a single batched DB insert. This significantly reduces wall-clock time by parallelizing network requests and batching database writes. Wrapped the DB insert safely with an `if (unmappedLists.length > 0)` check.
+
+## 2025-03-22 - Avoid Array.includes inside map/filter state updaters
+**Learning:** Calling `array.includes(id)` inside an `array.map()` or `array.filter()` loop (e.g., when updating React state with a subset of modified items) results in O(N*M) time complexity, which causes performance regressions when both lists grow. Additionally, using dynamic property checks (`a.status === 'failed'`) in the state updater instead of fixed IDs can introduce race conditions if the updater is called after an `await`, as new items might have failed in the background.
+**Action:** Convert the subset array of IDs to a `Set` before the loop, and use `set.has(item.id)` inside the map/filter. This safely captures the exact snapshot of IDs that were just processed while reducing the complexity to O(N).
