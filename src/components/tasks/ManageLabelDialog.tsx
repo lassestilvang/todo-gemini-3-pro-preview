@@ -19,6 +19,7 @@ import { createLabel, updateLabel, deleteLabel } from "@/lib/actions";
 import { IconPicker } from "@/components/ui/icon-picker";
 import { DeleteConfirmPopover } from "@/components/ui/delete-confirm-popover";
 import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
 
 const COLORS = [
     "#000000", // Black
@@ -214,6 +215,7 @@ function LabelForm({ label, userId, onClose }: { label?: { id: number; name: str
                         Cancel
                     </Button>
                     <Button type="submit" disabled={isSaving || isDeleting}>
+                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {isSaving ? "Saving..." : "Save"}
                     </Button>
                 </div>
