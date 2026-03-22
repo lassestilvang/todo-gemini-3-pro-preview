@@ -42,18 +42,20 @@ export function CalendarMain({
 
   const events = useMemo(() => {
     const visible = visibleListIds;
-    return tasks
-      .filter((task) => {
-        const dueDate = getTaskDueDate(task);
-        if (!dueDate) return false;
-        const listId =
-          task.listId === null || task.listId === undefined
-            ? null
-            : Number(task.listId);
-        return visible.has(listId);
-      })
-      .map(taskToEvent)
-      .filter(Boolean);
+    // ⚡ Bolt Opt: Replaced .filter().map().filter() chain with a single O(N) loop
+    const result = [];
+    for (let i = 0; i < tasks.length; i++) {
+      const task = tasks[i];
+      const dueDate = getTaskDueDate(task);
+      if (!dueDate) continue;
+      const listId = task.listId == null ? null : Number(task.listId);
+      if (!visible.has(listId)) continue;
+      const event = taskToEvent(task);
+      if (event) {
+        result.push(event);
+      }
+    }
+    return result;
   }, [tasks, visibleListIds]);
 
   return (
