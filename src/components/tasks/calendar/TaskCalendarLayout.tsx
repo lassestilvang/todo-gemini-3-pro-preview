@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, addMonths, subMonths, startOfDay } from "date-fns";
+import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, addMonths, subMonths } from "date-fns";
 import { useUser } from "@/components/providers/UserProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { type Task } from "@/lib/types";
@@ -49,7 +49,9 @@ export function TaskCalendarLayout({ tasks, onDateClick, onEdit }: TaskCalendarL
         continue;
       }
 
-      const key = startOfDay(task.dueDate).getTime();
+      // ⚡ Bolt Opt: Manually calculate timestamp without startOfDay (avoids redundant Date allocations inside loop)
+      const d = task.dueDate;
+      const key = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
       const entry = map.get(key) || { tasks: [], completedCount: 0 };
       entry.tasks.push(task);
       if (task.isCompleted) entry.completedCount++;
@@ -59,14 +61,19 @@ export function TaskCalendarLayout({ tasks, onDateClick, onEdit }: TaskCalendarL
   }, [tasks]);
 
   const daysWithMeta = useMemo(() => {
-    const todayKey = startOfDay(new Date()).getTime();
-    return days.map(day => ({
-      day,
-      key: startOfDay(day).getTime(),
-      isCurrentMonth: day.getMonth() === currentMonth.getMonth() && day.getFullYear() === currentMonth.getFullYear(),
-      isTodayDate: startOfDay(day).getTime() === todayKey,
-      label: day.getDate(),
-    }));
+    // ⚡ Bolt Opt: Manually calculate timestamps without startOfDay (which allocates Dates)
+    const now = new Date();
+    const todayKey = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    return days.map(day => {
+      const key = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
+      return {
+        day,
+        key,
+        isCurrentMonth: day.getMonth() === currentMonth.getMonth() && day.getFullYear() === currentMonth.getFullYear(),
+        isTodayDate: key === todayKey,
+        label: day.getDate(),
+      };
+    });
   }, [currentMonth, days]);
 
   return (
