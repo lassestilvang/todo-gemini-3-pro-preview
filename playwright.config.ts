@@ -80,6 +80,7 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
     env: {
+      ...process.env as NodeJS.ProcessEnv,
       E2E_TEST_MODE: 'true',
       NEXT_PUBLIC_E2E_TEST_MODE: 'true',
       E2E_TEST_SECRET: process.env.E2E_TEST_SECRET || 'local-e2e-secret',

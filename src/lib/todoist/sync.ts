@@ -232,6 +232,8 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
       scopedLocalLabelIds.add(mappedLocalLabelId);
     }
 
+    const externalEntityMappingsToCreate: (typeof externalEntityMap.$inferInsert)[] =
+      [];
     const labelMappingsToCreate: {
       userId: string;
       provider: "todoist";
@@ -286,7 +288,7 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
               mappedLabelIds.add(recreatedLabel.id);
             }
           } else {
-            labelMappingsToCreate.push({
+            externalEntityMappingsToCreate.push({
               userId,
               provider: "todoist" as const,
               entityType: "label" as const,
@@ -328,7 +330,7 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
       const existingRemoteLabel =
         remoteLabelsByNormalizedName.get(normalizedName);
       if (existingRemoteLabel && !labelIdMap.has(existingRemoteLabel.id)) {
-        labelMappingsToCreate.push({
+        externalEntityMappingsToCreate.push({
           userId,
           provider: "todoist" as const,
           entityType: "label" as const,
@@ -348,7 +350,7 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
         continue;
       }
 
-      labelMappingsToCreate.push({
+      externalEntityMappingsToCreate.push({
         userId,
         provider: "todoist" as const,
         entityType: "label" as const,
@@ -364,8 +366,8 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
       );
     }
 
-    if (labelMappingsToCreate.length > 0) {
-      await db.insert(externalEntityMap).values(labelMappingsToCreate);
+    if (externalEntityMappingsToCreate.length > 0) {
+      await db.insert(externalEntityMap).values(externalEntityMappingsToCreate);
     }
 
     const scopedRemoteLabelIds = hasScopedMappings

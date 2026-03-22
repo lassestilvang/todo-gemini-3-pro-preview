@@ -52,6 +52,7 @@ export async function authenticateTestUser(page: Page): Promise<boolean> {
 
     const data = await response.json();
     if (data.success !== true) {
+      console.error('[E2E] test-auth endpoint failed:', data);
       return false;
     }
 
