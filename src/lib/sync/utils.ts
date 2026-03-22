@@ -19,7 +19,7 @@ export function replaceIdsInPayload(
     const obj = payload as Record<string, unknown>;
     let changed = false;
     const newObj: Record<string, unknown> = {};
-    for (const key in obj) {
+    for (const key of Object.keys(obj)) {
       const val = obj[key];
       const newVal = replaceIdsInPayload(val, oldId, newId);
       if (newVal !== val) changed = true;
