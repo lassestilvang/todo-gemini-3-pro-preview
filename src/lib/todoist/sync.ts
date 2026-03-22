@@ -1470,6 +1470,8 @@ async function detectTaskConflicts(params: {
     }
   }
 
+  const conflictsToInsert: (typeof externalSyncConflicts.$inferInsert)[] = [];
+
   for (const mapping of taskMappings) {
     const localTaskId = mapping.localId;
     if (!localTaskId) {
@@ -1522,7 +1524,7 @@ async function detectTaskConflicts(params: {
     );
 
     if (!tasksMatch(localPayload, remotePayload)) {
-      await db.insert(externalSyncConflicts).values({
+      conflictsToInsert.push({
         userId,
         provider: "todoist" as const,
         entityType: "task" as const,
@@ -1534,6 +1536,10 @@ async function detectTaskConflicts(params: {
       });
       conflictKeys.add(conflictKey);
     }
+  }
+
+  if (conflictsToInsert.length > 0) {
+    await db.insert(externalSyncConflicts).values(conflictsToInsert);
   }
 }
 
