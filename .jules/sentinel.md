@@ -125,3 +125,8 @@
 **Vulnerability:** \`setGoogleTasksListMappings\` in \`src/lib/actions/google-tasks.ts\` lacked validation to prevent duplicate mappings (mapping multiple Google Tasks lists to the same local list or vice versa), unlike the Todoist implementation. This allowed users to map a local list to multiple external task lists, or map multiple local lists to the same external list.
 **Learning:** During sync, this many-to-one or one-to-many relationship causes unpredictable data conflicts, potential data overwrites (corruption), and infinite loop/DoS behaviors where tasks bounce back and forth during conflict resolution.
 **Prevention:** Added \`hasDuplicateStrings\` and \`hasDuplicateNonNullNumbers\` utility checks to validate uniqueness of external and local IDs in the mapping payload before proceeding with database updates.
+
+## 2024-03-22 - [Medium] DoS / Rate Limiting via Concurrent External API Sync
+**Vulnerability:** In `src/app/api/google-tasks-sync/route.ts`, the cron job synchronized multiple user integrations concurrently using `Promise.all()`. As the user base grows, this causes sudden bursts of simultaneous requests to the Google Tasks API.
+**Learning:** Concurrent execution of external API calls for multiple users leads to rapid exhaustion of third-party rate limits, potentially resulting in IP bans or service degradation (DoS) for all users.
+**Prevention:** Replaced `Promise.all()` with a sequential `for...of` loop to stagger API requests and respect third-party rate limits.
