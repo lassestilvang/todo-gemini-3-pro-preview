@@ -13,55 +13,58 @@ let sqliteConnection: any = null; // Raw SQLite connection for direct access in 
 
 // Select schema based on environment - SQLite for tests, PostgreSQL for production
 // Cast to pgSchema type for TypeScript compatibility (both schemas have same structure)
-const schema = (process.env.NODE_ENV === "test" ? sqliteSchema : pgSchema) as typeof pgSchema;
+const schema = (
+  process.env.NODE_ENV === "test" ? sqliteSchema : pgSchema
+) as typeof pgSchema;
 
 if (process.env.NODE_ENV === "test") {
-    // Use in-memory SQLite for tests to maintain fast test execution
-    // and avoid requiring a database connection during CI
-    const { Database } = await import("bun:sqlite");
-    const { drizzle } = await import("drizzle-orm/bun-sqlite");
+  // Use in-memory SQLite for tests to maintain fast test execution
+  // and avoid requiring a database connection during CI
+  const { Database } = await import("bun:sqlite");
+  const { drizzle } = await import("drizzle-orm/bun-sqlite");
 
-    // Create SQLite database
-    sqliteConnection = new Database(":memory:");
+  // Create SQLite database
+  sqliteConnection = new Database(":memory:");
 
-    // Use SQLite-specific schema that has compatible defaults (datetime('now') instead of NOW())
-    // Cast to DbConnection for type compatibility - tests use SQLite but share the same interface
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    db = drizzle(sqliteConnection, { schema: sqliteSchema }) as any;
+  // Use SQLite-specific schema that has compatible defaults (datetime('now') instead of NOW())
+  // Cast to DbConnection for type compatibility - tests use SQLite but share the same interface
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db = drizzle(sqliteConnection, { schema: sqliteSchema }) as any;
 } else {
-    // Use Neon PostgreSQL for development and production
-    if (!process.env.DATABASE_URL) {
-        throw new Error("DATABASE_URL environment variable is required");
-    }
-    const sql = neon(process.env.DATABASE_URL);
-    db = drizzleNeon(sql, { schema: pgSchema });
+  // Use Neon PostgreSQL for development and production
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL environment variable is required");
+  }
+  const connectionString = process.env.DATABASE_URL.replace("-pooler.", ".");
+  const sql = neon(connectionString);
+  db = drizzleNeon(sql, { schema: pgSchema });
 }
 
 // Export schema tables - uses SQLite schema at runtime for tests, PostgreSQL for production
 // TypeScript sees these as PostgreSQL types for consistent type checking
 export const {
-    users,
-    lists,
-    tasks,
-    labels,
-    externalIntegrations,
-    externalSyncState,
-    externalEntityMap,
-    externalSyncConflicts,
-    taskLabels,
-    reminders,
-    taskLogs,
-    habitCompletions,
-    taskDependencies,
-    templates,
-    userStats,
-    achievements,
-    userAchievements,
-    viewSettings,
-    rateLimits,
-    savedViews,
-    timeEntries,
-    customIcons,
+  users,
+  lists,
+  tasks,
+  labels,
+  externalIntegrations,
+  externalSyncState,
+  externalEntityMap,
+  externalSyncConflicts,
+  taskLabels,
+  reminders,
+  taskLogs,
+  habitCompletions,
+  taskDependencies,
+  templates,
+  userStats,
+  achievements,
+  userAchievements,
+  viewSettings,
+  rateLimits,
+  savedViews,
+  timeEntries,
+  customIcons,
 } = schema;
 
 export { db, sqliteConnection, schema };

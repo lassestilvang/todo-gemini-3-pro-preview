@@ -1,3 +1,6 @@
+## 2025-02-14 - Optimize label mapping creation in Todoist sync
+**Learning:** The Todoist sync process exhibited an N+1 query issue when saving newly created remote labels back to the database (`db.insert(externalEntityMap).values(...)` within a loop).
+**Action:** Replaced the loop's individual inserts with an array of mapping objects (`labelMappingsToCreate`) and a single batch insert at the end of the operation, significantly reducing database roundtrips and execution time.
 ## 2024-05-18 - Replace O(N*M) Array.find with O(1) Map lookups in Todoist Sync
 **Learning:** Found multiple instances in `src/lib/todoist/sync.ts` where `mappingState.labels.find()` and `mappingState.projects.some()` were called inside loops iterating over tasks, resulting in O(N*M) time complexity during sync, which can severely impact performance for users with many mapped labels and tasks.
 **Action:** Precomputed `mappedListIds: Set<number>` and `listLabelMappingMap: Map<number, string>` before the O(N) loops. This reduced the time complexity to O(N+M) using O(1) Map/Set lookups inside `hasLocalListMapping` and `buildLocalTaskPayload`.
