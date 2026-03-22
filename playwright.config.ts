@@ -87,6 +87,10 @@ export default defineConfig({
       E2E_TEST_SECRET: process.env.E2E_TEST_SECRET || "local-e2e-secret",
       DATABASE_URL:
         process.env.DATABASE_URL || "postgresql://dummy:pw@dummy.tld/dummy",
+      WORKOS_API_KEY: process.env.WORKOS_API_KEY || "",
+      WORKOS_CLIENT_ID: process.env.WORKOS_CLIENT_ID || "",
+      WORKOS_COOKIE_PASSWORD: process.env.WORKOS_COOKIE_PASSWORD || "",
+      GEMINI_API_KEY: process.env.GEMINI_API_KEY || "",
     },
   },
 });
