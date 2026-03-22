@@ -78,7 +78,7 @@ export function useTaskCounts(enabled: boolean = true): TaskCounts {
                     if (dueTime >= todayStart && dueTime < tomorrowStart) {
                         counts.today++;
                     } else if (dueTime >= tomorrowStart) {
-                        // Count strictly future dates.
+                        // Count tasks due from tomorrow onwards.
                         counts.upcoming++;
                     }
                 }
