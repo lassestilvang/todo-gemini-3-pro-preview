@@ -126,7 +126,6 @@ export async function exportUserData() {
     const taskIds = userTasks.map(t => t.id)
 
     let userTaskLabels: { taskId: number; labelId: number }[] = []
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let userReminders: any[] = []
 
     if (taskIds.length > 0) {
