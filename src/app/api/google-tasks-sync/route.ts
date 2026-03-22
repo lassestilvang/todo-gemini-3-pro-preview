@@ -20,12 +20,14 @@ export async function GET() {
             .from(externalIntegrations)
             .where(eq(externalIntegrations.provider, "google_tasks"));
 
-        const results = await Promise.all(
-            integrations.map(async (integration) => ({
+        // Process sequentially to reduce burst rate limits against the Google Tasks API.
+        const results: Array<{ userId: string; result: Awaited<ReturnType<typeof syncGoogleTasksForUser>> }> = [];
+        for (const integration of integrations) {
+            results.push({
                 userId: integration.userId,
                 result: await syncGoogleTasksForUser(integration.userId),
-            }))
-        );
+            });
+        }
 
         return NextResponse.json({ success: true, results });
     }

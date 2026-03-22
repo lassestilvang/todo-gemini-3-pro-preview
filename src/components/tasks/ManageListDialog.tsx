@@ -21,6 +21,7 @@ import { IconPicker } from "@/components/ui/icon-picker";
 import { DeleteConfirmPopover } from "@/components/ui/delete-confirm-popover";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
 
 const COLORS = [
     "#000000", // Black
@@ -241,6 +242,7 @@ function ListForm({ list, userId, onSubmit, onDelete, onCancel, isLoading }: Lis
                         Cancel
                     </Button>
                     <Button type="submit" disabled={isLoading}>
+                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {isLoading ? "Saving..." : "Save"}
                     </Button>
                 </div>

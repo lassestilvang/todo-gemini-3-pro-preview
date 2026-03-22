@@ -1,15 +1,15 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices } from "@playwright/test";
 
 /**
  * Playwright configuration for E2E testing.
- * 
+ *
  * Requirements: 5.1, 5.6, 5.7
  * - Uses Playwright as the testing framework
  * - Runs in headless mode for CI
  * - Uses test database isolation
  */
 export default defineConfig({
-  testDir: './e2e',
+  testDir: "./e2e",
 
   // Run tests in parallel
   fullyParallel: true,
@@ -24,7 +24,9 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
 
   // Reporter to use
-  reporter: process.env.CI ? [['blob'], ['github']] : [['html', { open: 'never' }]],
+  reporter: process.env.CI
+    ? [["blob"], ["github"]]
+    : [["html", { open: "never" }]],
 
   // Global timeout for each test
   timeout: 120000,
@@ -38,7 +40,7 @@ export default defineConfig({
     toHaveScreenshot: {
       maxDiffPixelRatio: 0.05,
       // In CI, we might run on different OS (Linux) vs local (Mac), leading to missing snapshots.
-      // We'll relax this check in CI to avoid blocking the build on missing snapshots, 
+      // We'll relax this check in CI to avoid blocking the build on missing snapshots,
       // but ideally we should generate Linux snapshots via Docker.
       threshold: 0.2,
     },
@@ -47,13 +49,13 @@ export default defineConfig({
   // Shared settings for all projects
   use: {
     // Base URL for the application
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000',
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000",
 
     // Collect trace when retrying the failed test
-    trace: 'on-first-retry',
+    trace: "on-first-retry",
 
     // Take screenshot on failure
-    screenshot: 'only-on-failure',
+    screenshot: "only-on-failure",
 
     // Headless mode
     headless: true,
@@ -68,22 +70,27 @@ export default defineConfig({
   // Configure projects for major browsers
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
     },
   ],
 
   // Run local dev server before starting the tests with E2E test mode enabled
   webServer: {
-    command: `E2E_TEST_MODE=true E2E_TEST_SECRET=${process.env.E2E_TEST_SECRET || 'local-e2e-secret'} bun run dev`,
+    command: `E2E_TEST_MODE=true NEXT_PUBLIC_E2E_TEST_MODE=true E2E_TEST_SECRET=${process.env.E2E_TEST_SECRET || 'local-e2e-secret'} bun run dev`,
     url: process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
     env: {
+      ...process.env as NodeJS.ProcessEnv,
       E2E_TEST_MODE: 'true',
       NEXT_PUBLIC_E2E_TEST_MODE: 'true',
       E2E_TEST_SECRET: process.env.E2E_TEST_SECRET || 'local-e2e-secret',
       DATABASE_URL: process.env.DATABASE_URL || '',
+      WORKOS_API_KEY: process.env.WORKOS_API_KEY || '',
+      WORKOS_CLIENT_ID: process.env.WORKOS_CLIENT_ID || '',
+      WORKOS_COOKIE_PASSWORD: process.env.WORKOS_COOKIE_PASSWORD || '',
+      GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
     },
   },
 });
