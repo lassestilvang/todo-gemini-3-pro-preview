@@ -10,7 +10,7 @@ import { useTheme } from "next-themes";
 import { useUser } from "@/components/providers/UserProvider";
 import { isSystem24Hour } from "@/lib/time-utils";
 import type { Task } from "@/lib/types";
-import { taskToEvent } from "@/components/calendar2/utils/task-to-event";
+import { taskToEvent, getTaskDueDate } from "@/components/calendar2/utils/task-to-event";
 
 import "@fullcalendar/react/skeleton.css";
 import "@fullcalendar/react/themes/classic/theme.css";
@@ -62,10 +62,13 @@ export function Calendar3Main({
     // ⚡ Bolt Opt: Replaced .filter().map().filter() chain with a single O(N) loop
     // Reduces multiple array passes, object allocations, and GC overhead.
     const result = [];
-    for (const task of tasks) {
-      const event = taskToEvent(task);
-      if (event) {
-        result.push(event);
+    for (let i = 0; i < tasks.length; i++) {
+      const task = tasks[i];
+      if (getTaskDueDate(task)) {
+        const event = taskToEvent(task);
+        if (event) {
+          result.push(event);
+        }
       }
     }
     return result;
