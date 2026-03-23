@@ -5,7 +5,7 @@ name: CI
 #   (Used by build job for schema push and build validation)
 # - NEON_API_KEY: Neon API key for creating preview branches
 # - NEON_PROJECT_ID: Neon project ID
-# 
+#
 # Note: Unit tests use in-memory SQLite (NODE_ENV=test) and don't require DATABASE_URL
 
 permissions:
@@ -91,7 +91,7 @@ jobs:
           current="preview/pr-${{ github.event.pull_request.number }}"
           # Get IDs of all branches starting with preview/pr- except the current one
           ids=$(neonctl branches list --project-id $NEON_PROJECT_ID -o json | jq -r --arg cur "$current" '.[] | select(.name | startswith("preview/")) | select(.name != $cur) | .id')
-          
+
           if [ -z "$ids" ]; then
             echo "No stale PR branches to prune."
           else
@@ -161,7 +161,7 @@ jobs:
           CI: true
           # Fixed seed for property-based tests to ensure reproducibility
           FAST_CHECK_SEED: "12345"
-      
+
       - name: Enforce Coverage Thresholds
         run: |
           bun -e '
@@ -240,30 +240,11 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Generate Neon Branch Name
-        if: github.event_name == 'pull_request'
-        id: neon-name
-        run: |
-          # Use PR number to reuse branches and avoid hitting limits
-          # Format: preview/pr-<number>
-          echo "branch_name=preview/pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
-
-      - name: Get Neon Branch URL (PR)
-        if: github.event_name == 'pull_request'
-        uses: neondatabase/create-branch-action@v6
-        id: neon-branch
-        continue-on-error: true
-        with:
-          project_id: ${{ secrets.NEON_PROJECT_ID }}
-          api_key: ${{ secrets.NEON_API_KEY }}
-          branch_name: ${{ steps.neon-name.outputs.branch_name }}
-          database: neondb
-
       - name: Setup Database (PR)
-        if: github.event_name == 'pull_request' && steps.neon-branch.outputs.db_url != ''
+        if: github.event_name == 'pull_request' && needs.build.outputs.db_url != ''
         run: bun run db:migrate:ci
         env:
-          DATABASE_URL: ${{ steps.neon-branch.outputs.db_url }}
+          DATABASE_URL: ${{ needs.build.outputs.db_url }}
 
       - name: Setup Database (Main)
         if: github.event_name == 'push'
@@ -357,7 +338,7 @@ jobs:
       - name: Run E2E Tests
         run: bunx playwright test --shard=${{ matrix.shard }}
         env:
-          DATABASE_URL: ${{ github.event_name == 'pull_request' && steps.neon-branch.outputs.db_url || secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ github.event_name == 'pull_request' && needs.build.outputs.db_url || secrets.DATABASE_URL }}
           E2E_TEST_MODE: "true"
           NEXT_PUBLIC_E2E_TEST_MODE: "true"
           E2E_TEST_SECRET: "ci-e2e-secret"
