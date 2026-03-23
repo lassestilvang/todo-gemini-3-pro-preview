@@ -113,7 +113,7 @@ export function areTaskPropsEqual(prev: Readonly<TaskItemProps>, next: Readonly<
     if (p.actualMinutes !== n.actualMinutes) return false;
     if (p.isRecurring !== n.isRecurring) return false;
 
-// Check if energyLevel or context changed (ensures correct memoization)
+    // Check if energyLevel or context changed
     if (p.energyLevel !== n.energyLevel) return false;
     if (p.context !== n.context) return false;
 
