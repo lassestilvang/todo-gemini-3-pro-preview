@@ -392,8 +392,11 @@ async function updateTaskImpl(
       const currentLabelNames = Array.from(currentLabelNamesMap.values());
       const newLabelNames = newLabelIds.map(id => allRelevantLabelsMap.get(id) || "Unknown");
 
-      const added = newLabelNames.filter((n) => !currentLabelNames.includes(n));
-      const removed = currentLabelNames.filter((n) => !newLabelNames.includes(n));
+      const currentLabelNamesSet = new Set(currentLabelNames);
+      const newLabelNamesSet = new Set(newLabelNames);
+
+      const added = newLabelNames.filter((n) => !currentLabelNamesSet.has(n));
+      const removed = currentLabelNames.filter((n) => !newLabelNamesSet.has(n));
 
       if (added.length > 0) changes.push(`Added labels: ${added.join(", ")}`);
       if (removed.length > 0) changes.push(`Removed labels: ${removed.join(", ")}`);
