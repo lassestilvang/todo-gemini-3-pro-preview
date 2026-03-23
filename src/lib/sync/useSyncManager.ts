@@ -460,9 +460,10 @@ export function useSyncManager() {
     await updateActionStatusBatch(
       failedIds.map((id) => ({ id, status: "pending" as const })),
     );
+    const failedSet = new Set(failedIds);
     setPendingActions((prev) =>
       prev.map((a) =>
-        failedIds.includes(a.id)
+        failedSet.has(a.id)
           ? { ...a, status: "pending" as const, error: undefined }
           : a,
       ),
@@ -476,7 +477,8 @@ export function useSyncManager() {
       .map((a) => a.id);
     if (failedIds.length === 0) return;
     await removeFromQueueBatch(failedIds);
-    setPendingActions((prev) => prev.filter((a) => !failedIds.includes(a.id)));
+    const failedSet = new Set(failedIds);
+    setPendingActions((prev) => prev.filter((a) => !failedSet.has(a.id)));
   }, []);
 
   return {
