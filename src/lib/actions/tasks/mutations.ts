@@ -372,7 +372,7 @@ async function updateTaskImpl(
     const currentLabelIds = currentTask.labels.map((l) => l.id).sort();
     const newLabelIds = [...labelIds].sort();
 
-    if (JSON.stringify(currentLabelIds) !== JSON.stringify(newLabelIds)) {
+    if (currentLabelIds.length !== newLabelIds.length || !currentLabelIds.every((val, index) => val === newLabelIds[index])) {
       const currentLabelNamesMap = new Map(currentTask.labels.map((l) => [l.id, l.name || "Unknown"]));
 
       const labelsToFetch = newLabelIds.filter(id => !currentLabelNamesMap.has(id));
