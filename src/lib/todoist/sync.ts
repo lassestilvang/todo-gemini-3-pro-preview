@@ -1942,6 +1942,8 @@ async function createLocalTasksInTodoist(params: {
     externalLabelToName,
   } = params;
 
+  const mappingsToCreate: (typeof externalEntityMap.$inferInsert)[] = [];
+
   for (const task of localTasks) {
     if (localMapping.has(task.id)) {
       continue;
@@ -1975,7 +1977,7 @@ async function createLocalTasksInTodoist(params: {
     }
 
     localMapping.set(task.id, created.id);
-    await db.insert(externalEntityMap).values({
+    mappingsToCreate.push({
       userId,
       provider: "todoist" as const,
       entityType: "task" as const,
@@ -1983,6 +1985,10 @@ async function createLocalTasksInTodoist(params: {
       externalId: created.id,
       externalParentId: created.parentId ?? null,
     });
+  }
+
+  if (mappingsToCreate.length > 0) {
+    await db.insert(externalEntityMap).values(mappingsToCreate);
   }
 }
 

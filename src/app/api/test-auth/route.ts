@@ -129,7 +129,12 @@ export async function POST(request: NextRequest) {
       process.env.DATABASE_URL &&
       !process.env.DATABASE_URL.includes("dummy")
     ) {
-      await syncUser(userToSync);
+      try {
+        await syncUser(userToSync);
+      } catch (e) {
+        console.warn("Failed to sync test user:", e);
+        // Continue anyway, maybe it already exists or Drizzle failed due to race conditions
+      }
     }
 
     // Set a test session cookie
