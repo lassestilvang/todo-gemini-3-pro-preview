@@ -10,7 +10,7 @@ import { useTheme } from "next-themes";
 import { useUser } from "@/components/providers/UserProvider";
 import { isSystem24Hour } from "@/lib/time-utils";
 import type { Task } from "@/lib/types";
-import { taskToEvent, getTaskDueDate } from "@/components/calendar2/utils/task-to-event";
+import { taskToEvent } from "@/components/calendar2/utils/task-to-event";
 
 import "@fullcalendar/react/skeleton.css";
 import "@fullcalendar/react/themes/classic/theme.css";
