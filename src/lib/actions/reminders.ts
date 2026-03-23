@@ -12,6 +12,7 @@ import {
   taskLogs,
   eq,
   and,
+  inArray,
   revalidatePath,
   type ActionResult,
   withErrorHandling,
@@ -53,7 +54,11 @@ export async function getReminders(taskId: number, userId: string) {
  * @param remindAt - The date/time when the reminder should trigger
  * @throws {ValidationError} When required fields are missing
  */
-async function createReminderImpl(userId: string, taskId: number, remindAt: Date) {
+async function createReminderImpl(
+  userId: string,
+  taskId: number,
+  remindAt: Date,
+) {
   await requireUser(userId);
 
   createReminderSchema.parse({ userId, taskId, remindAt });
@@ -97,7 +102,7 @@ async function createReminderImpl(userId: string, taskId: number, remindAt: Date
 export const createReminder: (
   userId: string,
   taskId: number,
-  remindAt: Date
+  remindAt: Date,
 ) => Promise<ActionResult<void>> = withErrorHandling(createReminderImpl);
 
 /**
@@ -132,7 +137,20 @@ async function deleteReminderImpl(userId: string, id: number) {
     details: `Reminder removed for ${reminder[0].remindAt.toLocaleString()}`,
   });
 
-  await db.delete(reminders).where(eq(reminders.id, id));
+  await db
+    .delete(reminders)
+    .where(
+      and(
+        eq(reminders.id, id),
+        inArray(
+          reminders.taskId,
+          db
+            .select({ id: tasks.id })
+            .from(tasks)
+            .where(eq(tasks.userId, userId)),
+        ),
+      ),
+    );
   revalidatePath("/");
 }
 
@@ -146,5 +164,5 @@ async function deleteReminderImpl(userId: string, id: number) {
  */
 export const deleteReminder: (
   userId: string,
-  id: number
+  id: number,
 ) => Promise<ActionResult<void>> = withErrorHandling(deleteReminderImpl);
