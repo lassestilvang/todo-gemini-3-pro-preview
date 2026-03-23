@@ -8,4 +8,4 @@
 
 ## 2025-03-22 - Missing Focus Indicators on Custom Tab Buttons
 **Learning:** Found that custom tab elements built using `<button>` tags (like the mode toggles in the Pomodoro timer) lacked `focus-visible` styles, making keyboard navigation difficult as users could not visually identify which tab they were currently focused on.
-**Action:** When creating custom tab buttons with `<button role="tab">`, always include explicit `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1` classes to ensure proper keyboard accessibility feedback.
+**Action:** When creating custom tab buttons with `<button role="tab">`, always include explicit `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background` classes to ensure proper keyboard accessibility feedback.
