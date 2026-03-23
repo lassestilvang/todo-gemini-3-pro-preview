@@ -42,6 +42,7 @@ export function useTaskCounts(enabled: boolean = true): TaskCounts {
         const now = new Date();
         const todayStart = startOfDay(now).getTime();
         const tomorrowStart = addDays(new Date(todayStart), 1).getTime();
+        const nowTime = now.getTime();
 
         Object.values(tasks).forEach(task => {
             // Only count incomplete tasks
@@ -77,8 +78,11 @@ export function useTaskCounts(enabled: boolean = true): TaskCounts {
                 if (!Number.isNaN(dueTime)) {
                     if (dueTime >= todayStart && dueTime < tomorrowStart) {
                         counts.today++;
-                    } else if (dueTime >= tomorrowStart) {
-                        // Count tasks due from tomorrow onwards.
+                    } else if (dueTime > nowTime) {
+                        // Note: 'Upcoming' typically means everything in the future,
+                        // or sometimes specifically "next 7 days".
+                        // Based on typical task apps, Upcoming usually means "Scheduled for future".
+                        // Let's count strictly future dates.
                         counts.upcoming++;
                     }
                 }
