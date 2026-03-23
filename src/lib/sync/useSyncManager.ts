@@ -476,8 +476,7 @@ export function useSyncManager() {
       .map((a) => a.id);
     if (failedIds.length === 0) return;
     await removeFromQueueBatch(failedIds);
-    const failedIdsSet = new Set(failedIds);
-    setPendingActions((prev) => prev.filter((a) => !failedIdsSet.has(a.id)));
+    setPendingActions((prev) => prev.filter((a) => !failedIds.includes(a.id)));
   }, []);
 
   return {
