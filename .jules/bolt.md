@@ -52,3 +52,7 @@
 ## 2025-02-13 - Replace includes with Set in Sync Manager
 **Learning:** Using `Array.includes` inside `.map()` or `.filter()` loops creates an O(N*M) time complexity bottleneck. By converting the lookup array to a `Set` before iteration and using `Set.has()`, complexity drops to O(N+M), significantly improving performance for state updates.
 **Action:** Replaced `failedIds.includes()` with a `Set` in `useSyncManager.ts` for both `retryAllFailed` and `dismissAllFailed`. Benchmarked a 90x speedup for 10000 items and 1000 failed IDs.
+
+## 2026-03-24 - Optimize Map allocation in Search Action
+**Learning:** Initializing Maps using `new Map(array.map(...))` creates a redundant O(N) intermediate array allocation before the Map is actually created, causing unnecessary garbage collection overhead.
+**Action:** Avoid `new Map(array.map(...))` and instead initialize an empty map (`new Map())` and populate it directly using a `for...of` loop, significantly reducing memory footprint during tight loops.
