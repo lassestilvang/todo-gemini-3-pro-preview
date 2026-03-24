@@ -9,3 +9,7 @@
 ## 2025-03-22 - Missing Focus Indicators on Custom Tab Buttons
 **Learning:** Found that custom tab elements built using `<button>` tags (like the mode toggles in the Pomodoro timer) lacked `focus-visible` styles, making keyboard navigation difficult as users could not visually identify which tab they were currently focused on.
 **Action:** When creating custom tab buttons with `<button role="tab">`, always include explicit `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background` classes to ensure proper keyboard accessibility feedback.
+
+## 2024-03-24 - Icon Picker Image Buttons Missing ARIA Labels
+**Learning:** Icon-only buttons used for selection in dynamic grids (like "Recently Used" or "My Icons") often rely on images without providing accessible names. Screen readers announce these as generic buttons, making it impossible for visually impaired users to know which icon they are selecting.
+**Action:** Always add `aria-label` attributes describing the specific icon (e.g., `aria-label={"Select custom icon " + c.name}`) when rendering grids of icon or image buttons.
