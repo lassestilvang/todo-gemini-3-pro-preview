@@ -347,9 +347,11 @@ export async function searchAll(
         .groupBy(taskDependencies.taskId),
     ]);
 
-  const blockedCountMap = new Map(
-    blockedCountsResult.map((r) => [r.taskId, Number(r.count)])
-  );
+  // ⚡ Bolt Opt: Avoid intermediate array allocation by populating Map directly.
+  const blockedCountMap = new Map<number, number>();
+  for (const r of blockedCountsResult) {
+    blockedCountMap.set(r.taskId, Number(r.count));
+  }
 
   const labelsByTaskId = new Map<
     number,
