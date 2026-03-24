@@ -41,7 +41,7 @@ export function IconPickerLibraryTab({
                 <button
                   key={r}
                   onClick={() => handleSelectIcon(r)}
-                  aria-label={`Select recently used icon ${r}`}
+                  aria-label={'Select recently used icon ' + (customIconNameByUrl.get(r) || r)}
                   className="shrink-0 flex items-center justify-center w-8 h-8 rounded-md border border-transparent hover:bg-accent/50 hover:border-border transition-all snap-start bg-secondary/30"
                 >
                   <ResolvedIcon icon={r} className="h-4 w-4" />
