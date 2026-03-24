@@ -55,4 +55,4 @@
 
 ## 2026-03-24 - Optimize Map allocation in Search Action
 **Learning:** Initializing Maps using `new Map(array.map(...))` creates a redundant O(N) intermediate array allocation before the Map is actually created, causing unnecessary garbage collection overhead.
-**Action:** Avoid `new Map(array.map(...))` and instead initialize an empty map (`new Map())` and populate it directly using a `for...of` loop, significantly reducing memory footprint during tight loops.
+**Action:** Avoid `new Map(array.map(...))` and instead initialize an empty map (`new Map()`) and populate it directly using a `for...of` loop, significantly reducing memory footprint during tight loops.
