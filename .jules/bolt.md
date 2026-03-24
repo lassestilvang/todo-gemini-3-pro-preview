@@ -56,3 +56,6 @@
 ## 2026-03-24 - Optimize Map allocation in Search Action
 **Learning:** Initializing Maps using `new Map(array.map(...))` creates a redundant O(N) intermediate array allocation before the Map is actually created, causing unnecessary garbage collection overhead.
 **Action:** Avoid `new Map(array.map(...))` and instead initialize an empty map (`new Map()`) and populate it directly using a `for...of` loop, significantly reducing memory footprint during tight loops.
+## 2026-03-24 - Replace O(N*M) array.includes with O(N) Set.has in array iterations
+**Learning:** Using `array.includes()` inside `.filter()` or `.map()` methods creates an O(N*M) time complexity bottleneck. This happens because `.includes()` iterates through the array linearly for every element processed by the outer loop.
+**Action:** Replaced `.includes()` with `.has()` by precomputing a `Set` (e.g., `const lookup = new Set(ids)`) before the loop. This reduces the time complexity from O(N*M) to O(N+M) due to O(1) lookups in `Set`.
