@@ -52,3 +52,7 @@
 ## 2025-02-13 - Replace includes with Set in Sync Manager
 **Learning:** Using `Array.includes` inside `.map()` or `.filter()` loops creates an O(N*M) time complexity bottleneck. By converting the lookup array to a `Set` before iteration and using `Set.has()`, complexity drops to O(N+M), significantly improving performance for state updates.
 **Action:** Replaced `failedIds.includes()` with a `Set` in `useSyncManager.ts` for both `retryAllFailed` and `dismissAllFailed`. Benchmarked a 90x speedup for 10000 items and 1000 failed IDs.
+
+## 2026-03-24 - Replace O(N*M) array.includes with O(N) Set.has in array iterations
+**Learning:** Using `array.includes()` inside `.filter()` or `.map()` methods creates an O(N*M) time complexity bottleneck. This happens because `.includes()` iterates through the array linearly for every element processed by the outer loop.
+**Action:** Replaced `.includes()` with `.has()` by precomputing a `Set` (e.g., `const lookup = new Set(ids)`) before the loop. This reduces the time complexity from O(N*M) to O(N+M) due to O(1) lookups in `Set`.
