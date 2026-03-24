@@ -291,7 +291,7 @@ async function updateTaskImpl(
         eq(taskLabels.taskId, id),
         inArray(
           taskLabels.taskId,
-          db.select({ id: tasks.id }).from(tasks).where(eq(tasks.userId, userId))
+          db.select({ id: tasks.id }).from(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, userId)))
         )
       )
     );
