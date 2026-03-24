@@ -286,7 +286,15 @@ async function updateTaskImpl(
     .where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
 
   if (labelIds !== undefined) {
-    await db.delete(taskLabels).where(eq(taskLabels.taskId, id));
+    await db.delete(taskLabels).where(
+      and(
+        eq(taskLabels.taskId, id),
+        inArray(
+          taskLabels.taskId,
+          db.select({ id: tasks.id }).from(tasks).where(eq(tasks.userId, userId))
+        )
+      )
+    );
     if (labelIds.length > 0) {
       const validLabels = await db
         .select({ id: labels.id })
