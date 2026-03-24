@@ -123,7 +123,20 @@ async function removeDependencyImpl(userId: string, taskId: number, blockerId: n
 
   await db
     .delete(taskDependencies)
-    .where(and(eq(taskDependencies.taskId, taskId), eq(taskDependencies.blockerId, blockerId)));
+    .where(
+      and(
+        eq(taskDependencies.taskId, taskId),
+        eq(taskDependencies.blockerId, blockerId),
+        inArray(
+          taskDependencies.taskId,
+          db.select({ id: tasks.id }).from(tasks).where(eq(tasks.userId, userId))
+        ),
+        inArray(
+          taskDependencies.blockerId,
+          db.select({ id: tasks.id }).from(tasks).where(eq(tasks.userId, userId))
+        )
+      )
+    );
 
   await db.insert(taskLogs).values({
     userId,
