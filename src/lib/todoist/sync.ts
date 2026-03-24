@@ -1259,6 +1259,9 @@ async function updateRemoteTasks(params: {
   const managedLocalLabelIds = Array.from(externalToLocalLabel.values());
   const mappedListIds = buildMappedListIds(mappingState);
 
+  const taskIdsWithLabelsToDelete: number[] = [];
+  const taskLabelsToInsert: (typeof taskLabels.$inferInsert)[] = [];
+
   for (const mapping of taskMappings) {
     if (!mapping.localId) {
       continue;
@@ -1341,24 +1344,32 @@ async function updateRemoteTasks(params: {
       .where(and(eq(tasks.id, localTask.id), eq(tasks.userId, userId)));
 
     if (managedLocalLabelIds.length > 0) {
-      await db
-        .delete(taskLabels)
-        .where(
-          and(
-            eq(taskLabels.taskId, localTask.id),
-            inArray(taskLabels.labelId, managedLocalLabelIds),
-          ),
-        );
+      taskIdsWithLabelsToDelete.push(localTask.id);
 
       if (labelIds.length > 0) {
-        await db.insert(taskLabels).values(
-          labelIds.map((labelId) => ({
+        for (const labelId of labelIds) {
+          taskLabelsToInsert.push({
             taskId: localTask.id,
             labelId,
-          })),
-        );
+          });
+        }
       }
     }
+  }
+
+  if (taskIdsWithLabelsToDelete.length > 0) {
+    await db
+      .delete(taskLabels)
+      .where(
+        and(
+          inArray(taskLabels.taskId, taskIdsWithLabelsToDelete),
+          inArray(taskLabels.labelId, managedLocalLabelIds),
+        ),
+      );
+  }
+
+  if (taskLabelsToInsert.length > 0) {
+    await db.insert(taskLabels).values(taskLabelsToInsert);
   }
 }
 

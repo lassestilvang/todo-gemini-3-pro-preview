@@ -59,3 +59,6 @@
 ## 2026-03-24 - Replace O(N*M) array.includes with O(N) Set.has in array iterations
 **Learning:** Using `array.includes()` inside `.filter()` or `.map()` methods creates an O(N*M) time complexity bottleneck. This happens because `.includes()` iterates through the array linearly for every element processed by the outer loop.
 **Action:** Replaced `.includes()` with `.has()` by precomputing a `Set` (e.g., `const lookup = new Set(ids)`) before the loop. This reduces the time complexity from O(N*M) to O(N+M) due to O(1) lookups in `Set`.
+## 2026-03-24 - Optimize Todoist Sync N+1 Task Labels Insert/Delete
+**Learning:** Performing `await db.delete()` and `await db.insert()` database queries repeatedly inside a `for...of` loop results in an N+1 query problem, significantly degrading sync performance when numerous task mappings are processed.
+**Action:** Replaced sequential `db.delete(taskLabels)` and `db.insert(taskLabels)` calls inside the `updateRemoteTasks` loop with an accumulator array strategy. A single bulk `db.delete()` using `inArray()` and a single bulk `db.insert().values()` were executed outside the loop, correctly typing the insert payload array with `typeof table.$inferInsert`. This decreased integration test suite execution time by approximately 550ms (from ~1480ms to ~920ms).
