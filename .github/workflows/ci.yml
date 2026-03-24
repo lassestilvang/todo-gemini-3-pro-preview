@@ -220,6 +220,8 @@ jobs:
     # Build needs lint and test to pass. Cleanup job is PR-only but we can depend on it optionally.
     needs: [lint, test, cleanup-legacy]
     if: always() && (needs.lint.result == 'success') && (needs.test.result == 'success')
+    outputs:
+      db_url: ${{ steps.neon-branch.outputs.db_url }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -303,37 +305,6 @@ jobs:
 
       - name: Install Playwright Browsers
         run: bunx playwright install --with-deps chromium
-
-      - name: Generate Neon Branch Name
-        if: github.event_name == 'pull_request'
-        id: neon-name
-        run: |
-          # Use PR number to reuse branches and avoid hitting limits
-          # Format: preview/pr-<number>
-          echo "branch_name=preview/pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
-
-      - name: Get Neon Branch URL (PR)
-        if: github.event_name == 'pull_request'
-        uses: neondatabase/create-branch-action@v6
-        id: neon-branch
-        continue-on-error: true
-        with:
-          project_id: ${{ secrets.NEON_PROJECT_ID }}
-          api_key: ${{ secrets.NEON_API_KEY }}
-          branch_name: ${{ steps.neon-name.outputs.branch_name }}
-          database: neondb
-
-      - name: Setup Database (PR)
-        if: github.event_name == 'pull_request' && steps.neon-branch.outputs.db_url != ''
-        run: bun run db:migrate:ci
-        env:
-          DATABASE_URL: ${{ steps.neon-branch.outputs.db_url }}
-
-      - name: Setup Database (Main)
-        if: github.event_name == 'push'
-        run: bun run db:migrate:ci
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Run E2E Tests
         run: bunx playwright test --shard=${{ matrix.shard }}
