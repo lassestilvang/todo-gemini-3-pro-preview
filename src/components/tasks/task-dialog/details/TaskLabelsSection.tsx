@@ -17,7 +17,12 @@ export function TaskLabelsSection({
     labels, selectedLabelIds, toggleLabel
 }: TaskLabelsSectionProps) {
     const labelById = useMemo(() => {
-        return new Map(labels.map((label) => [label.id, label]));
+        // ⚡ Bolt Opt: Avoid allocating an O(N) intermediate array before creating the Map
+        const map = new Map<number, typeof labels[0]>();
+        for (const label of labels) {
+            map.set(label.id, label);
+        }
+        return map;
     }, [labels]);
 
     return (

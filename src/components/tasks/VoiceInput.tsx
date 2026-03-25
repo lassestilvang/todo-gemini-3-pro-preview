@@ -127,20 +127,8 @@ declare global {
         start(): void;
         stop(): void;
         abort(): void;
-        onresult: (event: SpeechRecognitionEvent) => void;
-        onerror: (event: SpeechRecognitionErrorEvent) => void;
+        onresult: (event: any) => void;
+        onerror: (event: any) => void;
         onend: () => void;
-    }
-    interface SpeechRecognitionEvent {
-        results: {
-            [index: number]: {
-                [index: number]: {
-                    transcript: string;
-                };
-            };
-        };
-    }
-    interface SpeechRecognitionErrorEvent {
-        error: string;
     }
 }
