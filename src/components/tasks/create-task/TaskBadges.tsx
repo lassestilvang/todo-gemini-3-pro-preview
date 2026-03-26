@@ -21,7 +21,7 @@ function BadgeRemoveButton({ onClick, label }: { onClick: () => void, label: str
                 onClick();
             }}
             className="ml-1 hover:bg-muted rounded-full p-0.5 transition-colors"
-            aria-label={label}
+            aria-label={"Remove " + label}
         >
             <X className="h-3 w-3 text-muted-foreground" />
         </button>
