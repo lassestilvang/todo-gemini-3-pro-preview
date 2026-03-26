@@ -179,14 +179,20 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
       db.select().from(tasks).where(eq(tasks.userId, userId)),
       db.select().from(labels).where(eq(labels.userId, userId)),
     ]);
-    const localTaskMap = new Map(localTasks.map((task) => [task.id, task]));
+    // ⚡ Bolt Opt: Avoid allocating an intermediate array for map initialization
+    const localTaskMap = new Map<number, typeof tasks.$inferSelect>();
+    for (const task of localTasks) {
+      localTaskMap.set(task.id, task);
+    }
     const localTaskIds = localTasks.map((task) => task.id);
     const localTaskLabelMap = await fetchTaskLabels(localTaskIds);
-    const localLabelToExternal = new Map(
-      labelMappings
-        .filter((mapping) => mapping.localId !== null)
-        .map((mapping) => [mapping.localId as number, mapping.externalId]),
-    );
+    // ⚡ Bolt Opt: Avoid allocating an intermediate array for map initialization
+    const localLabelToExternal = new Map<number, string>();
+    for (const mapping of labelMappings) {
+      if (mapping.localId !== null) {
+        localLabelToExternal.set(mapping.localId as number, mapping.externalId);
+      }
+    }
     const labelMappingByLocalId = new Map<
       number,
       typeof externalEntityMap.$inferSelect
@@ -197,9 +203,11 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
       }
     }
     const conflictKeys = await getExistingConflictKeys(userId);
-    const remoteTaskMap = new Map(
-      remoteTasksInScope.map((task) => [task.id, task]),
-    );
+    // ⚡ Bolt Opt: Avoid allocating an intermediate array for map initialization
+    const remoteTaskMap = new Map<string, Task>();
+    for (const task of remoteTasksInScope) {
+      remoteTaskMap.set(task.id, task);
+    }
 
     const labelIdMap = new Map<string, number>();
     for (const mapping of labelMappings) {
@@ -208,9 +216,14 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
       }
     }
 
-    const remoteLabelsById = new Map(
-      snapshot.labels.map((label) => [label.id, label]),
-    );
+    // ⚡ Bolt Opt: Avoid allocating an intermediate array for map initialization
+    const remoteLabelsById = new Map<
+      string,
+      (typeof snapshot.labels)[number]
+    >();
+    for (const label of snapshot.labels) {
+      remoteLabelsById.set(label.id, label);
+    }
     const remoteLabelsByNormalizedName = new Map<
       string,
       (typeof snapshot.labels)[number]
@@ -437,9 +450,11 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
       }
     }
 
-    const existingTaskMap = new Map(
-      taskMappings.map((mapping) => [mapping.externalId, mapping.localId]),
-    );
+    // ⚡ Bolt Opt: Avoid allocating an intermediate array for map initialization
+    const existingTaskMap = new Map<string, number | null>();
+    for (const mapping of taskMappings) {
+      existingTaskMap.set(mapping.externalId, mapping.localId);
+    }
     const pendingTasks = remoteTasksInScope.filter(
       (task) => !existingTaskMap.has(task.id),
     );
@@ -573,9 +588,11 @@ async function ensureProjectAssignments(params: {
 }) {
   const { userId, projects, existingLists } = params;
   void buildDefaultProjectAssignments(projects as never, existingLists);
-  const lowerCaseListMap = new Map(
-    existingLists.map((list) => [list.name.toLowerCase(), list]),
-  );
+  // ⚡ Bolt Opt: Avoid allocating an intermediate array for map initialization
+  const lowerCaseListMap = new Map<string, (typeof existingLists)[number]>();
+  for (const list of existingLists) {
+    lowerCaseListMap.set(list.name.toLowerCase(), list);
+  }
   let maxPosition = Math.max(
     0,
     ...existingLists.map((list) => list.position ?? 0),
@@ -1075,11 +1092,13 @@ async function updateMappedTasks(params: {
   const mappedTasks = taskMappings.filter(
     (mapping) => mapping.localId && mapping.externalId,
   );
-  const localToExternalTaskMap = new Map(
-    mappedTasks
-      .filter((mapping) => mapping.localId && mapping.externalId)
-      .map((mapping) => [mapping.localId as number, mapping.externalId]),
-  );
+  // ⚡ Bolt Opt: Avoid allocating an intermediate array for map initialization
+  const localToExternalTaskMap = new Map<number, string>();
+  for (const mapping of mappedTasks) {
+    if (mapping.localId && mapping.externalId) {
+      localToExternalTaskMap.set(mapping.localId, mapping.externalId);
+    }
+  }
   const managedLabelNames = buildManagedLabelNameSet({
     mappingState,
     localLabelToExternal,
@@ -1465,7 +1484,11 @@ async function detectTaskConflicts(params: {
     return;
   }
 
-  const todoistTaskMap = new Map(todoistTasks.map((task) => [task.id, task]));
+  // ⚡ Bolt Opt: Avoid allocating an intermediate array for map initialization
+  const todoistTaskMap = new Map<string, Task>();
+  for (const task of todoistTasks) {
+    todoistTaskMap.set(task.id, task);
+  }
   const localTaskToExternal = new Map<number, string>();
   for (const mapping of taskMappings) {
     if (mapping.localId) {
