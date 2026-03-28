@@ -16,6 +16,28 @@ export type TodoistMappingState = {
     labels: TodoistLabelAssignment[];
 };
 
+// ⚡ Bolt Opt: Precomputed lookup maps with WeakMap caching for O(1) task resolution instead of O(N*M)
+const mappingCache = new WeakMap<TodoistMappingState, {
+    projectByProjectId: Map<string, TodoistProjectAssignment>;
+    labelByLabelId: Map<string, TodoistLabelAssignment>;
+    projectByListId: Map<number, TodoistProjectAssignment>;
+    labelByListId: Map<number, TodoistLabelAssignment>;
+}>();
+
+function getCachedMaps(mappings: TodoistMappingState) {
+    let cache = mappingCache.get(mappings);
+    if (!cache) {
+        cache = {
+            projectByProjectId: new Map(mappings.projects.map(p => [p.projectId, p])),
+            labelByLabelId: new Map(mappings.labels.map(l => [l.labelId, l])),
+            projectByListId: new Map(mappings.projects.filter(p => p.listId !== null).map(p => [p.listId!, p])),
+            labelByListId: new Map(mappings.labels.filter(l => l.listId !== null).map(l => [l.listId!, l])),
+        };
+        mappingCache.set(mappings, cache);
+    }
+    return cache;
+}
+
 export function buildDefaultProjectAssignments(
     projects: Project[],
     localLists: { id: number }[]
@@ -30,7 +52,8 @@ export function resolveTodoistTaskListId(
     task: Task,
     mappings: TodoistMappingState
 ): number | null {
-    const projectMatch = mappings.projects.find((mapping) => mapping.projectId === task.projectId);
+    const maps = getCachedMaps(mappings);
+    const projectMatch = maps.projectByProjectId.get(task.projectId);
     if (projectMatch?.listId) {
         return projectMatch.listId;
     }
@@ -40,7 +63,7 @@ export function resolveTodoistTaskListId(
     }
 
     for (const labelId of task.labels) {
-        const labelMatch = mappings.labels.find((mapping) => mapping.labelId === labelId);
+        const labelMatch = maps.labelByLabelId.get(labelId);
         if (labelMatch?.listId) {
             return labelMatch.listId;
         }
@@ -57,12 +80,14 @@ export function applyListLabelMapping(
         return {};
     }
 
-    const projectMatch = mappings.projects.find((mapping) => mapping.listId === listId);
+    const maps = getCachedMaps(mappings);
+
+    const projectMatch = maps.projectByListId.get(listId);
     if (projectMatch) {
         return { projectId: projectMatch.projectId };
     }
 
-    const labelMatch = mappings.labels.find((mapping) => mapping.listId === listId);
+    const labelMatch = maps.labelByListId.get(listId);
     if (labelMatch) {
         return { labelIds: [labelMatch.labelId] };
     }
