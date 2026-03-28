@@ -20,6 +20,28 @@ export type TodoistMappingState = {
   labels: TodoistLabelAssignment[];
 };
 
+// ⚡ Bolt Opt: Precomputed lookup maps with WeakMap caching for O(1) task resolution instead of O(N*M)
+const mappingCache = new WeakMap<TodoistMappingState, {
+    projectByProjectId: Map<string, TodoistProjectAssignment>;
+    labelByLabelId: Map<string, TodoistLabelAssignment>;
+    projectByListId: Map<number, TodoistProjectAssignment>;
+    labelByListId: Map<number, TodoistLabelAssignment>;
+}>();
+
+function getCachedMaps(mappings: TodoistMappingState) {
+    let cache = mappingCache.get(mappings);
+    if (!cache) {
+        cache = {
+            projectByProjectId: new Map(mappings.projects.map(p => [p.projectId, p])),
+            labelByLabelId: new Map(mappings.labels.map(l => [l.labelId, l])),
+            projectByListId: new Map(mappings.projects.filter(p => p.listId !== null).map(p => [p.listId!, p])),
+            labelByListId: new Map(mappings.labels.filter(l => l.listId !== null).map(l => [l.listId!, l])),
+        };
+        mappingCache.set(mappings, cache);
+    }
+    return cache;
+}
+
 export function buildDefaultProjectAssignments(
   projects: Project[],
   localLists: { id: number }[],
@@ -34,10 +56,10 @@ export function resolveTodoistTaskListId(
   task: Task,
   mappings: TodoistMappingState,
 ): number | null {
-  // ⚡ Bolt Opt: Replace O(N) Array.find with for...of to avoid callback overhead in hot mapping loop
-  for (const mapping of mappings.projects) {
-    if (mapping.projectId === task.projectId && mapping.listId) {
-      return mapping.listId;
+    const maps = getCachedMaps(mappings);
+    const projectMatch = maps.projectByProjectId.get(task.projectId);
+    if (projectMatch?.listId) {
+        return projectMatch.listId;
     }
   }
 
@@ -45,12 +67,11 @@ export function resolveTodoistTaskListId(
     return null;
   }
 
-  for (const labelId of task.labels) {
-    // ⚡ Bolt Opt: Replace O(N) Array.find with for...of to avoid callback overhead in hot mapping loop
-    for (const mapping of mappings.labels) {
-      if (mapping.labelId === labelId && mapping.listId) {
-        return mapping.listId;
-      }
+    for (const labelId of task.labels) {
+        const labelMatch = maps.labelByLabelId.get(labelId);
+        if (labelMatch?.listId) {
+            return labelMatch.listId;
+        }
     }
   }
 
@@ -65,17 +86,17 @@ export function applyListLabelMapping(
     return {};
   }
 
-  // ⚡ Bolt Opt: Replace O(N) Array.find with for...of to avoid callback overhead in hot mapping loop
-  for (const mapping of mappings.projects) {
-    if (mapping.listId === listId) {
-      return { projectId: mapping.projectId };
+    const maps = getCachedMaps(mappings);
+
+    const projectMatch = maps.projectByListId.get(listId);
+    if (projectMatch) {
+        return { projectId: projectMatch.projectId };
     }
   }
 
-  // ⚡ Bolt Opt: Replace O(N) Array.find with for...of to avoid callback overhead in hot mapping loop
-  for (const mapping of mappings.labels) {
-    if (mapping.listId === listId) {
-      return { labelIds: [mapping.labelId] };
+    const labelMatch = maps.labelByListId.get(listId);
+    if (labelMatch) {
+        return { labelIds: [labelMatch.labelId] };
     }
   }
 
