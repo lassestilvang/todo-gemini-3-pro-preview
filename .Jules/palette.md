@@ -17,3 +17,10 @@
 ## 2025-03-24 - Search Input Clear Buttons Missing ARIA Labels
 **Learning:** Found that the clear button (`<X />`) in the main search input was missing an `aria-label`. Without this, screen readers might just announce "button" or the generic icon name instead of the action ("Clear search query"). Users relying on screen readers wouldn't know what this button does.
 **Action:** Always provide an explicit `aria-label` (e.g., `aria-label="Clear search query"`) for icon-only buttons like clear/reset actions within form inputs.
+
+## 2025-03-28 - Add Explicit ARIA Labels to Custom Select Triggers
+**Learning:** Screen readers may fail to announce the purpose of custom UI select components (like those in shadcn/ui) if the visual label is disconnected from the trigger itself or if the placeholder text disappears upon selection.
+**Action:** When a visible label exists (like an external `<span>`), prefer `aria-labelledby` to link it to the `<SelectTrigger>`. This avoids duplicating text and is more maintainable. Use `aria-label` as a fallback when no visible label is present.
+## 2025-03-26 - Missing ARIA Labels on Preview Clear Buttons
+**Learning:** Icon-only buttons used to remove or clear an uploaded image preview (like in `UploadTab.tsx`) often lack accessible names, preventing screen readers from announcing what the button does ("Remove uploaded image").
+**Action:** Always add an `aria-label` (e.g. `aria-label="Remove uploaded image"`) to icon-only "clear" buttons inside file/image upload previews.
