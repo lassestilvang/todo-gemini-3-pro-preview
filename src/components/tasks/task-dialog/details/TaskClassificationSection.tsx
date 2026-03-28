@@ -37,7 +37,12 @@ export function TaskClassificationSection({
     estimateMinutes, setEstimateMinutes
 }: TaskClassificationSectionProps) {
     const listById = useMemo(() => {
-        return new Map(lists.map((list) => [list.id.toString(), list]));
+        // ⚡ Bolt Opt: Avoid allocating an O(N) intermediate array before creating the Map
+        const map = new Map<string, typeof lists[0]>();
+        for (const list of lists) {
+            map.set(list.id.toString(), list);
+        }
+        return map;
     }, [lists]);
 
     const selectedList = listById.get(listId);

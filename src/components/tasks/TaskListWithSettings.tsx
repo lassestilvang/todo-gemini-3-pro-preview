@@ -119,7 +119,14 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
     const isDragEnabled = settings.sortBy === "manual" && settings.groupBy === "none" && !!userId;
     const activeTaskIds = useMemo(() => activeTasks.map((task) => task.id), [activeTasks]);
-    const taskById = useMemo(() => new Map(derivedTasks.map((task) => [task.id, task])), [derivedTasks]);
+    const taskById = useMemo(() => {
+        // ⚡ Bolt Opt: Avoid allocating an O(N) intermediate array before creating the Map
+        const map = new Map<number, Task>();
+        for (const task of derivedTasks) {
+            map.set(task.id, task);
+        }
+        return map;
+    }, [derivedTasks]);
     const activeDragTask = useMemo(
         () => (activeId ? taskById.get(activeId) ?? null : null),
         [activeId, taskById]
