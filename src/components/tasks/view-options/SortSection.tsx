@@ -39,7 +39,7 @@ export function SortSection({
                             value={groupBy}
                             onValueChange={(value) => onUpdate("groupBy", value as ViewSettings["groupBy"])}
                         >
-                            <SelectTrigger aria-label="Grouping" className="w-[140px]" size="sm">
+                            <SelectTrigger aria-label="Sort Grouping" className="w-[140px]" size="sm">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -62,7 +62,7 @@ export function SortSection({
                             value={sortBy}
                             onValueChange={(value) => onUpdate("sortBy", value as ViewSettings["sortBy"])}
                         >
-                            <SelectTrigger aria-label="Sorting" className="w-[140px]" size="sm">
+                            <SelectTrigger aria-label="Sort Sorting" className="w-[140px]" size="sm">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
