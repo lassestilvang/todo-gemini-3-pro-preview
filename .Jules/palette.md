@@ -20,4 +20,4 @@
 
 ## 2025-03-28 - Add Explicit ARIA Labels to Custom Select Triggers
 **Learning:** Screen readers may fail to announce the purpose of custom UI select components (like those in shadcn/ui) if the visual label is disconnected from the trigger itself or if the placeholder text disappears upon selection.
-**Action:** Always provide an explicit `aria-label` attribute directly to `<SelectTrigger>` elements to ensure the field's purpose remains clearly conveyed, even when an external `<span>` acts as its visual label.
+**Action:** When a visible label exists (like an external `<span>`), prefer `aria-labelledby` to link it to the `<SelectTrigger>`. This avoids duplicating text and is more maintainable. Use `aria-label` as a fallback when no visible label is present.
