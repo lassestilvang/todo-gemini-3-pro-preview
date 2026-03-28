@@ -1,3 +1,7 @@
+## 2024-03-26 - TOCTOU IDOR in Database Deletions
+**Vulnerability:** A Time-of-Check to Time-of-Use (TOCTOU) Insecure Direct Object Reference (IDOR) was found in `src/lib/actions/time-tracking.ts`. The code initially used a `SELECT` query to verify that the target `entryId` belonged to the authenticated `userId`. However, the subsequent `DELETE` and `UPDATE` queries only used `eq(timeEntries.id, entryId)` without the `userId`. This allowed a potential race condition where an attacker could modify or delete the entry if the ID was altered between the check and the use.
+**Learning:** Checking ownership in a separate `SELECT` statement before an action query creates a race condition window (TOCTOU) and fails to leverage the database engine's transactional guarantees.
+**Prevention:** Always enforce atomic constraints directly on the mutation statement using multiple conditions in the `where` clause (e.g., `where(and(eq(table.id, id), eq(table.userId, userId)))`).
 ## 2026-01-25 - [Critical] IDOR in Server Actions
 **Vulnerability:** Server Actions (e.g. `getTasks`) accepted `userId` as an argument and trusted it blindly, allowing any user to access/modify any other user's data by guessing their ID.
 **Learning:** Exported "use server" functions are public API endpoints. Arguments must not be trusted for authorization.
