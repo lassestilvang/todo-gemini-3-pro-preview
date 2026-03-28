@@ -190,7 +190,7 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
     const localLabelToExternal = new Map<number, string>();
     for (const mapping of labelMappings) {
       if (mapping.localId !== null) {
-        localLabelToExternal.set(mapping.localId as number, mapping.externalId);
+localLabelToExternal.set(mapping.localId, mapping.externalId);
       }
     }
     const labelMappingByLocalId = new Map<
