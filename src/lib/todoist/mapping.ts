@@ -1,19 +1,23 @@
-import type { PersonalProject, WorkspaceProject, Task } from "@doist/todoist-api-typescript";
+import type {
+  PersonalProject,
+  WorkspaceProject,
+  Task,
+} from "@doist/todoist-api-typescript";
 export type Project = PersonalProject | WorkspaceProject;
 
 export type TodoistProjectAssignment = {
-    projectId: string;
-    listId: number | null;
+  projectId: string;
+  listId: number | null;
 };
 
 export type TodoistLabelAssignment = {
-    labelId: string;
-    listId: number | null;
+  labelId: string;
+  listId: number | null;
 };
 
 export type TodoistMappingState = {
-    projects: TodoistProjectAssignment[];
-    labels: TodoistLabelAssignment[];
+  projects: TodoistProjectAssignment[];
+  labels: TodoistLabelAssignment[];
 };
 
 // ⚡ Bolt Opt: Precomputed lookup maps with WeakMap caching for O(1) task resolution instead of O(N*M)
@@ -39,28 +43,29 @@ function getCachedMaps(mappings: TodoistMappingState) {
 }
 
 export function buildDefaultProjectAssignments(
-    projects: Project[],
-    localLists: { id: number }[]
+  projects: Project[],
+  localLists: { id: number }[],
 ): TodoistProjectAssignment[] {
-    return projects.map((project, index) => ({
-        projectId: project.id,
-        listId: localLists[index]?.id ?? null,
-    }));
+  return projects.map((project, index) => ({
+    projectId: project.id,
+    listId: localLists[index]?.id ?? null,
+  }));
 }
 
 export function resolveTodoistTaskListId(
-    task: Task,
-    mappings: TodoistMappingState
+  task: Task,
+  mappings: TodoistMappingState,
 ): number | null {
     const maps = getCachedMaps(mappings);
     const projectMatch = maps.projectByProjectId.get(task.projectId);
     if (projectMatch?.listId) {
         return projectMatch.listId;
     }
+  }
 
-    if (!task.labels?.length) {
-        return null;
-    }
+  if (!task.labels?.length) {
+    return null;
+  }
 
     for (const labelId of task.labels) {
         const labelMatch = maps.labelByLabelId.get(labelId);
@@ -68,17 +73,18 @@ export function resolveTodoistTaskListId(
             return labelMatch.listId;
         }
     }
+  }
 
-    return null;
+  return null;
 }
 
 export function applyListLabelMapping(
-    listId: number | null,
-    mappings: TodoistMappingState
+  listId: number | null,
+  mappings: TodoistMappingState,
 ): { projectId?: string; labelIds?: string[] } {
-    if (!listId) {
-        return {};
-    }
+  if (!listId) {
+    return {};
+  }
 
     const maps = getCachedMaps(mappings);
 
@@ -86,11 +92,13 @@ export function applyListLabelMapping(
     if (projectMatch) {
         return { projectId: projectMatch.projectId };
     }
+  }
 
     const labelMatch = maps.labelByListId.get(listId);
     if (labelMatch) {
         return { labelIds: [labelMatch.labelId] };
     }
+  }
 
-    return {};
+  return {};
 }
