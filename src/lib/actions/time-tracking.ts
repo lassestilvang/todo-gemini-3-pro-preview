@@ -375,7 +375,12 @@ export async function deleteTimeEntry(
             throw new NotFoundError("Time entry not found");
         }
 
-        await db.delete(timeEntries).where(eq(timeEntries.id, entryId));
+        await db.delete(timeEntries).where(
+            and(
+                eq(timeEntries.id, entryId),
+                eq(timeEntries.userId, userId)
+            )
+        );
 
         // ⚡ Bolt Opt: Replace O(N) fetch-and-sum in memory with O(1) SQL aggregation.
         await updateTaskActualMinutes(existing.taskId, userId);
