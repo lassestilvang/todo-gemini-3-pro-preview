@@ -61,7 +61,6 @@ export function resolveTodoistTaskListId(
     if (projectMatch?.listId) {
         return projectMatch.listId;
     }
-  }
 
   if (!task.labels?.length) {
     return null;
@@ -73,7 +72,6 @@ export function resolveTodoistTaskListId(
             return labelMatch.listId;
         }
     }
-  }
 
   return null;
 }
@@ -92,13 +90,11 @@ export function applyListLabelMapping(
     if (projectMatch) {
         return { projectId: projectMatch.projectId };
     }
-  }
 
     const labelMatch = maps.labelByListId.get(listId);
     if (labelMatch) {
         return { labelIds: [labelMatch.labelId] };
     }
-  }
 
   return {};
 }
