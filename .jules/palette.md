@@ -94,3 +94,18 @@
 ## 2024-03-24 - Icon Picker Image Buttons Missing ARIA Labels
 **Learning:** Icon-only buttons used for selection in dynamic grids (like "Recently Used" or "My Icons") often rely on images without providing accessible names. Screen readers announce these as generic buttons, making it impossible for visually impaired users to know which icon they are selecting.
 **Action:** Always add `aria-label` attributes describing the specific icon (e.g., `aria-label={"Select custom icon " + c.name}`) when rendering grids of icon or image buttons.
+
+## 2025-03-24 - Search Input Clear Buttons Missing ARIA Labels
+**Learning:** Found that the clear button (`<X />`) in the main search input was missing an `aria-label`. Without this, screen readers might just announce "button" or the generic icon name instead of the action ("Clear search query"). Users relying on screen readers wouldn't know what this button does.
+**Action:** Always provide an explicit `aria-label` (e.g., `aria-label="Clear search query"`) for icon-only buttons like clear/reset actions within form inputs.
+
+## 2025-03-28 - Add Explicit ARIA Labels to Custom Select Triggers
+**Learning:** Screen readers may fail to announce the purpose of custom UI select components (like those in shadcn/ui) if the visual label is disconnected from the trigger itself or if the placeholder text disappears upon selection.
+**Action:** When a visible label exists (like an external `<span>`), prefer `aria-labelledby` to link it to the `<SelectTrigger>`. This avoids duplicating text and is more maintainable. Use `aria-label` as a fallback when no visible label is present.
+## 2025-03-26 - Missing ARIA Labels on Preview Clear Buttons
+**Learning:** Icon-only buttons used to remove or clear an uploaded image preview (like in `UploadTab.tsx`) often lack accessible names, preventing screen readers from announcing what the button does ("Remove uploaded image").
+**Action:** Always add an `aria-label` (e.g. `aria-label="Remove uploaded image"`) to icon-only "clear" buttons inside file/image upload previews.
+
+## 2025-04-03 - Contextual ARIA Labels for Generic List Actions
+**Learning:** Buttons inside list items that perform an action (like "Use", "Edit", "Delete") often have visually generic text or just an icon. Without context, screen reader users navigating by buttons or tabbing through will only hear "Use button", without knowing which item it applies to.
+**Action:** Always add an explicit, contextual `aria-label` (e.g., `aria-label={"Use template " + template.name}`) to action buttons inside lists to provide full context to assistive technologies.
