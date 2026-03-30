@@ -68,6 +68,6 @@
 **Action:** Avoid `new Map(array.map(...))` and instead initialize an empty map (`new Map<K, V>()`) and populate it directly using a `for...of` loop to reduce memory footprint and improve rendering performance during tight loops.
 \n## 2024-03-27 - Array.find() Callback Overhead in Hot Mapping Loops\n**Learning:** Using `Array.find()` inside hot nested loops (like batch synchronization algorithms resolving labels and projects) creates significant hidden overhead due to repeated function allocations and closure invocations. Even for small inner arrays, multiplying this by thousands of external tasks results in O(N*M) bottlenecks.\n**Action:** Replace `Array.find()` with `for...of` loops in high-frequency mapping/resolution functions to achieve identical logic while eliminating callback and closure overhead entirely.
 
-## 2026-03-26 - Replace Array.reduce with for...of loop in hot loops
+## 2024-03-26 - Replace Array.reduce with for...of loop in hot loops
 **Learning:** Using `Array.reduce()` with a callback function incurs hidden overhead from function allocation and closure invocation, especially when processing potentially large datasets.
 **Action:** Replaced `.reduce()` with a standard `for...of` loop in `src/lib/weekly-review.ts` and `src/lib/time-export.ts`. This eliminates callback overhead and improves execution speed during simple array accumulations.
