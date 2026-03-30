@@ -9,3 +9,6 @@
 ## 2026-03-28 - Avoid array.map allocations during Map initialization
 **Learning:** The pattern `new Map(array.map(...))` or `new Map(array.filter(...).map(...))` creates unnecessary intermediate arrays just to initialize a Map. In performance-sensitive code (like Google Tasks sync processing), this adds redundant object allocations and increases GC overhead.
 **Action:** Replace `new Map(array.map(...))` with `const map = new Map(); for (const item of array) { map.set(...) }` to avoid intermediate array creation.
+## 2026-03-28 - Avoid array.map allocations during Map initialization
+**Learning:** The pattern `new Map(array.map(...))` or `new Map(array.filter(...).map(...))` creates unnecessary intermediate arrays just to initialize a Map. In performance-sensitive code (like Google Tasks sync processing), this adds redundant object allocations and increases GC overhead.
+**Action:** Replace `new Map(array.map(...))` with `const map = new Map(); for (const item of array) { map.set(...) }` to avoid intermediate array creation.
