@@ -43,13 +43,14 @@ export async function generateWeeklyReport(): Promise<{
             ));
 
         // Calculate XP (using same formula as addXP)
-        const xpThisWeek = completedThisWeek.reduce((total, task) => {
+        let xpThisWeek = 0;
+        for (const task of completedThisWeek) {
             let xp = 10; // base
             if (task.priority === "low") xp += 0;
             if (task.priority === "medium") xp += 5;
             if (task.priority === "high") xp += 10;
-            return total + xp;
-        }, 0);
+            xpThisWeek += xp;
+        }
 
         // Prepare data for AI
         const reportData = {
