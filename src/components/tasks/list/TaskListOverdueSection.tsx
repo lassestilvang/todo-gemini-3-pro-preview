@@ -40,18 +40,22 @@ export const TaskListOverdueSection = React.memo(function TaskListOverdueSection
     return (
         <div className="rounded-lg border border-destructive/30 bg-destructive/5">
             <div
-                role="button"
-                tabIndex={0}
-                className="flex w-full items-center justify-between px-4 py-3 cursor-pointer"
+                className={cn(
+                    "flex w-full items-center justify-between px-4 py-3 cursor-pointer",
+                    overdueCollapsed ? "rounded-lg" : "rounded-t-lg"
+                )}
                 onClick={onToggle}
-                onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        onToggle();
-                    }
-                }}
             >
-                <div className="flex items-center gap-2">
+                <button
+                    type="button"
+                    aria-expanded={!overdueCollapsed}
+                    aria-label={`Toggle overdue section, ${overdueTasks.length} tasks`}
+                    className="flex items-center gap-2 focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-destructive rounded-md"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onToggle();
+                    }}
+                >
                     <ChevronDown
                         className={cn(
                             "h-4 w-4 text-destructive/70 transition-transform duration-200",
@@ -62,10 +66,10 @@ export const TaskListOverdueSection = React.memo(function TaskListOverdueSection
                     <span className="text-xs text-destructive/70 bg-destructive/10 px-1.5 py-0.5 rounded-full font-medium">
                         {overdueTasks.length}
                     </span>
-                </div>
+                </button>
                 <button
                     type="button"
-                    className="flex items-center gap-1.5 text-xs font-medium text-destructive hover:text-destructive/80 transition-colors px-2 py-1 rounded-md hover:bg-destructive/10"
+                    className="flex items-center gap-1.5 text-xs font-medium text-destructive hover:text-destructive/80 transition-colors px-2 py-1 rounded-md hover:bg-destructive/10 focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-destructive"
                     onClick={(e) => {
                         e.stopPropagation();
                         onReschedule();

@@ -86,7 +86,10 @@ export async function exportTimeData(userId: string, options: ExportOptions) {
     }));
 
     // Calculate summary
-    const totalMinutes = formattedEntries.reduce((sum, e) => sum + (e.durationMinutes || 0), 0);
+    let totalMinutes = 0;
+    for (const e of formattedEntries) {
+        totalMinutes += (e.durationMinutes || 0);
+    }
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
 

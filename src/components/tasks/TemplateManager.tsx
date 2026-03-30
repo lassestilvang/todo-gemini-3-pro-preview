@@ -131,7 +131,7 @@ export function TemplateManager({ userId }: TemplateManagerProps) {
                                         </div>
                                     </div>
                                     <div className="flex gap-2">
-                                        <Button size="sm" variant="outline" onClick={() => handleInstantiate(template.id)} data-testid={`use-template-${template.id}`}>
+                                        <Button size="sm" variant="outline" onClick={() => handleInstantiate(template.id)} data-testid={`use-template-${template.id}`} aria-label={`Use template ${template.name}`}>
                                             <Play className="h-3 w-3 mr-1" />
                                             Use
                                         </Button>
