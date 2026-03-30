@@ -24,3 +24,7 @@
 ## 2025-03-26 - Missing ARIA Labels on Preview Clear Buttons
 **Learning:** Icon-only buttons used to remove or clear an uploaded image preview (like in `UploadTab.tsx`) often lack accessible names, preventing screen readers from announcing what the button does ("Remove uploaded image").
 **Action:** Always add an `aria-label` (e.g. `aria-label="Remove uploaded image"`) to icon-only "clear" buttons inside file/image upload previews.
+
+## 2025-04-03 - Contextual ARIA Labels for Generic List Actions
+**Learning:** Buttons inside list items that perform an action (like "Use", "Edit", "Delete") often have visually generic text or just an icon. Without context, screen reader users navigating by buttons or tabbing through will only hear "Use button", without knowing which item it applies to.
+**Action:** Always add an explicit, contextual `aria-label` (e.g., `aria-label={"Use template " + template.name}`) to action buttons inside lists to provide full context to assistive technologies.
