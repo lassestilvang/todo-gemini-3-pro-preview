@@ -109,3 +109,7 @@
 ## 2025-04-03 - Contextual ARIA Labels for Generic List Actions
 **Learning:** Buttons inside list items that perform an action (like "Use", "Edit", "Delete") often have visually generic text or just an icon. Without context, screen reader users navigating by buttons or tabbing through will only hear "Use button", without knowing which item it applies to.
 **Action:** Always add an explicit, contextual `aria-label` (e.g., `aria-label={"Use template " + template.name}`) to action buttons inside lists to provide full context to assistive technologies.
+
+## 2025-05-01 - Missing Focus Outlines on Absolute Positioned Clear Buttons
+**Learning:** Inline or absolute positioned clear/remove buttons (like 'X' inside search inputs or image upload previews) often lack visible focus indicators because they don't use standard `<Button>` components and the default browser outline is easily hidden or clipped.
+**Action:** Always append explicit focus-visible classes (`focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`) to absolute positioned interactive elements to ensure keyboard navigation visibility. For circular items on colored backgrounds, consider adding `focus-visible:ring-offset-2`.
