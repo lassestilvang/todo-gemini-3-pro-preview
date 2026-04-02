@@ -31,11 +31,30 @@ const mappingCache = new WeakMap<TodoistMappingState, {
 function getCachedMaps(mappings: TodoistMappingState) {
     let cache = mappingCache.get(mappings);
     if (!cache) {
+        // ⚡ Bolt Opt: Replaced chained .filter().map() arrays with single O(N) loops to avoid redundant array allocations
+        const projectByProjectId = new Map<string, TodoistProjectAssignment>();
+        const projectByListId = new Map<number, TodoistProjectAssignment>();
+        for (const p of mappings.projects) {
+            projectByProjectId.set(p.projectId, p);
+            if (p.listId !== null) {
+                projectByListId.set(p.listId, p);
+            }
+        }
+
+        const labelByLabelId = new Map<string, TodoistLabelAssignment>();
+        const labelByListId = new Map<number, TodoistLabelAssignment>();
+        for (const l of mappings.labels) {
+            labelByLabelId.set(l.labelId, l);
+            if (l.listId !== null) {
+                labelByListId.set(l.listId, l);
+            }
+        }
+
         cache = {
-            projectByProjectId: new Map(mappings.projects.map(p => [p.projectId, p])),
-            labelByLabelId: new Map(mappings.labels.map(l => [l.labelId, l])),
-            projectByListId: new Map(mappings.projects.filter(p => p.listId !== null).map(p => [p.listId!, p])),
-            labelByListId: new Map(mappings.labels.filter(l => l.listId !== null).map(l => [l.listId!, l])),
+            projectByProjectId,
+            labelByLabelId,
+            projectByListId,
+            labelByListId,
         };
         mappingCache.set(mappings, cache);
     }
