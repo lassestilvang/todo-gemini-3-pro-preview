@@ -112,4 +112,4 @@
 
 ## 2025-05-01 - Missing Focus Outlines on Absolute Positioned Clear Buttons
 **Learning:** Inline or absolute positioned clear/remove buttons (like 'X' inside search inputs or image upload previews) often lack visible focus indicators because they don't use standard `<Button>` components and the default browser outline is easily hidden or clipped.
-**Action:** Always append explicit focus-visible classes (`focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`) to absolute positioned interactive elements to ensure keyboard navigation visibility. For circular items on colored backgrounds, consider adding `focus-visible:ring-offset-2`.
+**Action:** Always append explicit focus-visible classes (`focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50`) to absolute positioned interactive elements to ensure keyboard navigation visibility. For circular items on colored backgrounds, consider adding `focus-visible:ring-offset-2`.
