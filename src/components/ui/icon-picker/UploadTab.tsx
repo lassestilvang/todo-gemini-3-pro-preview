@@ -76,7 +76,7 @@ export function IconPickerUploadTab({ state, dispatch, fileInputRef, handlePaste
                             />
                             <button
                                 onClick={(e) => { e.stopPropagation(); dispatch({ type: 'SET_UPLOAD_URL', payload: "" }); }}
-                                className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 focus-visible:ring-offset-2"
                                 aria-label="Remove uploaded image"
                             >
                                 <X className="h-3 w-3" />
