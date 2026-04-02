@@ -17,3 +17,7 @@
 ## 2024-03-26 - Replace Array.reduce with for...of loop in hot loops
 **Learning:** Using `Array.reduce()` with a callback function incurs hidden overhead from function allocation and closure invocation, especially when processing potentially large datasets.
 **Action:** Replaced `.reduce()` with a standard `for...of` loop in `src/lib/weekly-review.ts` and `src/lib/time-export.ts`. This eliminates callback overhead and improves execution speed during simple array accumulations.
+
+## 2026-04-02 - Avoid redundant Map and Array allocations inside chained iterations
+**Learning:** Initializing Maps or caching lookup tables using multiple chained array methods like `.filter(...).map(...)` incurs significant hidden overhead from allocating intermediate arrays on the heap before the Map itself is constructed, especially in high-frequency data synchronizers.
+**Action:** Replace `new Map(array.filter(...).map(...))` initializations with direct, single-pass `for...of` loops and manual `map.set()` calls. This completely eliminates intermediate allocations and reduces garbage collection pressure while traversing O(N) structures.

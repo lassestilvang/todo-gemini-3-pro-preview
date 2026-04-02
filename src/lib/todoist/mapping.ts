@@ -31,6 +31,7 @@ const mappingCache = new WeakMap<TodoistMappingState, {
 function getCachedMaps(mappings: TodoistMappingState) {
     let cache = mappingCache.get(mappings);
     if (!cache) {
+        // ⚡ Bolt Opt: Replaced chained .filter().map() arrays with single O(N) loops to avoid redundant array allocations
         const projectByProjectId = new Map<string, TodoistProjectAssignment>();
         const projectByListId = new Map<number, TodoistProjectAssignment>();
         for (const p of mappings.projects) {
