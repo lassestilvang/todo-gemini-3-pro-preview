@@ -110,6 +110,9 @@
 **Learning:** Buttons inside list items that perform an action (like "Use", "Edit", "Delete") often have visually generic text or just an icon. Without context, screen reader users navigating by buttons or tabbing through will only hear "Use button", without knowing which item it applies to.
 **Action:** Always add an explicit, contextual `aria-label` (e.g., `aria-label={"Use template " + template.name}`) to action buttons inside lists to provide full context to assistive technologies.
 
+## 2025-04-03 - Focus States for Absolute/Inline Buttons
+**Learning:** Found that absolute positioned inline `<button>` elements inside input fields (like 'clear search' actions) often lack visual focus feedback, as default browser focus rings are frequently clipped or omitted in these layouts.
+**Action:** Always append explicit focus-visible utility classes (e.g., `outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px] rounded-full`) to ensure keyboard users receive clear visual feedback when tabbing to inline absolute buttons.
 ## 2025-05-01 - Missing Focus Outlines on Absolute Positioned Clear Buttons
 **Learning:** Inline or absolute positioned clear/remove buttons (like 'X' inside search inputs or image upload previews) often lack visible focus indicators because they don't use standard `<Button>` components and the default browser outline is easily hidden or clipped.
 **Action:** Always append explicit focus-visible classes (`focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50`) to absolute positioned interactive elements to ensure keyboard navigation visibility. For circular items on colored backgrounds, consider adding `focus-visible:ring-offset-2`.
