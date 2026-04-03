@@ -65,16 +65,32 @@ export async function syncGoogleTasksForUser(userId: string): Promise<SyncResult
         const listMappings = entityMappings.filter((mapping) => mapping.entityType === "list");
         const taskMappings = entityMappings.filter((mapping) => mapping.entityType === "task");
 
-        const listExternalToLocal = new Map(listMappings.map((mapping) => [mapping.externalId, mapping.localId]));
-        const listLocalToExternal = new Map(
-            listMappings.filter((mapping) => mapping.localId !== null).map((mapping) => [mapping.localId as number, mapping.externalId])
-        );
-        const taskLocalToExternal = new Map(
-            taskMappings.filter((mapping) => mapping.localId !== null).map((mapping) => [mapping.localId as number, mapping.externalId])
-        );
+        // ⚡ Bolt Opt: Replaced Map initialization with arrays .filter().map() chains to a single O(N) loop to avoid intermediate array allocations
+        const listExternalToLocal = new Map<string, number | null>();
+        const listLocalToExternal = new Map<number, string>();
+        for (const mapping of listMappings) {
+            listExternalToLocal.set(mapping.externalId, mapping.localId);
+            if (mapping.localId !== null) {
+                listLocalToExternal.set(mapping.localId, mapping.externalId);
+            }
+        }
 
-        const localListMap = new Map(existingLists.map((list) => [list.id, list]));
-        const localTaskMap = new Map(localTasks.map((task) => [task.id, task]));
+        const taskLocalToExternal = new Map<number, string>();
+        for (const mapping of taskMappings) {
+            if (mapping.localId !== null) {
+                taskLocalToExternal.set(mapping.localId, mapping.externalId);
+            }
+        }
+
+        const localListMap = new Map<number, typeof existingLists[0]>();
+        for (const list of existingLists) {
+            localListMap.set(list.id, list);
+        }
+
+        const localTaskMap = new Map<number, typeof localTasks[0]>();
+        for (const task of localTasks) {
+            localTaskMap.set(task.id, task);
+        }
 
         await syncTasklists({
             userId,
@@ -91,10 +107,15 @@ export async function syncGoogleTasksForUser(userId: string): Promise<SyncResult
             .select()
             .from(externalEntityMap)
             .where(and(eq(externalEntityMap.userId, userId), eq(externalEntityMap.provider, "google_tasks"), eq(externalEntityMap.entityType, "list")));
-        const updatedExternalToLocal = new Map(updatedListMappings.map((mapping) => [mapping.externalId, mapping.localId]));
-        const updatedLocalToExternal = new Map(
-            updatedListMappings.filter((mapping) => mapping.localId !== null).map((mapping) => [mapping.localId as number, mapping.externalId])
-        );
+        // ⚡ Bolt Opt: Replaced map initializations with intermediate arrays with direct insertions
+        const updatedExternalToLocal = new Map<string, number | null>();
+        const updatedLocalToExternal = new Map<number, string>();
+        for (const mapping of updatedListMappings) {
+            updatedExternalToLocal.set(mapping.externalId, mapping.localId);
+            if (mapping.localId !== null) {
+                updatedLocalToExternal.set(mapping.localId, mapping.externalId);
+            }
+        }
 
         const remoteTaskIndex = buildRemoteTaskIndex(snapshot.tasksByList);
 
@@ -275,7 +296,11 @@ async function pullRemoteTasks(params: {
 }) {
     const { userId, remoteTasks, listExternalToLocal, taskMappings, localTaskMap, lastSyncedAt, conflictKeys } = params;
 
-    const taskExternalToLocal = new Map(taskMappings.map((mapping) => [mapping.externalId, mapping.localId]));
+    // ⚡ Bolt Opt: Replaced map initialization with intermediate array with direct insertion
+    const taskExternalToLocal = new Map<string, number | null>();
+    for (const mapping of taskMappings) {
+        taskExternalToLocal.set(mapping.externalId, mapping.localId);
+    }
 
     await Promise.all(
         Array.from(remoteTasks.entries()).map(async ([externalId, entry]) => {
