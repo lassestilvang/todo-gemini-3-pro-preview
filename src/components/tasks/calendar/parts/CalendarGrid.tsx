@@ -113,7 +113,7 @@ export function CalendarGrid({
                           e.stopPropagation();
                           onEdit(task);
                         }}
-                        aria-label={`Edit task: ${task.title}`}
+                        aria-label={`Edit ${task.isCompleted ? "completed " : ""}task: ${task.title}`}
                         className={cn(
                           "w-full text-left text-[10px] px-1 py-0.5 rounded truncate flex items-center gap-1 border cursor-pointer hover:ring-1 hover:ring-primary/30 transition-shadow",
                           task.isCompleted
