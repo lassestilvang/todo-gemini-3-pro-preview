@@ -119,3 +119,6 @@
 ## 2025-04-04 - Missing Focus Rings on Input Clear Buttons
 **Learning:** Found that custom search inputs containing an inline `<button>` to clear the input text (like `FloatingSearchInput` or `SidebarSearchInput`) often lack explicit `focus-visible` styles. Because they are absolutely positioned over the input and typically only styled for hover states, keyboard users navigating out of the input to clear it won't see any visual focus indicator.
 **Action:** When inspecting or adding icon-only inline controls (like clear buttons inside inputs), proactively add standard `focus-visible` utilities (e.g., `outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] rounded-md`) to ensure proper keyboard accessibility feedback.
+## 2024-04-03 - Dynamic Context for Identical Action Buttons
+**Learning:** Adding static `aria-label="Add task"` to dozens of identical buttons in a grid (like a calendar) forces screen reader users to guess which specific context (date) the button applies to when tabbing through.
+**Action:** When mapping over items to generate interactive elements, dynamically inject the item's context into the `aria-label` (e.g., `aria-label={"Add task on " + day.toDateString()}`). This ensures each button is uniquely identifiable when accessed out-of-context.

@@ -35,6 +35,7 @@ export function PeriodTasksSection({ tasks, onEdit }: PeriodTasksSectionProps) {
                         key={task.id}
                         type="button"
                         onClick={() => onEdit(task)}
+                        aria-label={`Edit task: ${task.title}`}
                         className={cn(
                             "w-full flex items-center justify-between rounded-md border bg-background px-3 py-2 text-left text-sm transition hover:border-primary/40 hover:shadow-sm",
                             task.isCompleted && "opacity-60"
