@@ -82,12 +82,12 @@ export async function syncGoogleTasksForUser(userId: string): Promise<SyncResult
             }
         }
 
-        const localListMap = new Map<number, (typeof existingLists)[number]>();
+        const localListMap = new Map<number, typeof existingLists[0]>();
         for (const list of existingLists) {
             localListMap.set(list.id, list);
         }
 
-        const localTaskMap = new Map<number, (typeof localTasks)[number]>();
+        const localTaskMap = new Map<number, typeof localTasks[0]>();
         for (const task of localTasks) {
             localTaskMap.set(task.id, task);
         }
