@@ -122,3 +122,7 @@
 ## 2024-04-03 - Dynamic Context for Identical Action Buttons
 **Learning:** Adding static `aria-label="Add task"` to dozens of identical buttons in a grid (like a calendar) forces screen reader users to guess which specific context (date) the button applies to when tabbing through.
 **Action:** When mapping over items to generate interactive elements, dynamically inject the item's context into the `aria-label` (e.g., `aria-label={"Add task on " + day.toDateString()}`). This ensures each button is uniquely identifiable when accessed out-of-context.
+
+## 2025-04-04 - Missing ARIA Labels and Focus Styles on Custom Syntax Shortcuts
+**Learning:** Found that custom helper buttons inside `Badge` components (like the Smart Syntax shortcuts `!high`, `@work`) lack accessible names (`aria-label`) and explicit focus indicators. Screen readers fail to convey their purpose out of context, and keyboard users cannot easily determine which badge has focus.
+**Action:** When implementing custom helper or syntax shortcut buttons inside components like `Badge` with `asChild`, ensure the nested `<button>` includes an explicit `aria-label` (e.g., `aria-label={"Insert smart syntax " + s}`). Furthermore, apply `focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-1` on the parent `Badge` or standard focus styles on the button to guarantee keyboard navigation feedback.
