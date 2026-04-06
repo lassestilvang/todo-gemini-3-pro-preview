@@ -118,7 +118,15 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
     const isDragEnabled = settings.sortBy === "manual" && settings.groupBy === "none" && !!userId;
-    const activeTaskIds = useMemo(() => activeTasks.map((task) => task.id), [activeTasks]);
+    const activeTaskIds = useMemo(() => {
+        // ⚡ Bolt Opt: Avoid Array.map overhead for extracting IDs.
+        const len = activeTasks.length;
+        const ids = new Array<number>(len);
+        for (let i = 0; i < len; i++) {
+            ids[i] = activeTasks[i].id;
+        }
+        return ids;
+    }, [activeTasks]);
     const taskById = useMemo(() => {
         // ⚡ Bolt Opt: Avoid allocating an O(N) intermediate array before creating the Map
         const map = new Map<number, Task>();

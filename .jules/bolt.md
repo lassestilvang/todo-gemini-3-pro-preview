@@ -21,3 +21,7 @@
 ## 2026-04-02 - Avoid redundant Map and Array allocations inside chained iterations
 **Learning:** Initializing Maps or caching lookup tables using multiple chained array methods like `.filter(...).map(...)` incurs significant hidden overhead from allocating intermediate arrays on the heap before the Map itself is constructed, especially in high-frequency data synchronizers.
 **Action:** Replace `new Map(array.filter(...).map(...))` initializations with direct, single-pass `for...of` loops and manual `map.set()` calls. This completely eliminates intermediate allocations and reduces garbage collection pressure while traversing O(N) structures.
+
+## 2025-02-28 - Avoid array callback methods for performance in render loops
+**Learning:** Using array callback methods like `.map()` to iterate and transform data inside React render loops adds unnecessary overhead from callback allocations and executions compared to a pre-allocated traditional for-loop, especially on large datasets.
+**Action:** Replaced `activeTasks.map((task) => task.id)` with a pre-allocated O(N) array initialized using a traditional C-style `for` loop in `TaskListWithSettings.tsx` to compute `activeTaskIds` faster and reduce GC overhead.
