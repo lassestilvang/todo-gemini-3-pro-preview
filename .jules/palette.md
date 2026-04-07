@@ -122,3 +122,6 @@
 ## 2024-04-03 - Dynamic Context for Identical Action Buttons
 **Learning:** Adding static `aria-label="Add task"` to dozens of identical buttons in a grid (like a calendar) forces screen reader users to guess which specific context (date) the button applies to when tabbing through.
 **Action:** When mapping over items to generate interactive elements, dynamically inject the item's context into the `aria-label` (e.g., `aria-label={"Add task on " + day.toDateString()}`). This ensures each button is uniquely identifiable when accessed out-of-context.
+## 2025-05-15 - Missing Focus Outlines on Expand/Collapse Sidebar Buttons
+**Learning:** Found that custom buttons used to expand/collapse or control the visibility of sidebars (like in `SlimSidebar.tsx` and `SidebarSavedViews.tsx`) often lack proper focus-visible styles, particularly when they use non-standard components or absolutely positioned elements, making them difficult to interact with via keyboard navigation.
+**Action:** Ensure that all custom navigation toggle and action buttons (like Expand, Hide, or Delete) include clear `focus-visible` states using standard utility classes like `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1` regardless of their position.

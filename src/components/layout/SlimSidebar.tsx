@@ -75,7 +75,7 @@ export function SlimSidebar({ lists, labels, onExpand, onHide, active = true }: 
                         <TooltipTrigger asChild>
                             <button
                                 onClick={onExpand}
-                                className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200"
+                                className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
                                 aria-label="Expand sidebar"
                             >
                                 <PanelLeftOpen className="h-4 w-4" />
@@ -171,7 +171,7 @@ export function SlimSidebar({ lists, labels, onExpand, onHide, active = true }: 
                                 <TooltipTrigger asChild>
                                     <button
                                         onClick={onExpand}
-                                        className="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors text-[10px] font-medium"
+                                        className="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors text-[10px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
                                     >
                                         +{lists.length - 5}
                                     </button>
@@ -230,7 +230,7 @@ export function SlimSidebar({ lists, labels, onExpand, onHide, active = true }: 
                                 <TooltipTrigger asChild>
                                     <button
                                         onClick={onExpand}
-                                        className="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors text-[10px] font-medium"
+                                        className="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors text-[10px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
                                     >
                                         +{labels.length - 5}
                                     </button>
@@ -250,7 +250,7 @@ export function SlimSidebar({ lists, labels, onExpand, onHide, active = true }: 
                     <TooltipTrigger asChild>
                         <button
                             onClick={onHide}
-                            className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200"
+                            className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
                             aria-label="Hide sidebar"
                         >
                             <PanelLeftClose className="h-4 w-4" />
