@@ -75,7 +75,7 @@ export function GoogleTasksMappingForm() {
 
             // ⚡ Bolt Opt: Precompute map to replace O(N*M) Array.find() inside loop with O(1) Map lookup
             // Replaced new Map(array.map()) with for...of to avoid O(N) intermediate array allocation
-            const listMappingsByTasklistId = new Map<string, number>();
+            const listMappingsByTasklistId = new Map<string, number | null>();
             for (const item of result.listMappings ?? []) {
                 listMappingsByTasklistId.set(item.tasklistId, item.listId);
             }
