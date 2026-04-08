@@ -24,6 +24,9 @@
 ## 2026-04-02 - Avoid redundant Map and Array allocations inside chained iterations
 **Learning:** Initializing Maps or caching lookup tables using multiple chained array methods like `.filter(...).map(...)` incurs significant hidden overhead from allocating intermediate arrays on the heap before the Map itself is constructed, especially in high-frequency data synchronizers.
 **Action:** Replace `new Map(array.filter(...).map(...))` initializations with direct, single-pass `for...of` loops and manual `map.set()` calls. This completely eliminates intermediate allocations and reduces garbage collection pressure while traversing O(N) structures.
+## 2024-05-30 - Optimize Sequential API Syncing
+**Learning:** Sequential iteration over network requests causes O(N) latency bottlenecks. Unbounded concurrency (e.g., mapping all to Promises) risks triggering third-party rate limits.
+**Action:** Replaced sequential loop with bounded concurrency chunking using Promise.all on batches of 5 to balance latency reduction with rate limit safety.
 
 ## 2025-02-15 - Optimize Todoist sync sequential bottleneck
 **Learning:** Sequential `for...of` loops with `await` inside them for mapping external API calls act as a massive bottleneck. While intended to prevent burst rate limits, pure sequential processing severely limits throughput and scalability when synchronizing many user integrations.
