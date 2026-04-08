@@ -53,8 +53,9 @@ export function SmartSyntaxPopover({ onInsert }: SmartSyntaxPopoverProps) {
                             <span className="text-sm font-medium">Context</span>
                             <div className="col-span-2 text-sm font-mono text-muted-foreground flex flex-wrap gap-1">
                                 {["@work", "@home"].map(s => (
-                                    <Badge key={s} variant="secondary" asChild className="px-1 py-0 h-5 font-normal cursor-pointer hover:bg-secondary/80 focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-1 focus-within:ring-offset-background">
-                                        <button type="button" aria-label={"Insert smart syntax " + s} className="w-full h-full flex items-center justify-center focus-visible:outline-none rounded-sm" onClick={() => onInsert(s)}>{s}</button>
+                                    <Badge key={s} variant="secondary" asChild className="px-1 py-0 h-5 font-normal cursor-pointer hover:bg-secondary/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background">
+                                        <button type="button" aria-label={`Insert smart syntax ${s}`} className="w-full h-full flex items-center justify-center focus-visible:outline-none" onClick={() => onInsert(s)}>{s}</button>
+                                    </Badge>
                                     </Badge>
                                 ))}
                             </div>
