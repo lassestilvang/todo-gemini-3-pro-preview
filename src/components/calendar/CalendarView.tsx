@@ -263,7 +263,7 @@ export function CalendarView({ tasks }: CalendarViewProps) {
                     }
                   }}
                   className={cn(
-                    "min-h-[100px] border-b border-r p-2 transition-colors hover:bg-muted/20 cursor-pointer flex flex-col gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    "min-h-[100px] border-b border-r p-2 transition-colors hover:bg-muted/20 cursor-pointer flex flex-col gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
                     !isCurrentMonth && "bg-muted/10 text-muted-foreground",
                     isSelectedDay && "bg-primary/5 ring-1 ring-inset ring-primary",
                     dayIdx % 7 === 6 && "border-r-0", // Remove right border for last column
