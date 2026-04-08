@@ -125,3 +125,7 @@
 ## 2025-05-15 - Missing Focus Outlines on Expand/Collapse Sidebar Buttons
 **Learning:** Found that custom buttons used to expand/collapse or control the visibility of sidebars (like in `SlimSidebar.tsx` and `SidebarSavedViews.tsx`) often lack proper focus-visible styles, particularly when they use non-standard components or absolutely positioned elements, making them difficult to interact with via keyboard navigation.
 **Action:** Ensure that all custom navigation toggle and action buttons (like Expand, Hide, or Delete) include clear focus-visible states using standard utility classes like outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 regardless of their position.
+
+## 2025-04-04 - Missing ARIA Labels and Focus Styles on Custom Syntax Shortcuts
+**Learning:** Found that custom helper buttons inside `Badge` components (like the Smart Syntax shortcuts `!high`, `@work`) lack accessible names (`aria-label`) and explicit focus indicators. Screen readers fail to convey their purpose out of context, and keyboard users cannot easily determine which badge has focus.
+**Action:** When implementing custom helper or syntax shortcut buttons inside components like `Badge` with `asChild`, ensure the nested `<button>` includes an explicit `aria-label` (e.g., `aria-label={"Insert smart syntax " + s}`). Furthermore, apply `focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1` to the component to guarantee keyboard navigation feedback.
