@@ -114,7 +114,7 @@ export function SidebarSavedViews({ userId }: { userId?: string }) {
                                 </Button>
                                 <button
                                     onClick={() => deleteMutation.mutate(view.id)}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100 outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                                     title={`Delete view ${view.name}`}
                                     aria-label={`Delete view ${view.name}`}
                                 >
