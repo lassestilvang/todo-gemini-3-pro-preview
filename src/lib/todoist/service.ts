@@ -52,7 +52,11 @@ export async function fetchTodoistSnapshot(
         fetchAllPages((cursor) => client.getTasks({ cursor, limit: 200 })),
     ]);
 
-    const taskById = new Map(activeTasks.map((task) => [task.id, task]));
+    // ⚡ Bolt Opt: Replaced new Map(array.map()) with for...of to avoid O(N) intermediate array allocation
+    const taskById = new Map<string, TodoistTask>();
+    for (const task of activeTasks) {
+        taskById.set(task.id, task);
+    }
 
     if (options?.lastSyncedAt) {
         const since = options.lastSyncedAt.toISOString();

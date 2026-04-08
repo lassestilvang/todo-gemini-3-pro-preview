@@ -59,7 +59,7 @@ export function TaskBoardCard({ task, onEdit }: TaskBoardCardProps) {
       }}
       onClick={() => onEdit(task)}
       className={cn(
-        "bg-background border border-l-2 rounded-lg p-3 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-shadow",
+        "bg-background border border-l-2 rounded-lg p-3 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         priorityColors[task.priority || "none"],
         isDragging && "opacity-50 shadow-lg z-50",
         task.isCompleted && "opacity-60"
