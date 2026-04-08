@@ -22,6 +22,9 @@
 **Learning:** Initializing Maps or caching lookup tables using multiple chained array methods like `.filter(...).map(...)` incurs significant hidden overhead from allocating intermediate arrays on the heap before the Map itself is constructed, especially in high-frequency data synchronizers.
 **Action:** Replace `new Map(array.filter(...).map(...))` initializations with direct, single-pass `for...of` loops and manual `map.set()` calls. This completely eliminates intermediate allocations and reduces garbage collection pressure while traversing O(N) structures.
 
+## 2026-04-06 - Replacing chained array iteration methods with single for...of loops
+**Learning:** Using chained array iteration methods like `.map()` and `.forEach()` (such as `array.map().forEach()`) internally creates intermediate arrays, resulting in unnecessary allocations and garbage collection overhead during list generation.
+**Action:** Replaced chained `.map()` and `.forEach()` array operations with single `for...of` loops to iterate over entries and populate nested arrays. This condenses operations to eliminate intermediate array allocations, significantly optimizing high-frequency render updates.
 ## 2026-03-31 - Avoid array.map allocations during Map initialization in sync pipelines
 **Learning:** Initializing Maps using `new Map(array.map(...))` creates unnecessary intermediate arrays. During high-volume synchronization processes (like fetching active Todoist tasks), this adds significant object allocations and increases Garbage Collection (GC) overhead.
 **Action:** Replace `new Map(array.map(...))` with `const map = new Map(); for (const item of array) { map.set(...) }` to construct lookup tables directly without an intermediate array allocation.
