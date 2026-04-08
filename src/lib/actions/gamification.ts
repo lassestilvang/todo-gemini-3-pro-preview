@@ -68,6 +68,7 @@ export async function getUserStats(userId: string) {
  * @returns Object with newXP, newLevel, and leveledUp flag
  */
 export async function addXP(userId: string, amount: number) {
+  await requireUser(userId);
   return await updateUserProgress(userId, amount);
 }
 
@@ -304,6 +305,7 @@ export async function updateUserProgress(userId: string, xpAmount: number) {
 export async function checkAchievements(
   userId: string,
 ) {
+  await requireUser(userId);
   // Now simply triggers the iterative logic correctly
   return await updateUserProgress(userId, 0);
 }
