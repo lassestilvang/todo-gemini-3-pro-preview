@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { db, externalIntegrations } from "@/db";
 import { syncTodoistForUser } from "@/lib/todoist/sync";
 import { eq } from "drizzle-orm";
+import pLimit from "p-limit";
 import { constantTimeEqual } from "@/lib/auth-bypass";
 
 export async function GET() {
@@ -20,14 +21,17 @@ export async function GET() {
             .from(externalIntegrations)
             .where(eq(externalIntegrations.provider, "todoist"));
 
-        // Process sequentially to reduce burst rate limits against the Todoist API.
-        const results: Array<{ userId: string; result: Awaited<ReturnType<typeof syncTodoistForUser>> }> = [];
-        for (const integration of integrations) {
-            results.push({
-                userId: integration.userId,
-                result: await syncTodoistForUser(integration.userId),
-            });
-        }
+        // Process with bounded concurrency to reduce burst rate limits against the Todoist API
+        // while improving overall throughput compared to purely sequential processing.
+        const limit = pLimit(5);
+        const results = await Promise.all(
+            integrations.map((integration) =>
+                limit(async () => ({
+                    userId: integration.userId,
+                    result: await syncTodoistForUser(integration.userId),
+                }))
+            )
+        );
 
         return NextResponse.json({ success: true, results });
     }
