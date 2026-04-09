@@ -250,13 +250,6 @@ localLabelToExternal.set(mapping.localId, mapping.externalId);
 
     const externalEntityMappingsToCreate: (typeof externalEntityMap.$inferInsert)[] =
       [];
-    const labelMappingsToCreate: {
-      userId: string;
-      provider: "todoist";
-      entityType: "label";
-      localId: number;
-      externalId: string;
-    }[] = [];
 
     for (const localLabel of localLabels) {
       if (hasScopedMappings && !scopedLocalLabelIds.has(localLabel.id)) {
