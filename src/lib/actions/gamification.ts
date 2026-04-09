@@ -69,6 +69,7 @@ export async function getUserStats(userId: string) {
  */
 export async function addXP(userId: string, amount: number) {
   await requireUser(userId);
+  if (amount <= 0) return;
   return await updateUserProgress(userId, amount);
 }
 
