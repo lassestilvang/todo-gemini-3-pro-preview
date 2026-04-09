@@ -20,13 +20,17 @@ export async function GET() {
             .from(externalIntegrations)
             .where(eq(externalIntegrations.provider, "google_tasks"));
 
-        // Process sequentially to reduce burst rate limits against the Google Tasks API.
+        // ⚡ Bolt Opt: Bounded concurrency (batch size 5) significantly reduces total execution time from O(N) latency while respecting external API burst rate limits.
         const results: Array<{ userId: string; result: Awaited<ReturnType<typeof syncGoogleTasksForUser>> }> = [];
-        for (const integration of integrations) {
-            results.push({
-                userId: integration.userId,
-                result: await syncGoogleTasksForUser(integration.userId),
-            });
+        for (let i = 0; i < integrations.length; i += 5) {
+            const batch = integrations.slice(i, i + 5);
+            const batchResults = await Promise.all(
+                batch.map(async (integration) => ({
+                    userId: integration.userId,
+                    result: await syncGoogleTasksForUser(integration.userId),
+                }))
+            );
+            results.push(...batchResults);
         }
 
         return NextResponse.json({ success: true, results });
