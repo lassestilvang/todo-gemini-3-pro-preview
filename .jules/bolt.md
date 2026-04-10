@@ -32,3 +32,7 @@
 ## 2025-04-09 - [Optimize] Bounded Concurrency in Google Tasks Sync
 **Learning:** Sequential processing using array chunking combined with `Promise.all` (e.g. `integrations.slice(i, i+5)`) creates uneven execution patterns where the entire batch is gated by the slowest task in the batch. While better than purely sequential execution, it leaves concurrency windows unutilized.
 **Action:** Use libraries like `p-limit` to establish bounded concurrency for external API interactions. `p-limit(N)` maintains exactly `N` concurrent operations at all times, drastically reducing overall queue latency without hitting burst rate limits.
+
+## 2026-04-10 - O(1) Set Lookup for Icon Filtering
+**Learning:** Using `Array.includes()` inside an array `.filter()` or loops results in O(N^2) time complexity. Initializing a static `Set` outside the filter allows for O(1) membership checking, significantly reducing lookup time for larger datasets.
+**Action:** Replaced the inline `Array.includes()` check in `src/lib/icons.ts` with a pre-initialized `Set` (`LABEL_ICONS_SET`) for O(1) performance during icon filtering.
