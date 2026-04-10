@@ -33,3 +33,7 @@
 **Learning:** Using Array.includes() for repeated membership checks results in O(N) lookup time. Initializing a static Set allows for O(1) performance, which is more efficient for validation logic.
 **Action:** Replaced the inline array .includes() check in src/lib/actions/custom-icons.ts with a pre-initialized Set (VALID_MIME_TYPES) for O(1) performance during icon MIME type validation.
 **Action:** Replaced manual array chunking in `src/app/api/google-tasks-sync/route.ts` with `p-limit(5)`. This optimization was already present in `todoist-sync/route.ts` but missing from Google Tasks sync.
+
+## 2026-04-10 - Safely Apply Bounded Concurrency with p-limit
+**Learning:** When replacing manual chunking + `Promise.all` with `p-limit` for bounded concurrency, the default behavior of `p-limit` differs critically on failure. A failing task causes `Promise.all` to throw immediately, but `p-limit` silently continues executing the remaining queued tasks in the background. This can lead to thousands of detached, runaway API calls if a generic error (like 401 Unauthorized) occurs.
+**Action:** Always wrap the `Promise.all(tasks.map(limit(() => ...)))` block in a `try/catch` block and explicitly call `limit.clearQueue()` in the catch block before rethrowing the error to preserve the intended fail-fast behavior of the original chunked loop.
