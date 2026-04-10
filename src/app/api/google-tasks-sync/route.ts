@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { db, externalIntegrations } from "@/db";
 import { syncGoogleTasksForUser } from "@/lib/google-tasks/sync";
 import { eq } from "drizzle-orm";
+import pLimit from "p-limit";
 import { constantTimeEqual } from "@/lib/auth-bypass";
 
 export async function GET() {
@@ -21,17 +22,15 @@ export async function GET() {
             .where(eq(externalIntegrations.provider, "google_tasks"));
 
         // ⚡ Bolt Opt: Bounded concurrency (batch size 5) significantly reduces total execution time from O(N) latency while respecting external API burst rate limits.
-        const results: Array<{ userId: string; result: Awaited<ReturnType<typeof syncGoogleTasksForUser>> }> = [];
-        for (let i = 0; i < integrations.length; i += 5) {
-            const batch = integrations.slice(i, i + 5);
-            const batchResults = await Promise.all(
-                batch.map(async (integration) => ({
+        const limit = pLimit(5);
+        const results = await Promise.all(
+            integrations.map((integration) =>
+                limit(async () => ({
                     userId: integration.userId,
                     result: await syncGoogleTasksForUser(integration.userId),
                 }))
-            );
-            results.push(...batchResults);
-        }
+            )
+        );
 
         return NextResponse.json({ success: true, results });
     }
