@@ -32,3 +32,6 @@
 ## 2025-04-09 - [Optimize] Bounded Concurrency in Google Tasks Sync
 **Learning:** Sequential processing using array chunking combined with `Promise.all` (e.g. `integrations.slice(i, i+5)`) creates uneven execution patterns where the entire batch is gated by the slowest task in the batch. While better than purely sequential execution, it leaves concurrency windows unutilized.
 **Action:** Use libraries like `p-limit` to establish bounded concurrency for external API interactions. `p-limit(N)` maintains exactly `N` concurrent operations at all times, drastically reducing overall queue latency without hitting burst rate limits.
+## 2024-05-19 - Optimize Google Tasks Sync Concurrency
+**Learning:** Manual chunking of promises combined with `Promise.all` (e.g. `batch.map(...)`) creates "uneven" execution where the entire batch is gated by the slowest task in that chunk, leaving concurrency windows underutilized.
+**Action:** Replaced sequential loop / manual chunking in `src/app/api/google-tasks-sync/route.ts` with `p-limit` to maintain a constant level of concurrency (limit 5). This maximizes throughput while strictly respecting rate limits.
