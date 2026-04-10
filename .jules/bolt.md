@@ -29,7 +29,7 @@
 **Learning:** Sequential processing using array chunking combined with `Promise.all` (e.g. `integrations.slice(i, i+5)`) creates uneven execution patterns where the entire batch is gated by the slowest task in the batch. While better than purely sequential execution, it leaves concurrency windows unutilized.
 **Action:** Use libraries like `p-limit` to establish bounded concurrency for external API interactions. `p-limit(N)` maintains exactly `N` concurrent operations at all times, drastically reducing overall queue latency without hitting burst rate limits.
 
-## 2026-04-10 - O(1) Set Lookup for Icon Filtering
-**Learning:** Using `Array.includes()` inside an array `.filter()` or loops results in O(N^2) time complexity. Initializing a static `Set` outside the filter allows for O(1) membership checking, significantly reducing lookup time for larger datasets.
-**Action:** Replaced the inline `Array.includes()` check in `src/lib/icons.ts` with a pre-initialized `Set` (`LABEL_ICONS_SET`) for O(1) performance during icon filtering.
+## 2026-04-10 - O(1) Set Lookup for MIME Type Validation
+**Learning:** Using Array.includes() for repeated membership checks results in O(N) lookup time. Initializing a static Set allows for O(1) performance, which is more efficient for validation logic.
+**Action:** Replaced the inline array .includes() check in src/lib/actions/custom-icons.ts with a pre-initialized Set (VALID_MIME_TYPES) for O(1) performance during icon MIME type validation.
 **Action:** Replaced manual array chunking in `src/app/api/google-tasks-sync/route.ts` with `p-limit(5)`. This optimization was already present in `todoist-sync/route.ts` but missing from Google Tasks sync.
