@@ -32,3 +32,6 @@
 ## 2025-04-09 - [Optimize] Bounded Concurrency in Google Tasks Sync
 **Learning:** Sequential processing using array chunking combined with `Promise.all` (e.g. `integrations.slice(i, i+5)`) creates uneven execution patterns where the entire batch is gated by the slowest task in the batch. While better than purely sequential execution, it leaves concurrency windows unutilized.
 **Action:** Use libraries like `p-limit` to establish bounded concurrency for external API interactions. `p-limit(N)` maintains exactly `N` concurrent operations at all times, drastically reducing overall queue latency without hitting burst rate limits.
+## 2026-04-10 - Optimize Array Conversion from Set
+**Learning:** `Array.from(set)` creates unnecessary intermediate arrays and has some performance overhead when doing array transformations or object creation. Using a pre-allocated array and an iterator loop `for (const x of set) arr[i++] = x` avoids `Array.from()` iteration overhead.
+**Action:** Replaced `Array.from(finalLabels)` with a pre-allocated `new Array(finalLabels.size)` populated via a `for...of` loop in `src/lib/todoist/mapper.ts` to optimize the Todoist labels mapping process.
