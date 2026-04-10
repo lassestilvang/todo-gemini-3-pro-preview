@@ -32,3 +32,6 @@
 ## 2025-04-09 - [Optimize] Bounded Concurrency in Google Tasks Sync
 **Learning:** Sequential processing using array chunking combined with `Promise.all` (e.g. `integrations.slice(i, i+5)`) creates uneven execution patterns where the entire batch is gated by the slowest task in the batch. While better than purely sequential execution, it leaves concurrency windows unutilized.
 **Action:** Use libraries like `p-limit` to establish bounded concurrency for external API interactions. `p-limit(N)` maintains exactly `N` concurrent operations at all times, drastically reducing overall queue latency without hitting burst rate limits.
+## 2024-04-10 - Optimize Set initialization
+**Learning:** Avoid initializing Sets using `new Set(array.map(...))` as it creates a redundant intermediate array allocation.
+**Action:** Initialize an empty structure and populate it directly using a `for...of` loop to avoid intermediate array allocations.
