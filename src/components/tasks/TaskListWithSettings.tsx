@@ -218,14 +218,32 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [groupedEntries, settings.groupBy, nowIsoDate]);
 
-    const groupedVirtualSections = useMemo<GroupedVirtualSection[]>(() => settings.groupBy === "none" ? [] : groupedEntries.map(([groupName, gTasks]) => {
-        const active: Task[] = [], completed: Task[] = [];
-        gTasks.forEach(t => (t.isCompleted ? completed : active).push(t));
-        const items: ({ type: "task"; task: Task } | { type: "separator" })[] = active.map(t => ({ type: "task" as const, task: t }));
-        if (active.length && completed.length) items.push({ type: "separator" });
-        completed.forEach(t => items.push({ type: "task", task: t }));
-        return { groupName, totalCount: gTasks.length, items };
-    }), [groupedEntries, settings.groupBy]);
+    const groupedVirtualSections = useMemo<GroupedVirtualSection[]>(() => {
+        if (settings.groupBy === "none") return [];
+        // ⚡ Bolt Opt: Replaced chained .map().forEach() with simple for...of loops
+        // to eliminate intermediate array allocations and closure overhead.
+        const sections: GroupedVirtualSection[] = [];
+        for (const [groupName, gTasks] of groupedEntries) {
+            const active: Task[] = [];
+            const completed: Task[] = [];
+            for (const t of gTasks) {
+                if (t.isCompleted) completed.push(t);
+                else active.push(t);
+            }
+            const items: ({ type: "task"; task: Task } | { type: "separator" })[] = [];
+            for (const t of active) {
+                items.push({ type: "task", task: t });
+            }
+            if (active.length > 0 && completed.length > 0) {
+                items.push({ type: "separator" });
+            }
+            for (const t of completed) {
+                items.push({ type: "task", task: t });
+            }
+            sections.push({ groupName, totalCount: gTasks.length, items });
+        }
+        return sections;
+    }, [groupedEntries, settings.groupBy]);
 
     const viewIndicator = useMemo(() => {
         if (settings.layout !== "list") return `Layout: ${settings.layout.charAt(0).toUpperCase() + settings.layout.slice(1)}`;
