@@ -1,10 +1,6 @@
-## 2024-04-07 - Avoid array.map allocations during Map initialization
-**Learning:** The pattern `new Map(array.map(...))` creates unnecessary intermediate arrays just to initialize a Map. In performance-sensitive code or frequent renders, this adds redundant object allocations and increases GC overhead.
-**Action:** Replace `new Map(array.map(...))` with an empty Map and a `for...of` loop (`const map = new Map(); for (const item of array) { map.set(...) }`) to avoid intermediate array creation.
+## 2026-04-10 - ⚡ Bolt: Optimize Google Tasks sync concurrency
 
-## 2024-05-30 - Optimize Sequential API Syncing
-**Learning:** Sequential iteration over network requests causes O(N) latency bottlenecks. Unbounded concurrency (e.g., mapping all to Promises) risks triggering third-party rate limits.
-**Action:** Replaced sequential loop with bounded concurrency chunking using Promise.all on batches of 5 to balance latency reduction with rate limit safety.
+**Learning:** When optimizing sequential asynchronous operations (e.g., external API syncs) to avoid burst rate limits, `p-limit` provides superior throughput compared to manual array chunking + `Promise.all`. Manual chunking creates uneven execution patterns where the entire batch is gated by the slowest task, leaving concurrency windows unutilized. `p-limit(N)` maintains exactly `N` concurrent operations at all times.
 
 ## 2025-02-15 - Optimize Todoist sync sequential bottleneck
 **Learning:** Sequential `for...of` loops with `await` inside them for mapping external API calls act as a massive bottleneck. While intended to prevent burst rate limits, pure sequential processing severely limits throughput and scalability when synchronizing many user integrations.
@@ -36,3 +32,4 @@
 ## 2026-04-10 - O(1) Set Lookup for Icon Filtering
 **Learning:** Using `Array.includes()` inside an array `.filter()` or loops results in O(N^2) time complexity. Initializing a static `Set` outside the filter allows for O(1) membership checking, significantly reducing lookup time for larger datasets.
 **Action:** Replaced the inline `Array.includes()` check in `src/lib/icons.ts` with a pre-initialized `Set` (`LABEL_ICONS_SET`) for O(1) performance during icon filtering.
+**Action:** Replaced manual array chunking in `src/app/api/google-tasks-sync/route.ts` with `p-limit(5)`. This optimization was already present in `todoist-sync/route.ts` but missing from Google Tasks sync.
