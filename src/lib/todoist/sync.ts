@@ -184,10 +184,12 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
     ]);
     // ⚡ Bolt Opt: Avoid allocating an intermediate array for map initialization
     const localTaskMap = new Map<number, typeof tasks.$inferSelect>();
+    const localTaskIds = new Array(localTasks.length);
+    let taskIdx = 0;
     for (const task of localTasks) {
       localTaskMap.set(task.id, task);
+      localTaskIds[taskIdx++] = task.id;
     }
-    const localTaskIds = localTasks.map((task) => task.id);
     const localTaskLabelMap = await fetchTaskLabels(localTaskIds, taskLabelCache);
     // ⚡ Bolt Opt: Avoid allocating an intermediate array for map initialization
     const localLabelToExternal = new Map<number, string>();
