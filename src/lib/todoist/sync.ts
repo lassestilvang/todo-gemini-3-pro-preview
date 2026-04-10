@@ -250,13 +250,6 @@ localLabelToExternal.set(mapping.localId, mapping.externalId);
 
     const externalEntityMappingsToCreate: (typeof externalEntityMap.$inferInsert)[] =
       [];
-    const labelMappingsToCreate: {
-      userId: string;
-      provider: "todoist";
-      entityType: "label";
-      localId: number;
-      externalId: string;
-    }[] = [];
 
     for (const localLabel of localLabels) {
       if (hasScopedMappings && !scopedLocalLabelIds.has(localLabel.id)) {
@@ -1109,133 +1102,139 @@ async function updateMappedTasks(params: {
   });
   const mappedListIds = buildMappedListIds(mappingState);
 
-  for (const mapping of mappedTasks) {
-    const localTask = localTaskMap.get(mapping.localId as number);
-    if (!localTask) {
-      continue;
-    }
-    if (
-      hasScopedMappings &&
-      !hasLocalListMapping(localTask.listId ?? null, mappedListIds)
-    ) {
-      continue;
-    }
+  // Process tasks in chunks to avoid rate limiting while utilizing bounded concurrency
+  const CHUNK_SIZE = 5;
+  for (let i = 0; i < mappedTasks.length; i += CHUNK_SIZE) {
+    const chunk = mappedTasks.slice(i, i + CHUNK_SIZE);
 
-    const remoteTask = remoteTaskMap.get(mapping.externalId);
-    if (!remoteTask) {
-      continue;
-    }
-
-    if (lastSyncedAt) {
-      const localChangedAfterLastSync = localTask.updatedAt > lastSyncedAt;
-      const remoteUpdatedAt = parseTodoistTimestamp(remoteTask.updatedAt);
-      const remoteChangedAfterLastSync = remoteUpdatedAt
-        ? remoteUpdatedAt > lastSyncedAt
-        : false;
-
-      // Pull-only when remote changed and local did not.
-      if (!localChangedAfterLastSync && remoteChangedAfterLastSync) {
-        continue;
+    await Promise.all(chunk.map(async (mapping) => {
+      const localTask = localTaskMap.get(mapping.localId as number);
+      if (!localTask) {
+        return;
+      }
+      if (
+        hasScopedMappings &&
+        !hasLocalListMapping(localTask.listId ?? null, mappedListIds)
+      ) {
+        return;
       }
 
-      // Skip idempotent updates when nothing changed since the last successful sync.
-      if (!localChangedAfterLastSync && !remoteChangedAfterLastSync) {
-        continue;
+      const remoteTask = remoteTaskMap.get(mapping.externalId);
+      if (!remoteTask) {
+        return;
       }
-    }
 
-    const conflictKey = buildConflictKey(
-      "task",
-      localTask.id,
-      mapping.externalId,
-    );
-    if (conflictKeys.has(conflictKey)) {
-      continue;
-    }
+      if (lastSyncedAt) {
+        const localChangedAfterLastSync = localTask.updatedAt > lastSyncedAt;
+        const remoteUpdatedAt = parseTodoistTimestamp(remoteTask.updatedAt);
+        const remoteChangedAfterLastSync = remoteUpdatedAt
+          ? remoteUpdatedAt > lastSyncedAt
+          : false;
 
-    const labelIds = localTaskLabelMap.get(localTask.id) ?? [];
-    const payload = mapLocalTaskToTodoist(localTask, mappingState, {
-      labelIds,
-      labelIdToExternal: localLabelToExternal,
-      externalLabelToName,
-    });
-    payload.labels = mergeManagedAndUnmanagedTaskLabels({
-      desiredManagedLabelNames: payload.labels ?? [],
-      remoteTaskLabelTokens: remoteTask.labels ?? [],
-      managedLabelNames,
-      externalLabelToName,
-    });
-    const listMapping = applyListLabelMapping(
-      localTask.listId ?? null,
-      mappingState,
-    );
-    const desiredProjectId = listMapping.projectId ?? null;
-    const desiredParentExternalId = localTask.parentId
-      ? (localToExternalTaskMap.get(localTask.parentId) ?? null)
-      : null;
+        // Pull-only when remote changed and local did not.
+        if (!localChangedAfterLastSync && remoteChangedAfterLastSync) {
+          return;
+        }
 
-    let effectiveProjectId = remoteTask.projectId ?? null;
-    let effectiveParentId = remoteTask.parentId ?? null;
+        // Skip idempotent updates when nothing changed since the last successful sync.
+        if (!localChangedAfterLastSync && !remoteChangedAfterLastSync) {
+          return;
+        }
+      }
 
-    if (
-      desiredParentExternalId &&
-      desiredParentExternalId !== effectiveParentId
-    ) {
-      await client.moveTask(mapping.externalId, {
-        parentId: desiredParentExternalId,
+      const conflictKey = buildConflictKey(
+        "task",
+        localTask.id,
+        mapping.externalId,
+      );
+      if (conflictKeys.has(conflictKey)) {
+        return;
+      }
+
+      const labelIds = localTaskLabelMap.get(localTask.id) ?? [];
+      const payload = mapLocalTaskToTodoist(localTask, mappingState, {
+        labelIds,
+        labelIdToExternal: localLabelToExternal,
+        externalLabelToName,
       });
-      effectiveParentId = desiredParentExternalId;
-    } else if (!desiredParentExternalId && effectiveParentId) {
-      const projectIdForRoot = desiredProjectId ?? effectiveProjectId;
-      if (projectIdForRoot) {
+      payload.labels = mergeManagedAndUnmanagedTaskLabels({
+        desiredManagedLabelNames: payload.labels ?? [],
+        remoteTaskLabelTokens: remoteTask.labels ?? [],
+        managedLabelNames,
+        externalLabelToName,
+      });
+      const listMapping = applyListLabelMapping(
+        localTask.listId ?? null,
+        mappingState,
+      );
+      const desiredProjectId = listMapping.projectId ?? null;
+      const desiredParentExternalId = localTask.parentId
+        ? (localToExternalTaskMap.get(localTask.parentId) ?? null)
+        : null;
+
+      let effectiveProjectId = remoteTask.projectId ?? null;
+      let effectiveParentId = remoteTask.parentId ?? null;
+
+      if (
+        desiredParentExternalId &&
+        desiredParentExternalId !== effectiveParentId
+      ) {
         await client.moveTask(mapping.externalId, {
-          projectId: projectIdForRoot,
+          parentId: desiredParentExternalId,
         });
-        effectiveProjectId = projectIdForRoot;
-        effectiveParentId = null;
+        effectiveParentId = desiredParentExternalId;
+      } else if (!desiredParentExternalId && effectiveParentId) {
+        const projectIdForRoot = desiredProjectId ?? effectiveProjectId;
+        if (projectIdForRoot) {
+          await client.moveTask(mapping.externalId, {
+            projectId: projectIdForRoot,
+          });
+          effectiveProjectId = projectIdForRoot;
+          effectiveParentId = null;
+        }
       }
-    }
 
-    if (
-      !desiredParentExternalId &&
-      desiredProjectId &&
-      desiredProjectId !== effectiveProjectId
-    ) {
-      await client.moveTask(mapping.externalId, {
-        projectId: desiredProjectId,
-      });
-      effectiveProjectId = desiredProjectId;
-    }
-
-    const remoteTaskForCompare = {
-      ...remoteTask,
-      projectId: effectiveProjectId ?? remoteTask.projectId,
-      labels: (remoteTask.labels ?? []).map(
-        (token) => externalLabelToName.get(token) ?? token,
-      ),
-    };
-    const shouldUpdateTask = shouldUpdateTodoistTask(
-      remoteTaskForCompare,
-      payload,
-    );
-    const shouldToggleCompletion =
-      (localTask.isCompleted ?? false) !== (remoteTask.checked ?? false);
-
-    if (!shouldUpdateTask && !shouldToggleCompletion) {
-      continue;
-    }
-
-    if (shouldUpdateTask) {
-      await client.updateTask(mapping.externalId, payload);
-    }
-
-    if (shouldToggleCompletion) {
-      if (localTask.isCompleted) {
-        await client.closeTask(mapping.externalId);
-      } else {
-        await client.reopenTask(mapping.externalId);
+      if (
+        !desiredParentExternalId &&
+        desiredProjectId &&
+        desiredProjectId !== effectiveProjectId
+      ) {
+        await client.moveTask(mapping.externalId, {
+          projectId: desiredProjectId,
+        });
+        effectiveProjectId = desiredProjectId;
       }
-    }
+
+      const remoteTaskForCompare = {
+        ...remoteTask,
+        projectId: effectiveProjectId ?? remoteTask.projectId,
+        labels: (remoteTask.labels ?? []).map(
+          (token) => externalLabelToName.get(token) ?? token,
+        ),
+      };
+      const shouldUpdateTask = shouldUpdateTodoistTask(
+        remoteTaskForCompare,
+        payload,
+      );
+      const shouldToggleCompletion =
+        (localTask.isCompleted ?? false) !== (remoteTask.checked ?? false);
+
+      if (!shouldUpdateTask && !shouldToggleCompletion) {
+        return;
+      }
+
+      if (shouldUpdateTask) {
+        await client.updateTask(mapping.externalId, payload);
+      }
+
+      if (shouldToggleCompletion) {
+        if (localTask.isCompleted) {
+          await client.closeTask(mapping.externalId);
+        } else {
+          await client.reopenTask(mapping.externalId);
+        }
+      }
+    }));
   }
 }
 

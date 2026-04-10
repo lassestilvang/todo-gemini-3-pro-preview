@@ -29,3 +29,6 @@
 ## 2025-02-28 - Avoid array callback methods for performance in render loops
 **Learning:** Using array callback methods like `.map()` to iterate and transform data inside React render loops adds unnecessary overhead from callback allocations and executions compared to a pre-allocated traditional for-loop, especially on large datasets.
 **Action:** Replaced `activeTasks.map((task) => task.id)` with a pre-allocated O(N) array initialized using a traditional C-style `for` loop in `TaskListWithSettings.tsx` to compute `activeTaskIds` faster and reduce GC overhead.
+## 2025-04-09 - [Optimize] Bounded Concurrency in Google Tasks Sync
+**Learning:** Sequential processing using array chunking combined with `Promise.all` (e.g. `integrations.slice(i, i+5)`) creates uneven execution patterns where the entire batch is gated by the slowest task in the batch. While better than purely sequential execution, it leaves concurrency windows unutilized.
+**Action:** Use libraries like `p-limit` to establish bounded concurrency for external API interactions. `p-limit(N)` maintains exactly `N` concurrent operations at all times, drastically reducing overall queue latency without hitting burst rate limits.
