@@ -33,3 +33,7 @@
 **Learning:** Using Array.includes() for repeated membership checks results in O(N) lookup time. Initializing a static Set allows for O(1) performance, which is more efficient for validation logic.
 **Action:** Replaced the inline array .includes() check in src/lib/actions/custom-icons.ts with a pre-initialized Set (VALID_MIME_TYPES) for O(1) performance during icon MIME type validation.
 **Action:** Replaced manual array chunking in `src/app/api/google-tasks-sync/route.ts` with `p-limit(5)`. This optimization was already present in `todoist-sync/route.ts` but missing from Google Tasks sync.
+
+## 2024-04-11 - Eliminate array allocation bottlenecks in Achievements Page
+**Learning:** Re-assigning or filtering arrays dynamically in React components using `.map()` and chained `.filter().map()` triggers unnecessary hidden heap allocations and GC overhead on every render, especially when initializing Sets. This can cause sluggishness in frequently updated components.
+**Action:** When deriving subsets or Sets from large object arrays, use `for...of` loops rather than chained array methods to build structures with a single pass and eliminate intermediate array object allocations.
