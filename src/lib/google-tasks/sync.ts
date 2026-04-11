@@ -107,7 +107,9 @@ export async function syncGoogleTasksForUser(userId: string): Promise<SyncResult
             .select()
             .from(externalEntityMap)
             .where(and(eq(externalEntityMap.userId, userId), eq(externalEntityMap.provider, "google_tasks"), eq(externalEntityMap.entityType, "list")));
-        // ⚡ Bolt Opt: Replaced map initializations with intermediate arrays with direct insertions
+
+        // ⚡ Bolt Opt: Populating both maps in a single pass to reduce iterations from O(3N) down to O(N)
+        // Eliminates two intermediate array allocations created by .map() and .filter().map()
         const updatedExternalToLocal = new Map<string, number | null>();
         const updatedLocalToExternal = new Map<number, string>();
         for (const mapping of updatedListMappings) {
@@ -296,7 +298,7 @@ async function pullRemoteTasks(params: {
 }) {
     const { userId, remoteTasks, listExternalToLocal, taskMappings, localTaskMap, lastSyncedAt, conflictKeys } = params;
 
-    // ⚡ Bolt Opt: Replaced map initialization with intermediate array with direct insertion
+    // ⚡ Bolt Opt: Replaced new Map(array.map()) with for...of to avoid O(N) intermediate array allocation
     const taskExternalToLocal = new Map<string, number | null>();
     for (const mapping of taskMappings) {
         taskExternalToLocal.set(mapping.externalId, mapping.localId);

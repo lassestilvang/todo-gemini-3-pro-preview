@@ -46,6 +46,7 @@ import {
     Ghost,
     Gamepad,
     Terminal,
+    Gem,
     Hash as HashIcon
 } from "lucide-react";
 
@@ -90,6 +91,7 @@ export const AVAILABLE_ICONS = [
     { name: "flame", icon: Flame, tags: ["fire", "hot"] },
     { name: "rocket", icon: Rocket, tags: ["launch", "space"] },
     { name: "zap", icon: Zap, tags: ["electricity", "power"] },
+    { name: "gem", icon: Gem, tags: ["diamond", "crystal"] },
 
     // Travel
     { name: "plane", icon: Plane, tags: ["fly", "travel", "airport"] },
@@ -114,8 +116,10 @@ export const AVAILABLE_ICONS = [
 ];
 
 export const LIST_ICONS = AVAILABLE_ICONS; // Legacy compatibility
+
+const LABEL_ICONS_SET = new Set(["tag", "hash", "flag", "bookmark", "alert-triangle", "check-square", "clock-3", "zap", "heart", "star", "flame", "rocket", "gem"]);
 export const LABEL_ICONS = AVAILABLE_ICONS.filter(i =>
-    ["tag", "hash", "flag", "bookmark", "alert-triangle", "check-square", "clock-3", "zap", "heart", "star", "flame", "rocket", "gem"].includes(i.name)
+    LABEL_ICONS_SET.has(i.name)
 );
 
 // Pre-computed lookup maps for O(1) icon resolution instead of O(n) array.find()

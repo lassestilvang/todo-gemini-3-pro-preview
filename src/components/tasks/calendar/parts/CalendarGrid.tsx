@@ -97,7 +97,7 @@ export function CalendarGrid({
                         onDateClick(day);
                       }}
                       className="h-5 w-5 flex items-center justify-center rounded text-muted-foreground/0 group-hover:text-muted-foreground/60 hover:!text-primary hover:bg-primary/10 transition-colors"
-                      aria-label="Add task"
+                      aria-label={`Add task on ${day.toDateString()}`}
                     >
                       <Plus className="h-3 w-3" />
                     </button>
@@ -113,6 +113,7 @@ export function CalendarGrid({
                           e.stopPropagation();
                           onEdit(task);
                         }}
+                        aria-label={`Edit ${task.isCompleted ? "completed " : ""}task: ${task.title}`}
                         className={cn(
                           "w-full text-left text-[10px] px-1 py-0.5 rounded truncate flex items-center gap-1 border cursor-pointer hover:ring-1 hover:ring-primary/30 transition-shadow",
                           task.isCompleted
@@ -167,7 +168,7 @@ export function CalendarGrid({
                       onDateClick(day);
                     }}
                     className="absolute bottom-1 right-1 h-4 w-4 flex items-center justify-center rounded text-muted-foreground/0 group-hover:text-muted-foreground/60 hover:!text-primary hover:bg-primary/10 transition-colors"
-                    aria-label="Add task"
+                    aria-label={`Add task on ${day.toDateString()}`}
                   >
                     <Plus className="h-2.5 w-2.5" />
                   </button>

@@ -137,7 +137,7 @@ export const TaskItem = memo(function TaskItem({
         >
             <div
                 className={cn(
-                    "group flex items-center gap-3 rounded-lg border p-4 hover:bg-accent/40 transition-all duration-200 hover:shadow-sm bg-card card relative",
+                    "group flex items-center gap-3 rounded-lg border p-4 hover:bg-accent/40 transition-all duration-200 hover:shadow-sm bg-card card relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     onEdit ? "cursor-pointer" : "cursor-default",
                     isCompleted && "opacity-60 bg-muted/30",
                     isBlocked && !isCompleted && "bg-orange-50/50 border-orange-100",

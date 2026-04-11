@@ -31,6 +31,9 @@ type MappingState = {
 };
 
 export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
+  // ⚡ Bolt Opt: Initialize cache to prevent redundant label queries
+  const taskLabelCache = new Map<number, number[]>();
+
   const integration = await db.query.externalIntegrations.findFirst({
     where: and(
       eq(externalIntegrations.userId, userId),
@@ -134,7 +137,11 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
         .filter((mapping) => mapping.localId !== null)
         .map((mapping) => mapping.externalId),
     );
-    const snapshotLabelIds = new Set(snapshot.labels.map((label) => label.id));
+// ⚡ Bolt Opt: Avoid allocating an intermediate array for Set initialization
+    const snapshotLabelIds = new Set<string>();
+    for (const label of snapshot.labels) {
+      snapshotLabelIds.add(label.id);
+    }
     const snapshotLabelNameToId = new Map<string, string>();
     for (const label of snapshot.labels) {
       const normalizedName = normalizeLabelName(label.name);
@@ -181,11 +188,13 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
     ]);
     // ⚡ Bolt Opt: Avoid allocating an intermediate array for map initialization
     const localTaskMap = new Map<number, typeof tasks.$inferSelect>();
-    for (const task of localTasks) {
+    const localTaskIds = new Array<number>(localTasks.length);
+    for (let i = 0; i < localTasks.length; i++) {
+      const task = localTasks[i];
       localTaskMap.set(task.id, task);
+      localTaskIds[i] = task.id;
     }
-    const localTaskIds = localTasks.map((task) => task.id);
-    const localTaskLabelMap = await fetchTaskLabels(localTaskIds);
+    const localTaskLabelMap = await fetchTaskLabels(localTaskIds, taskLabelCache);
     // ⚡ Bolt Opt: Avoid allocating an intermediate array for map initialization
     const localLabelToExternal = new Map<number, string>();
     for (const mapping of labelMappings) {
@@ -1391,24 +1400,50 @@ async function updateRemoteTasks(params: {
   }
 }
 
-async function fetchTaskLabels(taskIds: number[]) {
+async function fetchTaskLabels(
+  taskIds: number[],
+  cache?: Map<number, number[]>,
+) {
   if (taskIds.length === 0) {
     return new Map<number, number[]>();
   }
 
-  const rows = await db
-    .select({ taskId: taskLabels.taskId, labelId: taskLabels.labelId })
-    .from(taskLabels)
-    .where(inArray(taskLabels.taskId, taskIds));
+  const result = new Map<number, number[]>();
+  const missingIds: number[] = [];
 
-  const map = new Map<number, number[]>();
-  for (const row of rows) {
-    const current = map.get(row.taskId) ?? [];
-    current.push(row.labelId);
-    map.set(row.taskId, current);
+  for (const id of taskIds) {
+    const cached = cache?.get(id);
+    if (cached) {
+      // ⚡ Bolt Opt: Return a copy to avoid mutation of cached array
+      result.set(id, [...cached]);
+    } else {
+      missingIds.push(id);
+    }
   }
 
-  return map;
+  if (missingIds.length > 0) {
+    const rows = await db
+      .select({ taskId: taskLabels.taskId, labelId: taskLabels.labelId })
+      .from(taskLabels)
+      .where(inArray(taskLabels.taskId, missingIds));
+
+    for (const id of missingIds) {
+      result.set(id, []);
+      cache?.set(id, []);
+    }
+
+    for (const row of rows) {
+      const current = result.get(row.taskId)!;
+      current.push(row.labelId);
+
+      const cached = cache?.get(row.taskId);
+      if (cached) {
+        cached.push(row.labelId);
+      }
+    }
+  }
+
+  return result;
 }
 
 async function getExistingConflictKeys(userId: string) {

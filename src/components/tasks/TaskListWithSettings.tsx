@@ -129,8 +129,11 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
     }, [activeTasks]);
     const taskById = useMemo(() => {
         // ⚡ Bolt Opt: Avoid allocating an O(N) intermediate array before creating the Map
+        // and eliminate iterator overhead using an indexed for-loop.
         const map = new Map<number, Task>();
-        for (const task of derivedTasks) {
+        const len = derivedTasks.length;
+        for (let i = 0; i < len; i++) {
+            const task = derivedTasks[i];
             map.set(task.id, task);
         }
         return map;
@@ -218,14 +221,32 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [groupedEntries, settings.groupBy, nowIsoDate]);
 
-    const groupedVirtualSections = useMemo<GroupedVirtualSection[]>(() => settings.groupBy === "none" ? [] : groupedEntries.map(([groupName, gTasks]) => {
-        const active: Task[] = [], completed: Task[] = [];
-        gTasks.forEach(t => (t.isCompleted ? completed : active).push(t));
-        const items: ({ type: "task"; task: Task } | { type: "separator" })[] = active.map(t => ({ type: "task" as const, task: t }));
-        if (active.length && completed.length) items.push({ type: "separator" });
-        completed.forEach(t => items.push({ type: "task", task: t }));
-        return { groupName, totalCount: gTasks.length, items };
-    }), [groupedEntries, settings.groupBy]);
+    const groupedVirtualSections = useMemo<GroupedVirtualSection[]>(() => {
+        if (settings.groupBy === "none") return [];
+        // ⚡ Bolt Opt: Replaced chained .map().forEach() with simple for...of loops
+        // to eliminate intermediate array allocations and closure overhead.
+        const sections: GroupedVirtualSection[] = [];
+        for (const [groupName, gTasks] of groupedEntries) {
+            const active: Task[] = [];
+            const completed: Task[] = [];
+            for (const t of gTasks) {
+                if (t.isCompleted) completed.push(t);
+                else active.push(t);
+            }
+            const items: ({ type: "task"; task: Task } | { type: "separator" })[] = [];
+            for (const t of active) {
+                items.push({ type: "task", task: t });
+            }
+            if (active.length > 0 && completed.length > 0) {
+                items.push({ type: "separator" });
+            }
+            for (const t of completed) {
+                items.push({ type: "task", task: t });
+            }
+            sections.push({ groupName, totalCount: gTasks.length, items });
+        }
+        return sections;
+    }, [groupedEntries, settings.groupBy]);
 
     const viewIndicator = useMemo(() => {
         if (settings.layout !== "list") return `Layout: ${settings.layout.charAt(0).toUpperCase() + settings.layout.slice(1)}`;
@@ -249,7 +270,7 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
                             <>
                                 {activeTasks.length > 0 && (
                                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel} modifiers={[restrictToVerticalAxis]}>
-                                        <SortableContext items={activeTaskIds} strategy={verticalListSortingStrategy} disabled={!isDragEnabled}>
+                                        <SortableContext items={activeTasks} strategy={verticalListSortingStrategy} disabled={!isDragEnabled}>
                                             <div className="space-y-2">{activeTasks.map(t => <SortableTaskItem key={t.id} task={t} handleEdit={handleEditTask} listId={listId} userId={userId} isDragEnabled={isDragEnabled} dispatch={dispatch} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} />)}</div>
                                         </SortableContext>
                                         <DragOverlay>{activeDragTask ? <div className="opacity-90 rotate-2 scale-105 cursor-grabbing"><TaskItem task={activeDragTask} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={handleEditTask} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} /></div> : null}</DragOverlay>
