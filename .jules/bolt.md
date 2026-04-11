@@ -37,3 +37,7 @@
 ## 2024-04-11 - Eliminate array allocation bottlenecks in Achievements Page
 **Learning:** Re-assigning or filtering arrays dynamically in React components using `.map()` and chained `.filter().map()` triggers unnecessary hidden heap allocations and GC overhead on every render, especially when initializing Sets. This can cause sluggishness in frequently updated components.
 **Action:** When deriving subsets or Sets from large object arrays, use `for...of` loops rather than chained array methods to build structures with a single pass and eliminate intermediate array object allocations.
+
+## 2024-04-11 - Fullcalendar peer dependencies versioning
+**Learning:** Upgrading `@fullcalendar/core` and `@fullcalendar/react` to beta/rc versions arbitrarily will crash tools importing `useCalendarController` from `@fullcalendar/react` since v7 removed it. Downgrading the lockfile back to specific beta versions might clash with `calendarkit-pro` which pins its own dependencies, thus freezing the build pipeline.
+**Action:** When running tools like `bun install` that update locks, pay close attention to Next.js build errors showing `Export useCalendarController doesn't exist in target module` in `.js` or `.tsx` output. The fix is to strictly specify `7.0.0-beta.8` since `7.0.0-rc.0` was causing breaking issues. Also, remember to not automatically bump dependency versions unless required by the issue constraint.
