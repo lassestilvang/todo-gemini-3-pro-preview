@@ -4,7 +4,7 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/react/daygrid";
 import timeGridPlugin from "@fullcalendar/react/timegrid";
 import interactionPlugin from "@fullcalendar/react/interaction";
-import classicThemePlugin from "@fullcalendar/react/themes/classic";
+import classicThemePlugin from "@fullcalendar/react";
 import { useMemo, type ComponentProps } from "react";
 import { useTheme } from "next-themes";
 import { useUser } from "@/components/providers/UserProvider";
@@ -13,7 +13,6 @@ import type { Task } from "@/lib/types";
 import { getTaskDueDate, taskToEvent } from "@/components/calendar2/utils/task-to-event";
 
 import "@fullcalendar/react/skeleton.css";
-import "@fullcalendar/react/themes/classic/theme.css";
 
 interface Calendar3MainProps {
   tasks: Task[];
