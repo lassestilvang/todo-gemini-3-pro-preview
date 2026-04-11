@@ -11,8 +11,8 @@
         "@dnd-kit/utilities": "^3.2.2",
         "@doist/todoist-api-typescript": "^7.2.0",
         "@ducanh2912/next-pwa": "^10.2.9",
-        "@fullcalendar/core": "7.0.0-rc.0",
-        "@fullcalendar/react": "7.0.0-rc.0",
+        "@fullcalendar/core": "7.0.0-beta.7",
+        "@fullcalendar/react": "7.0.0-beta.7",
         "@google/generative-ai": "^0.24.1",
         "@neondatabase/serverless": "^1.0.2",
         "@radix-ui/react-avatar": "^1.1.11",
@@ -444,9 +444,11 @@
 
     "@floating-ui/utils": ["@floating-ui/utils@0.2.11", "", {}, "sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg=="],
 
-    "@fullcalendar/core": ["@fullcalendar/core@7.0.0-rc.0", "", { "dependencies": { "preact": "~10.23.1" } }, "sha512-sYdQ+Pb7xMyVrWBVarynSEEssPjbdKBRhAgnIuDVK8QhetS/VY4d/PfkGH3341eYoJ2AyZirQ8hWE8s64cLmmg=="],
+    "@full-ui/headless-calendar": ["@full-ui/headless-calendar@7.0.0-beta.7", "", { "peerDependencies": { "temporal-polyfill": "^0.3.0" } }, "sha512-6tQ7+ARLjTd/9606enUD08QBUVAb6PXZC+iNJMoJNEM7z/sqSC5BcwweU4ntx4rBCLAvz29T5TUOCBdj87ySXA=="],
 
-    "@fullcalendar/react": ["@fullcalendar/react@7.0.0-rc.0", "", { "peerDependencies": { "@fullcalendar/core": "7.0.0-rc.0", "react": "^16.7.0 || ^17 || ^18 || ^19", "react-dom": "^16.7.0 || ^17 || ^18 || ^19" } }, "sha512-vce0pHbRt0v2X8D3EmOhcIE/RJytBfrUz4U698CBX5ucnoMZNqqYG+gKL3/IrCO2fpWg3P4YfH1FgiSpTp/Mrw=="],
+    "@fullcalendar/core": ["@fullcalendar/core@7.0.0-beta.7", "", { "peerDependencies": { "@full-ui/headless-calendar": "7.0.0-beta.7", "temporal-polyfill": "^0.3.0" } }, "sha512-TvtvVGGQcPto4w+ysgyQ5IXoEDFfXEhqA+43YGnKpg1yh5faYm+W1tbveB22WwJmC/EqNzk11sDYNcnM6iFuCg=="],
+
+    "@fullcalendar/react": ["@fullcalendar/react@7.0.0-beta.7", "", { "dependencies": { "@full-ui/headless-calendar": "7.0.0-beta.7", "@fullcalendar/core": "7.0.0-beta.7" }, "peerDependencies": { "react": "^16.7.0 || ^17 || ^18 || ^19", "react-dom": "^16.7.0 || ^17 || ^18 || ^19", "temporal-polyfill": "^0.3.0" } }, "sha512-5Q2nV3yKqW0U/7GBN90/FPPwv1qXuiNz4gV742WPZd39HerNo7STl4iWsO3rzYlFkM9Woj48FimUkqTA/5O7Pw=="],
 
     "@google/generative-ai": ["@google/generative-ai@0.24.1", "", {}, "sha512-MqO+MLfM6kjxcKoy0p1wRzG3b4ZZXtPI+z2IE26UogS2Cm/XHO+7gGRBh6gcJsOiIVoH93UwKvW4HdgiOZCy9Q=="],
 
@@ -1655,8 +1657,6 @@
     "postgres-date": ["postgres-date@1.0.7", "", {}, "sha512-suDmjLVQg78nMK2UZ454hAG+OAW+HQPZ6n++TNDUX+L0+uUlLywnoxJKDou51Zm+zTCjrCl0Nq6J9C5hP9vK/Q=="],
 
     "postgres-interval": ["postgres-interval@1.2.0", "", { "dependencies": { "xtend": "^4.0.0" } }, "sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ=="],
-
-    "preact": ["preact@10.23.2", "", {}, "sha512-kKYfePf9rzKnxOAKDpsWhg/ysrHPqT+yQ7UW4JjdnqjFIeNUnNcEJvhuA8fDenxAGWzUqtd51DfVg7xp/8T9NA=="],
 
     "prelude-ls": ["prelude-ls@1.2.1", "", {}, "sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g=="],
 
