@@ -122,3 +122,7 @@
 ## 2024-04-03 - Dynamic Context for Identical Action Buttons
 **Learning:** Adding static `aria-label="Add task"` to dozens of identical buttons in a grid (like a calendar) forces screen reader users to guess which specific context (date) the button applies to when tabbing through.
 **Action:** When mapping over items to generate interactive elements, dynamically inject the item's context into the `aria-label` (e.g., `aria-label={"Add task on " + day.toDateString()}`). This ensures each button is uniquely identifiable when accessed out-of-context.
+
+## 2026-04-05 - Add aria-label to Todoist API Token Input
+**Learning:** Password inputs without explicit labels rely on placeholders, which can be insufficient for screen readers.
+**Action:** Added `aria-label="Todoist API token"` to the API token input in `TodoistSettings.tsx`.

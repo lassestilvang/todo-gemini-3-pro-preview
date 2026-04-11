@@ -124,17 +124,23 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
     );
     const hasLabelMappings = listLabelMappings.length > 0;
     const hasScopedMappings = hasProjectMappingRules || hasLabelMappings;
-    const mappedProjectIds = new Set(
-      projectMappings
-        .filter((mapping) => mapping.localId !== null)
-        .map((mapping) => mapping.externalId),
-    );
-    const mappedLabelIds = new Set(
-      listLabelMappings
-        .filter((mapping) => mapping.localId !== null)
-        .map((mapping) => mapping.externalId),
-    );
-    const snapshotLabelIds = new Set(snapshot.labels.map((label) => label.id));
+    const mappedProjectIds = new Set<string>();
+    for (const mapping of projectMappings) {
+      if (mapping.localId !== null) {
+        mappedProjectIds.add(mapping.externalId);
+      }
+    }
+
+    const mappedLabelIds = new Set<string>();
+    for (const mapping of listLabelMappings) {
+      if (mapping.localId !== null) {
+        mappedLabelIds.add(mapping.externalId);
+      }
+    }
+    const snapshotLabelIds = new Set<string>();
+    for (const label of snapshot.labels) {
+      snapshotLabelIds.add(label.id);
+    }
     const snapshotLabelNameToId = new Map<string, string>();
     for (const label of snapshot.labels) {
       const normalizedName = normalizeLabelName(label.name);
