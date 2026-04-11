@@ -65,11 +65,15 @@ export async function syncGoogleTasksForUser(userId: string): Promise<SyncResult
         const listMappings = entityMappings.filter((mapping) => mapping.entityType === "list");
         const taskMappings = entityMappings.filter((mapping) => mapping.entityType === "task");
 
-        // ⚡ Bolt Opt: Replaced Map initialization with arrays .filter().map() chains to a single O(N) loop to avoid intermediate array allocations
+        // ⚡ Bolt Opt: Replaced chained .filter().map() inside new Map() with single pass for...of loops
+        // This avoids creating intermediate arrays, reducing memory allocations and GC overhead
         const listExternalToLocal = new Map<string, number | null>();
-        const listLocalToExternal = new Map<number, string>();
         for (const mapping of listMappings) {
             listExternalToLocal.set(mapping.externalId, mapping.localId);
+        }
+
+        const listLocalToExternal = new Map<number, string>();
+        for (const mapping of listMappings) {
             if (mapping.localId !== null) {
                 listLocalToExternal.set(mapping.localId, mapping.externalId);
             }
