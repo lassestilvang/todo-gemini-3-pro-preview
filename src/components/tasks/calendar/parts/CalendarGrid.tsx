@@ -96,7 +96,7 @@ export function CalendarGrid({
                         e.stopPropagation();
                         onDateClick(day);
                       }}
-                      className="h-5 w-5 flex items-center justify-center rounded text-muted-foreground/0 group-hover:text-muted-foreground/60 hover:!text-primary hover:bg-primary/10 transition-colors"
+                      className="h-5 w-5 flex items-center justify-center rounded text-muted-foreground/0 group-hover:text-muted-foreground/60 hover:!text-primary hover:bg-primary/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       aria-label={`Add task on ${day.toDateString()}`}
                     >
                       <Plus className="h-3 w-3" />
@@ -115,7 +115,7 @@ export function CalendarGrid({
                         }}
                         aria-label={`Edit ${task.isCompleted ? "completed " : ""}task: ${task.title}`}
                         className={cn(
-                          "w-full text-left text-[10px] px-1 py-0.5 rounded truncate flex items-center gap-1 border cursor-pointer hover:ring-1 hover:ring-primary/30 transition-shadow",
+                          "w-full text-left text-[10px] px-1 py-0.5 rounded truncate flex items-center gap-1 border cursor-pointer hover:ring-1 hover:ring-primary/30 transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                           task.isCompleted
                             ? "bg-muted text-muted-foreground line-through border-transparent"
                             : "bg-background border-l-2 shadow-sm",
@@ -167,7 +167,7 @@ export function CalendarGrid({
                       e.stopPropagation();
                       onDateClick(day);
                     }}
-                    className="absolute bottom-1 right-1 h-4 w-4 flex items-center justify-center rounded text-muted-foreground/0 group-hover:text-muted-foreground/60 hover:!text-primary hover:bg-primary/10 transition-colors"
+                    className="absolute bottom-1 right-1 h-4 w-4 flex items-center justify-center rounded text-muted-foreground/0 group-hover:text-muted-foreground/60 hover:!text-primary hover:bg-primary/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     aria-label={`Add task on ${day.toDateString()}`}
                   >
                     <Plus className="h-2.5 w-2.5" />
