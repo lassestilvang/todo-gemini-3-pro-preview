@@ -137,7 +137,11 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
         .filter((mapping) => mapping.localId !== null)
         .map((mapping) => mapping.externalId),
     );
-    const snapshotLabelIds = new Set(snapshot.labels.map((label) => label.id));
+// ⚡ Bolt Opt: Avoid allocating an intermediate array for Set initialization
+    const snapshotLabelIds = new Set<string>();
+    for (const label of snapshot.labels) {
+      snapshotLabelIds.add(label.id);
+    }
     const snapshotLabelNameToId = new Map<string, string>();
     for (const label of snapshot.labels) {
       const normalizedName = normalizeLabelName(label.name);
