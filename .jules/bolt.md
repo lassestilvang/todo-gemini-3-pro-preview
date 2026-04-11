@@ -1,10 +1,6 @@
-## 2024-04-07 - Avoid array.map allocations during Map initialization
-**Learning:** The pattern `new Map(array.map(...))` creates unnecessary intermediate arrays just to initialize a Map. In performance-sensitive code or frequent renders, this adds redundant object allocations and increases GC overhead.
-**Action:** Replace `new Map(array.map(...))` with an empty Map and a `for...of` loop (`const map = new Map(); for (const item of array) { map.set(...) }`) to avoid intermediate array creation.
+## 2026-04-10 - ⚡ Bolt: Optimize Google Tasks sync concurrency
 
-## 2024-05-30 - Optimize Sequential API Syncing
-**Learning:** Sequential iteration over network requests causes O(N) latency bottlenecks. Unbounded concurrency (e.g., mapping all to Promises) risks triggering third-party rate limits.
-**Action:** Replaced sequential loop with bounded concurrency chunking using Promise.all on batches of 5 to balance latency reduction with rate limit safety.
+**Learning:** When optimizing sequential asynchronous operations (e.g., external API syncs) to avoid burst rate limits, `p-limit` provides superior throughput compared to manual array chunking + `Promise.all`. Manual chunking creates uneven execution patterns where the entire batch is gated by the slowest task, leaving concurrency windows unutilized. `p-limit(N)` maintains exactly `N` concurrent operations at all times.
 
 ## 2025-02-15 - Optimize Todoist sync sequential bottleneck
 **Learning:** Sequential `for...of` loops with `await` inside them for mapping external API calls act as a massive bottleneck. While intended to prevent burst rate limits, pure sequential processing severely limits throughput and scalability when synchronizing many user integrations.
@@ -35,3 +31,8 @@
 ## 2026-04-10 - Optimize Array Conversion from Set
 **Learning:** `Array.from(set)` can have performance overhead due to the iterator protocol and internal allocation strategies. Using a pre-allocated array and a manual iterator loop `for (const x of set) arr[i++] = x` avoids this overhead and ensures the array is efficiently populated, especially in performance-critical sync paths.
 **Action:** Replaced `Array.from(finalLabels)` with a pre-allocated `new Array(finalLabels.size)` populated via a `for...of` loop in `src/lib/todoist/mapper.ts` to optimize the Todoist labels mapping process.
+
+## 2026-04-10 - O(1) Set Lookup for MIME Type Validation
+**Learning:** Using Array.includes() for repeated membership checks results in O(N) lookup time. Initializing a static Set allows for O(1) performance, which is more efficient for validation logic.
+**Action:** Replaced the inline array .includes() check in src/lib/actions/custom-icons.ts with a pre-initialized Set (VALID_MIME_TYPES) for O(1) performance during icon MIME type validation.
+**Action:** Replaced manual array chunking in `src/app/api/google-tasks-sync/route.ts` with `p-limit(5)`. This optimization was already present in `todoist-sync/route.ts` but missing from Google Tasks sync.
