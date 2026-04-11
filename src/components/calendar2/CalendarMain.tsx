@@ -14,7 +14,6 @@ import { getTaskDueDate, taskToEvent } from "@/components/calendar2/utils/task-t
 
 import "@fullcalendar/react/skeleton.css";
 import "@fullcalendar/react/themes/classic/theme.css";
-import "@fullcalendar/react/themes/classic/palette.css";
 
 interface CalendarMainProps {
   tasks: Task[];
