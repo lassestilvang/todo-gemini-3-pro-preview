@@ -192,6 +192,7 @@ async function syncTasklists(params: {
     let maxPosition = Math.max(0, ...existingLists.map((list) => list.position ?? 0));
 
     const listsToInsert: { userId: string; name: string; slug: string; position: number; externalId: string }[] = [];
+    const listUpdatePromises: Promise<any>[] = [];
 
     for (const remoteList of tasklists) {
         const hasMapping = listExternalToLocal.has(remoteList.id);
@@ -205,10 +206,14 @@ async function syncTasklists(params: {
         if (mappedLocalId) {
             const localList = localListMap.get(mappedLocalId);
             if (localList && localList.name !== remoteList.title) {
-                await db
-                    .update(lists)
-                    .set({ name: remoteList.title })
-                    .where(and(eq(lists.id, localList.id), eq(lists.userId, userId)));
+                // ⚡ Bolt Opt: Replaced sequential db.update() with concurrent promises
+                // Executing updates in parallel reduces total I/O wait time from O(N) to O(1)
+                listUpdatePromises.push(
+                    db
+                        .update(lists)
+                        .set({ name: remoteList.title })
+                        .where(and(eq(lists.id, localList.id), eq(lists.userId, userId)))
+                );
             }
             continue;
         }
@@ -222,6 +227,10 @@ async function syncTasklists(params: {
             externalId: remoteList.id,
         });
         maxPosition += 1;
+    }
+
+    if (listUpdatePromises.length > 0) {
+        await Promise.all(listUpdatePromises);
     }
 
     if (listsToInsert.length > 0) {
