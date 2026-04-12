@@ -319,7 +319,21 @@ async function pullRemoteTasks(params: {
 
     const syncPromises = new Array(remoteTasks.size);
     let syncIndex = 0;
+
+    // ⚡ Bolt Opt: Batch database deletions to prevent N+1 queries.
+    const localTasksToDelete: number[] = [];
+    const externalIdsToDelete: string[] = [];
+
     for (const [externalId, entry] of remoteTasks) {
+        if (entry.task.deleted) {
+            const mappedLocalId = taskExternalToLocal.get(externalId) ?? null;
+            if (mappedLocalId) {
+                localTasksToDelete.push(mappedLocalId);
+                externalIdsToDelete.push(externalId);
+            }
+            continue;
+        }
+
         syncPromises[syncIndex++] = (async () => {
             const { task, tasklistId } = entry;
             const listId = listExternalToLocal.get(tasklistId) ?? null;
@@ -327,23 +341,6 @@ async function pullRemoteTasks(params: {
 
             const mappedLocalId = taskExternalToLocal.get(externalId) ?? null;
             const remoteUpdatedAt = task.updated ? new Date(task.updated) : null;
-
-            if (task.deleted) {
-                if (mappedLocalId) {
-                    await db.delete(tasks).where(and(eq(tasks.id, mappedLocalId), eq(tasks.userId, userId)));
-                    await db
-                        .delete(externalEntityMap)
-                        .where(
-                            and(
-                                eq(externalEntityMap.userId, userId),
-                                eq(externalEntityMap.provider, "google_tasks"),
-                                eq(externalEntityMap.entityType, "task"),
-                                eq(externalEntityMap.externalId, externalId)
-                            )
-                        );
-                }
-                return;
-            }
 
             if (mappedLocalId && localTaskMap.has(mappedLocalId)) {
                 const localTask = localTaskMap.get(mappedLocalId)!;
@@ -428,7 +425,24 @@ async function pullRemoteTasks(params: {
             }
         })();
     }
+
+    syncPromises.length = syncIndex;
     await Promise.all(syncPromises);
+
+    if (localTasksToDelete.length > 0) {
+        await db.delete(tasks).where(and(inArray(tasks.id, localTasksToDelete), eq(tasks.userId, userId)));
+    }
+
+    if (externalIdsToDelete.length > 0) {
+        await db.delete(externalEntityMap).where(
+            and(
+                eq(externalEntityMap.userId, userId),
+                eq(externalEntityMap.provider, "google_tasks"),
+                eq(externalEntityMap.entityType, "task"),
+                inArray(externalEntityMap.externalId, externalIdsToDelete)
+            )
+        );
+    }
 }
 
 async function pushLocalTasks(params: {

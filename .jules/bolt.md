@@ -95,3 +95,7 @@
 ## 2026-04-10 - ⚡ Bolt: Optimize Todoist sync bounded concurrency
 **Learning:** Sequential processing using array chunking combined with `Promise.all` (e.g. `mappedTasks.slice(i, i+5)`) creates uneven execution patterns where the entire batch is gated by the slowest task in the batch. While better than purely sequential execution, it leaves concurrency windows unutilized.
 **Action:** Replaced manual array chunking with `p-limit(5)` in `src/lib/todoist/sync.ts` to maximize throughput. When doing so, wrapped the limit call in a `try/catch` with `limit.clearQueue()` to preserve fail-fast semantics on error.
+
+## 2024-05-19 - Batch Google Tasks Deletions
+**Learning:** The `pullRemoteTasks` loop previously handled external task deletions sequentially inside a `Promise.all` mapping by issuing individual `db.delete(...)` queries, which caused a textbook N+1 query issue for deletions. While `Promise.all` provides concurrency, triggering too many individual deletes degrades database performance and hits connection limits.
+**Action:** Refactored the `pullRemoteTasks` loop to collect IDs of tasks that need to be deleted into `localTasksToDelete` and `externalIdsToDelete` arrays using a `for...of` loop (while properly skipping the rest of the logic with `continue`). Executed the collected deletions in a single batch outside the loop using Drizzle ORM's `inArray` operator, preventing N+1 queries.
