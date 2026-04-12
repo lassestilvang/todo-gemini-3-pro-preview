@@ -41,7 +41,7 @@ export default async function AchievementsPage() {
   }
 
   // ⚡ Bolt Opt: Precalculate locked achievements using a single for...of loop instead of .filter().map()
-  const lockedAchievements = [];
+  const lockedAchievements: typeof allAchievements = [];
   for (const achievement of allAchievements) {
     if (!unlockedIds.has(achievement.id)) {
       lockedAchievements.push(achievement);
