@@ -308,8 +308,10 @@ async function pullRemoteTasks(params: {
         taskExternalToLocal.set(mapping.externalId, mapping.localId);
     }
 
-    await Promise.all(
-        Array.from(remoteTasks.entries()).map(async ([externalId, entry]) => {
+    const syncPromises = new Array(remoteTasks.size);
+    let syncIndex = 0;
+    for (const [externalId, entry] of remoteTasks) {
+        syncPromises[syncIndex++] = (async () => {
             const { task, tasklistId } = entry;
             const listId = listExternalToLocal.get(tasklistId) ?? null;
             if (!listId) return;
@@ -415,8 +417,9 @@ async function pullRemoteTasks(params: {
                     externalUpdatedAt: remoteUpdatedAt,
                 });
             }
-        })
-    );
+        })();
+    }
+    await Promise.all(syncPromises);
 }
 
 async function pushLocalTasks(params: {
