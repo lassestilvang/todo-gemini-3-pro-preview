@@ -1,3 +1,6 @@
+## 2025-02-12 - Optimize Google Tasks Sync Iteration
+**Learning:** Initializing Maps to iterate over their elements using `Array.from(map.entries()).map(...)` creates a redundant intermediate array of size O(N), causing unnecessary memory allocations and garbage collection overhead. Pre-allocating an array based on `map.size` and pushing directly using a `for...of` loop is significantly faster.
+**Action:** Replaced `Array.from(remoteTasks.entries()).map` with a `for...of` loop and an upfront allocated array of promises in `src/lib/google-tasks/sync.ts`, which bypasses the intermediate array allocation while preserving asynchronous logic correctly.
 ## 2026-03-24 - Optimize Map allocation in React render loop
 **Learning:** Initializing Maps using `new Map(array.map(...))` inside React's `useMemo` or render loops creates a redundant O(N) intermediate array allocation before the Map is actually created, causing unnecessary garbage collection overhead on every recomputation.
 **Action:** Avoid `new Map(array.map(...))` and instead initialize an empty map (`new Map<K, V>()`) and populate it directly using a `for...of` loop to reduce memory footprint and improve rendering performance during tight loops.
