@@ -137,7 +137,11 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
         .filter((mapping) => mapping.localId !== null)
         .map((mapping) => mapping.externalId),
     );
-    const snapshotLabelIds = new Set(snapshot.labels.map((label) => label.id));
+// ⚡ Bolt Opt: Avoid allocating an intermediate array for Set initialization
+    const snapshotLabelIds = new Set<string>();
+    for (const label of snapshot.labels) {
+      snapshotLabelIds.add(label.id);
+    }
     const snapshotLabelNameToId = new Map<string, string>();
     for (const label of snapshot.labels) {
       const normalizedName = normalizeLabelName(label.name);
@@ -184,10 +188,12 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
     ]);
     // ⚡ Bolt Opt: Avoid allocating an intermediate array for map initialization
     const localTaskMap = new Map<number, typeof tasks.$inferSelect>();
-    for (const task of localTasks) {
+    const localTaskIds = new Array<number>(localTasks.length);
+    for (let i = 0; i < localTasks.length; i++) {
+      const task = localTasks[i];
       localTaskMap.set(task.id, task);
+      localTaskIds[i] = task.id;
     }
-    const localTaskIds = localTasks.map((task) => task.id);
     const localTaskLabelMap = await fetchTaskLabels(localTaskIds, taskLabelCache);
     // ⚡ Bolt Opt: Avoid allocating an intermediate array for map initialization
     const localLabelToExternal = new Map<number, string>();
