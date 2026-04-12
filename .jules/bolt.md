@@ -58,3 +58,7 @@
 ## 2024-04-11 - Fullcalendar peer dependencies versioning
 **Learning:** Upgrading `@fullcalendar/core` and `@fullcalendar/react` to beta/rc versions arbitrarily will crash tools importing `useCalendarController` from `@fullcalendar/react` since v7 removed it. Downgrading the lockfile back to specific beta versions might clash with `calendarkit-pro` which pins its own dependencies, thus freezing the build pipeline.
 **Action:** When running tools like `bun install` that update locks, pay close attention to Next.js build errors showing `Export useCalendarController doesn't exist in target module` in `.js` or `.tsx` output. The fix is to strictly specify `7.0.0-beta.8` since `7.0.0-rc.0` was causing breaking issues. Also, remember to not automatically bump dependency versions unless required by the issue constraint.
+
+## 2026-04-10 - ⚡ Bolt: Optimize Todoist sync bounded concurrency
+**Learning:** Sequential processing using array chunking combined with `Promise.all` (e.g. `mappedTasks.slice(i, i+5)`) creates uneven execution patterns where the entire batch is gated by the slowest task in the batch. While better than purely sequential execution, it leaves concurrency windows unutilized.
+**Action:** Replaced manual array chunking with `p-limit(5)` in `src/lib/todoist/sync.ts` to maximize throughput. When doing so, wrapped the limit call in a `try/catch` with `limit.clearQueue()` to preserve fail-fast semantics on error.
