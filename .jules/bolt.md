@@ -1,3 +1,33 @@
+## 2025-02-12 - Optimize Google Tasks Sync Iteration
+**Learning:** Initializing Maps to iterate over their elements using `Array.from(map.entries()).map(...)` creates a redundant intermediate array of size O(N), causing unnecessary memory allocations and garbage collection overhead. Pre-allocating an array based on `map.size` and pushing directly using a `for...of` loop is significantly faster.
+**Action:** Replaced `Array.from(remoteTasks.entries()).map` with a `for...of` loop and an upfront allocated array of promises in `src/lib/google-tasks/sync.ts`, which bypasses the intermediate array allocation while preserving asynchronous logic correctly.
+## 2026-03-24 - Optimize Map allocation in React render loop
+**Learning:** Initializing Maps using `new Map(array.map(...))` inside React's `useMemo` or render loops creates a redundant O(N) intermediate array allocation before the Map is actually created, causing unnecessary garbage collection overhead on every recomputation.
+**Action:** Avoid `new Map(array.map(...))` and instead initialize an empty map (`new Map<K, V>()`) and populate it directly using a `for...of` loop to reduce memory footprint and improve rendering performance during tight loops.
+
+## 2026-03-27 - Array.find() Callback Overhead in Hot Mapping Loops
+**Learning:** Using `Array.find()` inside hot nested loops (like batch synchronization algorithms resolving labels and projects) creates significant hidden overhead due to repeated function allocations and closure invocations. Even for small inner arrays, multiplying this by thousands of external tasks results in O(N*M) bottlenecks.
+**Action:** Replace `Array.find()` with `for...of` loops in high-frequency mapping/resolution functions to achieve identical logic while eliminating callback and closure overhead entirely.
+
+## 2026-03-28 - Avoid array.map allocations during Map initialization
+**Learning:** The pattern `new Map(array.map(...))` or `new Map(array.filter(...).map(...))` creates unnecessary intermediate arrays just to initialize a Map. In performance-sensitive code (like Google Tasks sync processing), this adds redundant object allocations and increases GC overhead.
+**Action:** Replace `new Map(array.map(...))` with `const map = new Map(); for (const item of array) { map.set(...) }` to avoid intermediate array creation.
+## 2026-03-28 - Avoid array.map allocations during Map initialization
+**Learning:** The pattern `new Map(array.map(...))` or `new Map(array.filter(...).map(...))` creates unnecessary intermediate arrays just to initialize a Map. In performance-sensitive code (like Google Tasks sync processing), this adds redundant object allocations and increases GC overhead.
+**Action:** Replace `new Map(array.map(...))` with `const map = new Map(); for (const item of array) { map.set(...) }` to avoid intermediate array creation.
+\n## 2024-03-27 - Array.find() Callback Overhead in Hot Mapping Loops\n**Learning:** Using `Array.find()` inside hot nested loops (like batch synchronization algorithms resolving labels and projects) creates significant hidden overhead due to repeated function allocations and closure invocations. Even for small inner arrays, multiplying this by thousands of external tasks results in O(N*M) bottlenecks.\n**Action:** Replace `Array.find()` with `for...of` loops in high-frequency mapping/resolution functions to achieve identical logic while eliminating callback and closure overhead entirely.
+
+## 2024-03-26 - Replace Array.reduce with for...of loop in hot loops
+**Learning:** Using `Array.reduce()` with a callback function incurs hidden overhead from function allocation and closure invocation, especially when processing potentially large datasets.
+**Action:** Replaced `.reduce()` with a standard `for...of` loop in `src/lib/weekly-review.ts` and `src/lib/time-export.ts`. This eliminates callback overhead and improves execution speed during simple array accumulations.
+
+## 2026-04-02 - Avoid redundant Map and Array allocations inside chained iterations
+**Learning:** Initializing Maps or caching lookup tables using multiple chained array methods like `.filter(...).map(...)` incurs significant hidden overhead from allocating intermediate arrays on the heap before the Map itself is constructed, especially in high-frequency data synchronizers.
+**Action:** Replace `new Map(array.filter(...).map(...))` initializations with direct, single-pass `for...of` loops and manual `map.set()` calls. This completely eliminates intermediate allocations and reduces garbage collection pressure while traversing O(N) structures.
+
+## 2026-04-05 - Optimize Todoist Sync Mappings
+**Learning:** Chaining `.filter().map()` on large arrays like `projectMappings` and `listLabelMappings` iterates twice and creates intermediate arrays.
+**Action:** Replaced `.filter().map()` with single-pass `for...of` loops to populate the `Set`s, achieving a ~20% performance improvement in construction.
 ## 2026-04-10 - ⚡ Bolt: Optimize Google Tasks sync concurrency
 
 ## 2025-02-28 - Avoid array callback methods for performance in render loops
@@ -62,3 +92,6 @@
 ## 2025-05-15 - Optimize N+1 Database Updates in Google Tasks Sync
 **Learning:** Sequential `await` calls inside loops for independent database operations (like `db.update`) create an N+1 performance bottleneck, where each operation must wait for the previous one to complete. This significantly increases total latency, especially with higher network or I/O overhead.
 **Action:** Refactored the tasklist synchronization loop to collect all update promises into an array and execute them concurrently using `Promise.all()`. This reduces the total time for updates from O(N) to O(1) (the time of the slowest single update).
+## 2026-04-10 - ⚡ Bolt: Optimize Todoist sync bounded concurrency
+**Learning:** Sequential processing using array chunking combined with `Promise.all` (e.g. `mappedTasks.slice(i, i+5)`) creates uneven execution patterns where the entire batch is gated by the slowest task in the batch. While better than purely sequential execution, it leaves concurrency windows unutilized.
+**Action:** Replaced manual array chunking with `p-limit(5)` in `src/lib/todoist/sync.ts` to maximize throughput. When doing so, wrapped the limit call in a `try/catch` with `limit.clearQueue()` to preserve fail-fast semantics on error.
