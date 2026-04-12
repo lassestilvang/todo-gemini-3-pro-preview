@@ -125,6 +125,10 @@
 ## 2024-04-03 - Dynamic Context for Identical Action Buttons
 **Learning:** Adding static `aria-label="Add task"` to dozens of identical buttons in a grid (like a calendar) forces screen reader users to guess which specific context (date) the button applies to when tabbing through.
 **Action:** When mapping over items to generate interactive elements, dynamically inject the item's context into the `aria-label` (e.g., `aria-label={"Add task on " + day.toDateString()}`). This ensures each button is uniquely identifiable when accessed out-of-context.
+
+## 2026-04-05 - Add aria-label to Todoist API Token Input
+**Learning:** Password inputs without explicit labels rely on placeholders, which can be insufficient for screen readers.
+**Action:** Added `aria-label="Todoist API token"` to the API token input in `TodoistSettings.tsx`.
 ## 2025-05-15 - Missing Focus Outlines on Expand/Collapse Sidebar Buttons
 **Learning:** Found that custom buttons used to expand/collapse or control the visibility of sidebars (like in `SlimSidebar.tsx` and `SidebarSavedViews.tsx`) often lack proper focus-visible styles, particularly when they use non-standard components or absolutely positioned elements, making them difficult to interact with via keyboard navigation.
 **Action:** Ensure that all custom navigation toggle and action buttons (like Expand, Hide, or Delete) include clear focus-visible states using standard utility classes like outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 regardless of their position.
