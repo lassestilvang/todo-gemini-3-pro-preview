@@ -9,6 +9,7 @@ import {
     tasks,
 } from "@/db";
 import { mapGoogleTaskToLocal, mapLocalTaskToGoogle } from "./mapper";
+import pLimit from "p-limit";
 import { createGoogleTasksClient, fetchGoogleTasksSnapshot, getGoogleTasksAccessToken } from "./service";
 import type { GoogleTask } from "./types";
 
@@ -443,8 +444,13 @@ async function pushLocalTasks(params: {
 }) {
     const { userId, client, localTasks, taskLocalToExternal, listLocalToExternal, remoteTasks, lastSyncedAt, conflictKeys } = params;
 
-    await Promise.all(
-        localTasks.map(async (localTask) => {
+    // ⚡ Bolt Opt: Bounded concurrency using p-limit to prevent rate limits and memory issues, with pre-allocated arrays
+    const limit = pLimit(10);
+    const syncPromises = new Array(localTasks.length);
+    let syncIndex = 0;
+
+    for (const localTask of localTasks) {
+        syncPromises[syncIndex++] = limit(async () => {
             if (!localTask.listId) return;
             const tasklistId = listLocalToExternal.get(localTask.listId) ?? null;
             if (!tasklistId) return;
@@ -526,8 +532,15 @@ async function pushLocalTasks(params: {
                         )
                     );
             }
-        })
-    );
+        });
+    }
+
+    try {
+        await Promise.all(syncPromises);
+    } catch (e) {
+        limit.clearQueue();
+        throw e;
+    }
 }
 
 async function getExistingConflictKeys(userId: string) {
