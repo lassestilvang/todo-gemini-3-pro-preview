@@ -168,13 +168,18 @@ export function mapLocalTaskToTodoist(
             combinedLabels.add(labelId);
         }
     }
-    const labels = combinedLabels.size > 0
-        ? Array.from(
-            new Set(
-                Array.from(combinedLabels).map((externalId) => externalLabelToName?.get(externalId) ?? externalId)
-            )
-        )
-        : undefined;
+    let labels: string[] | undefined = undefined;
+    if (combinedLabels.size > 0) {
+        const finalLabels = new Set<string>();
+        for (const externalId of combinedLabels) {
+            finalLabels.add(externalLabelToName?.get(externalId) ?? externalId);
+        }
+        labels = new Array(finalLabels.size);
+        let i = 0;
+        for (const label of finalLabels) {
+            labels[i++] = label;
+        }
+    }
     const iso = task.dueDate ? task.dueDate.toISOString() : null;
     const hasTime = task.dueDate ? hasLocalTimeComponent(task.dueDate) : false;
     const dueDate = task.dueDate ? formatLocalDateOnly(task.dueDate) : undefined;

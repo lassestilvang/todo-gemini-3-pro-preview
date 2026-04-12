@@ -54,7 +54,7 @@ export function CalendarSidebar({
           role="button"
           tabIndex={0}
           className={cn(
-            "flex items-center gap-2.5 text-sm px-2 py-1.5 rounded-md cursor-pointer transition-colors",
+            "flex items-center gap-2.5 text-sm px-2 py-1.5 rounded-md cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
             selectedListId === null ? "bg-accent" : "hover:bg-muted/50"
           )}
           onClick={() => onSelectList(null)}
@@ -82,7 +82,7 @@ export function CalendarSidebar({
             role="button"
             tabIndex={0}
             className={cn(
-              "flex items-center gap-2.5 text-sm px-2 py-1.5 rounded-md cursor-pointer transition-colors",
+              "flex items-center gap-2.5 text-sm px-2 py-1.5 rounded-md cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               selectedListId === list.id ? "bg-accent" : "hover:bg-muted/50"
             )}
             onClick={() => onSelectList(list.id)}
