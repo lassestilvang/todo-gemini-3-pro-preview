@@ -192,6 +192,7 @@ async function syncTasklists(params: {
     let maxPosition = Math.max(0, ...existingLists.map((list) => list.position ?? 0));
 
     const listsToInsert: { userId: string; name: string; slug: string; position: number; externalId: string }[] = [];
+    const listUpdatePromises: Promise<any>[] = [];
 
     for (const remoteList of tasklists) {
         const hasMapping = listExternalToLocal.has(remoteList.id);
@@ -205,10 +206,14 @@ async function syncTasklists(params: {
         if (mappedLocalId) {
             const localList = localListMap.get(mappedLocalId);
             if (localList && localList.name !== remoteList.title) {
-                await db
-                    .update(lists)
-                    .set({ name: remoteList.title })
-                    .where(and(eq(lists.id, localList.id), eq(lists.userId, userId)));
+                // ⚡ Bolt Opt: Replaced sequential db.update() with concurrent promises
+                // Executing updates in parallel reduces total I/O wait time from O(N) to O(1)
+                listUpdatePromises.push(
+                    db
+                        .update(lists)
+                        .set({ name: remoteList.title })
+                        .where(and(eq(lists.id, localList.id), eq(lists.userId, userId)))
+                );
             }
             continue;
         }
@@ -222,6 +227,10 @@ async function syncTasklists(params: {
             externalId: remoteList.id,
         });
         maxPosition += 1;
+    }
+
+    if (listUpdatePromises.length > 0) {
+        await Promise.all(listUpdatePromises);
     }
 
     if (listsToInsert.length > 0) {
@@ -308,8 +317,10 @@ async function pullRemoteTasks(params: {
         taskExternalToLocal.set(mapping.externalId, mapping.localId);
     }
 
-    await Promise.all(
-        Array.from(remoteTasks.entries()).map(async ([externalId, entry]) => {
+    const syncPromises = new Array(remoteTasks.size);
+    let syncIndex = 0;
+    for (const [externalId, entry] of remoteTasks) {
+        syncPromises[syncIndex++] = (async () => {
             const { task, tasklistId } = entry;
             const listId = listExternalToLocal.get(tasklistId) ?? null;
             if (!listId) return;
@@ -415,8 +426,9 @@ async function pullRemoteTasks(params: {
                     externalUpdatedAt: remoteUpdatedAt,
                 });
             }
-        })
-    );
+        })();
+    }
+    await Promise.all(syncPromises);
 }
 
 async function pushLocalTasks(params: {
