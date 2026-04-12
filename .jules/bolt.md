@@ -95,3 +95,6 @@
 ## 2026-04-10 - ⚡ Bolt: Optimize Todoist sync bounded concurrency
 **Learning:** Sequential processing using array chunking combined with `Promise.all` (e.g. `mappedTasks.slice(i, i+5)`) creates uneven execution patterns where the entire batch is gated by the slowest task in the batch. While better than purely sequential execution, it leaves concurrency windows unutilized.
 **Action:** Replaced manual array chunking with `p-limit(5)` in `src/lib/todoist/sync.ts` to maximize throughput. When doing so, wrapped the limit call in a `try/catch` with `limit.clearQueue()` to preserve fail-fast semantics on error.
+## 2023-10-27 - Bounded Concurrency using p-limit
+**Learning:** Using `Promise.all(array.map(...))` on large arrays with API calls can trigger rate limits and high memory usage due to unbounded concurrency. Using `pLimit` provides bounded concurrency for safer parallel processing. In loops where large numbers of asynchronous items are mapped, replacing the map with a pre-allocated array (`new Array(len)`) and a `for...of` loop can reduce GC overhead.
+**Action:** Replaced `Promise.all(localTasks.map(async ...))` with `pLimit(10)` and a `for...of` loop over a pre-allocated `syncPromises` array in `src/lib/google-tasks/sync.ts`. Added a `try/catch` to call `limit.clearQueue()` for fail-fast error handling.
