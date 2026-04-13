@@ -95,3 +95,6 @@
 ## 2026-04-10 - ⚡ Bolt: Optimize Todoist sync bounded concurrency
 **Learning:** Sequential processing using array chunking combined with `Promise.all` (e.g. `mappedTasks.slice(i, i+5)`) creates uneven execution patterns where the entire batch is gated by the slowest task in the batch. While better than purely sequential execution, it leaves concurrency windows unutilized.
 **Action:** Replaced manual array chunking with `p-limit(5)` in `src/lib/todoist/sync.ts` to maximize throughput. When doing so, wrapped the limit call in a `try/catch` with `limit.clearQueue()` to preserve fail-fast semantics on error.
+## 2024-05-24 - Concurrent db updates in Todoist sync
+**Learning:** Sequential `db.update` queries inside a loop executing asynchronous operations block the execution thread, leading to high cumulative I/O wait times, especially over high-latency database connections or large collections.
+**Action:** Replaced sequential `await db.update(tasks)` with an array of `taskUpdatePromises` inside the mapping loop in `src/lib/todoist/sync.ts` and executed them concurrently via `Promise.all()` after the loop completed. This reduces O(N) database operations to O(1) latency block.

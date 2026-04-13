@@ -1300,6 +1300,7 @@ async function updateRemoteTasks(params: {
 
   const taskIdsWithLabelsToDelete: number[] = [];
   const taskLabelsToInsert: (typeof taskLabels.$inferInsert)[] = [];
+  const taskUpdatePromises: Promise<any>[] = [];
 
   for (const mapping of taskMappings) {
     if (!mapping.localId) {
@@ -1359,28 +1360,31 @@ async function updateRemoteTasks(params: {
       .filter((id): id is number => Boolean(id));
 
     const remoteCompletedAt = parseTodoistTimestamp(remoteTask.completedAt);
-    await db
-      .update(tasks)
-      .set({
-        title: localPayload.title ?? localTask.title,
-        description: localPayload.description ?? localTask.description,
-        priority: localPayload.priority ?? localTask.priority,
-        dueDate: localPayload.dueDate ?? localTask.dueDate,
-        dueDatePrecision:
-          localPayload.dueDatePrecision ?? localTask.dueDatePrecision,
-        deadline: localPayload.deadline ?? localTask.deadline,
-        estimateMinutes:
-          localPayload.estimateMinutes ?? localTask.estimateMinutes,
-        isRecurring: localPayload.isRecurring ?? localTask.isRecurring,
-        recurringRule: localPayload.recurringRule ?? localTask.recurringRule,
-        isCompleted: localPayload.isCompleted ?? localTask.isCompleted,
-        completedAt: localPayload.isCompleted
-          ? (remoteCompletedAt ?? new Date())
-          : null,
-        listId: resolvedListId,
-        parentId: resolvedParentId,
-      })
-      .where(and(eq(tasks.id, localTask.id), eq(tasks.userId, userId)));
+    // ⚡ Bolt Opt: Replaced sequential db.update() with concurrent promises
+    taskUpdatePromises.push(
+      db
+        .update(tasks)
+        .set({
+          title: localPayload.title ?? localTask.title,
+          description: localPayload.description ?? localTask.description,
+          priority: localPayload.priority ?? localTask.priority,
+          dueDate: localPayload.dueDate ?? localTask.dueDate,
+          dueDatePrecision:
+            localPayload.dueDatePrecision ?? localTask.dueDatePrecision,
+          deadline: localPayload.deadline ?? localTask.deadline,
+          estimateMinutes:
+            localPayload.estimateMinutes ?? localTask.estimateMinutes,
+          isRecurring: localPayload.isRecurring ?? localTask.isRecurring,
+          recurringRule: localPayload.recurringRule ?? localTask.recurringRule,
+          isCompleted: localPayload.isCompleted ?? localTask.isCompleted,
+          completedAt: localPayload.isCompleted
+            ? (remoteCompletedAt ?? new Date())
+            : null,
+          listId: resolvedListId,
+          parentId: resolvedParentId,
+        })
+        .where(and(eq(tasks.id, localTask.id), eq(tasks.userId, userId)))
+    );
 
     if (managedLocalLabelIds.length > 0) {
       taskIdsWithLabelsToDelete.push(localTask.id);
@@ -1394,6 +1398,10 @@ async function updateRemoteTasks(params: {
         }
       }
     }
+  }
+
+  if (taskUpdatePromises.length > 0) {
+    await Promise.all(taskUpdatePromises);
   }
 
   if (taskIdsWithLabelsToDelete.length > 0) {
