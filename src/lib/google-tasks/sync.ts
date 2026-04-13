@@ -445,7 +445,7 @@ async function pushLocalTasks(params: {
     const { userId, client, localTasks, taskLocalToExternal, listLocalToExternal, remoteTasks, lastSyncedAt, conflictKeys } = params;
 
     // ⚡ Bolt Opt: Replaced Unbounded Promise.all with bounded p-limit(10) concurrency
-    // This allows requests to be processed concurrently instead of sequentially while preventing rate limit issues
+    // This maintains concurrent processing while bounding the number of in-flight requests to prevent rate limit issues
     const limit = pLimit(10);
 
     await Promise.all(
