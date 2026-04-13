@@ -95,6 +95,9 @@
 ## 2026-04-10 - ⚡ Bolt: Optimize Todoist sync bounded concurrency
 **Learning:** Sequential processing using array chunking combined with `Promise.all` (e.g. `mappedTasks.slice(i, i+5)`) creates uneven execution patterns where the entire batch is gated by the slowest task in the batch. While better than purely sequential execution, it leaves concurrency windows unutilized.
 **Action:** Replaced manual array chunking with `p-limit(5)` in `src/lib/todoist/sync.ts` to maximize throughput. When doing so, wrapped the limit call in a `try/catch` with `limit.clearQueue()` to preserve fail-fast semantics on error.
+## 2025-02-28 - Add p-limit bounded concurrency in pushLocalTasks
+**Learning:** Unbounded parallel execution via Promise.all can lead to hitting API rate limits. Converting these to bounded concurrent executions ensures reliability while maintaining high throughput.
+**Action:** Replaced unbounded `Promise.all` with `p-limit(10)` bounded concurrency in `src/lib/google-tasks/sync.ts` for safe, rate-limit-conscious concurrent operations.
 ## 2024-03-24 - Batched Database Insertions
 **Learning:** Avoid N+1 database insertions inside concurrent loops, even when wrapped in `Promise.all`. Extract payloads into an array and execute a single batched `.insert().values(array)` outside the loop to significantly reduce DB round-trips.
 **Action:** Refactored `pullRemoteTasks` in Google Tasks sync to batch incoming tasks into arrays during the mapping loop, then executed a single `db.insert(tasks).values(tasksToInsert)` after the loop completes. Ensure synchronous alignment of arrays if mapping returned values to external metadata.
