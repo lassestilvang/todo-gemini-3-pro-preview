@@ -10,11 +10,8 @@ import {
   tasks,
 } from "@/db";
 import { mapGoogleTaskToLocal, mapLocalTaskToGoogle } from "./mapper";
-import {
-  createGoogleTasksClient,
-  fetchGoogleTasksSnapshot,
-  getGoogleTasksAccessToken,
-} from "./service";
+import pLimit from "p-limit";
+import { createGoogleTasksClient, fetchGoogleTasksSnapshot, getGoogleTasksAccessToken } from "./service";
 import type { GoogleTask } from "./types";
 
 type SyncResult = {
@@ -778,8 +775,15 @@ async function pushLocalTasks(params: {
                 limit.clearQueue();
                 throw error;
             }
-        }))
-    );
+        });
+    }
+
+    try {
+        await Promise.all(syncPromises);
+    } catch (e) {
+        limit.clearQueue();
+        throw e;
+    }
 }
 
 async function getExistingConflictKeys(userId: string) {
