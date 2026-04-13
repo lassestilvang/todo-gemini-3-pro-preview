@@ -1300,7 +1300,8 @@ async function updateRemoteTasks(params: {
 
   const taskIdsWithLabelsToDelete: number[] = [];
   const taskLabelsToInsert: (typeof taskLabels.$inferInsert)[] = [];
-  const taskUpdatePromises: Promise<any>[] = [];
+  const limit = pLimit(10);
+  const taskUpdatePromises: Promise<unknown>[] = [];
 
   for (const mapping of taskMappings) {
     if (!mapping.localId) {
