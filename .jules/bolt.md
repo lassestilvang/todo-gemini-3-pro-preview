@@ -98,3 +98,7 @@
 ## 2024-03-24 - Batched Database Insertions
 **Learning:** Avoid N+1 database insertions inside concurrent loops, even when wrapped in `Promise.all`. Extract payloads into an array and execute a single batched `.insert().values(array)` outside the loop to significantly reduce DB round-trips.
 **Action:** Refactored `pullRemoteTasks` in Google Tasks sync to batch incoming tasks into arrays during the mapping loop, then executed a single `db.insert(tasks).values(tasksToInsert)` after the loop completes. Ensure synchronous alignment of arrays if mapping returned values to external metadata.
+
+## 2024-05-19 - Batch Google Tasks Deletions
+**Learning:** The `pullRemoteTasks` loop previously handled external task deletions sequentially inside a `Promise.all` mapping by issuing individual `db.delete(...)` queries, which caused a textbook N+1 query issue for deletions. While `Promise.all` provides concurrency, triggering too many individual deletes degrades database performance and hits connection limits.
+**Action:** Refactored the `pullRemoteTasks` loop to collect IDs of tasks that need to be deleted into `localTasksToDelete` and `externalIdsToDelete` arrays using a `for...of` loop (while properly skipping the rest of the logic with `continue`). Executed the collected deletions in a single batch outside the loop using Drizzle ORM's `inArray` operator, preventing N+1 queries.

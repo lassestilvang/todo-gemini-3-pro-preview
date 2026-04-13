@@ -545,6 +545,132 @@ async function pullRemoteTasks(params: {
       await db.insert(externalEntityMap).values(entityMapPayload);
     }
   }
+    const syncPromises = new Array(remoteTasks.size);
+    let syncIndex = 0;
+
+    // ⚡ Bolt Opt: Batch database deletions to prevent N+1 queries.
+    const localTasksToDelete: number[] = [];
+    const externalIdsToDelete: string[] = [];
+
+    for (const [externalId, entry] of remoteTasks) {
+        if (entry.task.deleted) {
+            const mappedLocalId = taskExternalToLocal.get(externalId) ?? null;
+            if (mappedLocalId) {
+                localTasksToDelete.push(mappedLocalId);
+                externalIdsToDelete.push(externalId);
+            }
+            continue;
+        }
+
+        syncPromises[syncIndex++] = (async () => {
+            const { task, tasklistId } = entry;
+            const listId = listExternalToLocal.get(tasklistId) ?? null;
+            if (!listId) return;
+
+            const mappedLocalId = taskExternalToLocal.get(externalId) ?? null;
+            const remoteUpdatedAt = task.updated ? new Date(task.updated) : null;
+
+            if (mappedLocalId && localTaskMap.has(mappedLocalId)) {
+                const localTask = localTaskMap.get(mappedLocalId)!;
+                if (shouldCreateConflict(localTask, task, listId, lastSyncedAt, conflictKeys)) {
+                    await createConflict({
+                        userId,
+                        localTask,
+                        task,
+                        tasklistId,
+                        listId,
+                        conflictKeys,
+                    });
+                    return;
+                }
+
+                if (remoteUpdatedAt && (!lastSyncedAt || remoteUpdatedAt > lastSyncedAt)) {
+                    const updates = mapGoogleTaskToLocal(task, listId);
+                    await db
+                        .update(tasks)
+                        .set({
+                            title: updates.title ?? localTask.title,
+                            description: updates.description ?? localTask.description,
+                            isCompleted: updates.isCompleted ?? localTask.isCompleted,
+                            completedAt: updates.completedAt ?? localTask.completedAt,
+                            dueDate: updates.dueDate ?? localTask.dueDate,
+                            dueDatePrecision: updates.dueDatePrecision ?? localTask.dueDatePrecision,
+                            listId: updates.listId ?? localTask.listId,
+                            updatedAt: new Date(),
+                        })
+                        .where(and(eq(tasks.id, localTask.id), eq(tasks.userId, userId)));
+                }
+
+                await db
+                    .update(externalEntityMap)
+                    .set({
+                        externalParentId: task.parent ?? null,
+                        externalEtag: task.etag ?? null,
+                        externalUpdatedAt: remoteUpdatedAt,
+                        updatedAt: new Date(),
+                    })
+                    .where(
+                        and(
+                            eq(externalEntityMap.userId, userId),
+                            eq(externalEntityMap.provider, "google_tasks"),
+                            eq(externalEntityMap.entityType, "task"),
+                            eq(externalEntityMap.externalId, externalId)
+                        )
+                    );
+
+                return;
+            }
+
+            const payload = mapGoogleTaskToLocal(task, listId);
+            const created = await db
+                .insert(tasks)
+                .values({
+                    userId,
+                    title: payload.title ?? task.title,
+                    description: payload.description ?? null,
+                    isCompleted: payload.isCompleted ?? false,
+                    completedAt: payload.completedAt ?? null,
+                    dueDate: payload.dueDate ?? null,
+                    dueDatePrecision: payload.dueDatePrecision ?? null,
+                    listId,
+                    isRecurring: false,
+                    recurringRule: null,
+                })
+                .returning();
+
+            const localId = created[0]?.id ?? null;
+            if (localId) {
+                await db.insert(externalEntityMap).values({
+                    userId,
+                    provider: "google_tasks" as const,
+                    entityType: "task" as const,
+                    localId,
+                    externalId,
+                    externalParentId: task.parent ?? null,
+                    externalEtag: task.etag ?? null,
+                    externalUpdatedAt: remoteUpdatedAt,
+                });
+            }
+        })();
+    }
+
+    syncPromises.length = syncIndex;
+    await Promise.all(syncPromises);
+
+    if (localTasksToDelete.length > 0) {
+        await db.delete(tasks).where(and(inArray(tasks.id, localTasksToDelete), eq(tasks.userId, userId)));
+    }
+
+    if (externalIdsToDelete.length > 0) {
+        await db.delete(externalEntityMap).where(
+            and(
+                eq(externalEntityMap.userId, userId),
+                eq(externalEntityMap.provider, "google_tasks"),
+                eq(externalEntityMap.entityType, "task"),
+                inArray(externalEntityMap.externalId, externalIdsToDelete)
+            )
+        );
+    }
 }
 
 async function pushLocalTasks(params: {
