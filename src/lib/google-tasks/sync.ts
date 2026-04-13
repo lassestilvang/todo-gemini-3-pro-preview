@@ -445,7 +445,7 @@ async function pushLocalTasks(params: {
     const { userId, client, localTasks, taskLocalToExternal, listLocalToExternal, remoteTasks, lastSyncedAt, conflictKeys } = params;
 
     // ⚡ Bolt Opt: Bounded concurrency using p-limit to prevent rate limits and memory issues, with pre-allocated arrays
-    const limit = pLimit(10);
+    const limit = pLimit(5);
     const syncPromises = new Array(localTasks.length);
     let syncIndex = 0;
 
