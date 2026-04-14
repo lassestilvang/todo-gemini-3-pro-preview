@@ -901,17 +901,22 @@ async function removeDeletedTasks(params: {
     // Parallelize external deletions to avoid N+1 API calls.
     // We handle 404 errors gracefully because if the task is already gone from Todoist,
     // we should still proceed with deleting our local mapping.
+    // ⚡ Bolt Opt: Replaced Unbounded Promise.all with bounded p-limit(5) concurrency
+    const limit = pLimit(5);
     await Promise.all(
-      externalIdsToDelete.map(async (id) => {
-        try {
-          await client.deleteTask(id);
-        } catch (error) {
-          if (error instanceof Error && error.message.includes("404")) {
-            return;
+      externalIdsToDelete.map((id) =>
+        limit(async () => {
+          try {
+            await client.deleteTask(id);
+          } catch (error) {
+            if (error instanceof Error && error.message.includes("404")) {
+              return;
+            }
+            limit.clearQueue();
+            throw error;
           }
-          throw error;
-        }
-      }),
+        }),
+      ),
     );
     await db
       .delete(externalEntityMap)
@@ -1301,6 +1306,8 @@ async function updateRemoteTasks(params: {
   const taskIdsWithLabelsToDelete: number[] = [];
   const taskLabelsToInsert: (typeof taskLabels.$inferInsert)[] = [];
 
+  const taskUpdatePromises: Promise<unknown>[] = [];
+
   for (const mapping of taskMappings) {
     if (!mapping.localId) {
       continue;
@@ -1359,28 +1366,31 @@ async function updateRemoteTasks(params: {
       .filter((id): id is number => Boolean(id));
 
     const remoteCompletedAt = parseTodoistTimestamp(remoteTask.completedAt);
-    await db
-      .update(tasks)
-      .set({
-        title: localPayload.title ?? localTask.title,
-        description: localPayload.description ?? localTask.description,
-        priority: localPayload.priority ?? localTask.priority,
-        dueDate: localPayload.dueDate ?? localTask.dueDate,
-        dueDatePrecision:
-          localPayload.dueDatePrecision ?? localTask.dueDatePrecision,
-        deadline: localPayload.deadline ?? localTask.deadline,
-        estimateMinutes:
-          localPayload.estimateMinutes ?? localTask.estimateMinutes,
-        isRecurring: localPayload.isRecurring ?? localTask.isRecurring,
-        recurringRule: localPayload.recurringRule ?? localTask.recurringRule,
-        isCompleted: localPayload.isCompleted ?? localTask.isCompleted,
-        completedAt: localPayload.isCompleted
-          ? (remoteCompletedAt ?? new Date())
-          : null,
-        listId: resolvedListId,
-        parentId: resolvedParentId,
-      })
-      .where(and(eq(tasks.id, localTask.id), eq(tasks.userId, userId)));
+    // ⚡ Bolt Opt: Replaced sequential db.update() with concurrent promises
+    taskUpdatePromises.push(
+      db
+        .update(tasks)
+        .set({
+          title: localPayload.title ?? localTask.title,
+          description: localPayload.description ?? localTask.description,
+          priority: localPayload.priority ?? localTask.priority,
+          dueDate: localPayload.dueDate ?? localTask.dueDate,
+          dueDatePrecision:
+            localPayload.dueDatePrecision ?? localTask.dueDatePrecision,
+          deadline: localPayload.deadline ?? localTask.deadline,
+          estimateMinutes:
+            localPayload.estimateMinutes ?? localTask.estimateMinutes,
+          isRecurring: localPayload.isRecurring ?? localTask.isRecurring,
+          recurringRule: localPayload.recurringRule ?? localTask.recurringRule,
+          isCompleted: localPayload.isCompleted ?? localTask.isCompleted,
+          completedAt: localPayload.isCompleted
+            ? (remoteCompletedAt ?? new Date())
+            : null,
+          listId: resolvedListId,
+          parentId: resolvedParentId,
+        })
+        .where(and(eq(tasks.id, localTask.id), eq(tasks.userId, userId)))
+    );
 
     if (managedLocalLabelIds.length > 0) {
       taskIdsWithLabelsToDelete.push(localTask.id);
@@ -1394,6 +1404,10 @@ async function updateRemoteTasks(params: {
         }
       }
     }
+  }
+
+  if (taskUpdatePromises.length > 0) {
+    await Promise.all(taskUpdatePromises);
   }
 
   if (taskIdsWithLabelsToDelete.length > 0) {

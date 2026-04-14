@@ -5,3 +5,7 @@
 ## 2024-04-11 - Add focus-visible styles to absolutely positioned buttons
 **Learning:** absolutely positioned inline `<button>` elements (such as the "Add task" `+` icons on calendar grids) often have their native browser focus rings clipped, omitted, or otherwise not styled by default in this application.
 **Action:** When building or modifying such absolutely positioned `<button>` icons, I must append `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring` classes to ensure keyboard navigation remains visibly accessible.
+
+## 2024-04-13 - Add focus-visible styles to custom tabIndex Tooltip triggers
+**Learning:** In components like `TaskItem.tsx`, custom inline tooltip triggers are sometimes built using non-interactive elements like `div` by setting `tabIndex={0}`. While this enables focusability for screen readers, these elements often lack default browser focus indicators, rendering them invisible to keyboard users.
+**Action:** When creating or modifying custom `tabIndex={0}` elements (such as `div` or `span` used for Tooltip triggers), explicitly append `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm` to ensure proper visual feedback during keyboard navigation.

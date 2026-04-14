@@ -225,7 +225,7 @@ export const TaskItem = memo(function TaskItem({
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <div
-                                        className={cn("flex items-center gap-1", isOverdue ? "text-red-500 font-medium" : "")}
+                                        className={cn("flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm", isOverdue ? "text-red-500 font-medium" : "")}
                                         aria-label={tooltipContent}
                                         tabIndex={0}
                                     >
@@ -265,7 +265,7 @@ export const TaskItem = memo(function TaskItem({
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <div
-                                        className="cursor-help"
+                                        className="cursor-help focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
                                         aria-label={energyLabels[task.energyLevel]}
                                         tabIndex={0}
                                     >
@@ -279,7 +279,7 @@ export const TaskItem = memo(function TaskItem({
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <div
-                                        className="cursor-help"
+                                        className="cursor-help focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
                                         aria-label={contextLabels[task.context] || "Context"}
                                         tabIndex={0}
                                     >

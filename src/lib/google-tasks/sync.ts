@@ -10,6 +10,7 @@ import {
   tasks,
 } from "@/db";
 import { mapGoogleTaskToLocal, mapLocalTaskToGoogle } from "./mapper";
+import pLimit from "p-limit";
 import { createGoogleTasksClient, fetchGoogleTasksSnapshot, getGoogleTasksAccessToken } from "./service";
 import type { GoogleTask } from "./types";
 
@@ -542,6 +543,8 @@ async function pullRemoteTasks(params: {
       await db.insert(externalEntityMap).values(entityMapPayload);
     }
   }
+    const syncPromises = new Array(remoteTasks.size);
+    let syncIndex = 0;
 
     // ⚡ Bolt Opt: Batch database deletions to prevent N+1 queries.
     const localTasksToDelete: number[] = [];
@@ -772,8 +775,15 @@ async function pushLocalTasks(params: {
                 limit.clearQueue();
                 throw error;
             }
-        }))
-    );
+        });
+    }
+
+    try {
+        await Promise.all(syncPromises);
+    } catch (e) {
+        limit.clearQueue();
+        throw e;
+    }
 }
 
 async function getExistingConflictKeys(userId: string) {
