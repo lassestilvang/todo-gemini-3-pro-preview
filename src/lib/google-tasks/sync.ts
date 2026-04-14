@@ -406,6 +406,7 @@ async function pullRemoteTasks(params: {
     externalUpdatedAt: Date | null;
   }[] = [];
 
+  const limit = pLimit(10);
   const taskUpdatePromises: Promise<unknown>[] = [];
   const conflictPromises: Promise<unknown>[] = [];
 
