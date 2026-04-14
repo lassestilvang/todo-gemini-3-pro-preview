@@ -279,7 +279,7 @@ export const TaskItem = memo(function TaskItem({
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <div
-                                        className="cursor-help focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                                        className="cursor-help focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
                                         aria-label={contextLabels[task.context] || "Context"}
                                         tabIndex={0}
                                     >
