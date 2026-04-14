@@ -901,17 +901,22 @@ async function removeDeletedTasks(params: {
     // Parallelize external deletions to avoid N+1 API calls.
     // We handle 404 errors gracefully because if the task is already gone from Todoist,
     // we should still proceed with deleting our local mapping.
+    // ⚡ Bolt Opt: Replaced Unbounded Promise.all with bounded p-limit(5) concurrency
+    const limit = pLimit(5);
     await Promise.all(
-      externalIdsToDelete.map(async (id) => {
-        try {
-          await client.deleteTask(id);
-        } catch (error) {
-          if (error instanceof Error && error.message.includes("404")) {
-            return;
+      externalIdsToDelete.map((id) =>
+        limit(async () => {
+          try {
+            await client.deleteTask(id);
+          } catch (error) {
+            if (error instanceof Error && error.message.includes("404")) {
+              return;
+            }
+            limit.clearQueue();
+            throw error;
           }
-          throw error;
-        }
-      }),
+        }),
+      ),
     );
     await db
       .delete(externalEntityMap)
@@ -1300,7 +1305,7 @@ async function updateRemoteTasks(params: {
 
   const taskIdsWithLabelsToDelete: number[] = [];
   const taskLabelsToInsert: (typeof taskLabels.$inferInsert)[] = [];
-  const limit = pLimit(10);
+
   const taskUpdatePromises: Promise<unknown>[] = [];
 
   for (const mapping of taskMappings) {
