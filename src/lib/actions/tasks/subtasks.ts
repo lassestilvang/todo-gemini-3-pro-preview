@@ -38,14 +38,10 @@ async function createSubtaskImpl(
   const parentTask = await db
     .select({ id: tasks.id, userId: tasks.userId })
     .from(tasks)
-    .where(eq(tasks.id, parentId))
+    .where(and(eq(tasks.id, parentId), eq(tasks.userId, userId)))
     .limit(1);
 
   if (parentTask.length === 0) {
-    throw new NotFoundError("Parent task not found or access denied");
-  }
-
-  if (parentTask[0].userId !== userId) {
     throw new NotFoundError("Parent task not found or access denied");
   }
 

@@ -407,10 +407,10 @@ async function pullRemoteTasks(params: {
     externalUpdatedAt: Date | null;
   }[] = [];
 
-  const syncPromises = new Array(remoteTasks.size);
-  let syncIndex = 0;
+  let syncPromises2 = new Array(remoteTasks.size);
+  let syncIndex2 = 0;
   for (const [externalId, entry] of remoteTasks) {
-    syncPromises[syncIndex++] = (async () => {
+    syncPromises2[syncIndex2++] = (async () => {
       const { task, tasklistId } = entry;
       const listId = listExternalToLocal.get(tasklistId) ?? null;
       if (!listId) return;
@@ -521,7 +521,7 @@ async function pullRemoteTasks(params: {
       });
     })();
   }
-  await Promise.all(syncPromises);
+  await Promise.all(syncPromises2);
 
   if (tasksToInsert.length > 0) {
     const created = await db.insert(tasks).values(tasksToInsert).returning();
@@ -543,8 +543,8 @@ async function pullRemoteTasks(params: {
       await db.insert(externalEntityMap).values(entityMapPayload);
     }
   }
-    const syncPromises = new Array(remoteTasks.size);
-    let syncIndex = 0;
+    syncPromises2 = new Array(remoteTasks.size);
+    syncIndex2 = 0;
 
     // ⚡ Bolt Opt: Batch database deletions to prevent N+1 queries.
     const localTasksToDelete: number[] = [];
@@ -560,7 +560,7 @@ async function pullRemoteTasks(params: {
             continue;
         }
 
-        syncPromises[syncIndex++] = (async () => {
+        syncPromises2[syncIndex2++] = (async () => {
             const { task, tasklistId } = entry;
             const listId = listExternalToLocal.get(tasklistId) ?? null;
             if (!listId) return;
@@ -652,8 +652,8 @@ async function pullRemoteTasks(params: {
         })();
     }
 
-    syncPromises.length = syncIndex;
-    await Promise.all(syncPromises);
+    syncPromises2.length = syncIndex2;
+    await Promise.all(syncPromises2);
 
     if (localTasksToDelete.length > 0) {
         await db.delete(tasks).where(and(inArray(tasks.id, localTasksToDelete), eq(tasks.userId, userId)));
@@ -687,10 +687,11 @@ async function pushLocalTasks(params: {
     // This maintains concurrent processing while bounding the number of in-flight requests to prevent rate limit issues
     const limit = pLimit(10);
 
-    await Promise.all(
-        localTasks.map((localTask) => limit(async () => {
-            try {
-                if (!localTask.listId) return;
+    try {
+        await Promise.all(
+            localTasks.map((localTask) => limit(async () => {
+                try {
+                    if (!localTask.listId) return;
                 const tasklistId = listLocalToExternal.get(localTask.listId) ?? null;
                 if (!tasklistId) return;
 
@@ -775,11 +776,7 @@ async function pushLocalTasks(params: {
                 limit.clearQueue();
                 throw error;
             }
-        });
-    }
-
-    try {
-        await Promise.all(syncPromises);
+        })));
     } catch (e) {
         limit.clearQueue();
         throw e;
