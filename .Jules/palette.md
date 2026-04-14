@@ -9,3 +9,7 @@
 ## 2024-04-13 - Add focus-visible styles to custom tabIndex Tooltip triggers
 **Learning:** In components like `TaskItem.tsx`, custom inline tooltip triggers are sometimes built using non-interactive elements like `div` by setting `tabIndex={0}`. While this enables focusability for screen readers, these elements often lack default browser focus indicators, rendering them invisible to keyboard users.
 **Action:** When creating or modifying custom `tabIndex={0}` elements (such as `div` or `span` used for Tooltip triggers), explicitly append `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm` to ensure proper visual feedback during keyboard navigation.
+
+## 2024-04-14 - Keyboard accessibility on custom interactive buttons
+**Learning:** Custom interactive elements like absolutely positioned buttons or inline toggle buttons often lose their native focus ring styling due to custom layout rules or overflow clipping, making them invisible to keyboard users navigating via Tab.
+**Action:** Consistently append explicitly defined `focus-visible` utility classes (such as `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`) to all custom or absolutely positioned `<button>` components to guarantee visible focus states across different device contexts.
