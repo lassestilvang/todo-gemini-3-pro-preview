@@ -198,7 +198,7 @@ export const TaskItem = memo(function TaskItem({
                         <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); if (onEdit) onEdit(task); }}
-                            className="relative inline-flex items-center gap-2 max-w-full bg-transparent border-none p-0 hover:underline focus:outline-none focus-visible:outline-none focus-visible:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 rounded-sm text-left appearance-none"
+                            className="relative inline-flex items-center gap-2 max-w-full bg-transparent border-none p-0 hover:underline focus:outline-none focus-visible:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm text-left appearance-none"
                             disabled={!onEdit}
                         >
                             {task.icon && <ResolvedIcon icon={task.icon} className="h-4 w-4 text-muted-foreground" />}
