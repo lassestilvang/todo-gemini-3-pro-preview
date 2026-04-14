@@ -10,7 +10,6 @@ import {
   tasks,
 } from "@/db";
 import { mapGoogleTaskToLocal, mapLocalTaskToGoogle } from "./mapper";
-import pLimit from "p-limit";
 import { createGoogleTasksClient, fetchGoogleTasksSnapshot, getGoogleTasksAccessToken } from "./service";
 import type { GoogleTask } from "./types";
 
