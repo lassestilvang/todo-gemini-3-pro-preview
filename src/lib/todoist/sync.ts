@@ -1,5 +1,5 @@
-import { and, eq, inArray, lt, ne, or } from "drizzle-orm";
 import pLimit from "p-limit";
+import { and, eq, inArray, lt, ne, or } from "drizzle-orm";
 import {
   db,
   externalEntityMap,
@@ -128,17 +128,23 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
     );
     const hasLabelMappings = listLabelMappings.length > 0;
     const hasScopedMappings = hasProjectMappingRules || hasLabelMappings;
-    const mappedProjectIds = new Set(
-      projectMappings
-        .filter((mapping) => mapping.localId !== null)
-        .map((mapping) => mapping.externalId),
-    );
-    const mappedLabelIds = new Set(
-      listLabelMappings
-        .filter((mapping) => mapping.localId !== null)
-        .map((mapping) => mapping.externalId),
-    );
-    const snapshotLabelIds = new Set(snapshot.labels.map((label) => label.id));
+    const mappedProjectIds = new Set<string>();
+    for (const mapping of projectMappings) {
+      if (mapping.localId !== null) {
+        mappedProjectIds.add(mapping.externalId);
+      }
+    }
+
+    const mappedLabelIds = new Set<string>();
+    for (const mapping of listLabelMappings) {
+      if (mapping.localId !== null) {
+        mappedLabelIds.add(mapping.externalId);
+      }
+    }
+    const snapshotLabelIds = new Set<string>();
+    for (const label of snapshot.labels) {
+      snapshotLabelIds.add(label.id);
+    }
     const snapshotLabelNameToId = new Map<string, string>();
     for (const label of snapshot.labels) {
       const normalizedName = normalizeLabelName(label.name);
@@ -185,10 +191,12 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
     ]);
     // ⚡ Bolt Opt: Avoid allocating an intermediate array for map initialization
     const localTaskMap = new Map<number, typeof tasks.$inferSelect>();
-    for (const task of localTasks) {
+    const localTaskIds = new Array<number>(localTasks.length);
+    for (let i = 0; i < localTasks.length; i++) {
+      const task = localTasks[i];
       localTaskMap.set(task.id, task);
+      localTaskIds[i] = task.id;
     }
-    const localTaskIds = localTasks.map((task) => task.id);
     const localTaskLabelMap = await fetchTaskLabels(
       localTaskIds,
       taskLabelCache,
@@ -893,27 +901,18 @@ async function removeDeletedTasks(params: {
     // Parallelize external deletions to avoid N+1 API calls.
     // We handle 404 errors gracefully because if the task is already gone from Todoist,
     // we should still proceed with deleting our local mapping.
-    // ⚡ Bolt Opt: Replaced unbounded Promise.all with p-limit(5) to safely utilize bounded concurrency.
-    const limitDelete = pLimit(5);
-    try {
-      await Promise.all(
-        externalIdsToDelete.map((id) =>
-          limitDelete(async () => {
-            try {
-              await client.deleteTask(id);
-            } catch (error) {
-              if (error instanceof Error && error.message.includes("404")) {
-                return;
-              }
-              throw error;
-            }
-          }),
-        ),
-      );
-    } catch (error) {
-      limitDelete.clearQueue();
-      throw error;
-    }
+    await Promise.all(
+      externalIdsToDelete.map(async (id) => {
+        try {
+          await client.deleteTask(id);
+        } catch (error) {
+          if (error instanceof Error && error.message.includes("404")) {
+            return;
+          }
+          throw error;
+        }
+      }),
+    );
     await db
       .delete(externalEntityMap)
       .where(inArray(externalEntityMap.id, mappingIdsForExternalDelete));
@@ -1115,13 +1114,12 @@ async function updateMappedTasks(params: {
   });
   const mappedListIds = buildMappedListIds(mappingState);
 
-  // ⚡ Bolt Opt: Replaced manual array chunking with p-limit(5) to maintain constant bounded concurrency
-  // and improve overall throughput for task syncs.
-  const limitTasks = pLimit(5);
-  try {
-    await Promise.all(
-      mappedTasks.map((mapping) =>
-        limitTasks(async () => {
+  // Process tasks with bounded concurrency to avoid rate limiting while maximizing throughput
+  const limit = pLimit(5);
+  await Promise.all(
+    mappedTasks.map((mapping) =>
+      limit(async () => {
+        try {
           const localTask = localTaskMap.get(mapping.localId as number);
           if (!localTask) {
             return;
@@ -1249,13 +1247,13 @@ async function updateMappedTasks(params: {
               await client.reopenTask(mapping.externalId);
             }
           }
-        }),
-      ),
-    );
-  } catch (error) {
-    limitTasks.clearQueue();
-    throw error;
-  }
+        } catch (error) {
+          limit.clearQueue();
+          throw error;
+        }
+      }),
+    ),
+  );
 }
 
 async function updateRemoteTasks(params: {

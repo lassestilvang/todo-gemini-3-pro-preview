@@ -174,7 +174,11 @@ export function mapLocalTaskToTodoist(
         for (const externalId of combinedLabels) {
             finalLabels.add(externalLabelToName?.get(externalId) ?? externalId);
         }
-        labels = Array.from(finalLabels);
+        labels = new Array(finalLabels.size);
+        let i = 0;
+        for (const label of finalLabels) {
+            labels[i++] = label;
+        }
     }
     const iso = task.dueDate ? task.dueDate.toISOString() : null;
     const hasTime = task.dueDate ? hasLocalTimeComponent(task.dueDate) : false;
