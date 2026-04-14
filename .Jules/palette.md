@@ -8,4 +8,4 @@
 
 ## 2024-04-13 - Add focus-visible styles to custom tabIndex Tooltip triggers
 **Learning:** In components like `TaskItem.tsx`, custom inline tooltip triggers are sometimes built using non-interactive elements like `div` by setting `tabIndex={0}`. While this enables focusability for screen readers, these elements often lack default browser focus indicators, rendering them invisible to keyboard users.
-**Action:** When creating or modifying custom `tabIndex={0}` elements (such as `div` or `span` used for Tooltip triggers), explicitly append `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm` to ensure proper visual feedback during keyboard navigation.
+**Action:** When creating or modifying custom `tabIndex={0}` elements (such as `div` or `span` used for Tooltip triggers), explicitly append `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm` to ensure proper visual feedback during keyboard navigation.
