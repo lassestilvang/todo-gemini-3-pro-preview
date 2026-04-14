@@ -12,4 +12,4 @@
 
 ## 2024-04-14 - Keyboard accessibility on custom interactive buttons
 **Learning:** Custom interactive elements like absolutely positioned buttons or inline toggle buttons often lose their native focus ring styling due to custom layout rules or overflow clipping, making them invisible to keyboard users navigating via Tab.
-**Action:** Consistently append explicitly defined `focus-visible` utility classes (such as `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`) to all custom or absolutely positioned `<button>` components to guarantee visible focus states across different device contexts.
+**Action:** Consistently append explicitly defined focus utility classes (such as outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-offset-2) to all custom or absolutely positioned <button> components to guarantee visible focus states across different device contexts.
