@@ -13,3 +13,6 @@
 ## 2024-04-14 - Keyboard accessibility on custom interactive buttons
 **Learning:** Custom interactive elements like absolutely positioned buttons or inline toggle buttons often lose their native focus ring styling due to custom layout rules or overflow clipping, making them invisible to keyboard users navigating via Tab.
 **Action:** Consistently append explicitly defined focus utility classes (such as outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-offset-2) to all custom or absolutely positioned <button> components to guarantee visible focus states across different device contexts.
+## 2024-05-18 - Missing ARIA label and focus styles on clear action button
+**Learning:** Found that secondary "clear" actions on filtering panels (like the "Clear all" button in SearchFiltersPanel) might miss explicit ARIA labels and robust keyboard focus styling (`focus-visible`), reducing accessibility for screen reader and keyboard users.
+**Action:** Always verify that "clear" or "reset" buttons, especially those using secondary or ghost variants, have explicitly descriptive `aria-label` attributes and include standard `focus-visible` ring utility classes.
