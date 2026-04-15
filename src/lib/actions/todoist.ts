@@ -901,7 +901,7 @@ export async function resolveTodoistConflict(conflictId: number, resolution: "lo
     await db
         .update(externalSyncConflicts)
         .set({ status: "resolved", resolution, resolvedAt: new Date() })
-        .where(eq(externalSyncConflicts.id, conflictId));
+        .where(and(eq(externalSyncConflicts.id, conflictId), eq(externalSyncConflicts.userId, user.id)));
 
     return { success: true };
 }
