@@ -36,7 +36,7 @@ async function createSubtaskImpl(
   await requireUser(userId);
 
   const parentTask = await db
-    .select({ id: tasks.id, userId: tasks.userId })
+    .select({ id: tasks.id })
     .from(tasks)
     .where(and(eq(tasks.id, parentId), eq(tasks.userId, userId)))
     .limit(1);
