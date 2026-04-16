@@ -16,3 +16,6 @@
 ## 2024-05-18 - Missing ARIA label and focus styles on clear action button
 **Learning:** Found that secondary "clear" actions on filtering panels (like the "Clear all" button in SearchFiltersPanel) might miss explicit ARIA labels and robust keyboard focus styling (`focus-visible`), reducing accessibility for screen reader and keyboard users.
 **Action:** Always verify that "clear" or "reset" buttons, especially those using secondary or ghost variants, have explicitly descriptive `aria-label` attributes and include standard `focus-visible` ring utility classes.
+## 2024-05-19 - Ensure Focus Rings on Search Result Links
+**Learning:** Found that the interactive `Link` elements used in `SearchResultSections.tsx` (for lists and labels) lacked explicit `focus-visible` utility classes. While they had hover states (`hover:bg-accent`), they were not easily distinguishable when navigating via keyboard (Tab), reducing accessibility.
+**Action:** Always verify that interactive elements, especially custom links and list items rendered as links, have explicit `focus-visible` classes (e.g., `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`) to ensure robust keyboard navigation support alongside standard hover states.
