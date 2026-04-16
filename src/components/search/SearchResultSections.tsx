@@ -72,7 +72,7 @@ export function SearchResultLabels({ labels }: SearchResultLabelsProps) {
           >
             <div
               className="h-2.5 w-2.5 rounded-full shrink-0"
-              style={{ backgroundColor: label.color ?? "#000" }}
+              style={{ backgroundColor: label.color ?? "hsl(var(--muted-foreground))" }}
             />
             {label.name}
           </Link>
