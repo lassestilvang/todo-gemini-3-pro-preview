@@ -29,7 +29,7 @@ export function SearchResultLists({ lists }: SearchResultListsProps) {
           >
             <div
               className="h-3 w-3 rounded-full shrink-0"
-              style={{ backgroundColor: list.color ?? "#000" }}
+              style={{ backgroundColor: list.color ?? "hsl(var(--muted-foreground))" }}
             />
             <div className="min-w-0">
               <p className="font-medium truncate">{list.name}</p>
