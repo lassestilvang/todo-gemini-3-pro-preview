@@ -112,7 +112,12 @@ export async function updateUserProgress(userId: string, xpAmount: number) {
       .where(eq(userAchievements.userId, userId))
   ]);
 
-  const alreadyUnlockedIds = new Set(unlockedEntries.map((u) => u.id));
+  // ⚡ Bolt Opt: Replaced `new Set(unlockedEntries.map(...))` with direct for...of loop
+  // to avoid redundant O(N) intermediate array allocation and garbage collection overhead.
+  const alreadyUnlockedIds = new Set<string>();
+  for (const u of unlockedEntries) {
+    alreadyUnlockedIds.add(u.id);
+  }
 
   // ⚡ Bolt Opt: Only query task counts if there are locked achievements that need them.
   let needTotalCount = false;

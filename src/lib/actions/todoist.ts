@@ -128,8 +128,18 @@ export async function createTodoistMappingList(name: string) {
         .select({ slug: lists.slug, position: lists.position })
         .from(lists)
         .where(eq(lists.userId, user.id));
-    const usedSlugs = new Set(existingLists.map((list) => list.slug));
-    const maxPosition = Math.max(0, ...existingLists.map((list) => list.position ?? 0));
+
+    // ⚡ Bolt Opt: Replaced `new Set(existingLists.map(...))` with direct for...of loop
+    // to avoid redundant O(N) intermediate array allocation and garbage collection overhead.
+    const usedSlugs = new Set<string>();
+    let maxPosition = 0;
+    for (const list of existingLists) {
+        usedSlugs.add(list.slug);
+        if (list.position !== null && list.position > maxPosition) {
+            maxPosition = list.position;
+        }
+    }
+
     const slug = buildUniqueSlug(slugifyListName(trimmedName), usedSlugs);
 
     const [created] = await db
@@ -460,7 +470,12 @@ export async function setTodoistProjectMappings(mappings: { projectId: string; l
             .from(lists)
             .where(and(eq(lists.userId, user.id), inArray(lists.id, listIds)));
 
-        const validListIds = new Set(validLists.map((l) => l.id));
+        // ⚡ Bolt Opt: Replaced `new Set(validLists.map(...))` with direct for...of loop
+        // to avoid redundant O(N) intermediate array allocation and garbage collection overhead.
+        const validListIds = new Set<number>();
+        for (const l of validLists) {
+            validListIds.add(l.id);
+        }
         const invalidIds = listIds.filter((id) => !validListIds.has(id));
 
         if (invalidIds.length > 0) {
@@ -548,7 +563,12 @@ export async function setTodoistLabelMappings(mappings: { labelId: string; listI
             .from(lists)
             .where(and(eq(lists.userId, user.id), inArray(lists.id, listIds)));
 
-        const validListIds = new Set(validLists.map((l) => l.id));
+        // ⚡ Bolt Opt: Replaced `new Set(validLists.map(...))` with direct for...of loop
+        // to avoid redundant O(N) intermediate array allocation and garbage collection overhead.
+        const validListIds = new Set<number>();
+        for (const l of validLists) {
+            validListIds.add(l.id);
+        }
         const invalidIds = listIds.filter((id) => !validListIds.has(id));
 
         if (invalidIds.length > 0) {
@@ -848,7 +868,12 @@ export async function resolveTodoistConflict(conflictId: number, resolution: "lo
         }
 
         const allRemoteLabels = await fetchAllTodoistLabels();
-        const remoteLabelIds = new Set(allRemoteLabels.map((label) => label.id));
+        // ⚡ Bolt Opt: Replaced `new Set(allRemoteLabels.map(...))` with direct for...of loop
+        // to avoid redundant O(N) intermediate array allocation and garbage collection overhead.
+        const remoteLabelIds = new Set<string>();
+        for (const label of allRemoteLabels) {
+            remoteLabelIds.add(label.id);
+        }
         const remoteLabelNameToId = new Map<string, string>();
         for (const label of allRemoteLabels) {
             const normalizedName = label.name.trim().toLowerCase();
