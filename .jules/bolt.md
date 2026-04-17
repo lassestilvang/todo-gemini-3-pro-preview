@@ -118,3 +118,8 @@
 ## 2026-04-10 - ⚡ Bolt: Optimize Todoist sync bounded concurrency external API deletions
 **Learning:** Sequential processing using array mapping combined with `Promise.all` (e.g. `externalIdsToDelete.map(async...)`) creates uneven execution patterns where unbounded concurrency may trigger external API rate limiting, particularly for deletions (`deleteTask`).
 **Action:** Replaced manual `Promise.all` + `.map()` unbounded execution with `p-limit(5)` in `src/lib/todoist/sync.ts` `removeDeletedTasks` to safely maximize throughput while respecting external burst rate limits. Ensure fail-fast behavior is preserved by clearing the limit queue (`limit.clearQueue()`) on unhandled rejections.
+
+## 2026-04-16 - Prevent Redundant Array Allocations When Initializing Sets
+
+**Learning:** Initializing Sets or Maps using `new Set(array.map(...))` creates an intermediate array that must be allocated in memory, processed, and then immediately discarded for garbage collection. This causes O(N) memory overhead and GC pressure.
+**Action:** When deriving a `Set` or `Map` from an existing array, bypass intermediate `.map()` calls by instantiating an empty structure (`new Set()`) and using a `for...of` loop to directly populate it.

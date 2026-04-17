@@ -180,7 +180,12 @@ export async function setGoogleTasksListMappings(mappings: { tasklistId: string;
             .from(lists)
             .where(and(eq(lists.userId, user.id), inArray(lists.id, listIds)));
 
-        const validListIds = new Set(validLists.map((l) => l.id));
+        // ⚡ Bolt Opt: Replaced `new Set(validLists.map(...))` with direct for...of loop
+        // to avoid redundant O(N) intermediate array allocation and garbage collection overhead.
+        const validListIds = new Set<number>();
+        for (const l of validLists) {
+            validListIds.add(l.id);
+        }
         const invalidIds = listIds.filter((id) => !validListIds.has(id));
 
         if (invalidIds.length > 0) {
