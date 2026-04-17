@@ -1,7 +1,16 @@
 "use server";
 
 import { and, eq, inArray } from "drizzle-orm";
-import {
+import { revalidatePath } from "next/cache";
+ import {
+   db,
+   externalEntityMap,
+   externalIntegrations,
+   externalSyncConflicts,
+   externalSyncState,
+   lists,
+   tasks,
+ } from "@/db";
   db,
   externalEntityMap,
   externalIntegrations,
