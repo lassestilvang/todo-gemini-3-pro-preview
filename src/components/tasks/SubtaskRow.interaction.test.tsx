@@ -94,7 +94,7 @@ describe("SubtaskRow Interaction", () => {
             />
         );
 
-        const row = screen.getByRole("button", { name: /Test Subtask/i, hidden: true }).closest('div[role="button"]') || screen.getByRole("button", { hidden: true });
+        const row = screen.getByRole("button", { name: /Test Subtask/i });
 
         fireEvent.keyDown(row, { key: "Enter", code: "Enter" });
 
