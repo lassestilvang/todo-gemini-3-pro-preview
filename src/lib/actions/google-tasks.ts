@@ -1,330 +1,438 @@
 "use server";
 
 import { and, eq, inArray } from "drizzle-orm";
-import { db, externalEntityMap, externalIntegrations, externalSyncConflicts, lists, tasks } from "@/db";
+import {
+  db,
+  externalEntityMap,
+  externalIntegrations,
+  externalSyncConflicts,
+  externalSyncState,
+  lists,
+  tasks,
+} from "@/db";
 import { getCurrentUser } from "@/lib/auth";
-import { createGoogleTasksClient, getGoogleTasksAccessToken } from "@/lib/google-tasks/service";
-import { mapGoogleTaskToLocal, mapLocalTaskToGoogle } from "@/lib/google-tasks/mapper";
+import {
+  createGoogleTasksClient,
+  getGoogleTasksAccessToken,
+} from "@/lib/google-tasks/service";
+import {
+  mapGoogleTaskToLocal,
+  mapLocalTaskToGoogle,
+} from "@/lib/google-tasks/mapper";
 import { syncGoogleTasksForUser } from "@/lib/google-tasks/sync";
 import { updateTask } from "@/lib/actions/tasks";
 
 export async function syncGoogleTasksNow() {
-    const user = await getCurrentUser();
-    if (!user) {
-        return { success: false, error: "Not authenticated" };
-    }
+  const user = await getCurrentUser();
+  if (!user) {
+    return { success: false, error: "Not authenticated" };
+  }
 
-    if (process.env.NODE_ENV === "test") {
-        return { success: true };
-    }
+  if (process.env.NODE_ENV === "test") {
+    return { success: true };
+  }
 
-    const result = await syncGoogleTasksForUser(user.id);
-    return { success: result.status === "ok", ...result };
+  const result = await syncGoogleTasksForUser(user.id);
+  return { success: result.status === "ok", ...result };
 }
 
 export async function disconnectGoogleTasks() {
-    const user = await getCurrentUser();
-    if (!user) {
-        return { success: false, error: "Not authenticated" };
-    }
+  const user = await getCurrentUser();
+  if (!user) {
+    return { success: false, error: "Not authenticated" };
+  }
 
-    if (process.env.NODE_ENV === "test") {
-        return { success: true };
-    }
-
-    await db
-        .delete(externalIntegrations)
-        .where(and(eq(externalIntegrations.userId, user.id), eq(externalIntegrations.provider, "google_tasks")));
-
+  if (process.env.NODE_ENV === "test") {
     return { success: true };
+  }
+
+  await db
+    .delete(externalIntegrations)
+    .where(
+      and(
+        eq(externalIntegrations.userId, user.id),
+        eq(externalIntegrations.provider, "google_tasks"),
+      ),
+    );
+
+  await db
+    .delete(externalEntityMap)
+    .where(
+      and(
+        eq(externalEntityMap.userId, user.id),
+        eq(externalEntityMap.provider, "google_tasks"),
+      ),
+    );
+
+  await db
+    .delete(externalSyncConflicts)
+    .where(
+      and(
+        eq(externalSyncConflicts.userId, user.id),
+        eq(externalSyncConflicts.provider, "google_tasks"),
+      ),
+    );
+
+  await db
+    .delete(externalSyncState)
+    .where(
+      and(
+        eq(externalSyncState.userId, user.id),
+        eq(externalSyncState.provider, "google_tasks"),
+      ),
+    );
+
+  return { success: true };
 }
 
 export async function getGoogleTasksStatus() {
-    const user = await getCurrentUser();
-    if (!user) {
-        return { success: false, error: "Not authenticated" };
-    }
+  const user = await getCurrentUser();
+  if (!user) {
+    return { success: false, error: "Not authenticated" };
+  }
 
-    if (process.env.NODE_ENV === "test") {
-        return { success: true, connected: false };
-    }
+  if (process.env.NODE_ENV === "test") {
+    return { success: true, connected: false };
+  }
 
-    const integration = await db.query.externalIntegrations.findFirst({
-        where: and(eq(externalIntegrations.userId, user.id), eq(externalIntegrations.provider, "google_tasks")),
-    });
+  const integration = await db.query.externalIntegrations.findFirst({
+    where: and(
+      eq(externalIntegrations.userId, user.id),
+      eq(externalIntegrations.provider, "google_tasks"),
+    ),
+  });
 
-    return { success: true, connected: Boolean(integration) };
+  return { success: true, connected: Boolean(integration) };
 }
 
 export async function getGoogleTasksConflicts() {
-    const user = await getCurrentUser();
-    if (!user) {
-        return { success: false, error: "Not authenticated" };
-    }
+  const user = await getCurrentUser();
+  if (!user) {
+    return { success: false, error: "Not authenticated" };
+  }
 
-    if (process.env.NODE_ENV === "test") {
-        return { success: true, conflicts: [] };
-    }
+  if (process.env.NODE_ENV === "test") {
+    return { success: true, conflicts: [] };
+  }
 
-    const conflicts = await db
-        .select()
-        .from(externalSyncConflicts)
-        .where(
-            and(
-                eq(externalSyncConflicts.userId, user.id),
-                eq(externalSyncConflicts.provider, "google_tasks"),
-                eq(externalSyncConflicts.status, "pending")
-            )
-        )
-        .orderBy(externalSyncConflicts.createdAt);
+  const conflicts = await db
+    .select()
+    .from(externalSyncConflicts)
+    .where(
+      and(
+        eq(externalSyncConflicts.userId, user.id),
+        eq(externalSyncConflicts.provider, "google_tasks"),
+        eq(externalSyncConflicts.status, "pending"),
+      ),
+    )
+    .orderBy(externalSyncConflicts.createdAt);
 
-    return { success: true, conflicts };
+  return { success: true, conflicts };
 }
 
 export async function getGoogleTasksMappingData() {
-    const user = await getCurrentUser();
-    if (!user) {
-        return { success: false, error: "Not authenticated" };
+  const user = await getCurrentUser();
+  if (!user) {
+    return { success: false, error: "Not authenticated" };
+  }
+
+  if (process.env.NODE_ENV === "test") {
+    return { success: false, error: "Google Tasks sync disabled in tests." };
+  }
+
+  const integration = await db.query.externalIntegrations.findFirst({
+    where: and(
+      eq(externalIntegrations.userId, user.id),
+      eq(externalIntegrations.provider, "google_tasks"),
+    ),
+  });
+
+  if (!integration) {
+    return { success: false, error: "Google Tasks integration not connected." };
+  }
+
+  const { accessToken } = await getGoogleTasksAccessToken(user.id);
+  const client = createGoogleTasksClient(accessToken);
+
+  const [tasklists, userLists, mappings] = await Promise.all([
+    client.listTasklists(),
+    db.select().from(lists).where(eq(lists.userId, user.id)),
+    db
+      .select()
+      .from(externalEntityMap)
+      .where(
+        and(
+          eq(externalEntityMap.userId, user.id),
+          eq(externalEntityMap.provider, "google_tasks"),
+          eq(externalEntityMap.entityType, "list"),
+        ),
+      ),
+  ]);
+
+  return {
+    success: true,
+    tasklists,
+    lists: userLists,
+    listMappings: mappings.map((mapping) => ({
+      tasklistId: mapping.externalId,
+      listId: mapping.localId,
+    })),
+  };
+}
+
+function hasDuplicateStrings(values: string[]) {
+  const seen = new Set<string>();
+  for (const value of values) {
+    const normalized = value.trim();
+    if (seen.has(normalized)) {
+      return true;
+    }
+    seen.add(normalized);
+  }
+  return false;
+}
+
+function hasDuplicateNonNullNumbers(values: Array<number | null>) {
+  const seen = new Set<number>();
+  for (const value of values) {
+    if (value !== null) {
+      if (seen.has(value)) {
+        return true;
+      }
+      seen.add(value);
+    }
+  }
+  return false;
+}
+
+export async function setGoogleTasksListMappings(
+  mappings: { tasklistId: string; listId: number | null }[],
+) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { success: false, error: "Not authenticated" };
+  }
+
+  if (mappings.length > 1000) {
+    return { success: false, error: "Too many mappings. Limit is 1000." };
+  }
+
+  if (hasDuplicateStrings(mappings.map((m) => m.tasklistId))) {
+    return {
+      success: false,
+      error: "Duplicate Google Tasks list mappings are not allowed.",
+    };
+  }
+  if (hasDuplicateNonNullNumbers(mappings.map((m) => m.listId))) {
+    return {
+      success: false,
+      error: "A local list can only be mapped to one Google Tasks list.",
+    };
+  }
+
+  const listIds = mappings
+    .map((m) => m.listId)
+    .filter((id): id is number => id !== null);
+
+  if (listIds.length > 0) {
+    const validLists = await db
+      .select({ id: lists.id })
+      .from(lists)
+      .where(and(eq(lists.userId, user.id), inArray(lists.id, listIds)));
+
+    // ⚡ Bolt Opt: Replaced `new Set(validLists.map(...))` with direct for...of loop
+    // to avoid redundant O(N) intermediate array allocation and garbage collection overhead.
+    const validListIds = new Set<number>();
+    for (const l of validLists) {
+      validListIds.add(l.id);
+    }
+    const invalidIds = listIds.filter((id) => !validListIds.has(id));
+
+    if (invalidIds.length > 0) {
+      return {
+        success: false,
+        error: "One or more lists not found or access denied",
+      };
+    }
+  }
+
+  if (process.env.NODE_ENV === "test") {
+    return { success: true };
+  }
+
+  await db
+    .delete(externalEntityMap)
+    .where(
+      and(
+        eq(externalEntityMap.userId, user.id),
+        eq(externalEntityMap.provider, "google_tasks"),
+        eq(externalEntityMap.entityType, "list"),
+      ),
+    );
+
+  if (mappings.length > 0) {
+    await db.insert(externalEntityMap).values(
+      mappings.map((mapping) => ({
+        userId: user.id,
+        provider: "google_tasks" as const,
+        entityType: "list" as const,
+        localId: mapping.listId,
+        externalId: mapping.tasklistId,
+      })),
+    );
+  }
+
+  await syncGoogleTasksNow();
+
+  return { success: true };
+}
+
+export async function resolveGoogleTasksConflict(
+  conflictId: number,
+  resolution: "local" | "remote",
+) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { success: false, error: "Not authenticated" };
+  }
+
+  if (process.env.NODE_ENV === "test") {
+    return { success: true };
+  }
+
+  const conflict = await db.query.externalSyncConflicts.findFirst({
+    where: and(
+      eq(externalSyncConflicts.id, conflictId),
+      eq(externalSyncConflicts.userId, user.id),
+    ),
+  });
+
+  if (!conflict || conflict.status !== "pending") {
+    return { success: false, error: "Conflict not found or already resolved." };
+  }
+
+  if (conflict.entityType !== "task") {
+    return {
+      success: false,
+      error: "Only task conflicts can be resolved for now.",
+    };
+  }
+
+  const integration = await db.query.externalIntegrations.findFirst({
+    where: and(
+      eq(externalIntegrations.userId, user.id),
+      eq(externalIntegrations.provider, "google_tasks"),
+    ),
+  });
+
+  if (!integration) {
+    return { success: false, error: "Google Tasks integration not connected." };
+  }
+
+  if (resolution === "local") {
+    if (!conflict.externalId || !conflict.localId) {
+      return {
+        success: false,
+        error: "Missing mapping for conflict resolution.",
+      };
     }
 
-    if (process.env.NODE_ENV === "test") {
-        return { success: false, error: "Google Tasks sync disabled in tests." };
-    }
-
-    const integration = await db.query.externalIntegrations.findFirst({
-        where: and(eq(externalIntegrations.userId, user.id), eq(externalIntegrations.provider, "google_tasks")),
+    const localTask = await db.query.tasks.findFirst({
+      where: and(eq(tasks.id, conflict.localId), eq(tasks.userId, user.id)),
     });
 
-    if (!integration) {
-        return { success: false, error: "Google Tasks integration not connected." };
+    if (!localTask || !localTask.listId) {
+      return { success: false, error: "Local task not found." };
+    }
+
+    const listMapping = await db.query.externalEntityMap.findFirst({
+      where: and(
+        eq(externalEntityMap.userId, user.id),
+        eq(externalEntityMap.provider, "google_tasks"),
+        eq(externalEntityMap.entityType, "list"),
+        eq(externalEntityMap.localId, localTask.listId),
+      ),
+    });
+
+    if (!listMapping) {
+      return { success: false, error: "List mapping not found." };
     }
 
     const { accessToken } = await getGoogleTasksAccessToken(user.id);
     const client = createGoogleTasksClient(accessToken);
+    await client.updateTask(
+      listMapping.externalId,
+      conflict.externalId,
+      mapLocalTaskToGoogle(localTask),
+    );
+  }
 
-    const [tasklists, userLists, mappings] = await Promise.all([
-        client.listTasklists(),
-        db.select().from(lists).where(eq(lists.userId, user.id)),
-        db
-            .select()
-            .from(externalEntityMap)
-            .where(
-                and(
-                    eq(externalEntityMap.userId, user.id),
-                    eq(externalEntityMap.provider, "google_tasks"),
-                    eq(externalEntityMap.entityType, "list")
-                )
-            ),
-    ]);
+  if (resolution === "remote") {
+    if (
+      !conflict.externalPayload ||
+      !conflict.localId ||
+      !conflict.externalId
+    ) {
+      return {
+        success: false,
+        error: "Missing payload for conflict resolution.",
+      };
+    }
 
-    return {
-        success: true,
-        tasklists,
-        lists: userLists,
-        listMappings: mappings.map((mapping) => ({
-            tasklistId: mapping.externalId,
-            listId: mapping.localId,
-        })),
+    const externalPayload = JSON.parse(conflict.externalPayload) as {
+      tasklistId: string;
     };
-}
 
-function hasDuplicateStrings(values: string[]) {
-    const seen = new Set<string>();
-    for (const value of values) {
-        const normalized = value.trim();
-        if (seen.has(normalized)) {
-            return true;
-        }
-        seen.add(normalized);
-    }
-    return false;
-}
-
-function hasDuplicateNonNullNumbers(values: Array<number | null>) {
-    const seen = new Set<number>();
-    for (const value of values) {
-        if (value !== null) {
-            if (seen.has(value)) {
-                return true;
-            }
-            seen.add(value);
-        }
-    }
-    return false;
-}
-
-export async function setGoogleTasksListMappings(mappings: { tasklistId: string; listId: number | null }[]) {
-    const user = await getCurrentUser();
-    if (!user) {
-        return { success: false, error: "Not authenticated" };
+    if (!externalPayload.tasklistId) {
+      return {
+        success: false,
+        error: "Missing tasklist mapping for conflict resolution.",
+      };
     }
 
-    if (mappings.length > 1000) {
-        return { success: false, error: "Too many mappings. Limit is 1000." };
-    }
+    const { accessToken } = await getGoogleTasksAccessToken(user.id);
+    const client = createGoogleTasksClient(accessToken);
+    const remoteTask = await client.getTask(
+      externalPayload.tasklistId,
+      conflict.externalId,
+    );
 
-    if (hasDuplicateStrings(mappings.map((m) => m.tasklistId))) {
-        return { success: false, error: "Duplicate Google Tasks list mappings are not allowed." };
-    }
-    if (hasDuplicateNonNullNumbers(mappings.map((m) => m.listId))) {
-        return { success: false, error: "A local list can only be mapped to one Google Tasks list." };
-    }
-
-    const listIds = mappings
-        .map((m) => m.listId)
-        .filter((id): id is number => id !== null);
-
-    if (listIds.length > 0) {
-        const validLists = await db
-            .select({ id: lists.id })
-            .from(lists)
-            .where(and(eq(lists.userId, user.id), inArray(lists.id, listIds)));
-
-        // ⚡ Bolt Opt: Replaced `new Set(validLists.map(...))` with direct for...of loop
-        // to avoid redundant O(N) intermediate array allocation and garbage collection overhead.
-        const validListIds = new Set<number>();
-        for (const l of validLists) {
-            validListIds.add(l.id);
-        }
-        const invalidIds = listIds.filter((id) => !validListIds.has(id));
-
-        if (invalidIds.length > 0) {
-            return { success: false, error: "One or more lists not found or access denied" };
-        }
-    }
-
-    if (process.env.NODE_ENV === "test") {
-        return { success: true };
-    }
-
-    await db
-        .delete(externalEntityMap)
-        .where(and(eq(externalEntityMap.userId, user.id), eq(externalEntityMap.provider, "google_tasks"), eq(externalEntityMap.entityType, "list")));
-
-    if (mappings.length > 0) {
-        await db.insert(externalEntityMap).values(
-            mappings.map((mapping) => ({
-                userId: user.id,
-                provider: "google_tasks" as const,
-                entityType: "list" as const,
-                localId: mapping.listId,
-                externalId: mapping.tasklistId,
-            }))
-        );
-    }
-
-    await syncGoogleTasksNow();
-
-    return { success: true };
-}
-
-export async function resolveGoogleTasksConflict(conflictId: number, resolution: "local" | "remote") {
-    const user = await getCurrentUser();
-    if (!user) {
-        return { success: false, error: "Not authenticated" };
-    }
-
-    if (process.env.NODE_ENV === "test") {
-        return { success: true };
-    }
-
-    const conflict = await db.query.externalSyncConflicts.findFirst({
-        where: and(eq(externalSyncConflicts.id, conflictId), eq(externalSyncConflicts.userId, user.id)),
+    const listMapping = await db.query.externalEntityMap.findFirst({
+      where: and(
+        eq(externalEntityMap.userId, user.id),
+        eq(externalEntityMap.provider, "google_tasks"),
+        eq(externalEntityMap.entityType, "list"),
+        eq(externalEntityMap.externalId, externalPayload.tasklistId),
+      ),
     });
 
-    if (!conflict || conflict.status !== "pending") {
-        return { success: false, error: "Conflict not found or already resolved." };
+    if (!listMapping || !listMapping.localId) {
+      return { success: false, error: "List mapping not found." };
     }
 
-    if (conflict.entityType !== "task") {
-        return { success: false, error: "Only task conflicts can be resolved for now." };
-    }
-
-    const integration = await db.query.externalIntegrations.findFirst({
-        where: and(eq(externalIntegrations.userId, user.id), eq(externalIntegrations.provider, "google_tasks")),
+    const updates = mapGoogleTaskToLocal(remoteTask, listMapping.localId);
+    await updateTask(conflict.localId, user.id, {
+      title: updates.title,
+      description: updates.description ?? null,
+      isCompleted: updates.isCompleted ?? false,
+      completedAt: updates.isCompleted
+        ? new Date(remoteTask.completed ?? Date.now())
+        : null,
+      dueDate: updates.dueDate ?? null,
+      dueDatePrecision: updates.dueDatePrecision ?? null,
+      listId: updates.listId ?? listMapping.localId,
     });
+  }
 
-    if (!integration) {
-        return { success: false, error: "Google Tasks integration not connected." };
-    }
+  await db
+    .update(externalSyncConflicts)
+    .set({ status: "resolved", resolution, resolvedAt: new Date() })
+    .where(
+      and(
+        eq(externalSyncConflicts.id, conflictId),
+        eq(externalSyncConflicts.userId, user.id),
+      ),
+    );
 
-    if (resolution === "local") {
-        if (!conflict.externalId || !conflict.localId) {
-            return { success: false, error: "Missing mapping for conflict resolution." };
-        }
-
-        const localTask = await db.query.tasks.findFirst({
-            where: and(eq(tasks.id, conflict.localId), eq(tasks.userId, user.id)),
-        });
-
-        if (!localTask || !localTask.listId) {
-            return { success: false, error: "Local task not found." };
-        }
-
-        const listMapping = await db.query.externalEntityMap.findFirst({
-            where: and(
-                eq(externalEntityMap.userId, user.id),
-                eq(externalEntityMap.provider, "google_tasks"),
-                eq(externalEntityMap.entityType, "list"),
-                eq(externalEntityMap.localId, localTask.listId)
-            ),
-        });
-
-        if (!listMapping) {
-            return { success: false, error: "List mapping not found." };
-        }
-
-        const { accessToken } = await getGoogleTasksAccessToken(user.id);
-        const client = createGoogleTasksClient(accessToken);
-        await client.updateTask(listMapping.externalId, conflict.externalId, mapLocalTaskToGoogle(localTask));
-    }
-
-    if (resolution === "remote") {
-        if (!conflict.externalPayload || !conflict.localId || !conflict.externalId) {
-            return { success: false, error: "Missing payload for conflict resolution." };
-        }
-
-        const externalPayload = JSON.parse(conflict.externalPayload) as {
-            tasklistId: string;
-        };
-
-        if (!externalPayload.tasklistId) {
-            return { success: false, error: "Missing tasklist mapping for conflict resolution." };
-        }
-
-        const { accessToken } = await getGoogleTasksAccessToken(user.id);
-        const client = createGoogleTasksClient(accessToken);
-        const remoteTask = await client.getTask(externalPayload.tasklistId, conflict.externalId);
-
-        const listMapping = await db.query.externalEntityMap.findFirst({
-            where: and(
-                eq(externalEntityMap.userId, user.id),
-                eq(externalEntityMap.provider, "google_tasks"),
-                eq(externalEntityMap.entityType, "list"),
-                eq(externalEntityMap.externalId, externalPayload.tasklistId)
-            ),
-        });
-
-        if (!listMapping || !listMapping.localId) {
-            return { success: false, error: "List mapping not found." };
-        }
-
-        const updates = mapGoogleTaskToLocal(remoteTask, listMapping.localId);
-        await updateTask(conflict.localId, user.id, {
-            title: updates.title,
-            description: updates.description ?? null,
-            isCompleted: updates.isCompleted ?? false,
-            completedAt: updates.isCompleted ? new Date(remoteTask.completed ?? Date.now()) : null,
-            dueDate: updates.dueDate ?? null,
-            dueDatePrecision: updates.dueDatePrecision ?? null,
-            listId: updates.listId ?? listMapping.localId,
-        });
-    }
-
-    await db
-        .update(externalSyncConflicts)
-        .set({ status: "resolved", resolution, resolvedAt: new Date() })
-        .where(and(eq(externalSyncConflicts.id, conflictId), eq(externalSyncConflicts.userId, user.id)));
-
-    return { success: true };
+  return { success: true };
 }
