@@ -19,3 +19,6 @@
 ## 2024-05-19 - Ensure Focus Rings on Search Result Links
 **Learning:** Found that the interactive `Link` elements used in `SearchResultSections.tsx` (for lists and labels) lacked explicit `focus-visible` utility classes. While they had hover states (`hover:bg-accent`), they were not easily distinguishable when navigating via keyboard (Tab), reducing accessibility.
 **Action:** Always verify that interactive elements, especially custom links and list items rendered as links, have explicit `focus-visible` classes (e.g., `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`) to ensure robust keyboard navigation support alongside standard hover states.
+## 2025-02-18 - Keyboard Accessibility for Subtask Rows
+**Learning:** Custom interactive elements (like subtask rows) that function as buttons must have both `role="button"` and `tabIndex={0}` to be discoverable by keyboard navigation. Additionally, they must implement a keydown handler to trigger their action on 'Enter' or 'Space', and include `focus-visible` utility classes to visually indicate focus state.
+**Action:** Always ensure that custom elements that are actionable via `onClick` also include `role="button"`, `tabIndex={0}`, an `onKeyDown` handler for 'Enter' and 'Space', and visible focus styles (e.g. `focus-visible:ring-2`).

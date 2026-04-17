@@ -17,9 +17,17 @@ interface SubtaskRowProps {
 export const SubtaskRow = memo(function SubtaskRow({ subtask, isCompleted, onToggle }: SubtaskRowProps) {
     return (
         <div
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onToggle(subtask.id, !isCompleted);
+                }
+            }}
             onClick={() => onToggle(subtask.id, !isCompleted)}
             className={cn(
-                "flex items-center gap-3 py-2 px-3 rounded-md hover:bg-muted/50 transition-colors cursor-pointer",
+                "flex items-center gap-3 py-2 px-3 rounded-md hover:bg-muted/50 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 isCompleted && "opacity-60"
             )}
         >
