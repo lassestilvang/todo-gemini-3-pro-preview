@@ -77,4 +77,52 @@ describe("SubtaskRow Interaction", () => {
         expect(onToggle).toHaveBeenCalledTimes(1);
         expect(onToggle).toHaveBeenCalledWith(1, true);
     });
+
+    it("toggles subtask when pressing Enter on the row", () => {
+        const onToggle = mock((_id: number, _checked: boolean) => {});
+        const subtask = {
+            id: 1,
+            title: "Test Subtask",
+            isCompleted: false
+        };
+
+        render(
+            <SubtaskRow
+                subtask={subtask}
+                isCompleted={false}
+                onToggle={onToggle}
+            />
+        );
+
+        const row = screen.getByRole("button", { name: /Test Subtask/i });
+
+        fireEvent.keyDown(row, { key: "Enter", code: "Enter" });
+
+        expect(onToggle).toHaveBeenCalledTimes(1);
+        expect(onToggle).toHaveBeenCalledWith(1, true);
+    });
+
+    it("toggles subtask when pressing Space on the row", () => {
+        const onToggle = mock((_id: number, _checked: boolean) => {});
+        const subtask = {
+            id: 1,
+            title: "Test Subtask",
+            isCompleted: true
+        };
+
+        render(
+            <SubtaskRow
+                subtask={subtask}
+                isCompleted={true}
+                onToggle={onToggle}
+            />
+        );
+
+        const row = screen.getByRole("button", { name: /Test Subtask/i, hidden: true }).closest('div[role="button"]') || screen.getByRole("button", { hidden: true });
+
+        fireEvent.keyDown(row, { key: " ", code: "Space" });
+
+        expect(onToggle).toHaveBeenCalledTimes(1);
+        expect(onToggle).toHaveBeenCalledWith(1, false);
+    });
 });
