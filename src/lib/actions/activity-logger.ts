@@ -1,4 +1,5 @@
 import { db, taskLogs } from "./shared";
+import { requireUser } from "@/lib/auth";
 
 /**
  * Log an activity to the task_logs table.
@@ -13,5 +14,6 @@ export async function logActivity(params: {
   labelId?: number;
   details?: string;
 }) {
+  await requireUser(params.userId);
   await db.insert(taskLogs).values(params);
 }
