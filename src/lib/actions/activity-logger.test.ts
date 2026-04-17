@@ -26,6 +26,10 @@ describe("logActivity internal helper", () => {
     });
 
     test("should log activity correctly", async () => {
+        // Set up the mock session context so that requireUser() passes.
+        const { setMockAuthUser } = await import("@/test/mocks");
+        setMockAuthUser({ id: testUserId, email: `${testUserId}@example.com` });
+
         // Log activity (internal helper usage)
         await logActivity({
             userId: testUserId,
