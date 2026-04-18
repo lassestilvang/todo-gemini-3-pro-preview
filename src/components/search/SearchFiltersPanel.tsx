@@ -253,7 +253,7 @@ function FilterSelect({
         {label}
       </label>
       <Select value={value} onValueChange={onValueChange}>
-        <SelectTrigger className="h-8">
+        <SelectTrigger size="sm" aria-label={`Filter by ${label}`}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
