@@ -123,3 +123,7 @@
 
 **Learning:** Initializing Sets or Maps using `new Set(array.map(...))` creates an intermediate array that must be allocated in memory, processed, and then immediately discarded for garbage collection. This causes O(N) memory overhead and GC pressure.
 **Action:** When deriving a `Set` or `Map` from an existing array, bypass intermediate `.map()` calls by instantiating an empty structure (`new Set()`) and using a `for...of` loop to directly populate it.
+
+## 2026-04-18 - Further optimizations for Set initialization with map
+**Learning:** Found several more instances of `new Set(array.map(...))` and `[...new Set(array.map(...))]` across multiple files which cause O(N) array allocation overhead and memory pressure during GC.
+**Action:** Replaced them with simple `for...of` loops, or an IIFE containing a `for...of` loop when inline replacement wasn't feasible (e.g. inside an object literal), to initialize Sets efficiently and avoid creating intermediate arrays.
