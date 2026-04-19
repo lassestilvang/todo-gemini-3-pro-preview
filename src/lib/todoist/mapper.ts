@@ -150,11 +150,6 @@ export function mapLocalTaskToTodoist(
     const labelIds = options?.labelIds ?? [];
     const labelMap = options?.labelIdToExternal;
     const externalLabelToName = options?.externalLabelToName;
-    const mappedLabels = labelMap
-        ? labelIds
-            .map((labelId) => labelMap.get(labelId) ?? null)
-            .filter((labelId): labelId is string => Boolean(labelId))
-        : undefined;
     // Preserve explicit task labels and append list-scoping label mapping when needed.
     // This prevents scoped tasks from dropping out of label-based sync.
     const combinedLabels = new Set<string>();
@@ -163,9 +158,14 @@ export function mapLocalTaskToTodoist(
             combinedLabels.add(labelId);
         }
     }
-    if (mappedLabels) {
-        for (const labelId of mappedLabels) {
-            combinedLabels.add(labelId);
+    // ⚡ Bolt Opt: Replaced mappedLabels chained .map().filter() with direct iteration
+    // into combinedLabels to avoid O(N) intermediate array allocations
+    if (labelMap) {
+        for (const labelId of labelIds) {
+            const mapped = labelMap.get(labelId);
+            if (mapped) {
+                combinedLabels.add(mapped);
+            }
         }
     }
     let labels: string[] | undefined = undefined;
