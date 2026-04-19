@@ -139,3 +139,6 @@
 ## 2026-04-18 - Add aria-label to dynamically generated select triggers
 **Learning:** Select triggers inside reusable generic components (like FilterSelect) often lack specific context when rendered multiple times for different filters. While the visual label provides context for sighted users, screen readers might not associate it correctly with the custom select trigger element unless explicitly linked or labelled.
 **Action:** When a visible label exists, link it to the `<SelectTrigger>` using `aria-labelledby` (using `React.useId()` to generate a unique ID). Only use an explicit `aria-label` (e.g. `aria-label={\`Filter by ${label}\`}`) as a fallback when no visible label is present, to ensure screen reader users have clear context for each distinct dropdown.
+## 2026-04-19 - Added Contextual aria-label to Collapsible List Sections
+**Learning:** Collapsible list sections that use text nodes to visually indicate grouping labels and item counts need explicit `aria-label`s on their toggle buttons to ensure the full context is announced seamlessly.
+**Action:** Always verify that main collapsible toggle buttons (like those using `aria-expanded`) contain an `aria-label` that describes the section and potentially the item count, rather than relying solely on nested text content.
