@@ -218,9 +218,14 @@ export function TodoistMappingForm() {
     const handleSave = async () => {
         dispatchUI({ type: "SAVE_START" });
         let createdListCount = 0;
+
+        const projectResults = await Promise.all(
+            projects.map((p) => resolveMappingSelection(projectMappings[p.id] ?? null, p.name))
+        );
         const projectPayload: { projectId: string; listId: number | null }[] = [];
-        for (const project of projects) {
-            const resolved = await resolveMappingSelection(projectMappings[project.id] ?? null, project.name);
+        for (let i = 0; i < projects.length; i++) {
+            const project = projects[i];
+            const resolved = projectResults[i];
             if (!resolved.success) {
                 dispatchUI({ type: "FETCH_ERROR", payload: resolved.error });
                 dispatchUI({ type: "SAVE_END" });
@@ -232,9 +237,13 @@ export function TodoistMappingForm() {
             projectPayload.push({ projectId: project.id, listId: resolved.listId });
         }
 
+        const labelResults = await Promise.all(
+            labels.map((l) => resolveMappingSelection(labelMappings[l.id] ?? null, l.name))
+        );
         const labelPayload: { labelId: string; listId: number | null }[] = [];
-        for (const label of labels) {
-            const resolved = await resolveMappingSelection(labelMappings[label.id] ?? null, label.name);
+        for (let i = 0; i < labels.length; i++) {
+            const label = labels[i];
+            const resolved = labelResults[i];
             if (!resolved.success) {
                 dispatchUI({ type: "FETCH_ERROR", payload: resolved.error });
                 dispatchUI({ type: "SAVE_END" });
