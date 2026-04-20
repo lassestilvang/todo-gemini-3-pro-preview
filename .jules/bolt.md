@@ -77,16 +77,6 @@
 **Action:** Replaced `Array.from(finalLabels)` with a pre-allocated `new Array(finalLabels.size)` populated via a `for...of` loop in `src/lib/todoist/mapper.ts` to optimize the Todoist labels mapping process.
 
 ## 2026-04-10 - O(1) Set Lookup for MIME Type Validation
-**Learning:** Using Array.includes() for repeated membership checks results in O(N) lookup time. Initializing a static Set allows for O(1) performance, which is more efficient for validation logic.
-**Action:** Replaced the inline array .includes() check in src/lib/actions/custom-icons.ts with a pre-initialized Set (VALID_MIME_TYPES) for O(1) performance during icon MIME type validation.
-**Action:** Replaced manual array chunking in `src/app/api/google-tasks-sync/route.ts` with `p-limit(5)`. This optimization was already present in `todoist-sync/route.ts` but missing from Google Tasks sync.
-
-## 2024-04-11 - Eliminate array allocation bottlenecks in Achievements Page
-**Learning:** Re-assigning or filtering arrays dynamically in React components using `.map()` and chained `.filter().map()` triggers unnecessary hidden heap allocations and GC overhead on every render, especially when initializing Sets. This can cause sluggishness in frequently updated components.
-**Action:** When deriving subsets or Sets from large object arrays, use `for...of` loops rather than chained array methods to build structures with a single pass and eliminate intermediate array object allocations.
-
-## 2024-04-11 - Fullcalendar peer dependencies versioning
-**Learning:** Upgrading `@fullcalendar/core` and `@fullcalendar/react` to beta/rc versions arbitrarily will crash tools importing `useCalendarController` from `@fullcalendar/react` since v7 removed it. Downgrading the lockfile back to specific beta versions might clash with `calendarkit-pro` which pins its own dependencies, thus freezing the build pipeline.
 **Action:** When running tools like `bun install` that update locks, pay close attention to Next.js build errors showing `Export useCalendarController doesn't exist in target module` in `.js` or `.tsx` output. The fix is to strictly specify `7.0.0-beta.8` since `7.0.0-rc.0` was causing breaking issues. Also, remember to not automatically bump dependency versions unless required by the issue constraint.
 
 ## 2025-05-15 - Optimize N+1 Database Updates in Google Tasks Sync
@@ -127,3 +117,7 @@
 ## 2026-04-18 - Further optimizations for Set initialization with map
 **Learning:** Found several more instances of `new Set(array.map(...))` and `[...new Set(array.map(...))]` across multiple files which cause O(N) array allocation overhead and memory pressure during GC.
 **Action:** Replaced them with simple `for...of` loops, or an IIFE containing a `for...of` loop when inline replacement wasn't feasible (e.g. inside an object literal), to initialize Sets efficiently and avoid creating intermediate arrays.
+
+## 2026-04-20 - Prevent Redundant Array Allocations When Initializing Sets
+**Learning:** Found more instances across codebase where Sets are initialized using new Set(array.map(...)) or [...new Set(array.map(...))]. This creates unnecessary intermediate array allocations that must be immediately garbage collected, causing memory overhead.
+**Action:** Replaced these with a for...of loop or a standard for loop (for index iteration) directly populating an empty Set to eliminate the intermediate O(N) array allocation overhead.

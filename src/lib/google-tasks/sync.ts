@@ -325,7 +325,10 @@ async function syncTasklists(params: {
     }
   }
 
-  const remoteListIds = new Set(tasklists.map((list) => list.id));
+  const remoteListIds = new Set<string>();
+  for (const list of tasklists) {
+    if (list.id) remoteListIds.add(list.id);
+  }
   const listIdsToDelete: number[] = [];
   for (const [localId, externalId] of listLocalToExternal.entries()) {
     if (!remoteListIds.has(externalId)) {

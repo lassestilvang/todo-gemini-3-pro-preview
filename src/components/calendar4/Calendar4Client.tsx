@@ -57,7 +57,13 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
             default: return state;
         }
     }, {
-        visibleListIds: new Set([null, ...initialLists.map((list) => list.id)]),
+        visibleListIds: (() => {
+            const set = new Set<number | null>([null]);
+            for (const list of initialLists) {
+                set.add(list.id);
+            }
+            return set;
+        })(),
         selectedListId: null,
         quickCreateOpen: false,
         quickCreateDate: undefined,

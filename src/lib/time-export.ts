@@ -61,7 +61,11 @@ export async function exportTimeData(userId: string, options: ExportOptions) {
     // Fetch task titles if needed
     const taskMap: Map<number, string> = new Map();
     if (includeTaskDetails) {
-        const taskIds = [...new Set(entries.map(e => e.taskId))];
+        const uniqueTaskIds = new Set<number>();
+        for (const e of entries) {
+            uniqueTaskIds.add(e.taskId);
+        }
+        const taskIds = [...uniqueTaskIds];
         if (taskIds.length > 0) {
             // Optimization: only fetch titles for tasks referenced by the export window.
             // This avoids scanning all user tasks when exporting a small subset.
@@ -168,7 +172,11 @@ export async function getTimeEntriesForRange(
         .orderBy(desc(timeEntries.startedAt));
 
     // Get task titles
-    const taskIds = [...new Set(entries.map(e => e.taskId))];
+    const uniqueTaskIds = new Set<number>();
+    for (const e of entries) {
+        uniqueTaskIds.add(e.taskId);
+    }
+    const taskIds = [...uniqueTaskIds];
     const taskMap = new Map<number, string>();
 
     if (taskIds.length > 0) {
