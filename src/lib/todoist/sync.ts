@@ -864,7 +864,10 @@ async function removeDeletedTasks(params: {
   remoteTasks: Task[];
 }) {
   const { client, taskMappings, localTaskMap, remoteTasks } = params;
-  const remoteTaskIds = new Set(remoteTasks.map((task) => task.id));
+  const remoteTaskIds = new Set<string>();
+  for (const task of remoteTasks) {
+    remoteTaskIds.add(task.id);
+  }
 
   const externalIdsToDelete: string[] = [];
   const mappingIdsForExternalDelete: number[] = [];
