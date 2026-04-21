@@ -142,3 +142,7 @@
 ## 2026-04-19 - Added Contextual aria-label to Collapsible List Sections
 **Learning:** Collapsible list sections that use text nodes to visually indicate grouping labels and item counts need explicit `aria-label`s on their toggle buttons to ensure the full context is announced seamlessly.
 **Action:** Always verify that main collapsible toggle buttons (like those using `aria-expanded`) contain an `aria-label` that describes the section and potentially the item count, rather than relying solely on nested text content.
+
+## 2024-05-18 - Add aria-labels to accordion toggle buttons
+**Learning:** Accordion-style collapsible sections often use buttons with text content and an icon to indicate their state (e.g., expanded/collapsed). Screen readers rely on `aria-expanded` and `aria-controls` to understand this interaction, but if the button's text is not descriptive enough (like just saying "Sort" or "Filter"), it might not provide enough context about the action the button performs. Adding an `aria-label` that explicitly describes the action (e.g., "Expand sort options") provides clearer context for screen reader users.
+**Action:** When creating or modifying accordion toggle buttons or collapsible sections, ensure they have descriptive `aria-label`s that clarify the action being performed, especially if the visible text alone is ambiguous or lacks verb-action context.

@@ -22,6 +22,7 @@ export function SortSection({
                 onClick={onToggle}
                 aria-expanded={expanded}
                 aria-controls="sort-options"
+                aria-label={expanded ? "Collapse sort options" : "Expand sort options"}
                 className="flex items-center justify-between w-full text-sm font-medium rounded-sm focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-ring"
             >
                 Sort
