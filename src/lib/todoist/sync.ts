@@ -597,14 +597,14 @@ async function ensureProjectAssignments(params: {
   const { userId, projects, existingLists } = params;
   void buildDefaultProjectAssignments(projects as never, existingLists);
   // ⚡ Bolt Opt: Avoid allocating an intermediate array for map initialization
+  // and simultaneously fold the maxPosition calculation into the same single-pass loop.
   const lowerCaseListMap = new Map<string, (typeof existingLists)[number]>();
+  let maxPosition = 0;
   for (const list of existingLists) {
     lowerCaseListMap.set(list.name.toLowerCase(), list);
+    const pos = list.position ?? 0;
+    if (pos > maxPosition) maxPosition = pos;
   }
-  let maxPosition = Math.max(
-    0,
-    ...existingLists.map((list) => list.position ?? 0),
-  );
 
   const hydratedAssignments = [] as {
     projectId: string;
