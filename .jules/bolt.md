@@ -121,6 +121,7 @@
 ## 2026-04-20 - Prevent Redundant Array Allocations When Initializing Sets
 **Learning:** Found more instances across codebase where Sets are initialized using new Set(array.map(...)) or [...new Set(array.map(...))]. This creates unnecessary intermediate array allocations that must be immediately garbage collected, causing memory overhead.
 **Action:** Replaced these with a for...of loop or a standard for loop (for index iteration) directly populating an empty Set to eliminate the intermediate O(N) array allocation overhead.
+
 ## 2026-04-20 - Eliminate O(N) array allocation overhead and stack limits in Math.max
 **Learning:** Calculating max/min values over collections using spread syntax with array mapping (e.g., `Math.max(0, ...array.map(x => x.val))`) is a common anti-pattern that creates two issues: 1) It generates a throw-away intermediate array containing the mapped values, creating O(N) allocation and garbage collection overhead. 2) Using the spread operator (`...`) on large arrays can throw "Maximum call stack size exceeded" errors in V8.
 **Action:** When calculating maximums (or minimums) over collections, always replace `Math.max(...array.map())` with a simple single-pass `for...of` loop (e.g., `for (const item of array) if (item.val > max) max = item.val;`). Whenever possible, fold this logic directly into any existing loop traversing the same collection to eliminate redundant array passes.
