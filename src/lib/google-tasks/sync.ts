@@ -247,10 +247,11 @@ async function syncTasklists(params: {
     localListMap,
     useUserMappings,
   } = params;
-  let maxPosition = Math.max(
-    0,
-    ...existingLists.map((list) => list.position ?? 0),
-  );
+  let maxPosition = 0;
+  for (const list of existingLists) {
+    const pos = list.position ?? 0;
+    if (pos > maxPosition) maxPosition = pos;
+  }
 
   const listsToInsert: {
     userId: string;
