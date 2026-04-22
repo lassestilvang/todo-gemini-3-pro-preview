@@ -453,9 +453,13 @@ export function useSyncManager() {
   }, []);
 
   const retryAllFailed = useCallback(async () => {
-    const failedIds = pendingActionsRef.current
-      .filter((a) => a.status === "failed")
-      .map((a) => a.id);
+    // ⚡ Bolt Opt: Replaced .filter().map() chain with a single O(N) loop
+    const failedIds: string[] = [];
+    for (const a of pendingActionsRef.current) {
+      if (a.status === "failed") {
+        failedIds.push(a.id);
+      }
+    }
     if (failedIds.length === 0) return;
     await updateActionStatusBatch(
       failedIds.map((id) => ({ id, status: "pending" as const })),
@@ -472,9 +476,13 @@ export function useSyncManager() {
   }, [processQueue]);
 
   const dismissAllFailed = useCallback(async () => {
-    const failedIds = pendingActionsRef.current
-      .filter((a) => a.status === "failed")
-      .map((a) => a.id);
+    // ⚡ Bolt Opt: Replaced .filter().map() chain with a single O(N) loop
+    const failedIds: string[] = [];
+    for (const a of pendingActionsRef.current) {
+      if (a.status === "failed") {
+        failedIds.push(a.id);
+      }
+    }
     if (failedIds.length === 0) return;
     await removeFromQueueBatch(failedIds);
     const failedSet = new Set(failedIds);
