@@ -558,7 +558,12 @@ async function toggleTaskCompletionImpl(id: number, userId: string, isCompleted:
           )
           .groupBy(taskDependencies.taskId);
 
-        const stillBlockedTaskIds = new Set(stillBlockedResult.map((t) => t.taskId));
+        // ⚡ Bolt Opt: Replaced `new Set(stillBlockedResult.map(...))` with direct for...of loop
+        // to avoid redundant O(N) intermediate array allocation and garbage collection overhead.
+        const stillBlockedTaskIds = new Set<number>();
+        for (const t of stillBlockedResult) {
+          stillBlockedTaskIds.add(t.taskId);
+        }
 
         const logsToInsert = blockedTasks.map((blockedTask) => {
           const isNowUnblocked = !stillBlockedTaskIds.has(blockedTask.id);

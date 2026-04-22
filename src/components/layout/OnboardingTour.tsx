@@ -141,7 +141,7 @@ export function OnboardingTour() {
                 >
                     <div className="flex justify-between items-start mb-2">
                         <h2 id="tour-step-title" className="font-bold text-lg">{step.title}</h2>
-                        <button onClick={endTour} className="p-1 hover:bg-muted rounded-full transition-colors" aria-label="Close tour">
+                        <button onClick={endTour} className="p-1 hover:bg-muted rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" aria-label="Close tour">
                             <X className="h-4 w-4" />
                         </button>
                     </div>
@@ -180,7 +180,7 @@ export function OnboardingTour() {
                 >
                     <div className="flex justify-between items-start mb-2">
                         <h2 id="tour-step-title" className="font-bold text-lg">{step.title}</h2>
-                        <button onClick={endTour} className="p-1 hover:bg-muted rounded-full transition-colors" aria-label="Close tour">
+                        <button onClick={endTour} className="p-1 hover:bg-muted rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" aria-label="Close tour">
                             <X className="h-4 w-4" />
                         </button>
                     </div>

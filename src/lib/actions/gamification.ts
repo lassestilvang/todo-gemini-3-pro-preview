@@ -68,6 +68,8 @@ export async function getUserStats(userId: string) {
  * @returns Object with newXP, newLevel, and leveledUp flag
  */
 export async function addXP(userId: string, amount: number) {
+  await requireUser(userId);
+  if (amount <= 0) return;
   return await updateUserProgress(userId, amount);
 }
 
@@ -110,7 +112,12 @@ export async function updateUserProgress(userId: string, xpAmount: number) {
       .where(eq(userAchievements.userId, userId))
   ]);
 
-  const alreadyUnlockedIds = new Set(unlockedEntries.map((u) => u.id));
+  // ⚡ Bolt Opt: Replaced `new Set(unlockedEntries.map(...))` with direct for...of loop
+  // to avoid redundant O(N) intermediate array allocation and garbage collection overhead.
+  const alreadyUnlockedIds = new Set<string>();
+  for (const u of unlockedEntries) {
+    alreadyUnlockedIds.add(u.id);
+  }
 
   // ⚡ Bolt Opt: Only query task counts if there are locked achievements that need them.
   let needTotalCount = false;
@@ -304,6 +311,7 @@ export async function updateUserProgress(userId: string, xpAmount: number) {
 export async function checkAchievements(
   userId: string,
 ) {
+  await requireUser(userId);
   // Now simply triggers the iterative logic correctly
   return await updateUserProgress(userId, 0);
 }

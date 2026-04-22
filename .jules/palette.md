@@ -1,3 +1,6 @@
+## 2025-02-12 - Expand Time Tracker Widget Button
+**Learning:** Found a missing `aria-label` and `focus-visible` styles on the button used to expand the compact time tracker widget. Screen reader users would have received insufficient context about the button's action, and keyboard users lacked visual feedback.
+**Action:** Added `aria-label="Expand time tracker"` and `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring` to ensure proper accessibility and keyboard navigation for the widget toggle.
 # Palette's Journal
 
 ## 2024-05-15 - Missing Accessible Names on Icon-only Buttons
@@ -109,3 +112,37 @@
 ## 2025-04-03 - Contextual ARIA Labels for Generic List Actions
 **Learning:** Buttons inside list items that perform an action (like "Use", "Edit", "Delete") often have visually generic text or just an icon. Without context, screen reader users navigating by buttons or tabbing through will only hear "Use button", without knowing which item it applies to.
 **Action:** Always add an explicit, contextual `aria-label` (e.g., `aria-label={"Use template " + template.name}`) to action buttons inside lists to provide full context to assistive technologies.
+
+## 2025-04-03 - Focus States for Absolute/Inline Buttons
+**Learning:** Found that absolute positioned inline `<button>` elements inside input fields (like 'clear search' actions) often lack visual focus feedback, as default browser focus rings are frequently clipped or omitted in these layouts.
+**Action:** Always append explicit focus-visible utility classes (e.g., `outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px] rounded-full`) to ensure keyboard users receive clear visual feedback when tabbing to inline absolute buttons.
+## 2025-05-01 - Missing Focus Outlines on Absolute Positioned Clear Buttons
+**Learning:** Inline or absolute positioned clear/remove buttons (like 'X' inside search inputs or image upload previews) often lack visible focus indicators because they don't use standard `<Button>` components and the default browser outline is easily hidden or clipped.
+**Action:** Always append explicit focus-visible classes (`focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50`) to absolute positioned interactive elements to ensure keyboard navigation visibility. For circular items on colored backgrounds, consider adding `focus-visible:ring-offset-2`.
+## 2025-04-04 - Missing Focus Rings on Input Clear Buttons
+**Learning:** Found that custom search inputs containing an inline `<button>` to clear the input text (like `FloatingSearchInput` or `SidebarSearchInput`) often lack explicit `focus-visible` styles. Because they are absolutely positioned over the input and typically only styled for hover states, keyboard users navigating out of the input to clear it won't see any visual focus indicator.
+**Action:** When inspecting or adding icon-only inline controls (like clear buttons inside inputs), proactively add standard `focus-visible` utilities (e.g., `outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] rounded-md`) to ensure proper keyboard accessibility feedback.
+## 2024-04-03 - Dynamic Context for Identical Action Buttons
+**Learning:** Adding static `aria-label="Add task"` to dozens of identical buttons in a grid (like a calendar) forces screen reader users to guess which specific context (date) the button applies to when tabbing through.
+**Action:** When mapping over items to generate interactive elements, dynamically inject the item's context into the `aria-label` (e.g., `aria-label={"Add task on " + day.toDateString()}`). This ensures each button is uniquely identifiable when accessed out-of-context.
+
+## 2026-04-05 - Add aria-label to Todoist API Token Input
+**Learning:** Password inputs without explicit labels rely on placeholders, which can be insufficient for screen readers.
+**Action:** Added `aria-label="Todoist API token"` to the API token input in `TodoistSettings.tsx`.
+## 2025-05-15 - Missing Focus Outlines on Expand/Collapse Sidebar Buttons
+**Learning:** Found that custom buttons used to expand/collapse or control the visibility of sidebars (like in `SlimSidebar.tsx` and `SidebarSavedViews.tsx`) often lack proper focus-visible styles, particularly when they use non-standard components or absolutely positioned elements, making them difficult to interact with via keyboard navigation.
+**Action:** Ensure that all custom navigation toggle and action buttons (like Expand, Hide, or Delete) include clear focus-visible states using standard utility classes like outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 regardless of their position.
+
+## 2025-04-04 - Missing ARIA Labels and Focus Styles on Custom Syntax Shortcuts
+**Learning:** Found that custom helper buttons inside `Badge` components (like the Smart Syntax shortcuts `!high`, `@work`) lack accessible names (`aria-label`) and explicit focus indicators. Screen readers fail to convey their purpose out of context, and keyboard users cannot easily determine which badge has focus.
+**Action:** When implementing custom helper or syntax shortcut buttons inside components like `Badge` with `asChild`, ensure the nested `<button>` includes an explicit `aria-label` (e.g., `aria-label={"Insert smart syntax " + s}`). Furthermore, apply `focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1` to the component to guarantee keyboard navigation feedback.
+## 2026-04-18 - Add aria-label to dynamically generated select triggers
+**Learning:** Select triggers inside reusable generic components (like FilterSelect) often lack specific context when rendered multiple times for different filters. While the visual label provides context for sighted users, screen readers might not associate it correctly with the custom select trigger element unless explicitly linked or labelled.
+**Action:** When a visible label exists, link it to the `<SelectTrigger>` using `aria-labelledby` (using `React.useId()` to generate a unique ID). Only use an explicit `aria-label` (e.g. `aria-label={\`Filter by ${label}\`}`) as a fallback when no visible label is present, to ensure screen reader users have clear context for each distinct dropdown.
+## 2026-04-19 - Added Contextual aria-label to Collapsible List Sections
+**Learning:** Collapsible list sections that use text nodes to visually indicate grouping labels and item counts need explicit `aria-label`s on their toggle buttons to ensure the full context is announced seamlessly.
+**Action:** Always verify that main collapsible toggle buttons (like those using `aria-expanded`) contain an `aria-label` that describes the section and potentially the item count, rather than relying solely on nested text content.
+
+## 2024-05-18 - Add aria-labels to accordion toggle buttons
+**Learning:** Accordion-style collapsible sections often use buttons with text content and an icon to indicate their state (e.g., expanded/collapsed). Screen readers rely on `aria-expanded` and `aria-controls` to understand this interaction. If the button's text is not descriptive enough (like just saying "Sort" or "Filter"), adding a static `aria-label` that explicitly describes the section (e.g., "Sort options") provides clearer context without being redundant with the state announced by `aria-expanded`.
+**Action:** When creating or modifying accordion toggle buttons or collapsible sections, ensure they have descriptive, static `aria-label`s that clarify the section's purpose, especially if the visible text alone is ambiguous.

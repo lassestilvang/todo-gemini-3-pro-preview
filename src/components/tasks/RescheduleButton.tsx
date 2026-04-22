@@ -50,23 +50,22 @@ export function RescheduleButton() {
 
     const handleApply = async () => {
         setIsLoading(true);
-        const applyResult = await suggestions.reduce<Promise<boolean>>(async (accPromise, suggestion) => {
-            const acc = await accPromise;
-            if (!acc) return false;
-
-            const ok = await applyScheduleSuggestion(
-                suggestion.taskId,
-                new Date(suggestion.suggestedDate),
-                suggestion.dueDatePrecision ?? null
+        // ⚡ Bolt Opt: Parallelize suggestion applies to reduce total network latency from O(N) to O(1)
+        const applyResults = await Promise.all(
+            suggestions.map((suggestion) =>
+                applyScheduleSuggestion(
+                    suggestion.taskId,
+                    new Date(suggestion.suggestedDate),
+                    suggestion.dueDatePrecision ?? null
+                )
+                    .then(() => true)
+                    .catch((error) => {
+                        console.error(error);
+                        return false;
+                    })
             )
-                .then(() => true)
-                .catch((error) => {
-                    console.error(error);
-                    return false;
-                });
-
-            return ok;
-        }, Promise.resolve(true));
+        );
+        const applyResult = applyResults.every((res) => res);
 
         if (applyResult) {
             toast.success(`Rescheduled ${suggestions.length} tasks!`);

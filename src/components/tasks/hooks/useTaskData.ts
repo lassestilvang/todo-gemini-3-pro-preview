@@ -86,13 +86,23 @@ export function useTaskData({ taskId, isEdit, userId }: UseTaskDataProps) {
 
     const fetchSubtasks = useCallback(async () => {
         if (taskId && userId) {
-            const result = await getSubtasks(taskId, userId);
+            // Perf: Fetch subtasks concurrently with reminders and logs
+            // to optimize O(N) sequential awaits into a single Promise.all
+            const [result, fetchedReminders, fetchedLogs] = await Promise.all([
+                getSubtasks(taskId, userId),
+                getReminders(taskId, userId),
+                getTaskLogs(taskId)
+            ]);
+
             if (!result.success) {
                 console.error(result.error.message);
                 setSubtasks([]);
-                return;
+            } else {
+                setSubtasks(result.data);
             }
-            setSubtasks(result.data);
+
+            setReminders(fetchedReminders);
+            setLogs(fetchedLogs);
         }
     }, [taskId, userId]);
 
@@ -127,12 +137,11 @@ export function useTaskData({ taskId, isEdit, userId }: UseTaskDataProps) {
 
             if (isEdit && taskId) {
                 fetchSubtasks();
-                fetchRemindersAndLogs();
                 fetchBlockers();
             }
         };
         fetchData();
-    }, [isEdit, taskId, userId, fetchSubtasks, fetchRemindersAndLogs, fetchBlockers]);
+    }, [isEdit, taskId, userId, fetchSubtasks, fetchBlockers]);
 
     // Search tasks for blockers
     useEffect(() => {

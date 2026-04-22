@@ -84,11 +84,17 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
     } catch {
       // ignore
     }
-    return new Set([UNASSIGNED_CALENDAR_ID, ...initialLists.map((list) => String(list.id))]);
+    const set = new Set<string>([UNASSIGNED_CALENDAR_ID]);
+    for (const list of initialLists) set.add(String(list.id));
+    return set;
   });
 
   const seenCalendarIdsRef = useRef<Set<string>>(
-    new Set([UNASSIGNED_CALENDAR_ID, ...initialLists.map((list) => String(list.id))])
+    (() => {
+      const set = new Set<string>([UNASSIGNED_CALENDAR_ID]);
+      for (const list of initialLists) set.add(String(list.id));
+      return set;
+    })()
   );
 
   useEffect(() => {
