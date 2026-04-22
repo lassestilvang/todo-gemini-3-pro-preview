@@ -83,7 +83,7 @@ export function QuickCapture({ userId }: { userId: string }) {
                                     placeholder="What's on your mind?..."
                                     value={title}
                                     onChange={(e) => setTitle(e.target.value)}
-                                    className="bg-muted/30 focus-visible:ring-indigo-500"
+                                    className="bg-muted/30"
                                     disabled={isSubmitting}
                                 />
                                 <div className="flex justify-end gap-2">
@@ -126,7 +126,7 @@ export function QuickCapture({ userId }: { userId: string }) {
                                 placeholder="What's on your mind?..."
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
-                                className="bg-muted/30 focus-visible:ring-indigo-500"
+                                className="bg-muted/30"
                                 disabled={isSubmitting}
                             />
                             <div className="flex justify-end gap-2">
