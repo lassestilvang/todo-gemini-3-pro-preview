@@ -144,4 +144,4 @@
 **Action:** Always verify that main collapsible toggle buttons (like those using `aria-expanded`) contain an `aria-label` that describes the section and potentially the item count, rather than relying solely on nested text content.
 ## 2024-05-13 - [Theme Consistency]
 **Learning:** Hardcoded focus ring colors (e.g., `focus-visible:ring-indigo-500`) break theme consistency, especially in dark mode where they might lack contrast or clash with primary brand colors.
-**Action:** Always rely on design system semantic tokens (like the default `--ring` CSS variable via `focus-visible:ring-ring` that comes free with Shadcn/UI Inputs) to ensure cohesive focus states across all themes.
+**Action:** Always rely on design system semantic tokens (like the default `--ring` CSS variable via the `focus-visible:ring-ring/50` and `focus-visible:ring-[3px]` classes already provided by the base `Input` component) to ensure cohesive focus states across all themes.
