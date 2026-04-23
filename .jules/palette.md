@@ -142,6 +142,9 @@
 ## 2026-04-19 - Added Contextual aria-label to Collapsible List Sections
 **Learning:** Collapsible list sections that use text nodes to visually indicate grouping labels and item counts need explicit `aria-label`s on their toggle buttons to ensure the full context is announced seamlessly.
 **Action:** Always verify that main collapsible toggle buttons (like those using `aria-expanded`) contain an `aria-label` that describes the section and potentially the item count, rather than relying solely on nested text content.
+## 2024-05-13 - [Theme Consistency]
+**Learning:** Hardcoded focus ring colors (e.g., `focus-visible:ring-indigo-500`) break theme consistency, especially in dark mode where they might lack contrast or clash with primary brand colors.
+**Action:** Always rely on design system semantic tokens (like the default `--ring` CSS variable via the `focus-visible:ring-ring/50` and `focus-visible:ring-[3px]` classes already provided by the base `Input` component) to ensure cohesive focus states across all themes.
 
 ## 2024-05-18 - Add aria-labels to accordion toggle buttons
 **Learning:** Accordion-style collapsible sections often use buttons with text content and an icon to indicate their state (e.g., expanded/collapsed). Screen readers rely on `aria-expanded` and `aria-controls` to understand this interaction. If the button's text is not descriptive enough (like just saying "Sort" or "Filter"), adding a static `aria-label` that explicitly describes the section (e.g., "Sort options") provides clearer context without being redundant with the state announced by `aria-expanded`.
