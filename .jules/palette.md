@@ -145,3 +145,7 @@
 ## 2024-05-13 - [Theme Consistency]
 **Learning:** Hardcoded focus ring colors (e.g., `focus-visible:ring-indigo-500`) break theme consistency, especially in dark mode where they might lack contrast or clash with primary brand colors.
 **Action:** Always rely on design system semantic tokens (like the default `--ring` CSS variable via the `focus-visible:ring-ring/50` and `focus-visible:ring-[3px]` classes already provided by the base `Input` component) to ensure cohesive focus states across all themes.
+
+## 2024-05-18 - Add aria-labels to accordion toggle buttons
+**Learning:** Accordion-style collapsible sections often use buttons with text content and an icon to indicate their state (e.g., expanded/collapsed). Screen readers rely on `aria-expanded` and `aria-controls` to understand this interaction. If the button's text is not descriptive enough (like just saying "Sort" or "Filter"), adding a static `aria-label` that explicitly describes the section (e.g., "Sort options") provides clearer context without being redundant with the state announced by `aria-expanded`.
+**Action:** When creating or modifying accordion toggle buttons or collapsible sections, ensure they have descriptive, static `aria-label`s that clarify the section's purpose, especially if the visible text alone is ambiguous.

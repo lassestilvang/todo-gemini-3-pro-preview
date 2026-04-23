@@ -31,6 +31,7 @@ export function FilterSection({
                 onClick={onToggle}
                 aria-expanded={expanded}
                 aria-controls="filter-options"
+                aria-label="Filter options"
                 className="flex items-center justify-between w-full text-sm font-medium rounded-sm focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-ring"
             >
                 Filter
