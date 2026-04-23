@@ -38,7 +38,7 @@ export function ThemeSwitcher() {
             aria-label={`Select ${metadata.label} theme`}
             aria-pressed={theme === themeName}
             className={cn(
-              "cursor-pointer transition-all hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+              "cursor-pointer transition-all hover:border-primary focus-visible:outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px] focus-visible:ring-offset-2",
               theme === themeName
                 ? "border-primary ring-2 ring-primary ring-offset-2"
                 : "",
