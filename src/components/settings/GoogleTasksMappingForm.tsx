@@ -155,7 +155,7 @@ export function GoogleTasksMappingForm() {
                                 });
                             }}
                         >
-                            <SelectTrigger className="w-full md:w-60">
+                            <SelectTrigger className="w-full md:w-60" aria-label={`Map tasklist ${tasklist.title} to list`}>
                                 <SelectValue placeholder="Select list" />
                             </SelectTrigger>
                             <SelectContent>

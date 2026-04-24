@@ -152,3 +152,6 @@
 ## 2026-04-20 - [Theme Switcher Accessibility]
 **Learning:** Found that non-semantic elements (like `Card` components) used as interactive toggles for themes lacked ARIA roles, states, labels, and keyboard navigation. This prevented screen reader users from understanding their purpose and keyboard users from interacting with them.
 **Action:** Always provide explicit ARIA attributes (`role="button"`, `aria-label`, `aria-pressed`) and full keyboard accessibility support (`tabIndex={0}`, `onKeyDown` handlers for "Enter" and "Space", and `focus-visible` utility classes) when converting non-semantic elements into interactive controls.
+
+**Learning:** In forms containing multiple identical `Select` components rendered in a list (like mapping a collection of items to another collection), custom `SelectTrigger` elements (e.g., from `shadcn/ui` / Radix UI) often lack explicit `aria-label`s. Screen reader users will only hear "Select list" and won't know *which* item is being mapped.
+**Action:** Always provide an explicit `aria-label` to custom `SelectTrigger` components that dynamically links the dropdown to its contextual label, e.g., `aria-label={\`Map \${itemName} to list\`}`.
