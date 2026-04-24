@@ -315,7 +315,7 @@ export function TodoistMappingForm() {
                                     });
                                 }}
                             >
-                                <SelectTrigger className="w-full md:w-60" aria-label={`Map project ${project.name} to list`}>
+                                <SelectTrigger className="w-full md:w-60" aria-labelledby={`project-label-${project.id}`}>
                                     <SelectValue placeholder="Select list" />
                                 </SelectTrigger>
                                 <SelectContent>
