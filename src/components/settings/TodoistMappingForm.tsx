@@ -219,9 +219,12 @@ export function TodoistMappingForm() {
         dispatchUI({ type: "SAVE_START" });
         let createdListCount = 0;
 
-        const projectResults = await Promise.all(
-            projects.map((p) => resolveMappingSelection(projectMappings[p.id] ?? null, p.name))
-        );
+        // ⚡ Bolt Opt: Replaced sequential `Promise.all` awaits for projects and labels with a single concurrent resolution
+        const [projectResults, labelResults] = await Promise.all([
+            Promise.all(projects.map((p) => resolveMappingSelection(projectMappings[p.id] ?? null, p.name))),
+            Promise.all(labels.map((l) => resolveMappingSelection(labelMappings[l.id] ?? null, l.name)))
+        ]);
+
         const projectPayload: { projectId: string; listId: number | null }[] = [];
         for (let i = 0; i < projects.length; i++) {
             const project = projects[i];
@@ -237,9 +240,6 @@ export function TodoistMappingForm() {
             projectPayload.push({ projectId: project.id, listId: resolved.listId });
         }
 
-        const labelResults = await Promise.all(
-            labels.map((l) => resolveMappingSelection(labelMappings[l.id] ?? null, l.name))
-        );
         const labelPayload: { labelId: string; listId: number | null }[] = [];
         for (let i = 0; i < labels.length; i++) {
             const label = labels[i];
