@@ -179,3 +179,8 @@
 **Vulnerability:** When a user disconnected their Google Tasks integration via `disconnectGoogleTasks`, the application only deleted the primary `externalIntegrations` record. It failed to cascade or manually delete the associated `externalEntityMap`, `externalSyncConflicts`, and `externalSyncState` records, leaving orphaned mapping rules and conflict data behind.
 **Learning:** External integration teardowns must fully clean up all associated state to avoid data leakage and prevent inconsistent behavior if the user later reconnects or if state leaks across sessions. Disconnect handlers must act comprehensively on all related entity tables.
 **Prevention:** Always verify that cascading deletes are properly configured at the schema level or explicitly implement deletion queries for all related tables (`externalEntityMap`, `externalSyncConflicts`, `externalSyncState`, etc.) scoped by `userId` and `provider` when removing an integration.
+
+## 2024-05-24 - Atomicity in Sequential Database Mutations
+**Vulnerability:** Found multiple instances where sequential database mutations (e.g., `db.insert(taskDependencies)` followed by `db.insert(taskLogs)`) were executed independently without wrapping them in a database transaction.
+**Learning:** This architectural gap could lead to a partially updated state if the first operation succeeds but the second fails, compromising data integrity. Sequential dependent operations must be atomic.
+**Prevention:** Always enforce atomicity by wrapping sequential DB inserts/updates/deletes inside a transaction block (e.g., `await db.transaction(async (tx) => { ... })`).
