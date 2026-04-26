@@ -124,6 +124,10 @@
 ## 2026-04-20 - Eliminate O(N) array allocation overhead and stack limits in Math.max
 **Learning:** Calculating max/min values over collections using spread syntax with array mapping (e.g., `Math.max(0, ...array.map(x => x.val))`) is a common anti-pattern that creates two issues: 1) It generates a throw-away intermediate array containing the mapped values, creating O(N) allocation and garbage collection overhead. 2) Using the spread operator (`...`) on large arrays can throw "Maximum call stack size exceeded" errors in V8.
 **Action:** When calculating maximums (or minimums) over collections, always replace `Math.max(...array.map())` with a simple single-pass `for...of` loop (e.g., `for (const item of array) if (item.val > max) max = item.val;`). Whenever possible, fold this logic directly into any existing loop traversing the same collection to eliminate redundant array passes.
+
+## 2026-04-26 - O(1) Lookup in AI Scheduling
+**Learning:** Performing O(N) `.find()` lookups inside an O(M) `.map()` loop results in O(N*M) time complexity. For large task lists or many AI suggestions, this causes noticeable latency. Converting the lookup array into a `Map` before the loop reduces complexity to O(N+M).
+**Action:** Always prefer `Map` or object-based lookups when performing nested searches across two collections, especially within data-intensive loops or server actions.
 ## 2026-04-26 - Eliminate chained `.map().filter()` operations for array transformations
 **Learning:** Chaining `.map()` and `.filter()` operations on arrays (e.g., `array.map(id => map.get(id)).filter(val => Boolean(val))`) creates unnecessary intermediate array allocations that must be immediately garbage collected. This causes memory overhead and GC pressure, especially in hot paths like sync loops.
 **Action:** Replace `.map().filter()` chains with a single pass `for...of` loop that directly populates a new array to eliminate the intermediate O(N) array allocation overhead.
