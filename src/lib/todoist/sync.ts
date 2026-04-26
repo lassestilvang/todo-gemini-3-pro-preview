@@ -998,9 +998,15 @@ async function createTodoistTasks(params: {
         labels: resolvedExternalLabelIds,
       } as Task;
       const payload = mapTodoistTaskToLocal(normalizedTask, mappingState);
-      const labelIds = resolvedExternalLabelIds
-        .map((labelId) => labelIdMap.get(labelId))
-        .filter((id): id is number => Boolean(id));
+      // ⚡ Bolt Opt: Replaced chained .map().filter() with a single pass for...of loop
+      // to avoid unnecessary intermediate array allocations
+      const labelIds: number[] = [];
+      for (const labelId of resolvedExternalLabelIds) {
+        const id = labelIdMap.get(labelId);
+        if (id !== undefined) {
+          labelIds.push(id);
+        }
+      }
       const parentMapping = task.parentId
         ? taskMappings.get(task.parentId)
         : null;
@@ -1364,9 +1370,15 @@ async function updateRemoteTasks(params: {
     const resolvedParentId = remoteTask.parentId
       ? (externalToLocalTask.get(remoteTask.parentId) ?? null)
       : null;
-    const labelIds = resolvedExternalLabelIds
-      .map((labelId) => externalToLocalLabel.get(labelId) ?? null)
-      .filter((id): id is number => Boolean(id));
+    // ⚡ Bolt Opt: Replaced chained .map().filter() with a single pass for...of loop
+    // to avoid unnecessary intermediate array allocations
+    const labelIds: number[] = [];
+    for (const labelId of resolvedExternalLabelIds) {
+      const id = externalToLocalLabel.get(labelId);
+      if (id !== undefined) {
+        labelIds.push(id);
+      }
+    }
 
     const remoteCompletedAt = parseTodoistTimestamp(remoteTask.completedAt);
     // ⚡ Bolt Opt: Replaced sequential db.update() with concurrent promises
@@ -1648,9 +1660,15 @@ function buildLocalTaskPayload(
   listLabelMappingMap: Map<number, string>,
 ) {
   const labelIds = localTaskLabelMap.get(task.id) ?? [];
-  const externalLabels = labelIds
-    .map((labelId) => localLabelToExternal.get(labelId) ?? null)
-    .filter((labelId): labelId is string => Boolean(labelId));
+  // ⚡ Bolt Opt: Replaced chained .map().filter() with a single pass for...of loop
+  // to avoid unnecessary intermediate array allocations
+  const externalLabels: string[] = [];
+  for (const labelId of labelIds) {
+    const ext = localLabelToExternal.get(labelId);
+    if (ext !== undefined) {
+      externalLabels.push(ext);
+    }
+  }
 
   if (task.listId) {
     // ⚡ Bolt Opt: Replaced O(N) Array.find() inside loop with O(1) Map lookup
