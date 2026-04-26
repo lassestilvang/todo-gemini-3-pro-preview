@@ -1375,7 +1375,7 @@ async function updateRemoteTasks(params: {
     const labelIds: number[] = [];
     for (const labelId of resolvedExternalLabelIds) {
       const id = externalToLocalLabel.get(labelId);
-      if (id) {
+      if (id !== undefined) {
         labelIds.push(id);
       }
     }
