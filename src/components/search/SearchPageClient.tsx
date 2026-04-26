@@ -145,6 +145,7 @@ export function SearchPageClient({
                     ref={inputRef}
                     type="text"
                     placeholder="Search tasks, lists, labels..."
+                    aria-label="Search query"
                     value={query}
                     onChange={(e) => dispatch({ type: 'SET_QUERY', payload: e.target.value })}
                     className="h-11 pl-9 pr-10 text-base"

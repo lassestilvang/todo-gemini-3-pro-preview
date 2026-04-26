@@ -155,3 +155,6 @@
 
 **Learning:** In forms containing multiple identical `Select` components rendered in a list (like mapping a collection of items to another collection), custom `SelectTrigger` elements (e.g., from `shadcn/ui` / Radix UI) often lack explicit `aria-label`s. Screen reader users will only hear "Select list" and won't know *which* item is being mapped.
 **Action:** Always provide an explicit `aria-label` to custom `SelectTrigger` components that dynamically links the dropdown to its contextual label, e.g., `aria-label={\`Map \${itemName} to list\`}`.
+## $(date +%Y-%m-%d) - Add aria-label to Input components
+**Learning:** React form inputs (using shadcn's Input component) frequently lack contextual aria-labels when they are used without an associated `<label>` element (like search bars, inline inputs, or file uploads), which negatively impacts screen reader users.
+**Action:** Always add descriptive `aria-label` attributes to `<Input />` components that do not have explicitly linked `<label>` tags.

@@ -163,6 +163,7 @@ export function CreateTaskInput({ listId, defaultDueDate, userId, defaultLabelId
                         <Input
                             ref={inputRef}
                             value={title}
+                            aria-label="New task title"
                             onChange={(e) => updateTitle(e.target.value)}
                             onFocus={() => dispatchState({ type: "SET_UI_STATE", payload: { isExpanded: true } })}
                             onKeyDown={(e) => {

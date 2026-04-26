@@ -139,6 +139,7 @@ export function DataExportImport() {
                             id="import-file"
                             type="file"
                             accept=".json"
+                            aria-label="Import data file"
                             onChange={handleImport}
                             disabled={isImporting}
                             className="w-full max-w-[250px]"
