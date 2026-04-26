@@ -998,11 +998,13 @@ async function createTodoistTasks(params: {
         labels: resolvedExternalLabelIds,
       } as Task;
       const payload = mapTodoistTaskToLocal(normalizedTask, mappingState);
+      // ⚡ Bolt Opt: Replaced chained .map().filter() with a single pass for...of loop
+      // to avoid unnecessary intermediate array allocations
       const labelIds: number[] = [];
-      for (const externalId of resolvedExternalLabelIds) {
-        const localId = labelIdMap.get(externalId);
-        if (localId) {
-          labelIds.push(localId);
+      for (const labelId of resolvedExternalLabelIds) {
+        const id = labelIdMap.get(labelId);
+        if (id !== undefined) {
+          labelIds.push(id);
         }
       }
       const parentMapping = task.parentId
@@ -1368,11 +1370,13 @@ async function updateRemoteTasks(params: {
     const resolvedParentId = remoteTask.parentId
       ? (externalToLocalTask.get(remoteTask.parentId) ?? null)
       : null;
+    // ⚡ Bolt Opt: Replaced chained .map().filter() with a single pass for...of loop
+    // to avoid unnecessary intermediate array allocations
     const labelIds: number[] = [];
-    for (const externalId of resolvedExternalLabelIds) {
-      const localId = externalToLocalLabel.get(externalId);
-      if (localId !== undefined) {
-        labelIds.push(localId);
+    for (const labelId of resolvedExternalLabelIds) {
+      const id = externalToLocalLabel.get(labelId);
+      if (id !== undefined) {
+        labelIds.push(id);
       }
     }
 
@@ -1656,11 +1660,13 @@ function buildLocalTaskPayload(
   listLabelMappingMap: Map<number, string>,
 ) {
   const labelIds = localTaskLabelMap.get(task.id) ?? [];
+  // ⚡ Bolt Opt: Replaced chained .map().filter() with a single pass for...of loop
+  // to avoid unnecessary intermediate array allocations
   const externalLabels: string[] = [];
   for (const labelId of labelIds) {
-    const externalId = localLabelToExternal.get(labelId);
-    if (externalId) {
-      externalLabels.push(externalId);
+    const ext = localLabelToExternal.get(labelId);
+    if (ext !== undefined) {
+      externalLabels.push(ext);
     }
   }
 
