@@ -998,9 +998,13 @@ async function createTodoistTasks(params: {
         labels: resolvedExternalLabelIds,
       } as Task;
       const payload = mapTodoistTaskToLocal(normalizedTask, mappingState);
-      const labelIds = resolvedExternalLabelIds
-        .map((labelId) => labelIdMap.get(labelId))
-        .filter((id): id is number => Boolean(id));
+      const labelIds: number[] = [];
+      for (const externalId of resolvedExternalLabelIds) {
+        const localId = labelIdMap.get(externalId);
+        if (localId) {
+          labelIds.push(localId);
+        }
+      }
       const parentMapping = task.parentId
         ? taskMappings.get(task.parentId)
         : null;
@@ -1364,9 +1368,13 @@ async function updateRemoteTasks(params: {
     const resolvedParentId = remoteTask.parentId
       ? (externalToLocalTask.get(remoteTask.parentId) ?? null)
       : null;
-    const labelIds = resolvedExternalLabelIds
-      .map((labelId) => externalToLocalLabel.get(labelId) ?? null)
-      .filter((id): id is number => Boolean(id));
+    const labelIds: number[] = [];
+    for (const externalId of resolvedExternalLabelIds) {
+      const localId = externalToLocalLabel.get(externalId);
+      if (localId) {
+        labelIds.push(localId);
+      }
+    }
 
     const remoteCompletedAt = parseTodoistTimestamp(remoteTask.completedAt);
     // ⚡ Bolt Opt: Replaced sequential db.update() with concurrent promises
@@ -1648,9 +1656,13 @@ function buildLocalTaskPayload(
   listLabelMappingMap: Map<number, string>,
 ) {
   const labelIds = localTaskLabelMap.get(task.id) ?? [];
-  const externalLabels = labelIds
-    .map((labelId) => localLabelToExternal.get(labelId) ?? null)
-    .filter((labelId): labelId is string => Boolean(labelId));
+  const externalLabels: string[] = [];
+  for (const labelId of labelIds) {
+    const externalId = localLabelToExternal.get(labelId);
+    if (externalId) {
+      externalLabels.push(externalId);
+    }
+  }
 
   if (task.listId) {
     // ⚡ Bolt Opt: Replaced O(N) Array.find() inside loop with O(1) Map lookup
