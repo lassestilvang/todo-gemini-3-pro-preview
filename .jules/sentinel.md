@@ -184,3 +184,7 @@
 **Vulnerability:** Found multiple instances where sequential database mutations (e.g., `db.insert(taskDependencies)` followed by `db.insert(taskLogs)`) were executed independently without wrapping them in a database transaction.
 **Learning:** This architectural gap could lead to a partially updated state if the first operation succeeds but the second fails, compromising data integrity. Sequential dependent operations must be atomic.
 **Prevention:** Always enforce atomicity by wrapping sequential DB inserts/updates/deletes inside a transaction block (e.g., `await db.transaction(async (tx) => { ... })`).
+## 2024-05-24 - Missing Transaction Boundaries in Complex Database Operations
+**Vulnerability:** In `src/lib/actions/gamification.ts`, multiple sequential database modifications (`db.update(userStats)`, `db.insert(userAchievements)`, `db.insert(taskLogs)`) were executed without a database transaction. If one of the later operations failed, it would lead to a partial state update (e.g. XP added, but achievement not unlocked or log not created).
+**Learning:** Sequential, dependent database mutations that enforce business logic integrity must be atomic. Leaving them outside a transaction introduces Time-of-Check to Time-of-Use (TOCTOU) and partial data vulnerability risks, which can be exploited or triggered by network errors.
+**Prevention:** Always wrap multi-step database mutations using `await db.transaction(async (tx) => { ... })` and pass the transaction `tx` object to subsequent queries.
