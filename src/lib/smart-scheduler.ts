@@ -168,7 +168,10 @@ export async function generateSmartSchedule(): Promise<ScheduleSuggestion[]> {
 
     const suggestions = JSON.parse(textResponse);
 
-    const taskMap = new Map(unscheduledTasks.map((t) => [t.id, t]));
+    const taskMap = new Map<number, (typeof unscheduledTasks)[number]>();
+    for (const task of unscheduledTasks) {
+      taskMap.set(task.id, task);
+    }
 
     // Map back to our interface and ensure dates are Date objects
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
