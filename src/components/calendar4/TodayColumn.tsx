@@ -57,7 +57,9 @@ export function TodayColumn({
               onClick={() => setShowDone(!showDone)}
               aria-expanded={showDone}
               aria-label={
-                showDone ? "Collapse done tasks" : "Expand done tasks"
+                showDone
+                  ? `Collapse ${doneTasks.length} done tasks`
+                  : `Expand ${doneTasks.length} done tasks`
               }
               aria-controls="done-tasks-list"
               className="flex items-center gap-2 px-4 py-2.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full"
