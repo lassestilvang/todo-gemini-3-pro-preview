@@ -340,7 +340,10 @@ Only include tasks that NEED a priority change. If all priorities look good, ret
 
     const suggestions = JSON.parse(jsonMatch[0]);
 
-    const taskMap = new Map(incompleteTasks.map((t) => [t.id, t]));
+    const taskMap = new Map<number, (typeof incompleteTasks)[number]>();
+    for (const task of incompleteTasks) {
+      taskMap.set(task.id, task);
+    }
 
     // Enrich with task titles and current priorities
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
