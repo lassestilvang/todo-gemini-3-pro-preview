@@ -128,3 +128,9 @@
 ## 2026-04-26 - O(1) Lookup in AI Scheduling
 **Learning:** Performing O(N) `.find()` lookups inside an O(M) `.map()` loop results in O(N*M) time complexity. For large task lists or many AI suggestions, this causes noticeable latency. Converting the lookup array into a `Map` before the loop reduces complexity to O(N+M).
 **Action:** Always prefer `Map` or object-based lookups when performing nested searches across two collections, especially within data-intensive loops or server actions.
+## 2026-04-26 - Eliminate chained `.map().filter()` operations for array transformations
+**Learning:** Chaining `.map()` and `.filter()` operations on arrays (e.g., `array.map(id => map.get(id)).filter(val => Boolean(val))`) creates unnecessary intermediate array allocations that must be immediately garbage collected. This causes memory overhead and GC pressure, especially in hot paths like sync loops.
+**Action:** Replace `.map().filter()` chains with a single pass `for...of` loop that directly populates a new array to eliminate the intermediate O(N) array allocation overhead.
+## 2025-04-25 - Optimize array allocations (.map().filter()) in hot paths
+**Learning:** Chaining array methods like `Array.prototype.map().filter()` inside loops or frequent execution paths (like data synchronization operations) creates unnecessary intermediate array allocations, increasing memory usage and garbage collection overhead.
+**Action:** Replace chained `.map().filter()` calls with a single-pass `for...of` loop or `.reduce()` to populate the final array directly. This is especially beneficial when processing collections of related entities where mapped fields are subsequently filtered out if null/undefined.
