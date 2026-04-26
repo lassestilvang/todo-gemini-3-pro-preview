@@ -1665,7 +1665,7 @@ function buildLocalTaskPayload(
   const externalLabels: string[] = [];
   for (const labelId of labelIds) {
     const ext = localLabelToExternal.get(labelId);
-    if (ext) {
+    if (ext !== undefined) {
       externalLabels.push(ext);
     }
   }
