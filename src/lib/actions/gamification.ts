@@ -260,7 +260,7 @@ export async function updateUserProgress(userId: string, xpAmount: number) {
           userId,
           achievementId: a.id
         }))
-      );
+      ).onConflictDoNothing();
 
       // Log achievements
       const logs = newlyUnlockedAchievements.map(a => ({
