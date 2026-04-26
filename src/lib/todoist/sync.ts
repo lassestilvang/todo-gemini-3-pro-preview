@@ -1003,7 +1003,7 @@ async function createTodoistTasks(params: {
       const labelIds: number[] = [];
       for (const labelId of resolvedExternalLabelIds) {
         const id = labelIdMap.get(labelId);
-        if (id) {
+        if (id !== undefined) {
           labelIds.push(id);
         }
       }
