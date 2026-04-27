@@ -158,3 +158,7 @@
 ## 2025-03-28 - Add aria-label to Input components
 **Learning:** React form inputs (using shadcn's Input component) frequently lack contextual aria-labels when they are used without an associated `<label>` element (like search bars, inline inputs, or file uploads), which negatively impacts screen reader users.
 **Action:** Always add descriptive `aria-label` attributes to `<Input />` components that do not have explicitly linked `<label>` tags.
+
+## 2024-04-26 - Add missing aria-labels to scattered button components
+**Learning:** Found several components utilizing standard `<button>` tags (like icon buttons for expanding sections or resetting inputs) without descriptive `aria-label`s, which makes them inaccessible to screen readers.
+**Action:** When creating raw `<button>` elements, specifically those without internal text content or whose text is only an icon or count, explicitly add an `aria-label` to describe the action.

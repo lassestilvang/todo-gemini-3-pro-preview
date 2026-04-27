@@ -13,7 +13,11 @@ interface TodayColumnProps {
   onEditTask?: (task: Task) => void;
 }
 
-export function TodayColumn({ tasks, doneTasks, onEditTask }: TodayColumnProps) {
+export function TodayColumn({
+  tasks,
+  doneTasks,
+  onEditTask,
+}: TodayColumnProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [showDone, setShowDone] = useState(false);
   useExternalDrag(containerRef);
@@ -40,7 +44,12 @@ export function TodayColumn({ tasks, doneTasks, onEditTask }: TodayColumnProps) 
             </div>
           ) : (
             tasks.map((task) => (
-              <DraggableTaskRow key={task.id} task={task} showTime onEdit={onEditTask} />
+              <DraggableTaskRow
+                key={task.id}
+                task={task}
+                showTime
+                onEdit={onEditTask}
+              />
             ))
           )}
         </div>
@@ -50,13 +59,18 @@ export function TodayColumn({ tasks, doneTasks, onEditTask }: TodayColumnProps) 
             <button
               onClick={() => setShowDone(!showDone)}
               aria-expanded={showDone}
+              aria-label={
+                showDone
+                  ? `Collapse ${doneTasks.length} done tasks`
+                  : `Expand ${doneTasks.length} done tasks`
+              }
               aria-controls="calendar2-done-tasks-list"
               className="flex items-center gap-2 px-4 py-2.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full"
             >
               <ChevronDown
                 className={cn(
                   "h-3.5 w-3.5 transition-transform duration-200",
-                  !showDone && "-rotate-90"
+                  !showDone && "-rotate-90",
                 )}
               />
               <CheckCircle2 className="h-3.5 w-3.5" />
@@ -67,9 +81,17 @@ export function TodayColumn({ tasks, doneTasks, onEditTask }: TodayColumnProps) 
             </button>
 
             {showDone && (
-              <div id="calendar2-done-tasks-list" className="px-1.5 pb-1.5 space-y-px">
+              <div
+                id="calendar2-done-tasks-list"
+                className="px-1.5 pb-1.5 space-y-px"
+              >
                 {doneTasks.map((task) => (
-                  <DraggableTaskRow key={task.id} task={task} showTime onEdit={onEditTask} />
+                  <DraggableTaskRow
+                    key={task.id}
+                    task={task}
+                    showTime
+                    onEdit={onEditTask}
+                  />
                 ))}
               </div>
             )}

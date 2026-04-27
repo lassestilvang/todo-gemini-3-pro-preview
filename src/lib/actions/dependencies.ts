@@ -70,16 +70,19 @@ async function addDependencyImpl(userId: string, taskId: number, blockerId: numb
     });
   }
 
-  await db.insert(taskDependencies).values({
-    taskId,
-    blockerId,
-  });
+  // 🛡️ Sentinel: Enforce atomicity by wrapping sequential inserts in a database transaction.
+  await db.transaction(async (tx) => {
+    await tx.insert(taskDependencies).values({
+      taskId,
+      blockerId,
+    });
 
-  await db.insert(taskLogs).values({
-    userId,
-    taskId,
-    action: "dependency_added",
-    details: `Blocked by task #${blockerId}`,
+    await tx.insert(taskLogs).values({
+      userId,
+      taskId,
+      action: "dependency_added",
+      details: `Blocked by task #${blockerId}`,
+    });
   });
 
   revalidatePath("/");
@@ -121,28 +124,31 @@ async function removeDependencyImpl(userId: string, taskId: number, blockerId: n
     throw new NotFoundError("One or both tasks not found or access denied");
   }
 
-  await db
-    .delete(taskDependencies)
-    .where(
-      and(
-        eq(taskDependencies.taskId, taskId),
-        eq(taskDependencies.blockerId, blockerId),
-        inArray(
-          taskDependencies.taskId,
-          db.select({ id: tasks.id }).from(tasks).where(eq(tasks.userId, userId))
-        ),
-        inArray(
-          taskDependencies.blockerId,
-          db.select({ id: tasks.id }).from(tasks).where(eq(tasks.userId, userId))
+  // 🛡️ Sentinel: Enforce atomicity by wrapping sequential delete and insert in a database transaction.
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(taskDependencies)
+      .where(
+        and(
+          eq(taskDependencies.taskId, taskId),
+          eq(taskDependencies.blockerId, blockerId),
+          inArray(
+            taskDependencies.taskId,
+            tx.select({ id: tasks.id }).from(tasks).where(eq(tasks.userId, userId))
+          ),
+          inArray(
+            taskDependencies.blockerId,
+            tx.select({ id: tasks.id }).from(tasks).where(eq(tasks.userId, userId))
+          )
         )
-      )
-    );
+      );
 
-  await db.insert(taskLogs).values({
-    userId,
-    taskId,
-    action: "dependency_removed",
-    details: `No longer blocked by task #${blockerId}`,
+    await tx.insert(taskLogs).values({
+      userId,
+      taskId,
+      action: "dependency_removed",
+      details: `No longer blocked by task #${blockerId}`,
+    });
   });
 
   revalidatePath("/");
