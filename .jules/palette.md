@@ -162,3 +162,11 @@
 ## 2024-04-26 - Add missing aria-labels to scattered button components
 **Learning:** Found several components utilizing standard `<button>` tags (like icon buttons for expanding sections or resetting inputs) without descriptive `aria-label`s, which makes them inaccessible to screen readers.
 **Action:** When creating raw `<button>` elements, specifically those without internal text content or whose text is only an icon or count, explicitly add an `aria-label` to describe the action.
+
+## $(date +%Y-%m-%d) - Added focus-visible styles to inputs
+**Learning:** Found several native `<input>` elements (text inputs for view names, number inputs for time estimates, and range sliders) lacking keyboard focus styles, leading to poor accessibility for keyboard users compared to native UI library components.
+**Action:** Always ensure that custom or raw `<input>` elements include standard focus indicators (e.g., `outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]`) to maintain consistent keyboard accessibility across the application.
+
+## $(date +%Y-%m-%d) - Found and removed duplicate prop
+**Learning:** Found an element containing two `aria-label` properties, one hardcoded and one dynamic, which caused an ESLint error and could confuse screen readers due to undefined behavior with conflicting accessibility attributes.
+**Action:** When adding or verifying accessibility attributes like `aria-label`, always double check the element to ensure that the attribute isn't already declared earlier in the JSX prop list.
