@@ -22,7 +22,7 @@ export function SaveAsViewSection({
                     value={viewName}
                     onChange={(e) => onViewNameChange(e.target.value)}
                     aria-label="View name"
-                    className="flex-1 px-2 py-1 text-xs border rounded bg-background"
+                    className="flex-1 px-2 py-1 text-xs border rounded bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
                 <Button
                     size="sm"

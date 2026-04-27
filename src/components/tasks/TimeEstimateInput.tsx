@@ -98,7 +98,7 @@ export function TimeEstimateInput({ value, onChange, className }: TimeEstimateIn
                                             const mins = sliderValue % 60;
                                             setSliderValue(hours * 60 + mins);
                                         }}
-                                        className="w-full h-10 px-3 rounded-lg border bg-background text-center text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
+                                        className="w-full h-10 px-3 rounded-lg border bg-background text-center text-lg font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                     />
                                 </div>
                                 <span className="text-xl font-bold text-muted-foreground mt-5">:</span>
@@ -116,7 +116,7 @@ export function TimeEstimateInput({ value, onChange, className }: TimeEstimateIn
                                             const mins = Math.max(0, Math.min(55, Number(e.target.value) || 0));
                                             setSliderValue(hours * 60 + mins);
                                         }}
-                                        className="w-full h-10 px-3 rounded-lg border bg-background text-center text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
+                                        className="w-full h-10 px-3 rounded-lg border bg-background text-center text-lg font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                     />
                                 </div>
                             </div>
@@ -130,7 +130,7 @@ export function TimeEstimateInput({ value, onChange, className }: TimeEstimateIn
                                     min={5}
                                     max={480}
                                     step={5}
-                                    className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-primary"
+                                    className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                 />
                                 <div className="flex justify-between text-xs text-muted-foreground">
                                     <span>5m</span>

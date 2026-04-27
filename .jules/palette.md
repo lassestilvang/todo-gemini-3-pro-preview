@@ -162,3 +162,7 @@
 ## 2024-04-26 - Add missing aria-labels to scattered button components
 **Learning:** Found several components utilizing standard `<button>` tags (like icon buttons for expanding sections or resetting inputs) without descriptive `aria-label`s, which makes them inaccessible to screen readers.
 **Action:** When creating raw `<button>` elements, specifically those without internal text content or whose text is only an icon or count, explicitly add an `aria-label` to describe the action.
+
+## $(date +%Y-%m-%d) - Added focus-visible styles to inputs
+**Learning:** Found several native `<input>` elements (text inputs for view names, number inputs for time estimates, and range sliders) lacking keyboard focus styles, leading to poor accessibility for keyboard users compared to native UI library components.
+**Action:** Always ensure that custom or raw `<input>` elements include standard focus indicators (e.g., `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`) to maintain consistent keyboard accessibility across the application.
