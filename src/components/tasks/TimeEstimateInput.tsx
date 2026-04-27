@@ -98,7 +98,7 @@ export function TimeEstimateInput({ value, onChange, className }: TimeEstimateIn
                                             const mins = sliderValue % 60;
                                             setSliderValue(hours * 60 + mins);
                                         }}
-                                        className="w-full h-10 px-3 rounded-lg border bg-background text-center text-lg font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                        className="w-full h-10 px-3 rounded-lg border bg-background text-center text-lg font-semibold outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
                                     />
                                 </div>
                                 <span className="text-xl font-bold text-muted-foreground mt-5">:</span>
