@@ -165,7 +165,7 @@
 
 ## $(date +%Y-%m-%d) - Added focus-visible styles to inputs
 **Learning:** Found several native `<input>` elements (text inputs for view names, number inputs for time estimates, and range sliders) lacking keyboard focus styles, leading to poor accessibility for keyboard users compared to native UI library components.
-**Action:** Always ensure that custom or raw `<input>` elements include standard focus indicators (e.g., `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`) to maintain consistent keyboard accessibility across the application.
+**Action:** Always ensure that custom or raw `<input>` elements include standard focus indicators (e.g., `outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]`) to maintain consistent keyboard accessibility across the application.
 
 ## $(date +%Y-%m-%d) - Found and removed duplicate prop
 **Learning:** Found an element containing two `aria-label` properties, one hardcoded and one dynamic, which caused an ESLint error and could confuse screen readers due to undefined behavior with conflicting accessibility attributes.
