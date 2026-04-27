@@ -54,6 +54,7 @@ export function ActivityLogFilters({
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Search activity..."
+                        aria-label="Search activity"
                         className="pl-9 bg-card/50 border-muted"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
