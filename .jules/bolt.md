@@ -64,6 +64,9 @@
 ## 2025-04-09 - [Optimize] Bounded Concurrency in Google Tasks Sync
 **Learning:** Sequential processing using array chunking combined with `Promise.all` (e.g. `integrations.slice(i, i+5)`) creates uneven execution patterns where the entire batch is gated by the slowest task in the batch. While better than purely sequential execution, it leaves concurrency windows unutilized.
 **Action:** Use libraries like `p-limit` to establish bounded concurrency for external API interactions. `p-limit(N)` maintains exactly `N` concurrent operations at all times, drastically reducing overall queue latency without hitting burst rate limits.
+## 2024-05-19 - Optimize Google Tasks Sync Concurrency
+**Learning:** Manual chunking of promises combined with `Promise.all` (e.g. `batch.map(...)`) creates "uneven" execution where the entire batch is gated by the slowest task in that chunk, leaving concurrency windows underutilized.
+**Action:** Replaced sequential loop / manual chunking in `src/app/api/google-tasks-sync/route.ts` with `p-limit` to maintain a constant level of concurrency (limit 5). This maximizes throughput while strictly respecting rate limits.
 
 ## 2026-04-10 - Optimize Map setup and DND Context Array Allocation
 **Learning:** In React components using `@dnd-kit/sortable`, passing an intermediate mapped array of IDs (e.g., `activeTaskIds = activeTasks.map(t => t.id)`) to `SortableContext` causes unnecessary O(N) array allocations during renders. `SortableContext` natively accepts an array of objects as long as they contain an `id` property. Additionally, using standard indexed `for` loops (e.g., `for (let i = 0; i < len; i++)`) to populate a `Map` is ~15-20% faster than using `for...of` loops, as it eliminates iterator allocation overhead.
