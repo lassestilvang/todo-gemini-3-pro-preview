@@ -510,7 +510,12 @@ async function toggleTaskCompletionImpl(id: number, userId: string, isCompleted:
         dueDatePrecision: task.dueDatePrecision ?? null,
         isCompleted: false,
         completedAt: null,
-        labelIds: labels.map((l) => l.id).filter((id): id is number => id !== null),
+        // ⚡ Bolt Opt: Prevent O(N) intermediate array allocation and GC pressure
+        // by replacing chained `.map().filter()` with a single-pass `.reduce()`
+        labelIds: labels.reduce<number[]>((acc, l) => {
+          if (l.id !== null) acc.push(l.id);
+          return acc;
+        }, []),
       });
     }
   }
