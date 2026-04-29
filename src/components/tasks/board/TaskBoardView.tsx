@@ -103,7 +103,7 @@ export function TaskBoardView({ tasks, userId, onEdit }: TaskBoardViewProps) {
           value={boardGroupMode}
           onValueChange={(v) => setBoardGroupMode(v as BoardGroupMode)}
         >
-          <SelectTrigger className="w-[140px]" size="sm">
+          <SelectTrigger className="w-[140px]" size="sm" aria-label="Group by">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

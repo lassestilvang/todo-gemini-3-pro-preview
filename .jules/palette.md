@@ -170,3 +170,7 @@
 ## $(date +%Y-%m-%d) - Found and removed duplicate prop
 **Learning:** Found an element containing two `aria-label` properties, one hardcoded and one dynamic, which caused an ESLint error and could confuse screen readers due to undefined behavior with conflicting accessibility attributes.
 **Action:** When adding or verifying accessibility attributes like `aria-label`, always double check the element to ensure that the attribute isn't already declared earlier in the JSX prop list.
+
+## 2025-05-19 - Missing aria-label on SelectTrigger components
+**Learning:** Found several generic `SelectTrigger` components that either lacked accompanying visible labels or where the visual text wasn't explicitly linked to the trigger itself. Screen reader users would only be told "Select list" or "button", making it impossible to determine the context of the interaction without reading the surrounding DOM elements.
+**Action:** Always ensure that custom dropdown triggers (e.g., `SelectTrigger` from shadcn/ui) are accompanied by an explicitly linked `<label>` (using `aria-labelledby`) or an explicit `aria-label` attribute (e.g., `aria-label="Group by"` or `aria-label="Recurring task frequency"`) to provide clear, immediate context for screen reader users.

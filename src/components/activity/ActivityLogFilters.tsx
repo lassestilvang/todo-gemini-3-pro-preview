@@ -62,7 +62,7 @@ export function ActivityLogFilters({
                 </div>
 
                 <Select value={typeFilter} onValueChange={setTypeFilter}>
-                    <SelectTrigger className="w-[160px] bg-card/50 border-muted">
+                    <SelectTrigger className="w-[160px] bg-card/50 border-muted" aria-label="Filter activity type">
                         <SelectValue placeholder="All types" />
                     </SelectTrigger>
                     <SelectContent>
