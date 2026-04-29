@@ -170,3 +170,7 @@
 ## $(date +%Y-%m-%d) - Found and removed duplicate prop
 **Learning:** Found an element containing two `aria-label` properties, one hardcoded and one dynamic, which caused an ESLint error and could confuse screen readers due to undefined behavior with conflicting accessibility attributes.
 **Action:** When adding or verifying accessibility attributes like `aria-label`, always double check the element to ensure that the attribute isn't already declared earlier in the JSX prop list.
+
+## 2024-04-28 - Indicate State on Custom Toggle Buttons
+**Learning:** Custom interactive elements behaving as selectable toggle options (like the time estimate presets) must explicitly use `aria-pressed` to communicate their active state to screen readers. Relying solely on visual changes (like background color swaps) leaves assistive technology users without context.
+**Action:** Always add `aria-pressed={isActive}` when creating a group of custom selectable buttons or chips. Ensure custom buttons also receive explicit `focus-visible` classes since they often lack default browser focus indicators when styled completely from scratch.
