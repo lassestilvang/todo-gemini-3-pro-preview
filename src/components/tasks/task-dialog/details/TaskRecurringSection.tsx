@@ -42,7 +42,7 @@ export function TaskRecurringSection({
                 </div>
                 {isRecurring && (
                     <Select value={recurringRule} onValueChange={setRecurringRule}>
-                        <SelectTrigger className="w-[180px] ml-auto h-8">
+                        <SelectTrigger className="w-[180px] ml-auto h-8" aria-label="Recurring task frequency">
                             <SelectValue placeholder="Frequency" />
                         </SelectTrigger>
                         <SelectContent>

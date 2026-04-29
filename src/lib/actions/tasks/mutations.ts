@@ -510,7 +510,12 @@ async function toggleTaskCompletionImpl(id: number, userId: string, isCompleted:
         dueDatePrecision: task.dueDatePrecision ?? null,
         isCompleted: false,
         completedAt: null,
-        labelIds: labels.map((l) => l.id).filter((id): id is number => id !== null),
+        // ⚡ Bolt Opt: Prevent O(N) intermediate array allocation and GC pressure
+        // by replacing chained `.map().filter()` with a single-pass `.reduce()`
+        labelIds: labels.reduce<number[]>((acc, l) => {
+          if (l.id !== null) acc.push(l.id);
+          return acc;
+        }, []),
       });
     }
   }
@@ -558,7 +563,12 @@ async function toggleTaskCompletionImpl(id: number, userId: string, isCompleted:
           )
           .groupBy(taskDependencies.taskId);
 
-        const stillBlockedTaskIds = new Set(stillBlockedResult.map((t) => t.taskId));
+        // ⚡ Bolt Opt: Replaced `new Set(stillBlockedResult.map(...))` with direct for...of loop
+        // to avoid redundant O(N) intermediate array allocation and garbage collection overhead.
+        const stillBlockedTaskIds = new Set<number>();
+        for (const t of stillBlockedResult) {
+          stillBlockedTaskIds.add(t.taskId);
+        }
 
         const logsToInsert = blockedTasks.map((blockedTask) => {
           const isNowUnblocked = !stillBlockedTaskIds.has(blockedTask.id);

@@ -65,6 +65,7 @@ export function SubtaskForm({ subtasks, onAdd, onRemove, onUpdate }: SubtaskForm
                 <Input
                   id={`subtask-title-${subtask.id}`}
                   value={subtask.title}
+                  aria-label="Subtask title"
                   onChange={(e) => onUpdate(subtask.id, "title", e.target.value)}
                   placeholder="Subtask title"
                 />

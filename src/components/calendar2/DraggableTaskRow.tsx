@@ -82,6 +82,7 @@ export const DraggableTaskRow = memo(function DraggableTaskRow({
       className={cn(
         "fc-external-task group flex items-start gap-2.5 px-2.5 py-2 rounded-md",
         "hover:bg-muted/50 transition-colors cursor-grab active:cursor-grabbing",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         isCompleted && "opacity-40"
       )}
       data-task-id={task.id}

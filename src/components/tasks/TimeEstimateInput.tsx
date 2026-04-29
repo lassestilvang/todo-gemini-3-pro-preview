@@ -52,8 +52,9 @@ export function TimeEstimateInput({ value, onChange, className }: TimeEstimateIn
                         key={preset.value}
                         type="button"
                         onClick={() => onChange(preset.value)}
+                        aria-pressed={value === preset.value}
                         className={cn(
-                            "px-3 py-1.5 text-sm font-medium rounded-full border transition-all duration-200",
+                            "px-3 py-1.5 text-sm font-medium rounded-full border transition-all duration-200 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
                             value === preset.value
                                 ? "bg-primary text-primary-foreground border-primary shadow-sm"
                                 : "bg-background hover:bg-muted border-border text-foreground hover:border-primary/50"
@@ -68,8 +69,9 @@ export function TimeEstimateInput({ value, onChange, className }: TimeEstimateIn
                     <PopoverTrigger asChild>
                         <button
                             type="button"
+                            aria-pressed={value !== null && !isPreset}
                             className={cn(
-                                "px-3 py-1.5 text-sm font-medium rounded-full border transition-all duration-200 flex items-center gap-1",
+                                "px-3 py-1.5 text-sm font-medium rounded-full border transition-all duration-200 flex items-center gap-1 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
                                 value !== null && !isPreset
                                     ? "bg-primary text-primary-foreground border-primary shadow-sm"
                                     : "bg-background hover:bg-muted border-border text-foreground hover:border-primary/50"
@@ -98,7 +100,7 @@ export function TimeEstimateInput({ value, onChange, className }: TimeEstimateIn
                                             const mins = sliderValue % 60;
                                             setSliderValue(hours * 60 + mins);
                                         }}
-                                        className="w-full h-10 px-3 rounded-lg border bg-background text-center text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
+                                        className="w-full h-10 px-3 rounded-lg border bg-background text-center text-lg font-semibold outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
                                     />
                                 </div>
                                 <span className="text-xl font-bold text-muted-foreground mt-5">:</span>
@@ -116,7 +118,7 @@ export function TimeEstimateInput({ value, onChange, className }: TimeEstimateIn
                                             const mins = Math.max(0, Math.min(55, Number(e.target.value) || 0));
                                             setSliderValue(hours * 60 + mins);
                                         }}
-                                        className="w-full h-10 px-3 rounded-lg border bg-background text-center text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
+                                        className="w-full h-10 px-3 rounded-lg border bg-background text-center text-lg font-semibold outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
                                     />
                                 </div>
                             </div>
@@ -130,7 +132,7 @@ export function TimeEstimateInput({ value, onChange, className }: TimeEstimateIn
                                     min={5}
                                     max={480}
                                     step={5}
-                                    className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-primary"
+                                    className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                 />
                                 <div className="flex justify-between text-xs text-muted-foreground">
                                     <span>5m</span>

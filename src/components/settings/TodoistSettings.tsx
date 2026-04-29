@@ -97,6 +97,7 @@ export function TodoistSettings() {
                         <Input
                             type="password"
                             placeholder="Paste your Todoist API token"
+                            aria-label="Todoist API token"
                             value={token}
                             onChange={(event) => setToken(event.target.value)}
                             disabled={isLoading}

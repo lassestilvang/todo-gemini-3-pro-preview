@@ -40,7 +40,11 @@ export function useTaskListView({
         const yearAnchor = startOfDay(new Date(todayStart.getFullYear(), 0, 1));
 
         if (tasksFromProps && tasksFromProps.length > 0 && !filterType) {
-            const propIds = new Set(tasksFromProps.map(t => t.id));
+            const propIds = new Set<number>();
+            const len = tasksFromProps.length;
+            for (let i = 0; i < len; i++) {
+                propIds.add(tasksFromProps[i].id);
+            }
             return allStoreTasks.filter(t => propIds.has(t.id) || t.id < 0);
         }
 

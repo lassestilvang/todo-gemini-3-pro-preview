@@ -124,6 +124,7 @@ export function CalendarTooltipSettings({
                         type="number"
                         min={1}
                         max={20}
+                        aria-label="Dense calendar tooltip threshold"
                         value={threshold ?? ""}
                         onChange={(event) => handleThresholdChange(event.target.value)}
                         disabled={isLoading}

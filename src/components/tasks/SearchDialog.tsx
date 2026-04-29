@@ -23,6 +23,8 @@ type SearchResult = {
     id: number;
     title: string;
     description: string | null;
+    isCompleted: boolean | null;
+    listId: number | null;
 };
 
 const COMMAND_PROPS = { shouldFilter: false };

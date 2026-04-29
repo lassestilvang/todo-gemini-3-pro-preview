@@ -125,6 +125,10 @@
 ## 2024-04-03 - Dynamic Context for Identical Action Buttons
 **Learning:** Adding static `aria-label="Add task"` to dozens of identical buttons in a grid (like a calendar) forces screen reader users to guess which specific context (date) the button applies to when tabbing through.
 **Action:** When mapping over items to generate interactive elements, dynamically inject the item's context into the `aria-label` (e.g., `aria-label={"Add task on " + day.toDateString()}`). This ensures each button is uniquely identifiable when accessed out-of-context.
+
+## 2026-04-05 - Add aria-label to Todoist API Token Input
+**Learning:** Password inputs without explicit labels rely on placeholders, which can be insufficient for screen readers.
+**Action:** Added `aria-label="Todoist API token"` to the API token input in `TodoistSettings.tsx`.
 ## 2025-05-15 - Missing Focus Outlines on Expand/Collapse Sidebar Buttons
 **Learning:** Found that custom buttons used to expand/collapse or control the visibility of sidebars (like in `SlimSidebar.tsx` and `SidebarSavedViews.tsx`) often lack proper focus-visible styles, particularly when they use non-standard components or absolutely positioned elements, making them difficult to interact with via keyboard navigation.
 **Action:** Ensure that all custom navigation toggle and action buttons (like Expand, Hide, or Delete) include clear focus-visible states using standard utility classes like outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 regardless of their position.
@@ -132,3 +136,44 @@
 ## 2025-04-04 - Missing ARIA Labels and Focus Styles on Custom Syntax Shortcuts
 **Learning:** Found that custom helper buttons inside `Badge` components (like the Smart Syntax shortcuts `!high`, `@work`) lack accessible names (`aria-label`) and explicit focus indicators. Screen readers fail to convey their purpose out of context, and keyboard users cannot easily determine which badge has focus.
 **Action:** When implementing custom helper or syntax shortcut buttons inside components like `Badge` with `asChild`, ensure the nested `<button>` includes an explicit `aria-label` (e.g., `aria-label={"Insert smart syntax " + s}`). Furthermore, apply `focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1` to the component to guarantee keyboard navigation feedback.
+## 2026-04-18 - Add aria-label to dynamically generated select triggers
+**Learning:** Select triggers inside reusable generic components (like FilterSelect) often lack specific context when rendered multiple times for different filters. While the visual label provides context for sighted users, screen readers might not associate it correctly with the custom select trigger element unless explicitly linked or labelled.
+**Action:** When a visible label exists, link it to the `<SelectTrigger>` using `aria-labelledby` (using `React.useId()` to generate a unique ID). Only use an explicit `aria-label` (e.g. `aria-label={\`Filter by ${label}\`}`) as a fallback when no visible label is present, to ensure screen reader users have clear context for each distinct dropdown.
+## 2026-04-19 - Added Contextual aria-label to Collapsible List Sections
+**Learning:** Collapsible list sections that use text nodes to visually indicate grouping labels and item counts need explicit `aria-label`s on their toggle buttons to ensure the full context is announced seamlessly.
+**Action:** Always verify that main collapsible toggle buttons (like those using `aria-expanded`) contain an `aria-label` that describes the section and potentially the item count, rather than relying solely on nested text content.
+## 2024-05-13 - [Theme Consistency]
+**Learning:** Hardcoded focus ring colors (e.g., `focus-visible:ring-indigo-500`) break theme consistency, especially in dark mode where they might lack contrast or clash with primary brand colors.
+**Action:** Always rely on design system semantic tokens (like the default `--ring` CSS variable via the `focus-visible:ring-ring/50` and `focus-visible:ring-[3px]` classes already provided by the base `Input` component) to ensure cohesive focus states across all themes.
+
+## 2024-05-18 - Add aria-labels to accordion toggle buttons
+**Learning:** Accordion-style collapsible sections often use buttons with text content and an icon to indicate their state (e.g., expanded/collapsed). Screen readers rely on `aria-expanded` and `aria-controls` to understand this interaction. If the button's text is not descriptive enough (like just saying "Sort" or "Filter"), adding a static `aria-label` that explicitly describes the section (e.g., "Sort options") provides clearer context without being redundant with the state announced by `aria-expanded`.
+**Action:** When creating or modifying accordion toggle buttons or collapsible sections, ensure they have descriptive, static `aria-label`s that clarify the section's purpose, especially if the visible text alone is ambiguous.
+## 2026-04-20 - [Theme Switcher Accessibility]
+**Learning:** Found that non-semantic elements (like `Card` components) used as interactive toggles for themes lacked ARIA roles, states, labels, and keyboard navigation. This prevented screen reader users from understanding their purpose and keyboard users from interacting with them.
+**Action:** Always provide explicit ARIA attributes (`role="button"`, `aria-label`, `aria-pressed`) and full keyboard accessibility support (`tabIndex={0}`, `onKeyDown` handlers for "Enter" and "Space", and `focus-visible` utility classes) when converting non-semantic elements into interactive controls.
+
+**Learning:** In forms containing multiple identical `Select` components rendered in a list (like mapping a collection of items to another collection), custom `SelectTrigger` elements (e.g., from `shadcn/ui` / Radix UI) often lack explicit `aria-label`s. Screen reader users will only hear "Select list" and won't know *which* item is being mapped.
+**Action:** Always provide an explicit `aria-label` to custom `SelectTrigger` components that dynamically links the dropdown to its contextual label, e.g., `aria-label={\`Map \${itemName} to list\`}`.
+## 2025-03-28 - Add aria-label to Input components
+**Learning:** React form inputs (using shadcn's Input component) frequently lack contextual aria-labels when they are used without an associated `<label>` element (like search bars, inline inputs, or file uploads), which negatively impacts screen reader users.
+**Action:** Always add descriptive `aria-label` attributes to `<Input />` components that do not have explicitly linked `<label>` tags.
+
+## 2024-04-26 - Add missing aria-labels to scattered button components
+**Learning:** Found several components utilizing standard `<button>` tags (like icon buttons for expanding sections or resetting inputs) without descriptive `aria-label`s, which makes them inaccessible to screen readers.
+**Action:** When creating raw `<button>` elements, specifically those without internal text content or whose text is only an icon or count, explicitly add an `aria-label` to describe the action.
+
+## $(date +%Y-%m-%d) - Added focus-visible styles to inputs
+**Learning:** Found several native `<input>` elements (text inputs for view names, number inputs for time estimates, and range sliders) lacking keyboard focus styles, leading to poor accessibility for keyboard users compared to native UI library components.
+**Action:** Always ensure that custom or raw `<input>` elements include standard focus indicators (e.g., `outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]`) to maintain consistent keyboard accessibility across the application.
+
+## $(date +%Y-%m-%d) - Found and removed duplicate prop
+**Learning:** Found an element containing two `aria-label` properties, one hardcoded and one dynamic, which caused an ESLint error and could confuse screen readers due to undefined behavior with conflicting accessibility attributes.
+**Action:** When adding or verifying accessibility attributes like `aria-label`, always double check the element to ensure that the attribute isn't already declared earlier in the JSX prop list.
+
+## 2025-05-19 - Missing aria-label on SelectTrigger components
+**Learning:** Found several generic `SelectTrigger` components that either lacked accompanying visible labels or where the visual text wasn't explicitly linked to the trigger itself. Screen reader users would only be told "Select list" or "button", making it impossible to determine the context of the interaction without reading the surrounding DOM elements.
+**Action:** Always ensure that custom dropdown triggers (e.g., `SelectTrigger` from shadcn/ui) are accompanied by an explicitly linked `<label>` (using `aria-labelledby`) or an explicit `aria-label` attribute (e.g., `aria-label="Group by"` or `aria-label="Recurring task frequency"`) to provide clear, immediate context for screen reader users.
+## 2024-04-28 - Indicate State on Custom Toggle Buttons
+**Learning:** Custom interactive elements behaving as selectable toggle options (like the time estimate presets) must explicitly use `aria-pressed` to communicate their active state to screen readers. Relying solely on visual changes (like background color swaps) leaves assistive technology users without context.
+**Action:** Always add `aria-pressed={isActive}` when creating a group of custom selectable buttons or chips. Ensure custom buttons also receive explicit `focus-visible` classes since they often lack default browser focus indicators when styled completely from scratch.

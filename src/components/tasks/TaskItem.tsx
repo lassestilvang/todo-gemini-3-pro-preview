@@ -171,7 +171,7 @@ export const TaskItem = memo(function TaskItem({
                 {hasSubtasks ? (
                     <button
                         onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
-                        className="flex items-center justify-center w-5 h-5 -ml-1 rounded hover:bg-muted transition-colors"
+                        className="flex items-center justify-center w-5 h-5 -ml-1 rounded hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         aria-expanded={isExpanded}
                         aria-label={isExpanded ? "Collapse subtasks" : "Expand subtasks"}
                     >
@@ -198,7 +198,7 @@ export const TaskItem = memo(function TaskItem({
                         <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); if (onEdit) onEdit(task); }}
-                            className="relative inline-flex items-center gap-2 max-w-full bg-transparent border-none p-0 hover:underline focus:underline focus:outline-none text-left appearance-none"
+                            className="relative inline-flex items-center gap-2 max-w-full bg-transparent border-none p-0 hover:underline focus:outline-none focus-visible:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm text-left appearance-none"
                             disabled={!onEdit}
                         >
                             {task.icon && <ResolvedIcon icon={task.icon} className="h-4 w-4 text-muted-foreground" />}
@@ -225,7 +225,7 @@ export const TaskItem = memo(function TaskItem({
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <div
-                                        className={cn("flex items-center gap-1", isOverdue ? "text-red-500 font-medium" : "")}
+                                        className={cn("flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm", isOverdue ? "text-red-500 font-medium" : "")}
                                         aria-label={tooltipContent}
                                         tabIndex={0}
                                     >
@@ -265,7 +265,7 @@ export const TaskItem = memo(function TaskItem({
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <div
-                                        className="cursor-help"
+                                        className="cursor-help focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
                                         aria-label={energyLabels[task.energyLevel]}
                                         tabIndex={0}
                                     >
@@ -279,7 +279,7 @@ export const TaskItem = memo(function TaskItem({
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <div
-                                        className="cursor-help"
+                                        className="cursor-help focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
                                         aria-label={contextLabels[task.context] || "Context"}
                                         tabIndex={0}
                                     >

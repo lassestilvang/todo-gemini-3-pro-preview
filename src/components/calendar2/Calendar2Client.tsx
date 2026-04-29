@@ -81,7 +81,13 @@ export function Calendar2Client({ initialTasks, initialLists }: Calendar2ClientP
       }
     },
     {
-      visibleListIds: new Set([null, ...initialLists.map((list) => list.id)]),
+      visibleListIds: (() => {
+        const set = new Set<number | null>([null]);
+        for (const list of initialLists) {
+          set.add(list.id);
+        }
+        return set;
+      })(),
       selectedListId: null,
       quickCreateOpen: false,
       quickCreateDate: undefined,

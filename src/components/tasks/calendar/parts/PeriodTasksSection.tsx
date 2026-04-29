@@ -37,7 +37,7 @@ export function PeriodTasksSection({ tasks, onEdit }: PeriodTasksSectionProps) {
                         onClick={() => onEdit(task)}
                         aria-label={`Edit ${task.isCompleted ? "completed " : ""}task: ${task.title}${task.dueDate ? `, due ${formatDuePeriod({ dueDate: task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate), dueDatePrecision: task.dueDatePrecision as DuePrecision })}` : ""}`}
                         className={cn(
-                            "w-full flex items-center justify-between rounded-md border bg-background px-3 py-2 text-left text-sm transition hover:border-primary/40 hover:shadow-sm",
+                            "w-full flex items-center justify-between rounded-md border bg-background px-3 py-2 text-left text-sm transition hover:border-primary/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                             task.isCompleted && "opacity-60"
                         )}
                     >

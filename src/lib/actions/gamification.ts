@@ -112,7 +112,12 @@ export async function updateUserProgress(userId: string, xpAmount: number) {
       .where(eq(userAchievements.userId, userId))
   ]);
 
-  const alreadyUnlockedIds = new Set(unlockedEntries.map((u) => u.id));
+  // ⚡ Bolt Opt: Replaced `new Set(unlockedEntries.map(...))` with direct for...of loop
+  // to avoid redundant O(N) intermediate array allocation and garbage collection overhead.
+  const alreadyUnlockedIds = new Set<string>();
+  for (const u of unlockedEntries) {
+    alreadyUnlockedIds.add(u.id);
+  }
 
   // ⚡ Bolt Opt: Only query task counts if there are locked achievements that need them.
   let needTotalCount = false;
@@ -225,7 +230,7 @@ export async function updateUserProgress(userId: string, xpAmount: number) {
   const finalLevel = calculateLevel(finalXP);
   const leveledUp = finalLevel > stats.level;
 
-  // 3. Perform Updates sequentially (or in a transaction if preferred)
+  // 3. Perform Updates in a transaction
   // A. Update User Stats
   const updateData: Partial<typeof userStats.$inferSelect> = {
     xp: finalXP,
@@ -241,50 +246,52 @@ export async function updateUserProgress(userId: string, xpAmount: number) {
     updateData.lastLogin = new Date();
   }
 
-  await db
-    .update(userStats)
-    .set(updateData)
-    .where(eq(userStats.userId, userId));
+  await db.transaction(async (tx) => {
+    await tx
+      .update(userStats)
+      .set(updateData)
+      .where(eq(userStats.userId, userId));
 
 
-  // B. Insert Newly Unlocked Achievements
-  if (newlyUnlockedAchievements.length > 0) {
-    await db.insert(userAchievements).values(
-      newlyUnlockedAchievements.map(a => ({
-        userId,
-        achievementId: a.id
-      }))
-    );
+    // B. Insert Newly Unlocked Achievements
+    if (newlyUnlockedAchievements.length > 0) {
+      await tx.insert(userAchievements).values(
+        newlyUnlockedAchievements.map(a => ({
+          userId,
+          achievementId: a.id
+        }))
+      ).onConflictDoNothing();
 
-    // Log achievements
-    const logs = newlyUnlockedAchievements.map(a => ({
-      userId,
-      taskId: null,
-      action: "achievement_unlocked",
-      details: `Unlocked achievement: ${a.name} (+${a.xpReward} XP)`,
-    }));
-
-    await db.insert(taskLogs).values(logs);
-  }
-
-  // C. Handle Streak Logs
-  if (shouldUpdateStreak) {
-    if (usedFreeze) {
-      await db.insert(taskLogs).values({
+      // Log achievements
+      const logs = newlyUnlockedAchievements.map(a => ({
         userId,
         taskId: null,
-        action: "streak_frozen",
-        details: "Streak freeze used! ❄️ Your streak is safe.",
-      });
-    } else if (newStreak > stats.currentStreak) {
-      await db.insert(taskLogs).values({
-        userId,
-        taskId: null,
-        action: "streak_updated",
-        details: `Streak increased to ${newStreak} days! 🔥`,
-      });
+        action: "achievement_unlocked",
+        details: `Unlocked achievement: ${a.name} (+${a.xpReward} XP)`,
+      }));
+
+      await tx.insert(taskLogs).values(logs);
     }
-  }
+
+    // C. Handle Streak Logs
+    if (shouldUpdateStreak) {
+      if (usedFreeze) {
+        await tx.insert(taskLogs).values({
+          userId,
+          taskId: null,
+          action: "streak_frozen",
+          details: "Streak freeze used! ❄️ Your streak is safe.",
+        });
+      } else if (newStreak > stats.currentStreak) {
+        await tx.insert(taskLogs).values({
+          userId,
+          taskId: null,
+          action: "streak_updated",
+          details: `Streak increased to ${newStreak} days! 🔥`,
+        });
+      }
+    }
+  });
 
   revalidatePath("/");
 

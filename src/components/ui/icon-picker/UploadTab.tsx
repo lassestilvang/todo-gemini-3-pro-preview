@@ -37,7 +37,8 @@ export function IconPickerUploadTab({ state, dispatch, fileInputRef, handlePaste
                     className={cn(
                         "border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center gap-2 transition-colors cursor-pointer relative",
                         isDragging ? "border-primary bg-primary/10" : "border-muted hover:bg-accent/30",
-                        uploadUrl ? "border-primary/50 bg-accent/10" : ""
+                        uploadUrl ? "border-primary/50 bg-accent/10" : "",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     )}
                     role="button"
                     tabIndex={0}

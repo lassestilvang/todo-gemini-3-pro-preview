@@ -118,19 +118,13 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
     const isDragEnabled = settings.sortBy === "manual" && settings.groupBy === "none" && !!userId;
-    const activeTaskIds = useMemo(() => {
-        // ⚡ Bolt Opt: Avoid Array.map overhead for extracting IDs.
-        const len = activeTasks.length;
-        const ids = new Array<number>(len);
-        for (let i = 0; i < len; i++) {
-            ids[i] = activeTasks[i].id;
-        }
-        return ids;
-    }, [activeTasks]);
     const taskById = useMemo(() => {
         // ⚡ Bolt Opt: Avoid allocating an O(N) intermediate array before creating the Map
+        // and eliminate iterator overhead using an indexed for-loop.
         const map = new Map<number, Task>();
-        for (const task of derivedTasks) {
+        const len = derivedTasks.length;
+        for (let i = 0; i < len; i++) {
+            const task = derivedTasks[i];
             map.set(task.id, task);
         }
         return map;
@@ -267,7 +261,7 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
                             <>
                                 {activeTasks.length > 0 && (
                                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel} modifiers={[restrictToVerticalAxis]}>
-                                        <SortableContext items={activeTaskIds} strategy={verticalListSortingStrategy} disabled={!isDragEnabled}>
+                                        <SortableContext items={activeTasks} strategy={verticalListSortingStrategy} disabled={!isDragEnabled}>
                                             <div className="space-y-2">{activeTasks.map(t => <SortableTaskItem key={t.id} task={t} handleEdit={handleEditTask} listId={listId} userId={userId} isDragEnabled={isDragEnabled} dispatch={dispatch} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} />)}</div>
                                         </SortableContext>
                                         <DragOverlay>{activeDragTask ? <div className="opacity-90 rotate-2 scale-105 cursor-grabbing"><TaskItem task={activeDragTask} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={handleEditTask} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} /></div> : null}</DragOverlay>

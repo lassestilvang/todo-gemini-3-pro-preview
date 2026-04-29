@@ -1,0 +1,111 @@
+    }
+  }
+  const externalToLocalTask = new Map<string, number>();
+  for (const taskMapping of taskMappings) {
+    if (taskMapping.localId) {
+      externalToLocalTask.set(taskMapping.externalId, taskMapping.localId);
+    }
+  }
+  const managedLocalLabelIds = Array.from(externalToLocalLabel.values());
+  const mappedListIds = buildMappedListIds(mappingState);
+
+  const taskIdsWithLabelsToDelete: number[] = [];
+  const taskLabelsToInsert: (typeof taskLabels.$inferInsert)[] = [];
+
+  for (const mapping of taskMappings) {
+    if (!mapping.localId) {
+      continue;
+    }
+
+    const localTask = localTaskMap.get(mapping.localId);
+    const remoteTask = remoteTaskMap.get(mapping.externalId);
+    if (!localTask || !remoteTask) {
+      continue;
+    }
+    if (
+      hasScopedMappings &&
+      !hasLocalListMapping(localTask.listId ?? null, mappedListIds)
+    ) {
+      continue;
+    }
+
+    const remoteUpdatedAt = parseTodoistTimestamp(remoteTask.updatedAt);
+    const shouldBackfillDue = shouldBackfillTodoistDue(localTask, remoteTask);
+    if (
+      lastSyncedAt &&
+      (!remoteUpdatedAt || remoteUpdatedAt <= lastSyncedAt) &&
+      !shouldBackfillDue
+    ) {
+      continue;
+    }
+
+    const conflictKey = buildConflictKey(
+      "task",
+      localTask.id,
+      mapping.externalId,
+    );
+    if (conflictKeys.has(conflictKey)) {
+      continue;
+    }
+
+    const resolvedExternalLabelIds = resolveTaskLabelExternalIds(
+      remoteTask,
+      remoteLabelIdSet,
+      remoteLabelNameToId,
+    );
+    const normalizedRemoteTask = {
+      ...remoteTask,
+      labels: resolvedExternalLabelIds,
+    } as Task;
+    const localPayload = mapTodoistTaskToLocal(
+      normalizedRemoteTask,
+      mappingState,
+    );
+    const resolvedListId = localPayload.listId ?? localTask.listId ?? null;
+    const resolvedParentId = remoteTask.parentId
+      ? (externalToLocalTask.get(remoteTask.parentId) ?? null)
+      : null;
+    const labelIds = resolvedExternalLabelIds
+      .map((labelId) => externalToLocalLabel.get(labelId) ?? null)
+      .filter((id): id is number => Boolean(id));
+
+    const remoteCompletedAt = parseTodoistTimestamp(remoteTask.completedAt);
+    await db
+      .update(tasks)
+      .set({
+        title: localPayload.title ?? localTask.title,
+        description: localPayload.description ?? localTask.description,
+        priority: localPayload.priority ?? localTask.priority,
+        dueDate: localPayload.dueDate ?? localTask.dueDate,
+        dueDatePrecision:
+          localPayload.dueDatePrecision ?? localTask.dueDatePrecision,
+        deadline: localPayload.deadline ?? localTask.deadline,
+        estimateMinutes:
+          localPayload.estimateMinutes ?? localTask.estimateMinutes,
+        isRecurring: localPayload.isRecurring ?? localTask.isRecurring,
+        recurringRule: localPayload.recurringRule ?? localTask.recurringRule,
+        isCompleted: localPayload.isCompleted ?? localTask.isCompleted,
+        completedAt: localPayload.isCompleted
+          ? (remoteCompletedAt ?? new Date())
+          : null,
+        listId: resolvedListId,
+        parentId: resolvedParentId,
+      })
+      .where(and(eq(tasks.id, localTask.id), eq(tasks.userId, userId)));
+
+    if (managedLocalLabelIds.length > 0) {
+      taskIdsWithLabelsToDelete.push(localTask.id);
+
+      if (labelIds.length > 0) {
+        for (const labelId of labelIds) {
+          taskLabelsToInsert.push({
+            taskId: localTask.id,
+            labelId,
+          });
+        }
+      }
+    }
+  }
+
+  if (taskIdsWithLabelsToDelete.length > 0) {
+    await db

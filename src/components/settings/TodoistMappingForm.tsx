@@ -218,9 +218,17 @@ export function TodoistMappingForm() {
     const handleSave = async () => {
         dispatchUI({ type: "SAVE_START" });
         let createdListCount = 0;
+
+        // ⚡ Bolt Opt: Replaced sequential `Promise.all` awaits for projects and labels with a single concurrent resolution
+        const [projectResults, labelResults] = await Promise.all([
+            Promise.all(projects.map((p) => resolveMappingSelection(projectMappings[p.id] ?? null, p.name))),
+            Promise.all(labels.map((l) => resolveMappingSelection(labelMappings[l.id] ?? null, l.name)))
+        ]);
+
         const projectPayload: { projectId: string; listId: number | null }[] = [];
-        for (const project of projects) {
-            const resolved = await resolveMappingSelection(projectMappings[project.id] ?? null, project.name);
+        for (let i = 0; i < projects.length; i++) {
+            const project = projects[i];
+            const resolved = projectResults[i];
             if (!resolved.success) {
                 dispatchUI({ type: "FETCH_ERROR", payload: resolved.error });
                 dispatchUI({ type: "SAVE_END" });
@@ -233,8 +241,9 @@ export function TodoistMappingForm() {
         }
 
         const labelPayload: { labelId: string; listId: number | null }[] = [];
-        for (const label of labels) {
-            const resolved = await resolveMappingSelection(labelMappings[label.id] ?? null, label.name);
+        for (let i = 0; i < labels.length; i++) {
+            const label = labels[i];
+            const resolved = labelResults[i];
             if (!resolved.success) {
                 dispatchUI({ type: "FETCH_ERROR", payload: resolved.error });
                 dispatchUI({ type: "SAVE_END" });
@@ -306,7 +315,7 @@ export function TodoistMappingForm() {
                                     });
                                 }}
                             >
-                                <SelectTrigger className="w-full md:w-60">
+                                <SelectTrigger className="w-full md:w-60" aria-labelledby={`project-label-${project.id}`}>
                                     <SelectValue placeholder="Select list" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -345,7 +354,7 @@ export function TodoistMappingForm() {
                                     });
                                 }}
                             >
-                                <SelectTrigger className="w-full md:w-60">
+                                <SelectTrigger className="w-full md:w-60" aria-labelledby={`label-label-${label.id}`}>
                                     <SelectValue placeholder="Select list" />
                                 </SelectTrigger>
                                 <SelectContent>

@@ -111,7 +111,11 @@ function AiBreakdownDialogContent({ open, onOpenChange, taskTitle, onConfirm }: 
                                         variant="link"
                                         size="sm"
                                         className="h-auto p-0"
-                                        onClick={() => setExcluded(new Set(suggestions.map((_, i) => i)))}
+                                        onClick={() => {
+                                            const set = new Set<number>();
+                                            for (let i = 0; i < suggestions.length; i++) set.add(i);
+                                            setExcluded(set);
+                                        }}
                                     >
                                         Deselect All
                                     </Button>

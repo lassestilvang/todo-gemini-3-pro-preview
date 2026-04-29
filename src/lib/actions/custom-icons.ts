@@ -14,6 +14,8 @@ import { logActivity } from "./activity-logger";
 import { cache } from "react";
 import { unstable_cache, revalidateTag } from "next/cache";
 
+const VALID_MIME_TYPES = new Set(["image/png", "image/jpeg", "image/gif", "image/webp", "image/bmp", "image/x-icon"]);
+
 /**
  * Validates the icon URL to prevent XSS (no javascript: or data:text/html)
  */
@@ -29,7 +31,7 @@ function isValidIconUrl(url: string): boolean {
         // Allow data URIs only if they are images
         if (parsed.protocol === "data:") {
             const mimeType = parsed.pathname.split(";")[0];
-            return ["image/png", "image/jpeg", "image/gif", "image/webp", "image/bmp", "image/x-icon"].includes(mimeType);
+            return VALID_MIME_TYPES.has(mimeType);
         }
 
         return false;

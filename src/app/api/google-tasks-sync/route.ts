@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { db, externalIntegrations } from "@/db";
 import { syncGoogleTasksForUser } from "@/lib/google-tasks/sync";
 import { eq } from "drizzle-orm";
+import pLimit from "p-limit";
 import { constantTimeEqual } from "@/lib/auth-bypass";
 import pLimit from "p-limit";
 
