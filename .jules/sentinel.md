@@ -188,3 +188,8 @@
 **Vulnerability:** In `src/lib/actions/gamification.ts`, multiple sequential database modifications (`db.update(userStats)`, `db.insert(userAchievements)`, `db.insert(taskLogs)`) were executed without a database transaction. If one of the later operations failed, it would lead to a partial state update (e.g. XP added, but achievement not unlocked or log not created).
 **Learning:** Sequential, dependent database mutations that enforce business logic integrity must be atomic. Leaving them outside a transaction introduces Time-of-Check to Time-of-Use (TOCTOU) and partial data vulnerability risks, which can be exploited or triggered by network errors.
 **Prevention:** Always wrap multi-step database mutations using `await db.transaction(async (tx) => { ... })` and pass the transaction `tx` object to subsequent queries.
+
+## 2024-05-01 - [Atomicity in sequential database mutations]
+**Vulnerability:** Missing database transactions for sequential mutations (e.g., creating an entity followed by logging the action). If the second mutation fails, it leaves the database in an inconsistent state (partial state updates).
+**Learning:** Sequential database operations that logically belong to a single action must be executed atomically. When Drizzle queries are written independently, an error mid-sequence causes orphaned data or incomplete logging.
+**Prevention:** Always wrap dependent, sequential database mutations (like inserts and their corresponding activity logs) inside a `db.transaction(async (tx) => { ... })` block.

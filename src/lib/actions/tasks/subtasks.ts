@@ -45,24 +45,28 @@ async function createSubtaskImpl(
     throw new NotFoundError("Parent task not found or access denied");
   }
 
-  const result = await db
-    .insert(tasks)
-    .values({
+  const subtask = await db.transaction(async (tx) => {
+    const result = await tx
+      .insert(tasks)
+      .values({
+        userId,
+        title,
+        parentId,
+        listId: null,
+        estimateMinutes: estimateMinutes || null,
+      })
+      .returning();
+
+    const newSubtask = result[0];
+
+    await tx.insert(taskLogs).values({
       userId,
-      title,
-      parentId,
-      listId: null,
-      estimateMinutes: estimateMinutes || null,
-    })
-    .returning();
+      taskId: parentId,
+      action: "subtask_created",
+      details: `Subtask created: ${title}`,
+    });
 
-  const subtask = result[0];
-
-  await db.insert(taskLogs).values({
-    userId,
-    taskId: parentId,
-    action: "subtask_created",
-    details: `Subtask created: ${title}`,
+    return newSubtask;
   });
 
   revalidatePath("/", "layout");
