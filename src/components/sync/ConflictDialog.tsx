@@ -16,7 +16,11 @@ import { AlertTriangle, Check } from "lucide-react";
 
 interface ConflictDialogProps {
   conflict: ConflictInfo | null;
-  onResolve: (actionId: string, resolution: 'local' | 'server' | 'merge', mergedData?: unknown) => void;
+  onResolve: (
+    actionId: string,
+    resolution: "local" | "server" | "merge",
+    mergedData?: unknown,
+  ) => void;
   onClose: () => void;
 }
 
@@ -28,7 +32,15 @@ interface FieldDiff {
 
 function getFieldDiffs(localData: unknown, serverData: unknown): FieldDiff[] {
   const diffs: FieldDiff[] = [];
-  const fields = ['title', 'description', 'priority', 'dueDate', 'deadline', 'isCompleted', 'listId'];
+  const fields = [
+    "title",
+    "description",
+    "priority",
+    "dueDate",
+    "deadline",
+    "isCompleted",
+    "listId",
+  ];
 
   const local = localData as Record<string, unknown>;
   const server = serverData as Record<string, unknown>;
@@ -37,7 +49,10 @@ function getFieldDiffs(localData: unknown, serverData: unknown): FieldDiff[] {
     const localVal = local?.[field];
     const serverVal = server?.[field];
 
-    if (localVal !== undefined && JSON.stringify(localVal) !== JSON.stringify(serverVal)) {
+    if (
+      localVal !== undefined &&
+      JSON.stringify(localVal) !== JSON.stringify(serverVal)
+    ) {
       diffs.push({
         field,
         local: localVal,
@@ -72,26 +87,38 @@ function formatFieldName(field: string): string {
   return names[field] || field;
 }
 
-export function ConflictDialog({ conflict, onResolve, onClose }: ConflictDialogProps) {
-  const [selectedFields, setSelectedFields] = useState<Record<string, 'local' | 'server'>>({});
+export function ConflictDialog({
+  conflict,
+  onResolve,
+  onClose,
+}: ConflictDialogProps) {
+  const [selectedFields, setSelectedFields] = useState<
+    Record<string, "local" | "server">
+  >({});
 
   if (!conflict) return null;
 
   const diffs = getFieldDiffs(conflict.localData, conflict.serverData);
   const serverData = conflict.serverData as Record<string, unknown>;
   const serverTitle = (serverData?.title as string) || "Task";
-  const serverUpdatedAt = serverData?.updatedAt as string | number | Date | undefined;
+  const serverUpdatedAt = serverData?.updatedAt as
+    | string
+    | number
+    | Date
+    | undefined;
 
   const handleMerge = () => {
     const mergedData: Record<string, unknown> = {};
     for (const diff of diffs) {
-      const choice = selectedFields[diff.field] || 'server';
-      mergedData[diff.field] = choice === 'local' ? diff.local : diff.server;
+      const choice = selectedFields[diff.field] || "server";
+      mergedData[diff.field] = choice === "local" ? diff.local : diff.server;
     }
-    onResolve(conflict.actionId, 'merge', mergedData);
+    onResolve(conflict.actionId, "merge", mergedData);
   };
 
-  const allFieldsSelected = diffs.every(d => selectedFields[d.field] !== undefined);
+  const allFieldsSelected = diffs.every(
+    (d) => selectedFields[d.field] !== undefined,
+  );
 
   return (
     <Dialog open={!!conflict} onOpenChange={() => onClose()}>
@@ -105,7 +132,8 @@ export function ConflictDialog({ conflict, onResolve, onClose }: ConflictDialogP
             &quot;{serverTitle}&quot; was modified on another device
             {serverUpdatedAt && (
               <> at {format(new Date(serverUpdatedAt), "PPp")}</>
-            )}. Choose how to resolve the conflict.
+            )}
+            . Choose how to resolve the conflict.
           </DialogDescription>
         </DialogHeader>
 
@@ -118,38 +146,53 @@ export function ConflictDialog({ conflict, onResolve, onClose }: ConflictDialogP
             </div>
 
             {diffs.map((diff) => (
-              <div key={diff.field} className="grid grid-cols-3 gap-2 text-sm items-start">
+              <div
+                key={diff.field}
+                className="grid grid-cols-3 gap-2 text-sm items-start"
+              >
                 <div className="font-medium">{formatFieldName(diff.field)}</div>
                 <button
                   type="button"
-                  onClick={() => setSelectedFields(prev => ({ ...prev, [diff.field]: 'local' }))}
-                  aria-pressed={selectedFields[diff.field] === 'local'}
+                  onClick={() =>
+                    setSelectedFields((prev) => ({
+                      ...prev,
+                      [diff.field]: "local",
+                    }))
+                  }
+                  aria-pressed={selectedFields[diff.field] === "local"}
                   aria-label={`Select local ${formatFieldName(diff.field)}`}
-                  className={`text-left p-2 rounded border transition-colors ${selectedFields[diff.field] === 'local'
-                      ? 'border-primary bg-primary/10'
-                      : 'border-border hover:border-primary/50'
-                    }`}
+                  className={`text-left p-2 rounded border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                    selectedFields[diff.field] === "local"
+                      ? "border-primary bg-primary/10"
+                      : "border-border hover:border-primary/50"
+                  }`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="truncate">{formatValue(diff.local)}</span>
-                    {selectedFields[diff.field] === 'local' && (
+                    {selectedFields[diff.field] === "local" && (
                       <Check className="h-4 w-4 text-primary shrink-0 ml-2" />
                     )}
                   </div>
                 </button>
                 <button
                   type="button"
-                  onClick={() => setSelectedFields(prev => ({ ...prev, [diff.field]: 'server' }))}
-                  aria-pressed={selectedFields[diff.field] === 'server'}
+                  onClick={() =>
+                    setSelectedFields((prev) => ({
+                      ...prev,
+                      [diff.field]: "server",
+                    }))
+                  }
+                  aria-pressed={selectedFields[diff.field] === "server"}
                   aria-label={`Select server ${formatFieldName(diff.field)}`}
-                  className={`text-left p-2 rounded border transition-colors ${selectedFields[diff.field] === 'server'
-                      ? 'border-primary bg-primary/10'
-                      : 'border-border hover:border-primary/50'
-                    }`}
+                  className={`text-left p-2 rounded border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                    selectedFields[diff.field] === "server"
+                      ? "border-primary bg-primary/10"
+                      : "border-border hover:border-primary/50"
+                  }`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="truncate">{formatValue(diff.server)}</span>
-                    {selectedFields[diff.field] === 'server' && (
+                    {selectedFields[diff.field] === "server" && (
                       <Check className="h-4 w-4 text-primary shrink-0 ml-2" />
                     )}
                   </div>
@@ -162,21 +205,18 @@ export function ConflictDialog({ conflict, onResolve, onClose }: ConflictDialogP
         <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button
             variant="outline"
-            onClick={() => onResolve(conflict.actionId, 'server')}
+            onClick={() => onResolve(conflict.actionId, "server")}
           >
             Use Server Version
           </Button>
           <Button
             variant="outline"
-            onClick={() => onResolve(conflict.actionId, 'local')}
+            onClick={() => onResolve(conflict.actionId, "local")}
           >
             Keep My Changes
           </Button>
           {diffs.length > 0 && (
-            <Button
-              onClick={handleMerge}
-              disabled={!allFieldsSelected}
-            >
+            <Button onClick={handleMerge} disabled={!allFieldsSelected}>
               Merge Selected
             </Button>
           )}

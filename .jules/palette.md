@@ -177,3 +177,7 @@
 ## 2024-04-28 - Indicate State on Custom Toggle Buttons
 **Learning:** Custom interactive elements behaving as selectable toggle options (like the time estimate presets) must explicitly use `aria-pressed` to communicate their active state to screen readers. Relying solely on visual changes (like background color swaps) leaves assistive technology users without context.
 **Action:** Always add `aria-pressed={isActive}` when creating a group of custom selectable buttons or chips. Ensure custom buttons also receive explicit `focus-visible` classes since they often lack default browser focus indicators when styled completely from scratch.
+
+## 2024-05-20 - Missing Focus Indicators on Custom Dialog Selection Buttons
+**Learning:** Custom interactive buttons used for selection in dialogs (e.g., choosing between local and server versions in a sync conflict dialog) often lack visual focus indicators, even if they correctly use `aria-pressed` to indicate their state. This leaves keyboard users without visual feedback when navigating the options.
+**Action:** Ensure that all custom selectable buttons include clear `focus-visible` states using standard utility classes (e.g., `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`) to guarantee keyboard accessibility.
