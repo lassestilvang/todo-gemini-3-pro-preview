@@ -181,3 +181,7 @@
 ## 2024-05-20 - Missing Focus Indicators on Custom Dialog Selection Buttons
 **Learning:** Custom interactive buttons used for selection in dialogs (e.g., choosing between local and server versions in a sync conflict dialog) often lack visual focus indicators, even if they correctly use `aria-pressed` to indicate their state. This leaves keyboard users without visual feedback when navigating the options.
 **Action:** Ensure that all custom selectable buttons include clear `focus-visible` states using standard utility classes (e.g., `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`) to guarantee keyboard accessibility.
+## 2024-05-14 - Improve accessibility of interactive wrapper
+
+**Learning:** When using a div or other non-semantic element with role="button" to create an interactive row, it's essential to include an aria-label and aria-pressed for context. However, this pattern must be avoided if the row contains other interactive elements (like checkboxes), as nested interactivity is invalid and confusing for screen readers.
+**Action:** Always verify that custom interactive container elements provide comprehensive aria attributes, but prioritize using semantic elements or a single interactive target to avoid nested roles and redundant tab stops.

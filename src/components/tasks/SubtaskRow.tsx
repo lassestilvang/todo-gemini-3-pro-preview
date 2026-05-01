@@ -19,6 +19,8 @@ export const SubtaskRow = memo(function SubtaskRow({ subtask, isCompleted, onTog
         <div
             role="button"
             tabIndex={0}
+            aria-label={`Toggle subtask: ${subtask.title}`}
+            aria-pressed={isCompleted || false}
             onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
