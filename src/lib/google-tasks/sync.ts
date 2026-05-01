@@ -10,7 +10,11 @@ import {
   tasks,
 } from "@/db";
 import { mapGoogleTaskToLocal, mapLocalTaskToGoogle } from "./mapper";
-import { createGoogleTasksClient, fetchGoogleTasksSnapshot, getGoogleTasksAccessToken } from "./service";
+import {
+  createGoogleTasksClient,
+  fetchGoogleTasksSnapshot,
+  getGoogleTasksAccessToken,
+} from "./service";
 import type { GoogleTask } from "./types";
 
 type SyncResult = {
@@ -361,8 +365,10 @@ async function syncTasklists(params: {
     (list) => !listLocalToExternal.has(list.id),
   );
   if (unmappedLists.length > 0) {
-    const newMappings = await Promise.all(
-      unmappedLists.map(async (list) => {
+    // ⚡ Bolt Opt: Replaced Unbounded Promise.all with bounded p-limit(5) concurrency
+    const limit = pLimit(5);
+    const syncPromises = unmappedLists.map((list) =>
+      limit(async () => {
         const created = await client.createTasklist({ title: list.name });
         return {
           userId,
@@ -373,6 +379,15 @@ async function syncTasklists(params: {
         };
       }),
     );
+
+    let newMappings;
+    try {
+      newMappings = await Promise.all(syncPromises);
+    } catch (e) {
+      limit.clearQueue();
+      throw e;
+    }
+
     await db.insert(externalEntityMap).values(newMappings);
   }
 }
@@ -453,7 +468,7 @@ async function pullRemoteTasks(params: {
             tasklistId,
             listId,
             conflictKeys,
-          })
+          }),
         );
         continue;
       }
@@ -478,7 +493,7 @@ async function pullRemoteTasks(params: {
               listId: updates.listId ?? localTask.listId,
               updatedAt: new Date(),
             })
-            .where(and(eq(tasks.id, localTask.id), eq(tasks.userId, userId)))
+            .where(and(eq(tasks.id, localTask.id), eq(tasks.userId, userId))),
         );
       }
 
@@ -498,7 +513,7 @@ async function pullRemoteTasks(params: {
               eq(externalEntityMap.entityType, "task"),
               eq(externalEntityMap.externalId, externalId),
             ),
-          )
+          ),
       );
 
       continue;
@@ -557,7 +572,9 @@ async function pullRemoteTasks(params: {
   if (localTasksToDelete.length > 0) {
     await db
       .delete(tasks)
-      .where(and(inArray(tasks.id, localTasksToDelete), eq(tasks.userId, userId)));
+      .where(
+        and(inArray(tasks.id, localTasksToDelete), eq(tasks.userId, userId)),
+      );
   }
 
   if (externalIdsToDelete.length > 0) {
@@ -584,107 +601,145 @@ async function pushLocalTasks(params: {
   lastSyncedAt: Date | null;
   conflictKeys: Set<string>;
 }) {
-    const { userId, client, localTasks, taskLocalToExternal, listLocalToExternal, remoteTasks, lastSyncedAt, conflictKeys } = params;
+  const {
+    userId,
+    client,
+    localTasks,
+    taskLocalToExternal,
+    listLocalToExternal,
+    remoteTasks,
+    lastSyncedAt,
+    conflictKeys,
+  } = params;
 
-    // ⚡ Bolt Opt: Replaced Unbounded Promise.all with bounded p-limit(10) concurrency
-    // This maintains concurrent processing while bounding the number of in-flight requests to prevent rate limit issues
-    const limit = pLimit(10);
+  // ⚡ Bolt Opt: Replaced Unbounded Promise.all with bounded p-limit(10) concurrency
+  // This maintains concurrent processing while bounding the number of in-flight requests to prevent rate limit issues
+  const limit = pLimit(10);
 
-    const syncPromises = localTasks.map((localTask) => limit(async () => {
-        try {
-            if (!localTask.listId) return;
-            const tasklistId = listLocalToExternal.get(localTask.listId) ?? null;
-            if (!tasklistId) return;
+  const syncPromises = localTasks.map((localTask) =>
+    limit(async () => {
+      try {
+        if (!localTask.listId) return;
+        const tasklistId = listLocalToExternal.get(localTask.listId) ?? null;
+        if (!tasklistId) return;
 
-            const externalId = taskLocalToExternal.get(localTask.id) ?? null;
-            if (!externalId) {
-                const created = await client.createTask(tasklistId, mapLocalTaskToGoogle(localTask));
-                await db.insert(externalEntityMap).values({
-                    userId,
-                    provider: "google_tasks" as const,
-                    entityType: "task" as const,
-                    localId: localTask.id,
-                    externalId: created.id,
-                    externalParentId: created.parent ?? null,
-                    externalEtag: created.etag ?? null,
-                    externalUpdatedAt: created.updated ? new Date(created.updated) : null,
-                });
-                return;
-            }
-
-            const remoteEntry = remoteTasks.get(externalId);
-            const remoteUpdatedAt = remoteEntry?.task.updated ? new Date(remoteEntry.task.updated) : null;
-
-            if (remoteEntry && shouldCreateConflict(localTask, remoteEntry.task, localTask.listId, lastSyncedAt, conflictKeys)) {
-                await createConflict({
-                    userId,
-                    localTask,
-                    task: remoteEntry.task,
-                    tasklistId: remoteEntry.tasklistId,
-                    listId: localTask.listId,
-                    conflictKeys,
-                });
-                return;
-            }
-
-            if (lastSyncedAt && localTask.updatedAt <= lastSyncedAt) {
-                return;
-            }
-
-            if (remoteUpdatedAt && lastSyncedAt && remoteUpdatedAt > lastSyncedAt) {
-                return;
-            }
-
-            if (remoteEntry) {
-                const updated = await client.updateTask(tasklistId, externalId, mapLocalTaskToGoogle(localTask));
-                await db
-                    .update(externalEntityMap)
-                    .set({
-                        externalParentId: updated.parent ?? null,
-                        externalEtag: updated.etag ?? null,
-                        externalUpdatedAt: updated.updated ? new Date(updated.updated) : null,
-                        updatedAt: new Date(),
-                    })
-                    .where(
-                        and(
-                            eq(externalEntityMap.userId, userId),
-                            eq(externalEntityMap.provider, "google_tasks"),
-                            eq(externalEntityMap.entityType, "task"),
-                            eq(externalEntityMap.externalId, externalId)
-                        )
-                    );
-            } else {
-                const created = await client.createTask(tasklistId, mapLocalTaskToGoogle(localTask));
-                await db
-                    .update(externalEntityMap)
-                    .set({
-                        externalId: created.id,
-                        externalParentId: created.parent ?? null,
-                        externalEtag: created.etag ?? null,
-                        externalUpdatedAt: created.updated ? new Date(created.updated) : null,
-                        updatedAt: new Date(),
-                    })
-                    .where(
-                        and(
-                            eq(externalEntityMap.userId, userId),
-                            eq(externalEntityMap.provider, "google_tasks"),
-                            eq(externalEntityMap.entityType, "task"),
-                            eq(externalEntityMap.localId, localTask.id)
-                        )
-                    );
-            }
-        } catch (error) {
-            limit.clearQueue();
-            throw error;
+        const externalId = taskLocalToExternal.get(localTask.id) ?? null;
+        if (!externalId) {
+          const created = await client.createTask(
+            tasklistId,
+            mapLocalTaskToGoogle(localTask),
+          );
+          await db.insert(externalEntityMap).values({
+            userId,
+            provider: "google_tasks" as const,
+            entityType: "task" as const,
+            localId: localTask.id,
+            externalId: created.id,
+            externalParentId: created.parent ?? null,
+            externalEtag: created.etag ?? null,
+            externalUpdatedAt: created.updated
+              ? new Date(created.updated)
+              : null,
+          });
+          return;
         }
-    }));
 
-    try {
-        await Promise.all(syncPromises);
-    } catch (e) {
+        const remoteEntry = remoteTasks.get(externalId);
+        const remoteUpdatedAt = remoteEntry?.task.updated
+          ? new Date(remoteEntry.task.updated)
+          : null;
+
+        if (
+          remoteEntry &&
+          shouldCreateConflict(
+            localTask,
+            remoteEntry.task,
+            localTask.listId,
+            lastSyncedAt,
+            conflictKeys,
+          )
+        ) {
+          await createConflict({
+            userId,
+            localTask,
+            task: remoteEntry.task,
+            tasklistId: remoteEntry.tasklistId,
+            listId: localTask.listId,
+            conflictKeys,
+          });
+          return;
+        }
+
+        if (lastSyncedAt && localTask.updatedAt <= lastSyncedAt) {
+          return;
+        }
+
+        if (remoteUpdatedAt && lastSyncedAt && remoteUpdatedAt > lastSyncedAt) {
+          return;
+        }
+
+        if (remoteEntry) {
+          const updated = await client.updateTask(
+            tasklistId,
+            externalId,
+            mapLocalTaskToGoogle(localTask),
+          );
+          await db
+            .update(externalEntityMap)
+            .set({
+              externalParentId: updated.parent ?? null,
+              externalEtag: updated.etag ?? null,
+              externalUpdatedAt: updated.updated
+                ? new Date(updated.updated)
+                : null,
+              updatedAt: new Date(),
+            })
+            .where(
+              and(
+                eq(externalEntityMap.userId, userId),
+                eq(externalEntityMap.provider, "google_tasks"),
+                eq(externalEntityMap.entityType, "task"),
+                eq(externalEntityMap.externalId, externalId),
+              ),
+            );
+        } else {
+          const created = await client.createTask(
+            tasklistId,
+            mapLocalTaskToGoogle(localTask),
+          );
+          await db
+            .update(externalEntityMap)
+            .set({
+              externalId: created.id,
+              externalParentId: created.parent ?? null,
+              externalEtag: created.etag ?? null,
+              externalUpdatedAt: created.updated
+                ? new Date(created.updated)
+                : null,
+              updatedAt: new Date(),
+            })
+            .where(
+              and(
+                eq(externalEntityMap.userId, userId),
+                eq(externalEntityMap.provider, "google_tasks"),
+                eq(externalEntityMap.entityType, "task"),
+                eq(externalEntityMap.localId, localTask.id),
+              ),
+            );
+        }
+      } catch (error) {
         limit.clearQueue();
-        throw e;
-    }
+        throw error;
+      }
+    }),
+  );
+
+  try {
+    await Promise.all(syncPromises);
+  } catch (e) {
+    limit.clearQueue();
+    throw e;
+  }
 }
 
 async function getExistingConflictKeys(userId: string) {
