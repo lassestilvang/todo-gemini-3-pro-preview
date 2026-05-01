@@ -132,8 +132,7 @@ export function ConflictDialog({
             &quot;{serverTitle}&quot; was modified on another device
             {serverUpdatedAt && (
               <> at {format(new Date(serverUpdatedAt), "PPp")}</>
-            )}
-            . Choose how to resolve the conflict.
+            )}. Choose how to resolve the conflict.
           </DialogDescription>
         </DialogHeader>
 
