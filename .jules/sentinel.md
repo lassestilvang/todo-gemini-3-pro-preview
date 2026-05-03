@@ -193,3 +193,8 @@
 **Vulnerability:** Missing database transactions for sequential mutations (e.g., creating an entity followed by logging the action). If the second mutation fails, it leaves the database in an inconsistent state (partial state updates).
 **Learning:** Sequential database operations that logically belong to a single action must be executed atomically. When Drizzle queries are written independently, an error mid-sequence causes orphaned data or incomplete logging.
 **Prevention:** Always wrap dependent, sequential database mutations (like inserts and their corresponding activity logs) inside a `db.transaction(async (tx) => { ... })` block.
+
+## 2024-05-18 - Enforce Atomic Transactions on Integration Disconnect
+**Vulnerability:** Sequential `db.delete` operations in `disconnectGoogleTasks` and `disconnectTodoist` were executed without a database transaction. If one operation failed, it could leave orphaned data, causing data inconsistencies and potential state leakage.
+**Learning:** Performing multiple related database mutations sequentially without a transaction exposes the system to partial state updates. In scenarios involving the cleanup of scoped data (like integrations or settings), atomicity must be guaranteed.
+**Prevention:** Always enforce atomicity by wrapping sequential dependent database mutations (inserts, updates, or deletes) in a database transaction (`await db.transaction(async (tx) => { ... })`).
