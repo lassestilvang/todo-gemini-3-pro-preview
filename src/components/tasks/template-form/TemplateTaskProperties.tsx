@@ -28,7 +28,7 @@ export function TemplateTaskProperties({ formData, updateField }: TemplateTaskPr
                             updateField("priority", value as TemplateFormData["priority"])
                         }
                     >
-                        <SelectTrigger data-testid="priority-select" aria-label="Select priority">
+<SelectTrigger data-testid="priority-select" aria-label="Priority">
                             <SelectValue placeholder="Select priority" />
                         </SelectTrigger>
                         <SelectContent>
