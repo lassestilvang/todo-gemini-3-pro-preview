@@ -46,41 +46,45 @@ export async function disconnectGoogleTasks() {
     return { success: true };
   }
 
-  await db
-    .delete(externalIntegrations)
-    .where(
-      and(
-        eq(externalIntegrations.userId, user.id),
-        eq(externalIntegrations.provider, "google_tasks"),
-      ),
-    );
+  // 🛡️ Sentinel: Enforce atomicity by wrapping sequential deletes in a database transaction.
+  // This prevents partial state updates and potential data inconsistencies if a subsequent delete fails.
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(externalIntegrations)
+      .where(
+        and(
+          eq(externalIntegrations.userId, user.id),
+          eq(externalIntegrations.provider, "google_tasks"),
+        ),
+      );
 
-  await db
-    .delete(externalEntityMap)
-    .where(
-      and(
-        eq(externalEntityMap.userId, user.id),
-        eq(externalEntityMap.provider, "google_tasks"),
-      ),
-    );
+    await tx
+      .delete(externalEntityMap)
+      .where(
+        and(
+          eq(externalEntityMap.userId, user.id),
+          eq(externalEntityMap.provider, "google_tasks"),
+        ),
+      );
 
-  await db
-    .delete(externalSyncConflicts)
-    .where(
-      and(
-        eq(externalSyncConflicts.userId, user.id),
-        eq(externalSyncConflicts.provider, "google_tasks"),
-      ),
-    );
+    await tx
+      .delete(externalSyncConflicts)
+      .where(
+        and(
+          eq(externalSyncConflicts.userId, user.id),
+          eq(externalSyncConflicts.provider, "google_tasks"),
+        ),
+      );
 
-  await db
-    .delete(externalSyncState)
-    .where(
-      and(
-        eq(externalSyncState.userId, user.id),
-        eq(externalSyncState.provider, "google_tasks"),
-      ),
-    );
+    await tx
+      .delete(externalSyncState)
+      .where(
+        and(
+          eq(externalSyncState.userId, user.id),
+          eq(externalSyncState.provider, "google_tasks"),
+        ),
+      );
+  });
 
   return { success: true };
 }

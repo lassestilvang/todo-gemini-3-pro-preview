@@ -298,21 +298,25 @@ export async function disconnectTodoist() {
         return { success: true };
     }
 
-    await db
-        .delete(externalIntegrations)
-        .where(and(eq(externalIntegrations.userId, user.id), eq(externalIntegrations.provider, "todoist")));
+    // 🛡️ Sentinel: Enforce atomicity by wrapping sequential deletes in a database transaction.
+    // This prevents partial state updates and potential data inconsistencies if a subsequent delete fails.
+    await db.transaction(async (tx) => {
+        await tx
+            .delete(externalIntegrations)
+            .where(and(eq(externalIntegrations.userId, user.id), eq(externalIntegrations.provider, "todoist")));
 
-    await db
-        .delete(externalEntityMap)
-        .where(and(eq(externalEntityMap.userId, user.id), eq(externalEntityMap.provider, "todoist")));
+        await tx
+            .delete(externalEntityMap)
+            .where(and(eq(externalEntityMap.userId, user.id), eq(externalEntityMap.provider, "todoist")));
 
-    await db
-        .delete(externalSyncConflicts)
-        .where(and(eq(externalSyncConflicts.userId, user.id), eq(externalSyncConflicts.provider, "todoist")));
+        await tx
+            .delete(externalSyncConflicts)
+            .where(and(eq(externalSyncConflicts.userId, user.id), eq(externalSyncConflicts.provider, "todoist")));
 
-    await db
-        .delete(externalSyncState)
-        .where(and(eq(externalSyncState.userId, user.id), eq(externalSyncState.provider, "todoist")));
+        await tx
+            .delete(externalSyncState)
+            .where(and(eq(externalSyncState.userId, user.id), eq(externalSyncState.provider, "todoist")));
+    });
 
     return { success: true };
 }
