@@ -184,4 +184,7 @@
 ## 2024-05-14 - Improve accessibility of interactive wrapper
 
 **Learning:** When using a div or other non-semantic element with role="button" to create an interactive row, it's essential to include an aria-label and aria-pressed for context. However, this pattern must be avoided if the row contains other interactive elements (like checkboxes), as nested interactivity is invalid and confusing for screen readers.
-**Action:** Always verify that custom interactive container elements provide comprehensive aria attributes, but prioritize using semantic elements or a single interactive target to avoid nested roles and redundant tab stops.
+
+## 2024-05-04 - Add aria-expanded and aria-controls to filter toggle
+**Learning:** For collapsible content panels triggered by a button, screen readers require the button to have `aria-expanded` and `aria-controls` attributes linking to the ID of the content container. Without these, the toggle button’s purpose and the visibility state of the filters remain inaccessible.
+**Action:** Always verify that custom dropdowns, toggles, or filter panels explicitly use `aria-expanded` and `aria-controls` to establish the semantic relationship between the trigger and the content it reveals.
