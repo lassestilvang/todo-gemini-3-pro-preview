@@ -140,3 +140,7 @@
 ## 2026-04-30 - Add p-limit bounded concurrency in Google Tasks sync mapping creation
 **Learning:** Using unbounded `Promise.all` alongside array mapping (`unmappedLists.map(...)`) when making external API calls (e.g., `client.createTasklist()`) risks triggering external rate limiting, especially when dealing with bulk operations like provisioning multiple new task lists.
 **Action:** Replaced unbounded `Promise.all` with bounded `p-limit(5)` concurrency in `src/lib/google-tasks/sync.ts` when creating new unmapped lists. This maximizes throughput while strictly controlling the number of in-flight external API requests, keeping it within safe burst thresholds. A try/catch block was included to preserve fail-fast error behavior by clearing the pending queue on failure.
+
+## 2025-05-03 - Batching External Entity Map Updates
+**Learning:** Sequential database updates inside a loop (N+1 query pattern) create a significant I/O bottleneck, especially in serverless or remote database environments where each round-trip adds substantial latency.
+**Action:** Collect database update queries into an array during loop execution and use `Promise.all()` (or `db.batch()`) to execute them concurrently after the loop. This reduces the total I/O wait time from O(N) to roughly O(1) round-trip.
