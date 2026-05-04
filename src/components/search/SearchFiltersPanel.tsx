@@ -83,6 +83,8 @@ export function SearchFiltersPanel({
           size="sm"
           onClick={onToggleFilters}
           className={cn(hasActiveFilters && "border-primary text-primary")}
+          aria-expanded={showFilters}
+          aria-controls="search-filters-content"
         >
           <SlidersHorizontal className="mr-2 h-3.5 w-3.5" />
           Filters
@@ -163,7 +165,7 @@ export function SearchFiltersPanel({
       </div>
 
       {showFilters && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 rounded-lg border bg-card">
+        <div id="search-filters-content" className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 rounded-lg border bg-card">
           <FilterSelect
             label="List"
             value={filters.listId != null ? String(filters.listId) : "all"}
