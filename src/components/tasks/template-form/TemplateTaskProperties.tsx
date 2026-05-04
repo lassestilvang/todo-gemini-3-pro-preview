@@ -48,7 +48,7 @@ export function TemplateTaskProperties({ formData, updateField }: TemplateTaskPr
                             updateField("dueDateType", value as TemplateFormData["dueDateType"])
                         }
                     >
-                        <SelectTrigger data-testid="due-date-select" aria-label="Select due date">
+<SelectTrigger data-testid="due-date-select" aria-label="Due Date">
                             <SelectValue placeholder="Select due date" />
                         </SelectTrigger>
                         <SelectContent>
