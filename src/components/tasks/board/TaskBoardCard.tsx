@@ -50,6 +50,7 @@ export function TaskBoardCard({ task, onEdit }: TaskBoardCardProps) {
       {...listeners}
       {...attributes}
       role="button"
+      aria-label={`Edit task: ${task.title}`}
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {

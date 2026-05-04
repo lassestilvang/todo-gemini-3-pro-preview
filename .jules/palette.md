@@ -185,3 +185,6 @@
 
 **Learning:** When using a div or other non-semantic element with role="button" to create an interactive row, it's essential to include an aria-label and aria-pressed for context. However, this pattern must be avoided if the row contains other interactive elements (like checkboxes), as nested interactivity is invalid and confusing for screen readers.
 **Action:** Always verify that custom interactive container elements provide comprehensive aria attributes, but prioritize using semantic elements or a single interactive target to avoid nested roles and redundant tab stops.
+## 2025-05-19 - Add explicit aria-label to complex interactive roles
+**Learning:** When using a `div` or other non-semantic element with `role="button"` as a container for complex content (like icons, multiple spans, due dates, priority labels), screen readers may produce fragmented or unintelligible readouts if there is no explicit top-level `aria-label`.
+**Action:** Always provide an explicit `aria-label` (e.g., `aria-label={\`Edit task: \${task.title}\`}`) to complex composite interactive elements like custom cards to ensure the action and context are clearly communicated.
