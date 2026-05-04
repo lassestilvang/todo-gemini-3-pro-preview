@@ -140,3 +140,7 @@
 ## 2026-04-30 - Add p-limit bounded concurrency in Google Tasks sync mapping creation
 **Learning:** Using unbounded `Promise.all` alongside array mapping (`unmappedLists.map(...)`) when making external API calls (e.g., `client.createTasklist()`) risks triggering external rate limiting, especially when dealing with bulk operations like provisioning multiple new task lists.
 **Action:** Replaced unbounded `Promise.all` with bounded `p-limit(5)` concurrency in `src/lib/google-tasks/sync.ts` when creating new unmapped lists. This maximizes throughput while strictly controlling the number of in-flight external API requests, keeping it within safe burst thresholds. A try/catch block was included to preserve fail-fast error behavior by clearing the pending queue on failure.
+
+## 2024-05-18 - Avoid Intermediate `.map()` Arrays for Property Iteration
+**Learning:** Checking for duplicate properties in an object array by first extracting them into a primitive array (e.g., `hasDuplicate(array.map(m => m.id))`) causes an unnecessary O(N) array allocation and subsequent garbage collection overhead.
+**Action:** When validating properties across an array of objects, pass the objects array directly and use a selector function (e.g., `hasDuplicate(array, (m) => m.id)`) to iterate in a single pass without creating throwaway arrays.

@@ -63,21 +63,22 @@ const getCachedLabels = cache(
     { revalidate: 60 }
 );
 
-function hasDuplicateStrings(values: string[]) {
+function hasDuplicateStrings<T>(items: T[], selector: (item: T) => string) {
     const seen = new Set<string>();
-    for (const value of values) {
-        const normalized = value.trim();
-        if (seen.has(normalized)) {
+    for (const item of items) {
+        const value = selector(item).trim();
+        if (seen.has(value)) {
             return true;
         }
-        seen.add(normalized);
+        seen.add(value);
     }
     return false;
 }
 
-function hasDuplicateNonNullNumbers(values: Array<number | null>) {
+function hasDuplicateNonNullNumbers<T>(items: T[], selector: (item: T) => number | null) {
     const seen = new Set<number>();
-    for (const value of values) {
+    for (const item of items) {
+        const value = selector(item);
         if (value === null) {
             continue;
         }
@@ -457,10 +458,10 @@ export async function setTodoistProjectMappings(mappings: { projectId: string; l
         return { success: false, error: "Too many mappings. Limit is 1000." };
     }
 
-    if (hasDuplicateStrings(mappings.map((m) => m.projectId))) {
+    if (hasDuplicateStrings(mappings, (m) => m.projectId)) {
         return { success: false, error: "Duplicate Todoist project mappings are not allowed." };
     }
-    if (hasDuplicateNonNullNumbers(mappings.map((m) => m.listId))) {
+    if (hasDuplicateNonNullNumbers(mappings, (m) => m.listId)) {
         return { success: false, error: "A local list can only be mapped to one Todoist project." };
     }
 
@@ -550,10 +551,10 @@ export async function setTodoistLabelMappings(mappings: { labelId: string; listI
         return { success: false, error: "Too many mappings. Limit is 1000." };
     }
 
-    if (hasDuplicateStrings(mappings.map((m) => m.labelId))) {
+    if (hasDuplicateStrings(mappings, (m) => m.labelId)) {
         return { success: false, error: "Duplicate Todoist label mappings are not allowed." };
     }
-    if (hasDuplicateNonNullNumbers(mappings.map((m) => m.listId))) {
+    if (hasDuplicateNonNullNumbers(mappings, (m) => m.listId)) {
         return { success: false, error: "A local list can only be mapped to one Todoist label." };
     }
 
