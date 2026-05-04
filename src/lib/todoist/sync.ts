@@ -262,6 +262,7 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
 
     const externalEntityMappingsToCreate: (typeof externalEntityMap.$inferInsert)[] =
       [];
+    const externalEntityMappingsToUpdate: any[] = [];
 
     for (const localLabel of localLabels) {
       if (hasScopedMappings && !scopedLocalLabelIds.has(localLabel.id)) {
@@ -282,22 +283,26 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
 
           const mappingRow = labelMappingByLocalId.get(localLabel.id);
           if (mappingRow) {
-            await db
-              .update(externalEntityMap)
-              .set({ externalId: recreatedLabel.id })
-              .where(eq(externalEntityMap.id, mappingRow.id));
+            externalEntityMappingsToUpdate.push(
+              db
+                .update(externalEntityMap)
+                .set({ externalId: recreatedLabel.id })
+                .where(eq(externalEntityMap.id, mappingRow.id)),
+            );
 
-            await db
-              .update(externalEntityMap)
-              .set({ externalId: recreatedLabel.id })
-              .where(
-                and(
-                  eq(externalEntityMap.userId, userId),
-                  eq(externalEntityMap.provider, "todoist"),
-                  eq(externalEntityMap.entityType, "list_label"),
-                  eq(externalEntityMap.externalId, mappingRow.externalId),
+            externalEntityMappingsToUpdate.push(
+              db
+                .update(externalEntityMap)
+                .set({ externalId: recreatedLabel.id })
+                .where(
+                  and(
+                    eq(externalEntityMap.userId, userId),
+                    eq(externalEntityMap.provider, "todoist"),
+                    eq(externalEntityMap.entityType, "list_label"),
+                    eq(externalEntityMap.externalId, mappingRow.externalId),
+                  ),
                 ),
-              );
+            );
 
             for (const listLabelMapping of mappingState.labels) {
               if (listLabelMapping.labelId === mappingRow.externalId) {
@@ -387,8 +392,18 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
       );
     }
 
-    if (externalEntityMappingsToCreate.length > 0) {
-      await db.insert(externalEntityMap).values(externalEntityMappingsToCreate);
+    if (
+      externalEntityMappingsToCreate.length > 0 ||
+      externalEntityMappingsToUpdate.length > 0
+    ) {
+      await Promise.all([
+        externalEntityMappingsToCreate.length > 0
+          ? db.insert(externalEntityMap).values(externalEntityMappingsToCreate)
+          : Promise.resolve(),
+        externalEntityMappingsToUpdate.length > 0
+          ? Promise.all(externalEntityMappingsToUpdate)
+          : Promise.resolve(),
+      ]);
     }
 
     const scopedRemoteLabelIds = hasScopedMappings
