@@ -111,7 +111,7 @@ export function TemplateTaskProperties({ formData, updateField }: TemplateTaskPr
                             updateField("context", value as TemplateFormData["context"])
                         }
                     >
-                        <SelectTrigger data-testid="context-select" aria-label="Select context">
+<SelectTrigger data-testid="context-select" aria-label="Context">
                             <SelectValue placeholder="Select context" />
                         </SelectTrigger>
                         <SelectContent>
