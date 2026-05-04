@@ -264,27 +264,30 @@ export async function setGoogleTasksListMappings(
     return { success: true };
   }
 
-  await db
-    .delete(externalEntityMap)
-    .where(
-      and(
-        eq(externalEntityMap.userId, user.id),
-        eq(externalEntityMap.provider, "google_tasks"),
-        eq(externalEntityMap.entityType, "list"),
-      ),
-    );
+  // 🛡️ Sentinel: Wrap delete and insert in a transaction to prevent partial updates
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(externalEntityMap)
+      .where(
+        and(
+          eq(externalEntityMap.userId, user.id),
+          eq(externalEntityMap.provider, "google_tasks"),
+          eq(externalEntityMap.entityType, "list"),
+        ),
+      );
 
-  if (mappings.length > 0) {
-    await db.insert(externalEntityMap).values(
-      mappings.map((mapping) => ({
-        userId: user.id,
-        provider: "google_tasks" as const,
-        entityType: "list" as const,
-        localId: mapping.listId,
-        externalId: mapping.tasklistId,
-      })),
-    );
-  }
+    if (mappings.length > 0) {
+      await tx.insert(externalEntityMap).values(
+        mappings.map((mapping) => ({
+          userId: user.id,
+          provider: "google_tasks" as const,
+          entityType: "list" as const,
+          localId: mapping.listId,
+          externalId: mapping.tasklistId,
+        })),
+      );
+    }
+  });
 
   await syncGoogleTasksNow();
 
