@@ -91,7 +91,7 @@ export function TemplateTaskProperties({ formData, updateField }: TemplateTaskPr
                             updateField("energyLevel", value as TemplateFormData["energyLevel"])
                         }
                     >
-                        <SelectTrigger data-testid="energy-select" aria-label="Select energy">
+<SelectTrigger data-testid="energy-select" aria-label="Energy Level">
                             <SelectValue placeholder="Select energy" />
                         </SelectTrigger>
                         <SelectContent>
