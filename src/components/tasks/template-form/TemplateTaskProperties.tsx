@@ -28,7 +28,7 @@ export function TemplateTaskProperties({ formData, updateField }: TemplateTaskPr
                             updateField("priority", value as TemplateFormData["priority"])
                         }
                     >
-                        <SelectTrigger data-testid="priority-select">
+                        <SelectTrigger data-testid="priority-select" aria-label="Select priority">
                             <SelectValue placeholder="Select priority" />
                         </SelectTrigger>
                         <SelectContent>
@@ -48,7 +48,7 @@ export function TemplateTaskProperties({ formData, updateField }: TemplateTaskPr
                             updateField("dueDateType", value as TemplateFormData["dueDateType"])
                         }
                     >
-                        <SelectTrigger data-testid="due-date-select">
+                        <SelectTrigger data-testid="due-date-select" aria-label="Select due date">
                             <SelectValue placeholder="Select due date" />
                         </SelectTrigger>
                         <SelectContent>
@@ -91,7 +91,7 @@ export function TemplateTaskProperties({ formData, updateField }: TemplateTaskPr
                             updateField("energyLevel", value as TemplateFormData["energyLevel"])
                         }
                     >
-                        <SelectTrigger data-testid="energy-select">
+                        <SelectTrigger data-testid="energy-select" aria-label="Select energy">
                             <SelectValue placeholder="Select energy" />
                         </SelectTrigger>
                         <SelectContent>
@@ -111,7 +111,7 @@ export function TemplateTaskProperties({ formData, updateField }: TemplateTaskPr
                             updateField("context", value as TemplateFormData["context"])
                         }
                     >
-                        <SelectTrigger data-testid="context-select">
+                        <SelectTrigger data-testid="context-select" aria-label="Select context">
                             <SelectValue placeholder="Select context" />
                         </SelectTrigger>
                         <SelectContent>

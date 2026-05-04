@@ -185,3 +185,7 @@
 
 **Learning:** When using a div or other non-semantic element with role="button" to create an interactive row, it's essential to include an aria-label and aria-pressed for context. However, this pattern must be avoided if the row contains other interactive elements (like checkboxes), as nested interactivity is invalid and confusing for screen readers.
 **Action:** Always verify that custom interactive container elements provide comprehensive aria attributes, but prioritize using semantic elements or a single interactive target to avoid nested roles and redundant tab stops.
+
+## 2024-05-18 - Add aria-labels to custom select triggers
+**Learning:** Custom UI components like Radix UI's `SelectTrigger` often need explicit `aria-label`s, especially when they are used within forms where the visual label might not be automatically associated by screen readers due to DOM structure or custom styling.
+**Action:** Always check custom `Select` components, especially the `SelectTrigger`, to ensure they have an `aria-label` or `aria-labelledby` attribute pointing to a valid ID when building accessible forms.
