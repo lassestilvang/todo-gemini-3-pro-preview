@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { db, lists } from "@/db";
 import { createTask, updateTask } from "@/lib/actions/tasks";
-import { setTodoistProjectMappings, setTodoistLabelMappings } from "@/lib/actions/todoist";
+import { setTodoistProjectMappings, setTodoistLabelMappings, updateTodoistProjectMapping } from "@/lib/actions/todoist";
 import { runInAuthContext } from "@/test/mocks";
 
 type ListRow = typeof lists.$inferSelect;
@@ -113,15 +113,18 @@ describe("Security: List IDOR in Task Operations", () => {
         });
 
         // User B tries to map their Todoist project to User A's list
+        // TODO: Need a valid Todoist task ID for realistic testing,
+        // but we'll try to map to User A's list ID
         await runInAuthContext({ id: userBId, email: "b@example.com" }, async () => {
-            const result = await setTodoistProjectMappings([
-                { projectId: "123", listId: listA.id }
-            ]);
+            const updateResult = await updateTodoistProjectMapping(listA.id, {
+                projectId: "todoist-project-123",
+                projectName: "My Project"
+            });
 
             // Verify the action failed
-            expect(result.success).toBe(false);
-            if (!result.success) {
-                expect(result.error).toContain("One or more lists not found or access denied");
+            expect(updateResult.success).toBe(false);
+            if (!updateResult.success) {
+                expect(updateResult.error).toContain("One or more lists not found or access denied");
             }
         });
     });

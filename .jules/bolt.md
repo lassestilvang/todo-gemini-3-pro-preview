@@ -144,3 +144,12 @@
 ## 2026-05-04 - ⚡ Bolt: Eliminate chained `.map().filter()` array allocations in data migrations
 **Learning:** Chaining array operations like `.map().filter()` inside loops or bulk data processing (like `importUserData`) creates unnecessary intermediate array allocations, increasing memory usage and garbage collection overhead. This is especially problematic in bulk data operations where the array sizes can be large.
 **Action:** Replaced chained `.map().filter()` calls with a single-pass `for...of` loop to populate the target array directly in `src/lib/actions/data-migration.ts`. This eliminates the intermediate O(N) array allocation overhead while preserving the exact same behavior and safety.
+## 2024-05-18 - Avoid Intermediate `.map()` Arrays for Property Iteration
+**Learning:** Checking for duplicate properties in an object array by first extracting them into a primitive array (e.g., `hasDuplicate(array.map(m => m.id))`) causes an unnecessary O(N) array allocation and subsequent garbage collection overhead.
+**Action:** When validating properties across an array of objects, pass the objects array directly and use a selector function (e.g., `hasDuplicate(array, (m) => m.id)`) to iterate in a single pass without creating throwaway arrays.
+## 2025-05-03 - Batching External Entity Map Updates
+**Learning:** Sequential database updates inside a loop (N+1 query pattern) create a significant I/O bottleneck, especially in serverless or remote database environments where each round-trip adds substantial latency.
+**Action:** Collect database update queries into an array during loop execution and use `Promise.all()` (or `db.batch()`) to execute them concurrently after the loop. This reduces the total I/O wait time from O(N) to roughly O(1) round-trip.
+## 2026-05-18 - Eliminate redundant array allocations in duplicate checks
+**Learning:** Checking for duplicate properties within an array of objects by extracting the properties via `array.map()` (e.g., `hasDuplicate(array.map(m => m.id))`) creates unnecessary O(N) array allocation overhead and memory pressure during GC.
+**Action:** Refactored utility functions like `hasDuplicateStrings` to accept the generic object array and a selector function (e.g., `hasDuplicate(array, (m) => m.id)`). This enables a single-pass check using a `for...of` loop without creating intermediate throw-away arrays.

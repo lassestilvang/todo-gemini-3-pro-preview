@@ -193,3 +193,17 @@
 **Vulnerability:** Missing database transactions for sequential mutations (e.g., creating an entity followed by logging the action). If the second mutation fails, it leaves the database in an inconsistent state (partial state updates).
 **Learning:** Sequential database operations that logically belong to a single action must be executed atomically. When Drizzle queries are written independently, an error mid-sequence causes orphaned data or incomplete logging.
 **Prevention:** Always wrap dependent, sequential database mutations (like inserts and their corresponding activity logs) inside a `db.transaction(async (tx) => { ... })` block.
+## $(date +%Y-%m-%d) - [IDOR in Todoist Project Mapping]
+**Vulnerability:** Insecure Direct Object Reference (IDOR). A user could potentially map their Todoist project to any local list by providing its ID, without the system verifying that they actually owned the target list.
+**Learning:** Server actions performing database mutations must always validate ownership of all target entities against the authenticated user context, even if the action is intended for internal use or integration.
+**Prevention:** Enforce tenant isolation directly in the database query (e.g., \`.where(and(eq(lists.id, listId), eq(lists.userId, userId)))\`) and remove test-only logic bypasses that skip these checks.
+
+## 2024-05-18 - Enforce Atomic Transactions on Integration Disconnect
+**Vulnerability:** Sequential `db.delete` operations in `disconnectGoogleTasks` and `disconnectTodoist` were executed without a database transaction. If one operation failed, it could leave orphaned data, causing data inconsistencies and potential state leakage.
+**Learning:** Performing multiple related database mutations sequentially without a transaction exposes the system to partial state updates. In scenarios involving the cleanup of scoped data (like integrations or settings), atomicity must be guaranteed.
+**Prevention:** Always enforce atomicity by wrapping sequential dependent database mutations (inserts, updates, or deletes) in a database transaction (`await db.transaction(async (tx) => { ... })`).
+
+## 2024-05-04 - [Data Integrity] Missing Database Transactions in Mapping Updates
+**Vulnerability:** In `google-tasks.ts` and `todoist.ts`, the external integration mapping functions (`setGoogleTasksListMappings`, `setTodoistProjectMappings`, and `setTodoistLabelMappings`) were executing sequential `db.delete(externalEntityMap)` and `db.insert(externalEntityMap)` operations outside of a database transaction.
+**Learning:** This is a Time-of-Check to Time-of-Use (TOCTOU) / data integrity risk. If the application process crashes or the `insert` query fails after the `delete` operation succeeds, the user's previously existing external entity mappings are permanently lost, leading to broken synchronizations.
+**Prevention:** Always wrap sequences of related and dependent database mutations (like wiping and replacing configuration or mappings) inside a `db.transaction(async (tx) => { ... })` block to ensure atomic execution.

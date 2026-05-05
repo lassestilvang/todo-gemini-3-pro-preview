@@ -46,41 +46,45 @@ export async function disconnectGoogleTasks() {
     return { success: true };
   }
 
-  await db
-    .delete(externalIntegrations)
-    .where(
-      and(
-        eq(externalIntegrations.userId, user.id),
-        eq(externalIntegrations.provider, "google_tasks"),
-      ),
-    );
+  // 🛡️ Sentinel: Enforce atomicity by wrapping sequential deletes in a database transaction.
+  // This prevents partial state updates and potential data inconsistencies if a subsequent delete fails.
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(externalIntegrations)
+      .where(
+        and(
+          eq(externalIntegrations.userId, user.id),
+          eq(externalIntegrations.provider, "google_tasks"),
+        ),
+      );
 
-  await db
-    .delete(externalEntityMap)
-    .where(
-      and(
-        eq(externalEntityMap.userId, user.id),
-        eq(externalEntityMap.provider, "google_tasks"),
-      ),
-    );
+    await tx
+      .delete(externalEntityMap)
+      .where(
+        and(
+          eq(externalEntityMap.userId, user.id),
+          eq(externalEntityMap.provider, "google_tasks"),
+        ),
+      );
 
-  await db
-    .delete(externalSyncConflicts)
-    .where(
-      and(
-        eq(externalSyncConflicts.userId, user.id),
-        eq(externalSyncConflicts.provider, "google_tasks"),
-      ),
-    );
+    await tx
+      .delete(externalSyncConflicts)
+      .where(
+        and(
+          eq(externalSyncConflicts.userId, user.id),
+          eq(externalSyncConflicts.provider, "google_tasks"),
+        ),
+      );
 
-  await db
-    .delete(externalSyncState)
-    .where(
-      and(
-        eq(externalSyncState.userId, user.id),
-        eq(externalSyncState.provider, "google_tasks"),
-      ),
-    );
+    await tx
+      .delete(externalSyncState)
+      .where(
+        and(
+          eq(externalSyncState.userId, user.id),
+          eq(externalSyncState.provider, "google_tasks"),
+        ),
+      );
+  });
 
   return { success: true };
 }
@@ -180,21 +184,23 @@ export async function getGoogleTasksMappingData() {
   };
 }
 
-function hasDuplicateStrings(values: string[]) {
+function hasDuplicateStrings<T>(items: T[], selector: (item: T) => string) {
   const seen = new Set<string>();
-  for (const value of values) {
+  for (const item of items) {
+    const value = selector(item);
     const normalized = value.trim();
     if (seen.has(normalized)) {
       return true;
     }
-    seen.add(normalized);
+    seen.add(value);
   }
   return false;
 }
 
-function hasDuplicateNonNullNumbers(values: Array<number | null>) {
+function hasDuplicateNonNullNumbers<T>(items: T[], selector: (item: T) => number | null) {
   const seen = new Set<number>();
-  for (const value of values) {
+  for (const item of items) {
+    const value = selector(item);
     if (value !== null) {
       if (seen.has(value)) {
         return true;
@@ -217,13 +223,14 @@ export async function setGoogleTasksListMappings(
     return { success: false, error: "Too many mappings. Limit is 1000." };
   }
 
-  if (hasDuplicateStrings(mappings.map((m) => m.tasklistId))) {
+  // ⚡ Bolt Opt: Replaced `mappings.map(...)` with selector function to avoid intermediate array allocation
+  if (hasDuplicateStrings(mappings, (m) => m.tasklistId)) {
     return {
       success: false,
       error: "Duplicate Google Tasks list mappings are not allowed.",
     };
   }
-  if (hasDuplicateNonNullNumbers(mappings.map((m) => m.listId))) {
+  if (hasDuplicateNonNullNumbers(mappings, (m) => m.listId)) {
     return {
       success: false,
       error: "A local list can only be mapped to one Google Tasks list.",
@@ -260,27 +267,30 @@ export async function setGoogleTasksListMappings(
     return { success: true };
   }
 
-  await db
-    .delete(externalEntityMap)
-    .where(
-      and(
-        eq(externalEntityMap.userId, user.id),
-        eq(externalEntityMap.provider, "google_tasks"),
-        eq(externalEntityMap.entityType, "list"),
-      ),
-    );
+  // 🛡️ Sentinel: Wrap delete and insert in a transaction to prevent partial updates
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(externalEntityMap)
+      .where(
+        and(
+          eq(externalEntityMap.userId, user.id),
+          eq(externalEntityMap.provider, "google_tasks"),
+          eq(externalEntityMap.entityType, "list"),
+        ),
+      );
 
-  if (mappings.length > 0) {
-    await db.insert(externalEntityMap).values(
-      mappings.map((mapping) => ({
-        userId: user.id,
-        provider: "google_tasks" as const,
-        entityType: "list" as const,
-        localId: mapping.listId,
-        externalId: mapping.tasklistId,
-      })),
-    );
-  }
+    if (mappings.length > 0) {
+      await tx.insert(externalEntityMap).values(
+        mappings.map((mapping) => ({
+          userId: user.id,
+          provider: "google_tasks" as const,
+          entityType: "list" as const,
+          localId: mapping.listId,
+          externalId: mapping.tasklistId,
+        })),
+      );
+    }
+  });
 
   await syncGoogleTasksNow();
 
