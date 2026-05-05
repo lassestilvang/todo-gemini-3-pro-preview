@@ -212,7 +212,7 @@ export async function connectTodoist(token: string) {
 
 export async function updateTodoistProjectMapping(
     listId: number | null,
-    mapping: { projectId: string; projectName: string }
+    mapping: { projectId: string }
 ) {
     const user = await getCurrentUser();
     if (!user) {
