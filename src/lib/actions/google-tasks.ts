@@ -187,8 +187,9 @@ export async function getGoogleTasksMappingData() {
 function hasDuplicateStrings<T>(items: T[], selector: (item: T) => string) {
   const seen = new Set<string>();
   for (const item of items) {
-    const value = selector(item).trim();
-    if (seen.has(value)) {
+    const value = selector(item);
+    const normalized = value.trim();
+    if (seen.has(normalized)) {
       return true;
     }
     seen.add(value);
@@ -222,6 +223,7 @@ export async function setGoogleTasksListMappings(
     return { success: false, error: "Too many mappings. Limit is 1000." };
   }
 
+  // ⚡ Bolt Opt: Replaced `mappings.map(...)` with selector function to avoid intermediate array allocation
   if (hasDuplicateStrings(mappings, (m) => m.tasklistId)) {
     return {
       success: false,

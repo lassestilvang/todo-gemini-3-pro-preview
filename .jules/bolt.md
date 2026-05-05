@@ -147,3 +147,6 @@
 ## 2025-05-03 - Batching External Entity Map Updates
 **Learning:** Sequential database updates inside a loop (N+1 query pattern) create a significant I/O bottleneck, especially in serverless or remote database environments where each round-trip adds substantial latency.
 **Action:** Collect database update queries into an array during loop execution and use `Promise.all()` (or `db.batch()`) to execute them concurrently after the loop. This reduces the total I/O wait time from O(N) to roughly O(1) round-trip.
+## 2026-05-18 - Eliminate redundant array allocations in duplicate checks
+**Learning:** Checking for duplicate properties within an array of objects by extracting the properties via `array.map()` (e.g., `hasDuplicate(array.map(m => m.id))`) creates unnecessary O(N) array allocation overhead and memory pressure during GC.
+**Action:** Refactored utility functions like `hasDuplicateStrings` to accept the generic object array and a selector function (e.g., `hasDuplicate(array, (m) => m.id)`). This enables a single-pass check using a `for...of` loop without creating intermediate throw-away arrays.

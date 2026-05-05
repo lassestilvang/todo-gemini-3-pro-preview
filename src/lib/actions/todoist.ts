@@ -66,8 +66,9 @@ const getCachedLabels = cache(
 function hasDuplicateStrings<T>(items: T[], selector: (item: T) => string) {
     const seen = new Set<string>();
     for (const item of items) {
-        const value = selector(item).trim();
-        if (seen.has(value)) {
+        const value = selector(item);
+        const normalized = value.trim();
+        if (seen.has(normalized)) {
             return true;
         }
         seen.add(value);
@@ -458,6 +459,7 @@ export async function setTodoistProjectMappings(mappings: { projectId: string; l
         return { success: false, error: "Too many mappings. Limit is 1000." };
     }
 
+    // ⚡ Bolt Opt: Replaced `mappings.map(...)` with selector function to avoid intermediate array allocation
     if (hasDuplicateStrings(mappings, (m) => m.projectId)) {
         return { success: false, error: "Duplicate Todoist project mappings are not allowed." };
     }
@@ -554,6 +556,7 @@ export async function setTodoistLabelMappings(mappings: { labelId: string; listI
         return { success: false, error: "Too many mappings. Limit is 1000." };
     }
 
+    // ⚡ Bolt Opt: Replaced `mappings.map(...)` with selector function to avoid intermediate array allocation
     if (hasDuplicateStrings(mappings, (m) => m.labelId)) {
         return { success: false, error: "Duplicate Todoist label mappings are not allowed." };
     }
