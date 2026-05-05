@@ -99,7 +99,7 @@ export function SearchFiltersPanel({
             variant="ghost"
             size="sm"
             onClick={onClearFilters}
-            className="text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="text-muted-foreground"
             aria-label="Clear all filters"
           >
             Clear all
