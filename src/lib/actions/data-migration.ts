@@ -369,14 +369,17 @@ export async function importUserData(jsonData: unknown) {
         }
 
         // 3b. Update Parent IDs
-        const parentUpdates = data.tasks
-            .map((task) => {
-                if (!task.parentId) return null
-                const newParentId = taskMap.get(task.parentId)
-                const newTaskId = taskMap.get(task.id)
-                return newParentId && newTaskId ? { id: newTaskId, parentId: newParentId } : null
-            })
-            .filter((update): update is { id: number; parentId: number } => update !== null)
+        // ⚡ Bolt Opt: Replaced chained .map().filter() with a single pass for...of loop
+        const parentUpdates: { id: number; parentId: number }[] = [];
+        for (const task of data.tasks) {
+            if (task.parentId) {
+                const newParentId = taskMap.get(task.parentId);
+                const newTaskId = taskMap.get(task.id);
+                if (newParentId && newTaskId) {
+                    parentUpdates.push({ id: newTaskId, parentId: newParentId });
+                }
+            }
+        }
 
         if (parentUpdates.length > 0) {
             // ⚡ Bolt Opt: Single batched UPDATE replaces N per-task updates.
@@ -403,13 +406,15 @@ export async function importUserData(jsonData: unknown) {
         }
 
         // 4. Import Task Labels
-        const taskLabelValues = data.taskLabels
-            .map((tl) => {
-                const newTaskId = taskMap.get(tl.taskId)
-                const newLabelId = labelMap.get(tl.labelId)
-                return newTaskId && newLabelId ? { taskId: newTaskId, labelId: newLabelId } : null
-            })
-            .filter((value): value is { taskId: number; labelId: number } => value !== null)
+        // ⚡ Bolt Opt: Replaced chained .map().filter() with a single pass for...of loop
+        const taskLabelValues: { taskId: number; labelId: number }[] = [];
+        for (const tl of data.taskLabels) {
+            const newTaskId = taskMap.get(tl.taskId);
+            const newLabelId = labelMap.get(tl.labelId);
+            if (newTaskId && newLabelId) {
+                taskLabelValues.push({ taskId: newTaskId, labelId: newLabelId });
+            }
+        }
 
         if (taskLabelValues.length > 0) {
             // ⚡ Bolt Opt: Batch insert reduces task label writes to a handful of queries.
@@ -419,27 +424,28 @@ export async function importUserData(jsonData: unknown) {
         }
 
         // 5. Import Reminders
-        const reminderValues = data.reminders
-            .map((r) => {
-                const newTaskId = taskMap.get(r.taskId)
-                if (!newTaskId) return null
-                return {
+        // ⚡ Bolt Opt: Replaced chained .map().filter() with a single pass for...of loop
+        const reminderValues: {
+            id: undefined;
+            taskId: number;
+            remindAt: Date;
+            createdAt: Date;
+            type?: string | undefined;
+            message?: string | null | undefined;
+            isSent?: boolean | undefined;
+        }[] = [];
+        for (const r of data.reminders) {
+            const newTaskId = taskMap.get(r.taskId);
+            if (newTaskId) {
+                reminderValues.push({
                     ...r,
                     id: undefined,
                     taskId: newTaskId,
                     remindAt: new Date(r.remindAt),
                     createdAt: new Date(r.createdAt),
-                }
-            })
-            .filter((value) => value !== null) as {
-                id: undefined;
-                taskId: number;
-                remindAt: Date;
-                createdAt: Date;
-                type?: string | undefined;
-                message?: string | null | undefined;
-                isSent?: boolean | undefined;
-            }[]
+                });
+            }
+        }
 
         if (reminderValues.length > 0) {
             // ⚡ Bolt Opt: Batch reminder inserts to avoid per-row roundtrips.
