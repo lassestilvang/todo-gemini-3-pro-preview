@@ -192,7 +192,7 @@ function hasDuplicateStrings<T>(items: T[], selector: (item: T) => string) {
     if (seen.has(normalized)) {
       return true;
     }
-    seen.add(normalized);
+    seen.add(value);
   }
   return false;
 }
