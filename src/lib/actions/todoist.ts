@@ -63,21 +63,23 @@ const getCachedLabels = cache(
     { revalidate: 60 }
 );
 
-function hasDuplicateStrings(values: string[]) {
+function hasDuplicateStrings<T>(items: T[], selector: (item: T) => string) {
     const seen = new Set<string>();
-    for (const value of values) {
+    for (const item of items) {
+        const value = selector(item);
         const normalized = value.trim();
         if (seen.has(normalized)) {
             return true;
         }
-        seen.add(normalized);
+        seen.add(value);
     }
     return false;
 }
 
-function hasDuplicateNonNullNumbers(values: Array<number | null>) {
+function hasDuplicateNonNullNumbers<T>(items: T[], selector: (item: T) => number | null) {
     const seen = new Set<number>();
-    for (const value of values) {
+    for (const item of items) {
+        const value = selector(item);
         if (value === null) {
             continue;
         }
@@ -342,21 +344,25 @@ export async function disconnectTodoist() {
         return { success: true };
     }
 
-    await db
-        .delete(externalIntegrations)
-        .where(and(eq(externalIntegrations.userId, user.id), eq(externalIntegrations.provider, "todoist")));
+    // 🛡️ Sentinel: Enforce atomicity by wrapping sequential deletes in a database transaction.
+    // This prevents partial state updates and potential data inconsistencies if a subsequent delete fails.
+    await db.transaction(async (tx) => {
+        await tx
+            .delete(externalIntegrations)
+            .where(and(eq(externalIntegrations.userId, user.id), eq(externalIntegrations.provider, "todoist")));
 
-    await db
-        .delete(externalEntityMap)
-        .where(and(eq(externalEntityMap.userId, user.id), eq(externalEntityMap.provider, "todoist")));
+        await tx
+            .delete(externalEntityMap)
+            .where(and(eq(externalEntityMap.userId, user.id), eq(externalEntityMap.provider, "todoist")));
 
-    await db
-        .delete(externalSyncConflicts)
-        .where(and(eq(externalSyncConflicts.userId, user.id), eq(externalSyncConflicts.provider, "todoist")));
+        await tx
+            .delete(externalSyncConflicts)
+            .where(and(eq(externalSyncConflicts.userId, user.id), eq(externalSyncConflicts.provider, "todoist")));
 
-    await db
-        .delete(externalSyncState)
-        .where(and(eq(externalSyncState.userId, user.id), eq(externalSyncState.provider, "todoist")));
+        await tx
+            .delete(externalSyncState)
+            .where(and(eq(externalSyncState.userId, user.id), eq(externalSyncState.provider, "todoist")));
+    });
 
     return { success: true };
 }
@@ -497,10 +503,11 @@ export async function setTodoistProjectMappings(mappings: { projectId: string; l
         return { success: false, error: "Too many mappings. Limit is 1000." };
     }
 
-    if (hasDuplicateStrings(mappings.map((m) => m.projectId))) {
+    // ⚡ Bolt Opt: Replaced `mappings.map(...)` with selector function to avoid intermediate array allocation
+    if (hasDuplicateStrings(mappings, (m) => m.projectId)) {
         return { success: false, error: "Duplicate Todoist project mappings are not allowed." };
     }
-    if (hasDuplicateNonNullNumbers(mappings.map((m) => m.listId))) {
+    if (hasDuplicateNonNullNumbers(mappings, (m) => m.listId)) {
         return { success: false, error: "A local list can only be mapped to one Todoist project." };
     }
 
@@ -558,20 +565,48 @@ export async function setTodoistProjectMappings(mappings: { projectId: string; l
         eq(externalEntityMap.entityType, "list")
     );
 
-    if (mappings.length === 0) {
-        await db
-            .delete(externalEntityMap)
-            .where(scopedWhere);
-    } else {
-        await db
-            .delete(externalEntityMap)
-            .where(
-                and(
-                    scopedWhere,
-                    not(inArray(externalEntityMap.externalId, mappings.map((mapping) => mapping.projectId)))
+    // 🛡️ Sentinel: Wrap delete and insert in a transaction to prevent partial updates
+    await db.transaction(async (tx) => {
+        if (mappings.length > 0) {
+            await tx.insert(externalEntityMap)
+                .values(
+                    mappings.map((mapping) => ({
+                        userId: user.id,
+                        provider: "todoist" as const,
+                        entityType: "list" as const,
+                        localId: mapping.listId,
+                        externalId: mapping.projectId,
+                    }))
                 )
-            );
-    }
+                .onConflictDoUpdate({
+                    target: [
+                        externalEntityMap.userId,
+                        externalEntityMap.provider,
+                        externalEntityMap.entityType,
+                        externalEntityMap.externalId,
+                    ],
+                    set: {
+                        localId: sql`excluded.local_id`,
+                        updatedAt: new Date(),
+                    },
+                });
+        }
+
+        if (mappings.length === 0) {
+            await tx
+                .delete(externalEntityMap)
+                .where(scopedWhere);
+        } else {
+            await tx
+                .delete(externalEntityMap)
+                .where(
+                    and(
+                        scopedWhere,
+                        not(inArray(externalEntityMap.externalId, mappings.map((mapping) => mapping.projectId)))
+                    )
+                );
+        }
+    });
 
     return { success: true };
 }
@@ -586,10 +621,11 @@ export async function setTodoistLabelMappings(mappings: { labelId: string; listI
         return { success: false, error: "Too many mappings. Limit is 1000." };
     }
 
-    if (hasDuplicateStrings(mappings.map((m) => m.labelId))) {
+    // ⚡ Bolt Opt: Replaced `mappings.map(...)` with selector function to avoid intermediate array allocation
+    if (hasDuplicateStrings(mappings, (m) => m.labelId)) {
         return { success: false, error: "Duplicate Todoist label mappings are not allowed." };
     }
-    if (hasDuplicateNonNullNumbers(mappings.map((m) => m.listId))) {
+    if (hasDuplicateNonNullNumbers(mappings, (m) => m.listId)) {
         return { success: false, error: "A local list can only be mapped to one Todoist label." };
     }
 
@@ -647,20 +683,48 @@ export async function setTodoistLabelMappings(mappings: { labelId: string; listI
         eq(externalEntityMap.entityType, "list_label")
     );
 
-    if (mappings.length === 0) {
-        await db
-            .delete(externalEntityMap)
-            .where(scopedWhere);
-    } else {
-        await db
-            .delete(externalEntityMap)
-            .where(
-                and(
-                    scopedWhere,
-                    not(inArray(externalEntityMap.externalId, mappings.map((mapping) => mapping.labelId)))
+    // 🛡️ Sentinel: Wrap delete and insert in a transaction to prevent partial updates
+    await db.transaction(async (tx) => {
+        if (mappings.length > 0) {
+            await tx.insert(externalEntityMap)
+                .values(
+                    mappings.map((mapping) => ({
+                        userId: user.id,
+                        provider: "todoist" as const,
+                        entityType: "list_label" as const,
+                        localId: mapping.listId,
+                        externalId: mapping.labelId,
+                    }))
                 )
-            );
-    }
+                .onConflictDoUpdate({
+                    target: [
+                        externalEntityMap.userId,
+                        externalEntityMap.provider,
+                        externalEntityMap.entityType,
+                        externalEntityMap.externalId,
+                    ],
+                    set: {
+                        localId: sql`excluded.local_id`,
+                        updatedAt: new Date(),
+                    },
+                });
+        }
+
+        if (mappings.length === 0) {
+            await tx
+                .delete(externalEntityMap)
+                .where(scopedWhere);
+        } else {
+            await tx
+                .delete(externalEntityMap)
+                .where(
+                    and(
+                        scopedWhere,
+                        not(inArray(externalEntityMap.externalId, mappings.map((mapping) => mapping.labelId)))
+                    )
+                );
+        }
+    });
 
     return { success: true };
 }
