@@ -492,51 +492,54 @@ export async function setTodoistProjectMappings(mappings: { projectId: string; l
         return { success: true };
     }
 
-    if (mappings.length > 0) {
-        await db.insert(externalEntityMap)
-            .values(
-                mappings.map((mapping) => ({
-                    userId: user.id,
-                    provider: "todoist" as const,
-                    entityType: "list" as const,
-                    localId: mapping.listId,
-                    externalId: mapping.projectId,
-                }))
-            )
-            .onConflictDoUpdate({
-                target: [
-                    externalEntityMap.userId,
-                    externalEntityMap.provider,
-                    externalEntityMap.entityType,
-                    externalEntityMap.externalId,
-                ],
-                set: {
-                    localId: sql`excluded.local_id`,
-                    updatedAt: new Date(),
-                },
-            });
-    }
-
     const scopedWhere = and(
         eq(externalEntityMap.userId, user.id),
         eq(externalEntityMap.provider, "todoist"),
         eq(externalEntityMap.entityType, "list")
     );
 
-    if (mappings.length === 0) {
-        await db
-            .delete(externalEntityMap)
-            .where(scopedWhere);
-    } else {
-        await db
-            .delete(externalEntityMap)
-            .where(
-                and(
-                    scopedWhere,
-                    not(inArray(externalEntityMap.externalId, mappings.map((mapping) => mapping.projectId)))
+    // 🛡️ Sentinel: Wrap delete and insert in a transaction to prevent partial updates
+    await db.transaction(async (tx) => {
+        if (mappings.length > 0) {
+            await tx.insert(externalEntityMap)
+                .values(
+                    mappings.map((mapping) => ({
+                        userId: user.id,
+                        provider: "todoist" as const,
+                        entityType: "list" as const,
+                        localId: mapping.listId,
+                        externalId: mapping.projectId,
+                    }))
                 )
-            );
-    }
+                .onConflictDoUpdate({
+                    target: [
+                        externalEntityMap.userId,
+                        externalEntityMap.provider,
+                        externalEntityMap.entityType,
+                        externalEntityMap.externalId,
+                    ],
+                    set: {
+                        localId: sql`excluded.local_id`,
+                        updatedAt: new Date(),
+                    },
+                });
+        }
+
+        if (mappings.length === 0) {
+            await tx
+                .delete(externalEntityMap)
+                .where(scopedWhere);
+        } else {
+            await tx
+                .delete(externalEntityMap)
+                .where(
+                    and(
+                        scopedWhere,
+                        not(inArray(externalEntityMap.externalId, mappings.map((mapping) => mapping.projectId)))
+                    )
+                );
+        }
+    });
 
     return { success: true };
 }
@@ -585,51 +588,54 @@ export async function setTodoistLabelMappings(mappings: { labelId: string; listI
         return { success: true };
     }
 
-    if (mappings.length > 0) {
-        await db.insert(externalEntityMap)
-            .values(
-                mappings.map((mapping) => ({
-                    userId: user.id,
-                    provider: "todoist" as const,
-                    entityType: "list_label" as const,
-                    localId: mapping.listId,
-                    externalId: mapping.labelId,
-                }))
-            )
-            .onConflictDoUpdate({
-                target: [
-                    externalEntityMap.userId,
-                    externalEntityMap.provider,
-                    externalEntityMap.entityType,
-                    externalEntityMap.externalId,
-                ],
-                set: {
-                    localId: sql`excluded.local_id`,
-                    updatedAt: new Date(),
-                },
-            });
-    }
-
     const scopedWhere = and(
         eq(externalEntityMap.userId, user.id),
         eq(externalEntityMap.provider, "todoist"),
         eq(externalEntityMap.entityType, "list_label")
     );
 
-    if (mappings.length === 0) {
-        await db
-            .delete(externalEntityMap)
-            .where(scopedWhere);
-    } else {
-        await db
-            .delete(externalEntityMap)
-            .where(
-                and(
-                    scopedWhere,
-                    not(inArray(externalEntityMap.externalId, mappings.map((mapping) => mapping.labelId)))
+    // 🛡️ Sentinel: Wrap delete and insert in a transaction to prevent partial updates
+    await db.transaction(async (tx) => {
+        if (mappings.length > 0) {
+            await tx.insert(externalEntityMap)
+                .values(
+                    mappings.map((mapping) => ({
+                        userId: user.id,
+                        provider: "todoist" as const,
+                        entityType: "list_label" as const,
+                        localId: mapping.listId,
+                        externalId: mapping.labelId,
+                    }))
                 )
-            );
-    }
+                .onConflictDoUpdate({
+                    target: [
+                        externalEntityMap.userId,
+                        externalEntityMap.provider,
+                        externalEntityMap.entityType,
+                        externalEntityMap.externalId,
+                    ],
+                    set: {
+                        localId: sql`excluded.local_id`,
+                        updatedAt: new Date(),
+                    },
+                });
+        }
+
+        if (mappings.length === 0) {
+            await tx
+                .delete(externalEntityMap)
+                .where(scopedWhere);
+        } else {
+            await tx
+                .delete(externalEntityMap)
+                .where(
+                    and(
+                        scopedWhere,
+                        not(inArray(externalEntityMap.externalId, mappings.map((mapping) => mapping.labelId)))
+                    )
+                );
+        }
+    });
 
     return { success: true };
 }
