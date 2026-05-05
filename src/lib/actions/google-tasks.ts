@@ -184,9 +184,10 @@ export async function getGoogleTasksMappingData() {
   };
 }
 
-function hasDuplicateStrings(values: string[]) {
+function hasDuplicateStrings<T>(items: T[], selector: (item: T) => string) {
   const seen = new Set<string>();
-  for (const value of values) {
+  for (const item of items) {
+    const value = selector(item);
     const normalized = value.trim();
     if (seen.has(normalized)) {
       return true;
@@ -196,9 +197,10 @@ function hasDuplicateStrings(values: string[]) {
   return false;
 }
 
-function hasDuplicateNonNullNumbers(values: Array<number | null>) {
+function hasDuplicateNonNullNumbers<T>(items: T[], selector: (item: T) => number | null) {
   const seen = new Set<number>();
-  for (const value of values) {
+  for (const item of items) {
+    const value = selector(item);
     if (value !== null) {
       if (seen.has(value)) {
         return true;
@@ -221,13 +223,14 @@ export async function setGoogleTasksListMappings(
     return { success: false, error: "Too many mappings. Limit is 1000." };
   }
 
-  if (hasDuplicateStrings(mappings.map((m) => m.tasklistId))) {
+  // ⚡ Bolt Opt: Replaced `mappings.map(...)` with selector function to avoid intermediate array allocation
+  if (hasDuplicateStrings(mappings, (m) => m.tasklistId)) {
     return {
       success: false,
       error: "Duplicate Google Tasks list mappings are not allowed.",
     };
   }
-  if (hasDuplicateNonNullNumbers(mappings.map((m) => m.listId))) {
+  if (hasDuplicateNonNullNumbers(mappings, (m) => m.listId)) {
     return {
       success: false,
       error: "A local list can only be mapped to one Google Tasks list.",
