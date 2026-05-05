@@ -25,4 +25,4 @@
 
 ## 2025-05-05 - Ensure Focus Rings on Secondary Clear Action Buttons
 **Learning:** Found that secondary "clear" or "reset" actions across search interfaces and filter panels frequently miss explicit keyboard focus styling (`focus-visible:ring-offset-2`, etc), or have inconsistent custom configurations. This reduces accessibility for screen reader and keyboard users navigating input fields and complex filter menus.
-**Action:** Always verify that "clear" or "reset" buttons attached to inputs or filter toggles have consistently defined explicit `focus-visible` utility classes (e.g., `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`).
+**Action:** Always verify that "clear" or "reset" buttons attached to inputs or filter toggles have consistently defined explicit focus-visible utility classes (e.g., focus-visible:outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]).
