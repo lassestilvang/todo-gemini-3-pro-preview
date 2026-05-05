@@ -125,7 +125,7 @@ export function SearchFiltersPanel({
             {labelMap.get(filters.labelId) ?? "Label"}
             <button
               onClick={() => onUpdateFilter("labelId", undefined)}
-              className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-full"
+              className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] rounded-full"
               aria-label="Remove label filter"
             >
               <X className="h-3 w-3" />
