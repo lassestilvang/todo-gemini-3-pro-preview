@@ -212,6 +212,50 @@ export async function connectTodoist(token: string) {
     return { success: true };
 }
 
+export async function updateTodoistProjectMapping(
+    listId: number | null,
+    mapping: { projectId: string }
+) {
+    const user = await getCurrentUser();
+    if (!user) {
+        return { success: false, error: "Not authenticated" };
+    }
+
+    if (listId !== null) {
+        const validLists = await db
+            .select({ id: lists.id })
+            .from(lists)
+            .where(and(eq(lists.userId, user.id), eq(lists.id, listId)));
+
+        if (validLists.length === 0) {
+            return { success: false, error: "One or more lists not found or access denied" };
+        }
+    }
+
+    await db.insert(externalEntityMap)
+        .values({
+            userId: user.id,
+            provider: "todoist" as const,
+            entityType: "list" as const,
+            localId: listId,
+            externalId: mapping.projectId,
+        })
+        .onConflictDoUpdate({
+            target: [
+                externalEntityMap.userId,
+                externalEntityMap.provider,
+                externalEntityMap.entityType,
+                externalEntityMap.externalId,
+            ],
+            set: {
+                localId: listId,
+                updatedAt: new Date(),
+            },
+        });
+
+    return { success: true };
+}
+
 export async function getTodoistStatus() {
     const user = await getCurrentUser();
     if (!user) {
@@ -490,8 +534,29 @@ export async function setTodoistProjectMappings(mappings: { projectId: string; l
         }
     }
 
-    if (process.env.NODE_ENV === "test") {
-        return { success: true };
+    if (mappings.length > 0) {
+        await db.insert(externalEntityMap)
+            .values(
+                mappings.map((mapping) => ({
+                    userId: user.id,
+                    provider: "todoist" as const,
+                    entityType: "list" as const,
+                    localId: mapping.listId,
+                    externalId: mapping.projectId,
+                }))
+            )
+            .onConflictDoUpdate({
+                target: [
+                    externalEntityMap.userId,
+                    externalEntityMap.provider,
+                    externalEntityMap.entityType,
+                    externalEntityMap.externalId,
+                ],
+                set: {
+                    localId: sql`excluded.local_id`,
+                    updatedAt: new Date(),
+                },
+            });
     }
 
     const scopedWhere = and(
@@ -587,8 +652,29 @@ export async function setTodoistLabelMappings(mappings: { labelId: string; listI
         }
     }
 
-    if (process.env.NODE_ENV === "test") {
-        return { success: true };
+    if (mappings.length > 0) {
+        await db.insert(externalEntityMap)
+            .values(
+                mappings.map((mapping) => ({
+                    userId: user.id,
+                    provider: "todoist" as const,
+                    entityType: "list_label" as const,
+                    localId: mapping.listId,
+                    externalId: mapping.labelId,
+                }))
+            )
+            .onConflictDoUpdate({
+                target: [
+                    externalEntityMap.userId,
+                    externalEntityMap.provider,
+                    externalEntityMap.entityType,
+                    externalEntityMap.externalId,
+                ],
+                set: {
+                    localId: sql`excluded.local_id`,
+                    updatedAt: new Date(),
+                },
+            });
     }
 
     const scopedWhere = and(

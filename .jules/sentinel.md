@@ -193,6 +193,10 @@
 **Vulnerability:** Missing database transactions for sequential mutations (e.g., creating an entity followed by logging the action). If the second mutation fails, it leaves the database in an inconsistent state (partial state updates).
 **Learning:** Sequential database operations that logically belong to a single action must be executed atomically. When Drizzle queries are written independently, an error mid-sequence causes orphaned data or incomplete logging.
 **Prevention:** Always wrap dependent, sequential database mutations (like inserts and their corresponding activity logs) inside a `db.transaction(async (tx) => { ... })` block.
+## $(date +%Y-%m-%d) - [IDOR in Todoist Project Mapping]
+**Vulnerability:** Insecure Direct Object Reference (IDOR). A user could potentially map their Todoist project to any local list by providing its ID, without the system verifying that they actually owned the target list.
+**Learning:** Server actions performing database mutations must always validate ownership of all target entities against the authenticated user context, even if the action is intended for internal use or integration.
+**Prevention:** Enforce tenant isolation directly in the database query (e.g., \`.where(and(eq(lists.id, listId), eq(lists.userId, userId)))\`) and remove test-only logic bypasses that skip these checks.
 
 ## 2024-05-18 - Enforce Atomic Transactions on Integration Disconnect
 **Vulnerability:** Sequential `db.delete` operations in `disconnectGoogleTasks` and `disconnectTodoist` were executed without a database transaction. If one operation failed, it could leave orphaned data, causing data inconsistencies and potential state leakage.
