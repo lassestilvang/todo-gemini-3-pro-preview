@@ -99,7 +99,7 @@ export function SearchFiltersPanel({
             variant="ghost"
             size="sm"
             onClick={onClearFilters}
-            className="text-muted-foreground focus-visible:ring-offset-2"
+            className="text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             aria-label="Clear all filters"
           >
             Clear all
@@ -112,7 +112,7 @@ export function SearchFiltersPanel({
             {listMap.get(filters.listId) ?? "List"}
             <button
               onClick={() => onUpdateFilter("listId", undefined)}
-              className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full"
+              className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-full"
               aria-label="Remove list filter"
             >
               <X className="h-3 w-3" />
@@ -125,7 +125,7 @@ export function SearchFiltersPanel({
             {labelMap.get(filters.labelId) ?? "Label"}
             <button
               onClick={() => onUpdateFilter("labelId", undefined)}
-              className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full"
+              className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-full"
               aria-label="Remove label filter"
             >
               <X className="h-3 w-3" />
@@ -138,7 +138,7 @@ export function SearchFiltersPanel({
             {filters.priority}
             <button
               onClick={() => onUpdateFilter("priority", undefined)}
-              className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full"
+              className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-full"
               aria-label="Remove priority filter"
             >
               <X className="h-3 w-3" />
@@ -155,7 +155,7 @@ export function SearchFiltersPanel({
             {filters.status}
             <button
               onClick={() => onUpdateFilter("status", undefined)}
-              className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full"
+              className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-full"
               aria-label="Remove status filter"
             >
               <X className="h-3 w-3" />

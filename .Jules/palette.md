@@ -22,3 +22,7 @@
 ## 2025-02-18 - Keyboard Accessibility for Subtask Rows
 **Learning:** Custom interactive elements (like subtask rows) that function as buttons must have both `role="button"` and `tabIndex={0}` to be discoverable by keyboard navigation. Additionally, they must implement a keydown handler to trigger their action on 'Enter' or 'Space', and include `focus-visible` utility classes to visually indicate focus state.
 **Action:** Always ensure that custom elements that are actionable via `onClick` also include `role="button"`, `tabIndex={0}`, an `onKeyDown` handler for 'Enter' and 'Space', and visible focus styles (e.g. `focus-visible:ring-2`).
+
+## 2025-05-05 - Ensure Focus Rings on Secondary Clear Action Buttons
+**Learning:** Found that secondary "clear" or "reset" actions across search interfaces and filter panels frequently miss explicit keyboard focus styling (`focus-visible:ring-offset-2`, etc), or have inconsistent custom configurations. This reduces accessibility for screen reader and keyboard users navigating input fields and complex filter menus.
+**Action:** Always verify that "clear" or "reset" buttons attached to inputs or filter toggles have consistently defined explicit `focus-visible` utility classes (e.g., `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`).
