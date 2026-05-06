@@ -117,10 +117,41 @@ async function createTaskImpl(data: typeof tasks.$inferInsert & { labelIds?: num
       position: currentMin - 1024
     };
 
-    const result = await db.insert(tasks).values(finalTaskData as typeof tasks.$inferInsert).returning();
-    const task = Array.isArray(result) ? result[0] : null;
+    // 🛡️ Sentinel: Enforce atomicity for sequential dependent mutations
+    const task = await db.transaction(async (tx) => {
+      const result = await tx.insert(tasks).values(finalTaskData as typeof tasks.$inferInsert).returning();
+      const newTask = Array.isArray(result) ? result[0] : null;
 
-    if (!task) throw new Error("Failed to create task");
+      if (!newTask) throw new Error("Failed to create task");
+
+      if (finalLabelIds.length > 0) {
+        const validLabels = await tx
+          .select({ id: labels.id })
+          .from(labels)
+          .where(and(eq(labels.userId, taskData.userId), inArray(labels.id, finalLabelIds)));
+
+        const validLabelIds = validLabels.map((l) => l.id);
+
+        if (validLabelIds.length > 0) {
+          await tx.insert(taskLabels).values(
+            validLabelIds.map((labelId: number) => ({
+              taskId: newTask.id,
+              labelId,
+            }))
+          );
+        }
+      }
+
+      await tx.insert(taskLogs).values({
+        userId: taskData.userId,
+        taskId: newTask.id,
+        action: "created",
+        details: "Task created",
+      });
+
+      return newTask;
+    });
+
     const isSqlite = !!sqliteConnection;
     const coerceTimestamp = (value: Date | number | null | undefined) => {
       if (value === null || value === undefined) return value;
@@ -137,31 +168,6 @@ async function createTaskImpl(data: typeof tasks.$inferInsert & { labelIds?: num
           updatedAt: coerceTimestamp(task.updatedAt),
         }
       : task) as typeof tasks.$inferSelect;
-
-    if (finalLabelIds.length > 0) {
-      const validLabels = await db
-        .select({ id: labels.id })
-        .from(labels)
-        .where(and(eq(labels.userId, taskData.userId), inArray(labels.id, finalLabelIds)));
-
-      const validLabelIds = validLabels.map((l) => l.id);
-
-      if (validLabelIds.length > 0) {
-        await db.insert(taskLabels).values(
-          validLabelIds.map((labelId: number) => ({
-            taskId: task.id,
-            labelId,
-          }))
-        );
-      }
-    }
-
-    await db.insert(taskLogs).values({
-      userId: taskData.userId,
-      taskId: task.id,
-      action: "created",
-      details: "Task created",
-    });
 
     // Run sync in background (fire and forget or catch errors) to avoid blocking response
     // and prevent auth errors in nested contexts affecting the main action
