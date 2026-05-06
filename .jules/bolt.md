@@ -153,3 +153,7 @@
 ## 2026-05-18 - Eliminate redundant array allocations in duplicate checks
 **Learning:** Checking for duplicate properties within an array of objects by extracting the properties via `array.map()` (e.g., `hasDuplicate(array.map(m => m.id))`) creates unnecessary O(N) array allocation overhead and memory pressure during GC.
 **Action:** Refactored utility functions like `hasDuplicateStrings` to accept the generic object array and a selector function (e.g., `hasDuplicate(array, (m) => m.id)`). This enables a single-pass check using a `for...of` loop without creating intermediate throw-away arrays.
+
+## 2024-05-06 - Avoid Duplicate O(N) Array Iteration with Redundant Filter Calls
+**Learning:** In React components like `TemplatePreview.tsx`, creating intermediate arrays for bounds checking (e.g. `hasSubtasks = filter().length > 0`) and then repeating the identical filter operation to store the data (`validSubtasks = filter()`) creates redundant O(N) iterations and memory allocations.
+**Action:** Always compute the filtered array once and derive boolean checks like `hasSubtasks` from the cached array's length (`validSubtasks.length > 0`). This reduces CPU time and GC overhead.
