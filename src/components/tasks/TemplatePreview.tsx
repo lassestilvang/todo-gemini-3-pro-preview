@@ -70,8 +70,9 @@ export function TemplatePreview({ formData }: TemplatePreviewProps) {
   const dueDateDisplay = getDueDateDisplay();
   const energyEmoji = getEnergyEmoji();
   const contextEmoji = getContextEmoji();
-  const hasSubtasks = formData.subtasks.filter((s) => s.title.trim()).length > 0;
+  // ⚡ Bolt Opt: Avoid redundant O(N) array allocation by computing `validSubtasks` once
   const validSubtasks = formData.subtasks.filter((s) => s.title.trim());
+  const hasSubtasks = validSubtasks.length > 0;
 
   // Check if there's anything to preview
   const hasContent =
@@ -86,7 +87,10 @@ export function TemplatePreview({ formData }: TemplatePreviewProps) {
 
   if (!hasContent) {
     return (
-      <div className="rounded-lg border border-dashed p-4" data-testid="template-preview">
+      <div
+        className="rounded-lg border border-dashed p-4"
+        data-testid="template-preview"
+      >
         <p className="text-sm text-muted-foreground text-center">
           Fill in the form to see a preview of your template
         </p>
@@ -95,17 +99,25 @@ export function TemplatePreview({ formData }: TemplatePreviewProps) {
   }
 
   return (
-    <div className="rounded-lg border p-4 bg-card" data-testid="template-preview">
+    <div
+      className="rounded-lg border p-4 bg-card"
+      data-testid="template-preview"
+    >
       {/* Main Task Preview */}
       <div className="space-y-2">
         {/* Title */}
         <div className="font-medium text-sm" data-testid="preview-title">
-          {formData.title || <span className="text-muted-foreground italic">No title</span>}
+          {formData.title || (
+            <span className="text-muted-foreground italic">No title</span>
+          )}
         </div>
 
         {/* Description */}
         {formData.description && (
-          <p className="text-sm text-muted-foreground" data-testid="preview-description">
+          <p
+            className="text-sm text-muted-foreground"
+            data-testid="preview-description"
+          >
             {formData.description}
           </p>
         )}
@@ -114,7 +126,10 @@ export function TemplatePreview({ formData }: TemplatePreviewProps) {
         <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
           {/* Subtask count indicator */}
           {hasSubtasks && (
-            <div className="flex items-center gap-1" data-testid="preview-subtask-count">
+            <div
+              className="flex items-center gap-1"
+              data-testid="preview-subtask-count"
+            >
               <GitBranch className="h-3 w-3" />
               <span>{validSubtasks.length}</span>
             </div>
@@ -122,7 +137,10 @@ export function TemplatePreview({ formData }: TemplatePreviewProps) {
 
           {/* Due Date */}
           {dueDateDisplay && (
-            <div className="flex items-center gap-1" data-testid="preview-due-date">
+            <div
+              className="flex items-center gap-1"
+              data-testid="preview-due-date"
+            >
               <Calendar className="h-3 w-3" />
               <span>{dueDateDisplay}</span>
             </div>
@@ -131,7 +149,10 @@ export function TemplatePreview({ formData }: TemplatePreviewProps) {
           {/* Priority */}
           {formData.priority !== "none" && (
             <div
-              className={cn("flex items-center gap-1", priorityColors[formData.priority])}
+              className={cn(
+                "flex items-center gap-1",
+                priorityColors[formData.priority],
+              )}
               data-testid="preview-priority"
             >
               <Flag className="h-3 w-3" />
@@ -141,7 +162,10 @@ export function TemplatePreview({ formData }: TemplatePreviewProps) {
 
           {/* Estimate */}
           {formData.estimateMinutes && formData.estimateMinutes > 0 && (
-            <div className="flex items-center gap-1" data-testid="preview-estimate">
+            <div
+              className="flex items-center gap-1"
+              data-testid="preview-estimate"
+            >
               <Clock className="h-3 w-3" />
               <span>{formData.estimateMinutes}m</span>
             </div>
@@ -149,7 +173,10 @@ export function TemplatePreview({ formData }: TemplatePreviewProps) {
 
           {/* Energy Level */}
           {energyEmoji && (
-            <div className="flex items-center gap-1" data-testid="preview-energy">
+            <div
+              className="flex items-center gap-1"
+              data-testid="preview-energy"
+            >
               <Zap className="h-3 w-3" />
               <span>{energyEmoji}</span>
             </div>
@@ -157,7 +184,10 @@ export function TemplatePreview({ formData }: TemplatePreviewProps) {
 
           {/* Context */}
           {contextEmoji && (
-            <div className="flex items-center gap-1" data-testid="preview-context">
+            <div
+              className="flex items-center gap-1"
+              data-testid="preview-context"
+            >
               <MapPin className="h-3 w-3" />
               <span>{contextEmoji}</span>
             </div>
@@ -167,14 +197,20 @@ export function TemplatePreview({ formData }: TemplatePreviewProps) {
 
       {/* Subtasks Preview */}
       {hasSubtasks && (
-        <div className="mt-3 ml-4 space-y-1 border-l-2 border-muted pl-3" data-testid="preview-subtasks">
+        <div
+          className="mt-3 ml-4 space-y-1 border-l-2 border-muted pl-3"
+          data-testid="preview-subtasks"
+        >
           {validSubtasks.map((subtask) => (
             <div key={subtask.id} className="py-1">
               <div className="text-sm" data-testid="preview-subtask-title">
                 {subtask.title}
               </div>
               {subtask.description && (
-                <div className="text-xs text-muted-foreground" data-testid="preview-subtask-description">
+                <div
+                  className="text-xs text-muted-foreground"
+                  data-testid="preview-subtask-description"
+                >
                   {subtask.description}
                 </div>
               )}
