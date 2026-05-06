@@ -199,4 +199,4 @@
 
 ## 2025-05-06 - Add Accessible Label to Time Estimate Slider
 **Learning:** Native `<input type="range">` elements used as custom sliders (like the one in `TimeEstimateInput.tsx`) frequently lack contextual text labels that screen readers can interpret, leading to poor accessibility for visually impaired users.
-**Action:** Always ensure that range sliders, or any custom interactive inputs that do not have a visible `<label>` associated with them via `htmlFor`/`id`, have an explicit `aria-label` attribute added to describe their function (e.g., `aria-label="Adjust time estimate"`).
+**Action:** Always ensure that range sliders, or any custom interactive inputs that do not have a visible `<label>` associated with them via `htmlFor`/`id`, have an explicit `aria-label` attribute added to describe their function (e.g., `aria-label="Adjust time estimate"`) and `aria-valuetext` to provide a human-readable description of the current value.
