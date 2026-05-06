@@ -133,6 +133,7 @@ export function TimeEstimateInput({ value, onChange, className }: TimeEstimateIn
                                     max={480}
                                     step={5}
                                     aria-label="Adjust time estimate"
+                                    aria-valuetext={formatTime(sliderValue)}
                                     className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                 />
                                 <div className="flex justify-between text-xs text-muted-foreground">
