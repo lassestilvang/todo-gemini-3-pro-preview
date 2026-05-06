@@ -196,3 +196,7 @@
 ## 2024-05-04 - Add aria-expanded and aria-controls to filter toggle
 **Learning:** For collapsible content panels triggered by a button, screen readers require the button to have `aria-expanded` and `aria-controls` attributes linking to the ID of the content container. Without these, the toggle button’s purpose and the visibility state of the filters remain inaccessible.
 **Action:** Always verify that custom dropdowns, toggles, or filter panels explicitly use `aria-expanded` and `aria-controls` to establish the semantic relationship between the trigger and the content it reveals.
+
+## 2025-05-06 - Add Accessible Label to Time Estimate Slider
+**Learning:** Native `<input type="range">` elements used as custom sliders (like the one in `TimeEstimateInput.tsx`) frequently lack contextual text labels that screen readers can interpret, leading to poor accessibility for visually impaired users.
+**Action:** Always ensure that range sliders, or any custom interactive inputs that do not have a visible `<label>` associated with them via `htmlFor`/`id`, have an explicit `aria-label` attribute added to describe their function (e.g., `aria-label="Adjust time estimate"`) and `aria-valuetext` to provide a human-readable description of the current value.
