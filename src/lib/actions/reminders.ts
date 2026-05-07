@@ -150,7 +150,7 @@ async function deleteReminderImpl(userId: string, id: number) {
             tx
               .select({ id: tasks.id })
               .from(tasks)
-              .where(eq(tasks.userId, userId)),
+              .where(and(eq(tasks.id, reminder[0].taskId), eq(tasks.userId, userId))),
           ),
         ),
       );
