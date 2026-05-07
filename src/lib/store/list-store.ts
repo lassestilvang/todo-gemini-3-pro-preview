@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { deleteListFromCache, getCachedLists, replaceListsInCache, saveListToCache, saveListsToCache } from '@/lib/sync/db';
+import { deleteListFromCache, deleteListsFromCacheBatch, getCachedLists, replaceListsInCache, saveListsToCache, saveListToCache } from '@/lib/sync/db';
 
 type List = {
     id: number;
@@ -97,7 +97,8 @@ export const useListStore = create<ListState>((set, get) => ({
             });
             return { lists: newLists };
         });
-        Promise.all(ids.map(id => deleteListFromCache(id))).catch(console.error);
+        // ⚡ Bolt Opt: Replaced sequential deleteListFromCache with a single batch delete to reduce IndexedDB transaction overhead
+        deleteListsFromCacheBatch(ids).catch(console.error);
     },
 
     deleteList: (id: number) => {
