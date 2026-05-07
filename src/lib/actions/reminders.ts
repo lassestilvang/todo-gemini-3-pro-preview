@@ -74,16 +74,18 @@ async function createReminderImpl(
     throw new NotFoundError("Task not found or access denied");
   }
 
-  await db.insert(reminders).values({
-    taskId,
-    remindAt,
-  });
+  await db.transaction(async (tx) => {
+    await tx.insert(reminders).values({
+      taskId,
+      remindAt,
+    });
 
-  await db.insert(taskLogs).values({
-    userId,
-    taskId,
-    action: "reminder_added",
-    details: `Reminder set for ${remindAt.toLocaleString()}`,
+    await tx.insert(taskLogs).values({
+      userId,
+      taskId,
+      action: "reminder_added",
+      details: `Reminder set for ${remindAt.toLocaleString()}`,
+    });
   });
 
   revalidatePath("/");
@@ -130,27 +132,29 @@ async function deleteReminderImpl(userId: string, id: number) {
     throw new NotFoundError("Reminder not found or access denied");
   }
 
-  await db.insert(taskLogs).values({
-    userId,
-    taskId: reminder[0].taskId,
-    action: "reminder_removed",
-    details: `Reminder removed for ${reminder[0].remindAt.toLocaleString()}`,
-  });
+  await db.transaction(async (tx) => {
+    await tx.insert(taskLogs).values({
+      userId,
+      taskId: reminder[0].taskId,
+      action: "reminder_removed",
+      details: `Reminder removed for ${reminder[0].remindAt.toLocaleString()}`,
+    });
 
-  await db
-    .delete(reminders)
-    .where(
-      and(
-        eq(reminders.id, id),
-        inArray(
-          reminders.taskId,
-          db
-            .select({ id: tasks.id })
-            .from(tasks)
-            .where(eq(tasks.userId, userId)),
+    await tx
+      .delete(reminders)
+      .where(
+        and(
+          eq(reminders.id, id),
+          inArray(
+            reminders.taskId,
+            tx
+              .select({ id: tasks.id })
+              .from(tasks)
+              .where(eq(tasks.userId, userId)),
+          ),
         ),
-      ),
-    );
+      );
+  });
   revalidatePath("/");
 }
 

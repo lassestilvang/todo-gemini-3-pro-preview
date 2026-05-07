@@ -211,3 +211,8 @@
 **Vulnerability:** Partial data state updates during sequential database operations (e.g., creating a task, assigning labels, logging activity). If an operation after the primary entity creation fails, the database is left in an inconsistent state with orphaned records or missing expected metadata.
 **Learning:** Sequential inserts or updates that depend on a common operation (like a primary insertion) must be treated as a single unit of work. Application-level execution does not guarantee atomicity in the event of failures or errors.
 **Prevention:** Always wrap multiple dependent database mutations within a database transaction (`await db.transaction(async (tx) => { ... })`). This ensures that either all operations succeed completely or all fail gracefully, maintaining data integrity.
+
+## $(date +%Y-%m-%d) - [Data Integrity] Missing Transactions in Reminders Actions
+**Vulnerability:** In `src/lib/actions/reminders.ts`, the `createReminderImpl` and `deleteReminderImpl` functions performed sequential database mutations (inserting/deleting a reminder, then inserting a task log) outside of a database transaction.
+**Learning:** Performing multiple related mutations sequentially without a transaction creates a risk of partial state updates if one operation fails, compromising data integrity (e.g., creating a reminder without logging it, or logging its deletion without actually removing it).
+**Prevention:** Always enforce atomicity by wrapping sequential dependent database mutations, such as CRUD operations on primary entities combined with secondary logging or tracking entries, in a `db.transaction(async (tx) => { ... })` block.
