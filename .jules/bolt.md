@@ -157,3 +157,6 @@
 ## 2024-05-06 - Avoid Duplicate O(N) Array Iteration with Redundant Filter Calls
 **Learning:** In React components like `TemplatePreview.tsx`, creating intermediate arrays for bounds checking (e.g. `hasSubtasks = filter().length > 0`) and then repeating the identical filter operation to store the data (`validSubtasks = filter()`) creates redundant O(N) iterations and memory allocations.
 **Action:** Always compute the filtered array once and derive boolean checks like `hasSubtasks` from the cached array's length (`validSubtasks.length > 0`). This reduces CPU time and GC overhead.
+## 2026-05-19 - ⚡ Bolt: Batch IndexedDB cache deletions
+**Learning:** Performing multiple individual `db.delete()` calls in IndexedDB wrapped in a `Promise.all` opens an independent transaction for each delete. This adds significant transaction overhead and blocks the main thread longer than necessary during bulk operations like cache invalidation in Zustand stores.
+Action: When deleting multiple items from an IndexedDB store, open a single readwrite transaction and batch all .delete() calls onto that single transaction object using a for...of loop (e.g., for (const id of ids) tx.store.delete(id); await tx.done), significantly reducing transaction overhead and avoiding intermediate array allocations.

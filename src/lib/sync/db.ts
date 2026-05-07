@@ -110,6 +110,17 @@ export async function deleteTaskFromCache(id: number) {
     await db.delete('tasks', id);
 }
 
+// ⚡ Bolt Opt: Batch deletion to reduce IndexedDB transaction overhead
+export async function deleteTasksFromCacheBatch(ids: number[]) {
+    if (ids.length === 0) return;
+    const db = await getDB();
+    const tx = db.transaction('tasks', 'readwrite');
+    for (const id of ids) {
+        tx.store.delete(id);
+    }
+    await tx.done;
+}
+
 export async function getCachedTasks() {
     const db = await getDB();
     return db.getAll('tasks') as Promise<any[]>;
@@ -223,6 +234,17 @@ export async function deleteListFromCache(id: number) {
     await db.delete('lists', id);
 }
 
+// ⚡ Bolt Opt: Batch deletion to reduce IndexedDB transaction overhead
+export async function deleteListsFromCacheBatch(ids: number[]) {
+    if (ids.length === 0) return;
+    const db = await getDB();
+    const tx = db.transaction('lists', 'readwrite');
+    for (const id of ids) {
+        tx.store.delete(id);
+    }
+    await tx.done;
+}
+
 export async function getCachedLists() {
     const db = await getDB();
     return db.getAll('lists') as Promise<any[]>;
@@ -266,6 +288,17 @@ export async function saveLabelToCache(item: any) {
 export async function deleteLabelFromCache(id: number) {
     const db = await getDB();
     await db.delete('labels', id);
+}
+
+// ⚡ Bolt Opt: Batch deletion to reduce IndexedDB transaction overhead
+export async function deleteLabelsFromCacheBatch(ids: number[]) {
+    if (ids.length === 0) return;
+    const db = await getDB();
+    const tx = db.transaction('labels', 'readwrite');
+    for (const id of ids) {
+        tx.store.delete(id);
+    }
+    await tx.done;
 }
 
 export async function getCachedLabels() {

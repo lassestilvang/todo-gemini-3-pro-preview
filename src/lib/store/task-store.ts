@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Task } from '@/lib/types';
-import { deleteTaskFromCache, getCachedTasks, replaceTasksInCache, saveTaskToCache, saveTasksToCache } from '@/lib/sync/db';
+import { deleteTaskFromCache, deleteTasksFromCacheBatch, getCachedTasks, replaceTasksInCache, saveTasksToCache, saveTaskToCache } from '@/lib/sync/db';
 
 interface TaskState {
     tasks: Record<number, Task>;
@@ -150,7 +150,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
             });
             return { tasks: newTasks, subtaskIndex: updatedIndex };
         });
-        Promise.all(ids.map(id => deleteTaskFromCache(id))).catch(console.error);
+        // ⚡ Bolt Opt: Replaced sequential deleteTaskFromCache with a single batch delete to reduce IndexedDB transaction overhead
+        deleteTasksFromCacheBatch(ids).catch(console.error);
     },
 
     deleteTask: (id: number) => {

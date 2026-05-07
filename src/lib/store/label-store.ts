@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { deleteLabelFromCache, getCachedLabels, replaceLabelsInCache, saveLabelToCache, saveLabelsToCache } from '@/lib/sync/db';
+import { deleteLabelFromCache, deleteLabelsFromCacheBatch, getCachedLabels, replaceLabelsInCache, saveLabelToCache, saveLabelsToCache } from '@/lib/sync/db';
 
 type Label = {
     id: number;
@@ -96,7 +96,8 @@ export const useLabelStore = create<LabelState>((set, get) => ({
             });
             return { labels: newLabels };
         });
-        Promise.all(ids.map(id => deleteLabelFromCache(id))).catch(console.error);
+        // ⚡ Bolt Opt: Replaced sequential deleteLabelFromCache with a single batch delete to reduce IndexedDB transaction overhead
+        deleteLabelsFromCacheBatch(ids).catch(console.error);
     },
 
     deleteLabel: (id: number) => {
