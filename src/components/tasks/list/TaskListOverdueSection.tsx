@@ -69,7 +69,7 @@ export const TaskListOverdueSection = React.memo(function TaskListOverdueSection
                 </button>
                 <button
                     type="button"
-                    aria-label="Reschedule overdue tasks"
+                    aria-label={`Reschedule ${overdueTasks.length} overdue tasks`}
                     className="flex items-center gap-1.5 text-xs font-medium text-destructive hover:text-destructive/80 transition-colors px-2 py-1 rounded-md hover:bg-destructive/10 focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-destructive"
                     onClick={(e) => {
                         e.stopPropagation();
