@@ -163,11 +163,11 @@
 **Learning:** Found several components utilizing standard `<button>` tags (like icon buttons for expanding sections or resetting inputs) without descriptive `aria-label`s, which makes them inaccessible to screen readers.
 **Action:** When creating raw `<button>` elements, specifically those without internal text content or whose text is only an icon or count, explicitly add an `aria-label` to describe the action.
 
-## $(date +%Y-%m-%d) - Added focus-visible styles to inputs
+## 2024-05-20 - Added focus-visible styles to inputs
 **Learning:** Found several native `<input>` elements (text inputs for view names, number inputs for time estimates, and range sliders) lacking keyboard focus styles, leading to poor accessibility for keyboard users compared to native UI library components.
 **Action:** Always ensure that custom or raw `<input>` elements include standard focus indicators (e.g., `outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]`) to maintain consistent keyboard accessibility across the application.
 
-## $(date +%Y-%m-%d) - Found and removed duplicate prop
+## 2024-05-20 - Found and removed duplicate prop
 **Learning:** Found an element containing two `aria-label` properties, one hardcoded and one dynamic, which caused an ESLint error and could confuse screen readers due to undefined behavior with conflicting accessibility attributes.
 **Action:** When adding or verifying accessibility attributes like `aria-label`, always double check the element to ensure that the attribute isn't already declared earlier in the JSX prop list.
 
@@ -200,3 +200,7 @@
 ## 2025-05-06 - Add Accessible Label to Time Estimate Slider
 **Learning:** Native `<input type="range">` elements used as custom sliders (like the one in `TimeEstimateInput.tsx`) frequently lack contextual text labels that screen readers can interpret, leading to poor accessibility for visually impaired users.
 **Action:** Always ensure that range sliders, or any custom interactive inputs that do not have a visible `<label>` associated with them via `htmlFor`/`id`, have an explicit `aria-label` attribute added to describe their function (e.g., `aria-label="Adjust time estimate"`) and `aria-valuetext` to provide a human-readable description of the current value.
+
+## 2024-05-20 - Add missing aria-label to Reschedule button
+**Learning:** Found that the "Reschedule" button in the `TaskListOverdueSection` component lacked an `aria-label`. Without this, screen readers might just announce "button" or only the icon name/partial text, depending on how they parse the nested content (`CalendarClock` and text).
+**Action:** Always provide an explicit `aria-label` (e.g., `aria-label="Reschedule overdue tasks"`) for utility action buttons within task lists or sections to ensure their context and purpose are fully clear to screen reader users.
