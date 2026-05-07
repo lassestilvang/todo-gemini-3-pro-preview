@@ -115,10 +115,10 @@ export async function deleteTasksFromCacheBatch(ids: number[]) {
     if (ids.length === 0) return;
     const db = await getDB();
     const tx = db.transaction('tasks', 'readwrite');
-    await Promise.all([
-        ...ids.map(id => tx.store.delete(id)),
-        tx.done
-    ]);
+    for (const id of ids) {
+        tx.store.delete(id);
+    }
+    await tx.done;
 }
 
 export async function getCachedTasks() {
