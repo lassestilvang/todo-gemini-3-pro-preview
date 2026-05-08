@@ -75,7 +75,7 @@ export async function saveTasksToCache(tasks: any[]) {
     const db = await getDB();
     const tx = db.transaction('tasks', 'readwrite');
     for (const t of tasks) {
-        tx.store.put(t);
+        void void tx.store.put(t);
     }
     await tx.done;
 }
@@ -90,12 +90,12 @@ export async function replaceTasksInCache(tasks: any[]) {
         for (const entry of existing) {
             const id = (entry as { id?: number }).id;
             if (typeof id === 'number') {
-                tx.store.delete(id);
+                void tx.store.delete(id);
             }
         }
     }
     for (const task of tasks) {
-        tx.store.put(task);
+        void void tx.store.put(task);
     }
     await tx.done;
 }
@@ -116,7 +116,7 @@ export async function deleteTasksFromCacheBatch(ids: number[]) {
     const db = await getDB();
     const tx = db.transaction('tasks', 'readwrite');
     for (const id of ids) {
-        tx.store.delete(id);
+        void void tx.store.delete(id);
     }
     await tx.done;
 }
@@ -137,7 +137,7 @@ export async function addToQueueBatch(actions: PendingAction[]) {
     const tx = db.transaction('queue', 'readwrite');
     // Perf: batch queue inserts to reduce IndexedDB overhead during rapid dispatch bursts.
     for (const action of actions) {
-        tx.store.put(action);
+        void void tx.store.put(action);
     }
     await tx.done;
 }
@@ -154,7 +154,7 @@ export async function removeFromQueueBatch(ids: string[]) {
     // Perf: batch deletes in a single transaction to reduce IndexedDB overhead
     // when draining large sync queues.
     for (const id of ids) {
-        tx.store.delete(id);
+        void void tx.store.delete(id);
     }
     await tx.done;
 }
@@ -186,7 +186,7 @@ export async function updateActionStatusBatch(
         if (action) {
             action.status = status;
             if (error) action.error = error;
-            tx.store.put(action);
+            void void tx.store.put(action);
         }
     }
     await tx.done;
@@ -197,7 +197,7 @@ export async function saveListsToCache(items: any[]) {
     const db = await getDB();
     const tx = db.transaction('lists', 'readwrite');
     for (const item of items) {
-        tx.store.put(item);
+        void void tx.store.put(item);
     }
     await tx.done;
 }
@@ -212,12 +212,12 @@ export async function replaceListsInCache(items: any[]) {
         for (const entry of existing) {
             const id = (entry as { id?: number }).id;
             if (typeof id === 'number') {
-                tx.store.delete(id);
+                void tx.store.delete(id);
             }
         }
     }
     for (const item of items) {
-        tx.store.put(item);
+        void void tx.store.put(item);
     }
     await tx.done;
 }
@@ -238,7 +238,7 @@ export async function deleteListsFromCacheBatch(ids: number[]) {
     const db = await getDB();
     const tx = db.transaction('lists', 'readwrite');
     for (const id of ids) {
-        tx.store.delete(id);
+        void void tx.store.delete(id);
     }
     await tx.done;
 }
@@ -253,7 +253,7 @@ export async function saveLabelsToCache(items: any[]) {
     const db = await getDB();
     const tx = db.transaction('labels', 'readwrite');
     for (const item of items) {
-        tx.store.put(item);
+        void void tx.store.put(item);
     }
     await tx.done;
 }
@@ -268,12 +268,12 @@ export async function replaceLabelsInCache(items: any[]) {
         for (const entry of existing) {
             const id = (entry as { id?: number }).id;
             if (typeof id === 'number') {
-                tx.store.delete(id);
+                void tx.store.delete(id);
             }
         }
     }
     for (const item of items) {
-        tx.store.put(item);
+        void void tx.store.put(item);
     }
     await tx.done;
 }
@@ -294,7 +294,7 @@ export async function deleteLabelsFromCacheBatch(ids: number[]) {
     const db = await getDB();
     const tx = db.transaction('labels', 'readwrite');
     for (const id of ids) {
-        tx.store.delete(id);
+        void void tx.store.delete(id);
     }
     await tx.done;
 }
@@ -330,8 +330,8 @@ export async function setAllLastFetched(): Promise<void> {
     const db = await getDB();
     const now = Date.now();
     const tx = db.transaction('meta', 'readwrite');
-    tx.store.put({ key: 'lastFetched:tasks', value: now });
-    tx.store.put({ key: 'lastFetched:lists', value: now });
-    tx.store.put({ key: 'lastFetched:labels', value: now });
+    void void tx.store.put({ key: 'lastFetched:tasks', value: now });
+    void void tx.store.put({ key: 'lastFetched:lists', value: now });
+    void void tx.store.put({ key: 'lastFetched:labels', value: now });
     await tx.done;
 }
