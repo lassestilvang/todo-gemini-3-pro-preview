@@ -74,10 +74,10 @@ export function getDB() {
 export async function saveTasksToCache(tasks: any[]) {
     const db = await getDB();
     const tx = db.transaction('tasks', 'readwrite');
-    await Promise.all([
-        ...tasks.map(t => tx.store.put(t)),
-        tx.done
-    ]);
+    for (const t of tasks) {
+        void void tx.store.put(t);
+    }
+    await tx.done;
 }
 
 export async function replaceTasksInCache(tasks: any[]) {
@@ -87,17 +87,17 @@ export async function replaceTasksInCache(tasks: any[]) {
         await (tx.store as { clear: () => Promise<void> }).clear();
     } else {
         const existing = await tx.store.getAll();
-        await Promise.all(
-            existing
-                .map((entry) => (entry as { id?: number }).id)
-                .filter((id): id is number => typeof id === "number")
-                .map((id) => tx.store.delete(id))
-        );
+        for (const entry of existing) {
+            const id = (entry as { id?: number }).id;
+            if (typeof id === 'number') {
+                void tx.store.delete(id);
+            }
+        }
     }
-    await Promise.all([
-        ...tasks.map((task) => tx.store.put(task)),
-        tx.done,
-    ]);
+    for (const task of tasks) {
+        void void tx.store.put(task);
+    }
+    await tx.done;
 }
 
 export async function saveTaskToCache(task: any) {
@@ -116,7 +116,7 @@ export async function deleteTasksFromCacheBatch(ids: number[]) {
     const db = await getDB();
     const tx = db.transaction('tasks', 'readwrite');
     for (const id of ids) {
-        tx.store.delete(id);
+        void void tx.store.delete(id);
     }
     await tx.done;
 }
@@ -136,10 +136,10 @@ export async function addToQueueBatch(actions: PendingAction[]) {
     const db = await getDB();
     const tx = db.transaction('queue', 'readwrite');
     // Perf: batch queue inserts to reduce IndexedDB overhead during rapid dispatch bursts.
-    await Promise.all([
-        ...actions.map(action => tx.store.put(action)),
-        tx.done
-    ]);
+    for (const action of actions) {
+        void void tx.store.put(action);
+    }
+    await tx.done;
 }
 
 export async function removeFromQueue(id: string) {
@@ -153,10 +153,10 @@ export async function removeFromQueueBatch(ids: string[]) {
     const tx = db.transaction('queue', 'readwrite');
     // Perf: batch deletes in a single transaction to reduce IndexedDB overhead
     // when draining large sync queues.
-    await Promise.all([
-        ...ids.map(id => tx.store.delete(id)),
-        tx.done
-    ]);
+    for (const id of ids) {
+        void void tx.store.delete(id);
+    }
+    await tx.done;
 }
 
 export async function getQueue(): Promise<PendingAction[]> {
@@ -181,27 +181,25 @@ export async function updateActionStatusBatch(
     const db = await getDB();
     const tx = db.transaction('queue', 'readwrite');
     // Perf: batch status updates to reduce per-action IndexedDB writes during sync.
-    await Promise.all([
-        ...updates.map(async ({ id, status, error }) => {
-            const action = await tx.store.get(id);
-            if (action) {
-                action.status = status;
-                if (error) action.error = error;
-                await tx.store.put(action);
-            }
-        }),
-        tx.done
-    ]);
+    for (const { id, status, error } of updates) {
+        const action = await tx.store.get(id);
+        if (action) {
+            action.status = status;
+            if (error) action.error = error;
+            void void tx.store.put(action);
+        }
+    }
+    await tx.done;
 }
 
 // Lists cache functions
 export async function saveListsToCache(items: any[]) {
     const db = await getDB();
     const tx = db.transaction('lists', 'readwrite');
-    await Promise.all([
-        ...items.map(item => tx.store.put(item)),
-        tx.done
-    ]);
+    for (const item of items) {
+        void void tx.store.put(item);
+    }
+    await tx.done;
 }
 
 export async function replaceListsInCache(items: any[]) {
@@ -211,17 +209,17 @@ export async function replaceListsInCache(items: any[]) {
         await (tx.store as { clear: () => Promise<void> }).clear();
     } else {
         const existing = await tx.store.getAll();
-        await Promise.all(
-            existing
-                .map((entry) => (entry as { id?: number }).id)
-                .filter((id): id is number => typeof id === "number")
-                .map((id) => tx.store.delete(id))
-        );
+        for (const entry of existing) {
+            const id = (entry as { id?: number }).id;
+            if (typeof id === 'number') {
+                void tx.store.delete(id);
+            }
+        }
     }
-    await Promise.all([
-        ...items.map((item) => tx.store.put(item)),
-        tx.done,
-    ]);
+    for (const item of items) {
+        void void tx.store.put(item);
+    }
+    await tx.done;
 }
 
 export async function saveListToCache(item: any) {
@@ -240,7 +238,7 @@ export async function deleteListsFromCacheBatch(ids: number[]) {
     const db = await getDB();
     const tx = db.transaction('lists', 'readwrite');
     for (const id of ids) {
-        tx.store.delete(id);
+        void void tx.store.delete(id);
     }
     await tx.done;
 }
@@ -254,10 +252,10 @@ export async function getCachedLists() {
 export async function saveLabelsToCache(items: any[]) {
     const db = await getDB();
     const tx = db.transaction('labels', 'readwrite');
-    await Promise.all([
-        ...items.map(item => tx.store.put(item)),
-        tx.done
-    ]);
+    for (const item of items) {
+        void void tx.store.put(item);
+    }
+    await tx.done;
 }
 
 export async function replaceLabelsInCache(items: any[]) {
@@ -267,17 +265,17 @@ export async function replaceLabelsInCache(items: any[]) {
         await (tx.store as { clear: () => Promise<void> }).clear();
     } else {
         const existing = await tx.store.getAll();
-        await Promise.all(
-            existing
-                .map((entry) => (entry as { id?: number }).id)
-                .filter((id): id is number => typeof id === "number")
-                .map((id) => tx.store.delete(id))
-        );
+        for (const entry of existing) {
+            const id = (entry as { id?: number }).id;
+            if (typeof id === 'number') {
+                void tx.store.delete(id);
+            }
+        }
     }
-    await Promise.all([
-        ...items.map((item) => tx.store.put(item)),
-        tx.done,
-    ]);
+    for (const item of items) {
+        void void tx.store.put(item);
+    }
+    await tx.done;
 }
 
 export async function saveLabelToCache(item: any) {
@@ -296,7 +294,7 @@ export async function deleteLabelsFromCacheBatch(ids: number[]) {
     const db = await getDB();
     const tx = db.transaction('labels', 'readwrite');
     for (const id of ids) {
-        tx.store.delete(id);
+        void void tx.store.delete(id);
     }
     await tx.done;
 }
@@ -332,10 +330,8 @@ export async function setAllLastFetched(): Promise<void> {
     const db = await getDB();
     const now = Date.now();
     const tx = db.transaction('meta', 'readwrite');
-    await Promise.all([
-        tx.store.put({ key: 'lastFetched:tasks', value: now }),
-        tx.store.put({ key: 'lastFetched:lists', value: now }),
-        tx.store.put({ key: 'lastFetched:labels', value: now }),
-        tx.done
-    ]);
+    void void tx.store.put({ key: 'lastFetched:tasks', value: now });
+    void void tx.store.put({ key: 'lastFetched:lists', value: now });
+    void void tx.store.put({ key: 'lastFetched:labels', value: now });
+    await tx.done;
 }
