@@ -1,341 +1,358 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { openDB, DBSchema, IDBPDatabase } from 'idb';
-import { PendingAction } from './types';
+import { openDB, DBSchema, IDBPDatabase } from "idb";
+import { PendingAction } from "./types";
 
-const DB_NAME = 'todo-gemini-sync';
+const DB_NAME = "todo-gemini-sync";
 const DB_VERSION = 5;
 
 interface MetaValue {
-    key: string;
-    value: number | string | boolean;
+  key: string;
+  value: number | string | boolean;
 }
 
 interface SyncDB extends DBSchema {
-    queue: {
-        key: string;
-        value: PendingAction;
-        indexes: { 'by-timestamp': number };
-    };
-    tasks: {
-        key: number;
-        value: Record<string, unknown>;
-    };
-    lists: {
-        key: number;
-        value: Record<string, unknown>;
-    };
-    labels: {
-        key: number;
-        value: Record<string, unknown>;
-    };
-    meta: {
-        key: string;
-        value: MetaValue;
-    };
+  queue: {
+    key: string;
+    value: PendingAction;
+    indexes: { "by-timestamp": number };
+  };
+  tasks: {
+    key: number;
+    value: Record<string, unknown>;
+  };
+  lists: {
+    key: number;
+    value: Record<string, unknown>;
+  };
+  labels: {
+    key: number;
+    value: Record<string, unknown>;
+  };
+  meta: {
+    key: string;
+    value: MetaValue;
+  };
 }
 
 let dbPromise: Promise<IDBPDatabase<SyncDB>> | null = null;
 
 export function getDB() {
-    if (!dbPromise) {
-        dbPromise = openDB<SyncDB>(DB_NAME, DB_VERSION, {
-            async upgrade(db, oldVersion, _newVersion, transaction) {
-                if (oldVersion < 1) {
-                    const store = db.createObjectStore('queue', { keyPath: 'id' });
-                    store.createIndex('by-timestamp', 'timestamp');
-                }
-                if (oldVersion < 2) {
-                    db.createObjectStore('tasks', { keyPath: 'id' });
-                }
-                if (oldVersion < 3) {
-                    db.createObjectStore('lists', { keyPath: 'id' });
-                    db.createObjectStore('labels', { keyPath: 'id' });
-                }
-                if (oldVersion < 4) {
-                    db.createObjectStore('meta', { keyPath: 'key' });
-                }
-                if (oldVersion < 5 && db.objectStoreNames.contains('tasks')) {
-                    const store = transaction.objectStore('tasks');
-                    let cursor = await store.openCursor();
-                    while (cursor) {
-                        const value = cursor.value as Record<string, unknown>;
-                        if (value && !("dueDatePrecision" in value)) {
-                            cursor.update({ ...value, dueDatePrecision: null });
-                        }
-                        cursor = await cursor.continue();
-                    }
-                }
-            },
-        });
-    }
-    return dbPromise;
+  if (!dbPromise) {
+    dbPromise = openDB<SyncDB>(DB_NAME, DB_VERSION, {
+      async upgrade(db, oldVersion, _newVersion, transaction) {
+        if (oldVersion < 1) {
+          const store = db.createObjectStore("queue", { keyPath: "id" });
+          store.createIndex("by-timestamp", "timestamp");
+        }
+        if (oldVersion < 2) {
+          db.createObjectStore("tasks", { keyPath: "id" });
+        }
+        if (oldVersion < 3) {
+          db.createObjectStore("lists", { keyPath: "id" });
+          db.createObjectStore("labels", { keyPath: "id" });
+        }
+        if (oldVersion < 4) {
+          db.createObjectStore("meta", { keyPath: "key" });
+        }
+        if (oldVersion < 5 && db.objectStoreNames.contains("tasks")) {
+          const store = transaction.objectStore("tasks");
+          let cursor = await store.openCursor();
+          while (cursor) {
+            const value = cursor.value as Record<string, unknown>;
+            if (value && !("dueDatePrecision" in value)) {
+              cursor.update({ ...value, dueDatePrecision: null });
+            }
+            cursor = await cursor.continue();
+          }
+        }
+      },
+    });
+  }
+  return dbPromise;
 }
 
 export async function saveTasksToCache(tasks: any[]) {
-    const db = await getDB();
-    const tx = db.transaction('tasks', 'readwrite');
-    await Promise.all([
-        ...tasks.map(t => tx.store.put(t)),
-        tx.done
-    ]);
+  const db = await getDB();
+  const tx = db.transaction("tasks", "readwrite");
+  for (const t of tasks) {
+    tx.store.put(t);
+  }
+  await tx.done;
 }
 
 export async function replaceTasksInCache(tasks: any[]) {
-    const db = await getDB();
-    const tx = db.transaction('tasks', 'readwrite');
-    if (typeof (tx.store as { clear?: () => Promise<void> }).clear === "function") {
-        await (tx.store as { clear: () => Promise<void> }).clear();
-    } else {
-        const existing = await tx.store.getAll();
-        await Promise.all(
-            existing
-                .map((entry) => (entry as { id?: number }).id)
-                .filter((id): id is number => typeof id === "number")
-                .map((id) => tx.store.delete(id))
-        );
+  const db = await getDB();
+  const tx = db.transaction("tasks", "readwrite");
+  if (
+    typeof (tx.store as { clear?: () => Promise<void> }).clear === "function"
+  ) {
+    await (tx.store as { clear: () => Promise<void> }).clear();
+  } else {
+    const existing = await tx.store.getAll();
+    for (const entry of existing) {
+      const id = (entry as { id?: number }).id;
+      if (typeof id === "number") {
+        tx.store.delete(id);
+      }
     }
-    await Promise.all([
-        ...tasks.map((task) => tx.store.put(task)),
-        tx.done,
-    ]);
+  }
+  for (const task of tasks) {
+    tx.store.put(task);
+  }
+  await tx.done;
 }
 
 export async function saveTaskToCache(task: any) {
-    const db = await getDB();
-    await db.put('tasks', task);
+  const db = await getDB();
+  await db.put("tasks", task);
 }
 
 export async function deleteTaskFromCache(id: number) {
-    const db = await getDB();
-    await db.delete('tasks', id);
+  const db = await getDB();
+  await db.delete("tasks", id);
 }
 
 // ⚡ Bolt Opt: Batch deletion to reduce IndexedDB transaction overhead
 export async function deleteTasksFromCacheBatch(ids: number[]) {
-    if (ids.length === 0) return;
-    const db = await getDB();
-    const tx = db.transaction('tasks', 'readwrite');
-    for (const id of ids) {
-        tx.store.delete(id);
-    }
-    await tx.done;
+  if (ids.length === 0) return;
+  const db = await getDB();
+  const tx = db.transaction("tasks", "readwrite");
+  for (const id of ids) {
+    tx.store.delete(id);
+  }
+  await tx.done;
 }
 
 export async function getCachedTasks() {
-    const db = await getDB();
-    return db.getAll('tasks') as Promise<any[]>;
+  const db = await getDB();
+  return db.getAll("tasks") as Promise<any[]>;
 }
 
 export async function addToQueue(action: PendingAction) {
-    const db = await getDB();
-    await db.put('queue', action);
+  const db = await getDB();
+  await db.put("queue", action);
 }
 
 export async function addToQueueBatch(actions: PendingAction[]) {
-    if (actions.length === 0) return;
-    const db = await getDB();
-    const tx = db.transaction('queue', 'readwrite');
-    // Perf: batch queue inserts to reduce IndexedDB overhead during rapid dispatch bursts.
-    await Promise.all([
-        ...actions.map(action => tx.store.put(action)),
-        tx.done
-    ]);
+  if (actions.length === 0) return;
+  const db = await getDB();
+  const tx = db.transaction("queue", "readwrite");
+  // Perf: batch queue inserts to reduce IndexedDB overhead during rapid dispatch bursts.
+  for (const action of actions) {
+    tx.store.put(action);
+  }
+  await tx.done;
 }
 
 export async function removeFromQueue(id: string) {
-    const db = await getDB();
-    await db.delete('queue', id);
+  const db = await getDB();
+  await db.delete("queue", id);
 }
 
 export async function removeFromQueueBatch(ids: string[]) {
-    if (ids.length === 0) return;
-    const db = await getDB();
-    const tx = db.transaction('queue', 'readwrite');
-    // Perf: batch deletes in a single transaction to reduce IndexedDB overhead
-    // when draining large sync queues.
-    await Promise.all([
-        ...ids.map(id => tx.store.delete(id)),
-        tx.done
-    ]);
+  if (ids.length === 0) return;
+  const db = await getDB();
+  const tx = db.transaction("queue", "readwrite");
+  // Perf: batch deletes in a single transaction to reduce IndexedDB overhead
+  // when draining large sync queues.
+  for (const id of ids) {
+    tx.store.delete(id);
+  }
+  await tx.done;
 }
 
 export async function getQueue(): Promise<PendingAction[]> {
-    const db = await getDB();
-    return db.getAllFromIndex('queue', 'by-timestamp');
+  const db = await getDB();
+  return db.getAllFromIndex("queue", "by-timestamp");
 }
 
-export async function updateActionStatus(id: string, status: PendingAction['status'], error?: string) {
-    const db = await getDB();
-    const action = await db.get('queue', id);
-    if (action) {
-        action.status = status;
-        if (error) action.error = error;
-        await db.put('queue', action);
-    }
+export async function updateActionStatus(
+  id: string,
+  status: PendingAction["status"],
+  error?: string,
+) {
+  const db = await getDB();
+  const action = await db.get("queue", id);
+  if (action) {
+    action.status = status;
+    if (error) action.error = error;
+    await db.put("queue", action);
+  }
 }
 
 export async function updateActionStatusBatch(
-    updates: Array<{ id: string; status: PendingAction['status']; error?: string }>
+  updates: Array<{
+    id: string;
+    status: PendingAction["status"];
+    error?: string;
+  }>,
 ) {
-    if (updates.length === 0) return;
-    const db = await getDB();
-    const tx = db.transaction('queue', 'readwrite');
-    // Perf: batch status updates to reduce per-action IndexedDB writes during sync.
-    await Promise.all([
-        ...updates.map(async ({ id, status, error }) => {
-            const action = await tx.store.get(id);
-            if (action) {
-                action.status = status;
-                if (error) action.error = error;
-                await tx.store.put(action);
-            }
-        }),
-        tx.done
-    ]);
+  if (updates.length === 0) return;
+  const db = await getDB();
+  const tx = db.transaction("queue", "readwrite");
+  // Perf: batch status updates to reduce per-action IndexedDB writes during sync.
+  await Promise.all([
+    ...updates.map(async ({ id, status, error }) => {
+      const action = await tx.store.get(id);
+      if (action) {
+        action.status = status;
+        if (error) action.error = error;
+        await tx.store.put(action);
+      }
+    }),
+    tx.done,
+  ]);
 }
 
 // Lists cache functions
 export async function saveListsToCache(items: any[]) {
-    const db = await getDB();
-    const tx = db.transaction('lists', 'readwrite');
-    await Promise.all([
-        ...items.map(item => tx.store.put(item)),
-        tx.done
-    ]);
+  const db = await getDB();
+  const tx = db.transaction("lists", "readwrite");
+  for (const item of items) {
+    tx.store.put(item);
+  }
+  await tx.done;
 }
 
 export async function replaceListsInCache(items: any[]) {
-    const db = await getDB();
-    const tx = db.transaction('lists', 'readwrite');
-    if (typeof (tx.store as { clear?: () => Promise<void> }).clear === "function") {
-        await (tx.store as { clear: () => Promise<void> }).clear();
-    } else {
-        const existing = await tx.store.getAll();
-        await Promise.all(
-            existing
-                .map((entry) => (entry as { id?: number }).id)
-                .filter((id): id is number => typeof id === "number")
-                .map((id) => tx.store.delete(id))
-        );
+  const db = await getDB();
+  const tx = db.transaction("lists", "readwrite");
+  if (
+    typeof (tx.store as { clear?: () => Promise<void> }).clear === "function"
+  ) {
+    await (tx.store as { clear: () => Promise<void> }).clear();
+  } else {
+    const existing = await tx.store.getAll();
+    for (const entry of existing) {
+      const id = (entry as { id?: number }).id;
+      if (typeof id === "number") {
+        tx.store.delete(id);
+      }
     }
-    await Promise.all([
-        ...items.map((item) => tx.store.put(item)),
-        tx.done,
-    ]);
+  }
+  for (const item of items) {
+    tx.store.put(item);
+  }
+  await tx.done;
 }
 
 export async function saveListToCache(item: any) {
-    const db = await getDB();
-    await db.put('lists', item);
+  const db = await getDB();
+  await db.put("lists", item);
 }
 
 export async function deleteListFromCache(id: number) {
-    const db = await getDB();
-    await db.delete('lists', id);
+  const db = await getDB();
+  await db.delete("lists", id);
 }
 
 // ⚡ Bolt Opt: Batch deletion to reduce IndexedDB transaction overhead
 export async function deleteListsFromCacheBatch(ids: number[]) {
-    if (ids.length === 0) return;
-    const db = await getDB();
-    const tx = db.transaction('lists', 'readwrite');
-    for (const id of ids) {
-        tx.store.delete(id);
-    }
-    await tx.done;
+  if (ids.length === 0) return;
+  const db = await getDB();
+  const tx = db.transaction("lists", "readwrite");
+  for (const id of ids) {
+    tx.store.delete(id);
+  }
+  await tx.done;
 }
 
 export async function getCachedLists() {
-    const db = await getDB();
-    return db.getAll('lists') as Promise<any[]>;
+  const db = await getDB();
+  return db.getAll("lists") as Promise<any[]>;
 }
 
 // Labels cache functions
 export async function saveLabelsToCache(items: any[]) {
-    const db = await getDB();
-    const tx = db.transaction('labels', 'readwrite');
-    await Promise.all([
-        ...items.map(item => tx.store.put(item)),
-        tx.done
-    ]);
+  const db = await getDB();
+  const tx = db.transaction("labels", "readwrite");
+  for (const item of items) {
+    tx.store.put(item);
+  }
+  await tx.done;
 }
 
 export async function replaceLabelsInCache(items: any[]) {
-    const db = await getDB();
-    const tx = db.transaction('labels', 'readwrite');
-    if (typeof (tx.store as { clear?: () => Promise<void> }).clear === "function") {
-        await (tx.store as { clear: () => Promise<void> }).clear();
-    } else {
-        const existing = await tx.store.getAll();
-        await Promise.all(
-            existing
-                .map((entry) => (entry as { id?: number }).id)
-                .filter((id): id is number => typeof id === "number")
-                .map((id) => tx.store.delete(id))
-        );
+  const db = await getDB();
+  const tx = db.transaction("labels", "readwrite");
+  if (
+    typeof (tx.store as { clear?: () => Promise<void> }).clear === "function"
+  ) {
+    await (tx.store as { clear: () => Promise<void> }).clear();
+  } else {
+    const existing = await tx.store.getAll();
+    for (const entry of existing) {
+      const id = (entry as { id?: number }).id;
+      if (typeof id === "number") {
+        tx.store.delete(id);
+      }
     }
-    await Promise.all([
-        ...items.map((item) => tx.store.put(item)),
-        tx.done,
-    ]);
+  }
+  for (const item of items) {
+    tx.store.put(item);
+  }
+  await tx.done;
 }
 
 export async function saveLabelToCache(item: any) {
-    const db = await getDB();
-    await db.put('labels', item);
+  const db = await getDB();
+  await db.put("labels", item);
 }
 
 export async function deleteLabelFromCache(id: number) {
-    const db = await getDB();
-    await db.delete('labels', id);
+  const db = await getDB();
+  await db.delete("labels", id);
 }
 
 // ⚡ Bolt Opt: Batch deletion to reduce IndexedDB transaction overhead
 export async function deleteLabelsFromCacheBatch(ids: number[]) {
-    if (ids.length === 0) return;
-    const db = await getDB();
-    const tx = db.transaction('labels', 'readwrite');
-    for (const id of ids) {
-        tx.store.delete(id);
-    }
-    await tx.done;
+  if (ids.length === 0) return;
+  const db = await getDB();
+  const tx = db.transaction("labels", "readwrite");
+  for (const id of ids) {
+    tx.store.delete(id);
+  }
+  await tx.done;
 }
 
 export async function getCachedLabels() {
-    const db = await getDB();
-    return db.getAll('labels') as Promise<any[]>;
+  const db = await getDB();
+  return db.getAll("labels") as Promise<any[]>;
 }
 
 // Meta store functions for data freshness tracking
-export type EntityType = 'tasks' | 'lists' | 'labels';
+export type EntityType = "tasks" | "lists" | "labels";
 
 const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
 
 export async function setLastFetched(entity: EntityType): Promise<void> {
-    const db = await getDB();
-    await db.put('meta', { key: `lastFetched:${entity}`, value: Date.now() });
+  const db = await getDB();
+  await db.put("meta", { key: `lastFetched:${entity}`, value: Date.now() });
 }
 
-export async function getLastFetched(entity: EntityType): Promise<number | null> {
-    const db = await getDB();
-    const record = await db.get('meta', `lastFetched:${entity}`);
-    return record?.value as number | null ?? null;
+export async function getLastFetched(
+  entity: EntityType,
+): Promise<number | null> {
+  const db = await getDB();
+  const record = await db.get("meta", `lastFetched:${entity}`);
+  return (record?.value as number | null) ?? null;
 }
 
-export async function isDataStale(entity: EntityType, thresholdMs: number = STALE_THRESHOLD_MS): Promise<boolean> {
-    const lastFetched = await getLastFetched(entity);
-    if (lastFetched === null) return true;
-    return Date.now() - lastFetched > thresholdMs;
+export async function isDataStale(
+  entity: EntityType,
+  thresholdMs: number = STALE_THRESHOLD_MS,
+): Promise<boolean> {
+  const lastFetched = await getLastFetched(entity);
+  if (lastFetched === null) return true;
+  return Date.now() - lastFetched > thresholdMs;
 }
 
 export async function setAllLastFetched(): Promise<void> {
-    const db = await getDB();
-    const now = Date.now();
-    const tx = db.transaction('meta', 'readwrite');
-    await Promise.all([
-        tx.store.put({ key: 'lastFetched:tasks', value: now }),
-        tx.store.put({ key: 'lastFetched:lists', value: now }),
-        tx.store.put({ key: 'lastFetched:labels', value: now }),
-        tx.done
-    ]);
+  const db = await getDB();
+  const now = Date.now();
+  const tx = db.transaction("meta", "readwrite");
+  tx.store.put({ key: "lastFetched:tasks", value: now });
+  tx.store.put({ key: "lastFetched:lists", value: now });
+  tx.store.put({ key: "lastFetched:labels", value: now });
+  await tx.done;
 }
