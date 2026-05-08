@@ -20,10 +20,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import {
-  getEffectiveCalendarDenseTooltipThreshold,
-  useUser,
-} from "@/components/providers/UserProvider";
+import { getEffectiveCalendarDenseTooltipThreshold, useUser } from "@/components/providers/UserProvider";
 
 import {
   Tooltip,
@@ -64,17 +61,16 @@ export function CalendarView({ tasks }: CalendarViewProps) {
 
   // Use props if provided (SSR), otherwise fallback to store (Client Hydration)
   const displayTasks = useMemo((): CalendarTask[] => {
-    const sourceTasks =
-      tasks && tasks.length > 0 ? tasks : Object.values(storeTasks);
+    const sourceTasks = (tasks && tasks.length > 0) ? tasks : Object.values(storeTasks);
     // Perf: avoid redundant Date allocations. Task.dueDate is already a Date
     // (or null). Reusing it prevents per-task allocations when the calendar re-renders.
-    return sourceTasks.map((t) => ({
+    return sourceTasks.map(t => ({
       id: t.id,
       title: t.title,
       dueDate: t.dueDate ?? null,
       isCompleted: !!t.isCompleted, // Ensure boolean
       priority: (t.priority ?? "none") as "none" | "low" | "medium" | "high",
-      energyLevel: t.energyLevel ?? null, // Ensure string | null
+      energyLevel: t.energyLevel ?? null // Ensure string | null
     }));
   }, [tasks, storeTasks]);
 
@@ -118,11 +114,7 @@ export function CalendarView({ tasks }: CalendarViewProps) {
       // Perf: use start-of-day timestamp keys to avoid format() per task.
       // ⚡ Bolt Opt: Manually calculate start-of-day timestamp without object allocation (date-fns startOfDay instantiates new Date)
       const d = task.dueDate;
-      const dateKey = new Date(
-        d.getFullYear(),
-        d.getMonth(),
-        d.getDate(),
-      ).getTime();
+      const dateKey = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
       const existing = map.get(dateKey);
       if (existing) {
         existing.tasks.push(task);
@@ -142,34 +134,18 @@ export function CalendarView({ tasks }: CalendarViewProps) {
   const daysWithMeta = useMemo(() => {
     // Perf: precompute all day metadata once to avoid repeated date-fns calls per cell.
     // ⚡ Bolt Opt: Manually calculate timestamps without startOfDay (which allocates Dates)
-    const selectedKey = selectedDate
-      ? new Date(
-          selectedDate.getFullYear(),
-          selectedDate.getMonth(),
-          selectedDate.getDate(),
-        ).getTime()
-      : null;
+    const selectedKey = selectedDate ? new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate()).getTime() : null;
     const now = new Date();
-    const todayKey = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-    ).getTime();
+    const todayKey = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     const currentMonthValue = currentMonth.getMonth();
     const currentMonthYear = currentMonth.getFullYear();
 
-    return days.map((day) => {
-      const key = new Date(
-        day.getFullYear(),
-        day.getMonth(),
-        day.getDate(),
-      ).getTime();
+    return days.map(day => {
+      const key = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
       return {
         day,
         key,
-        isCurrentMonth:
-          day.getMonth() === currentMonthValue &&
-          day.getFullYear() === currentMonthYear,
+        isCurrentMonth: day.getMonth() === currentMonthValue && day.getFullYear() === currentMonthYear,
         isSelected: selectedKey !== null && key === selectedKey,
         isTodayDate: key === todayKey,
         label: day.getDate(),
@@ -188,9 +164,7 @@ export function CalendarView({ tasks }: CalendarViewProps) {
   };
 
   if (!isInitialized && tasks.length === 0) {
-    return (
-      <div className="flex-1 min-h-0 w-full animate-pulse bg-muted rounded-lg" />
-    );
+    return <div className="flex-1 min-h-0 w-full animate-pulse bg-muted rounded-lg" />;
   }
 
   return (
@@ -263,122 +237,116 @@ export function CalendarView({ tasks }: CalendarViewProps) {
           <div className="grid grid-cols-7 flex-1 auto-rows-fr">
             {(() => {
               // Perf: hoist tooltip threshold calculation outside the per-day render loop
-              const tooltipThreshold =
-                getEffectiveCalendarDenseTooltipThreshold(
-                  calendarDenseTooltipThreshold,
-                  6,
-                );
+              const tooltipThreshold = getEffectiveCalendarDenseTooltipThreshold(calendarDenseTooltipThreshold, 6);
 
-              return daysWithMeta.map(
-                (
-                  { day, key, isCurrentMonth, isSelected, isTodayDate, label },
-                  dayIdx,
-                ) => {
-                  const { tasks: dayTasks, completedCount } =
-                    getTaskSummaryForDayKey(key);
-                  const isSelectedDay = isSelected;
-                  // Perf: use native title tooltips on busy days to avoid mounting
-                  // a Tooltip component for every task badge.
-                  const useNativeTooltip =
-                    calendarUseNativeTooltipsOnDenseDays === false
-                      ? false
-                      : dayTasks.length > tooltipThreshold;
+              return daysWithMeta.map(({ day, key, isCurrentMonth, isSelected, isTodayDate, label }, dayIdx) => {
+                const { tasks: dayTasks, completedCount } =
+                  getTaskSummaryForDayKey(key);
+                const isSelectedDay = isSelected;
+                // Perf: use native title tooltips on busy days to avoid mounting
+                // a Tooltip component for every task badge.
+                const useNativeTooltip =
+                  calendarUseNativeTooltipsOnDenseDays === false
+                    ? false
+                    : dayTasks.length > tooltipThreshold;
 
-                  return (
-                    <div
-                      key={day.toString()}
-                      role="button"
-                      tabIndex={0}
-                      aria-label={`Select ${format(day, "MMMM d, yyyy")}`}
-                      onClick={() => setSelectedDate(day)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          setSelectedDate(day);
-                        }
-                      }}
+                return (
+                <div
+                  key={day.toString()}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Select ${format(day, 'MMMM d, yyyy')}`}
+                  onClick={() => setSelectedDate(day)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedDate(day);
+                    }
+                  }}
+                  className={cn(
+                    "min-h-[100px] border-b border-r p-2 transition-colors hover:bg-muted/20 cursor-pointer flex flex-col gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+                    !isCurrentMonth && "bg-muted/10 text-muted-foreground",
+                    isSelectedDay && "bg-primary/5 ring-1 ring-inset ring-primary",
+                    dayIdx % 7 === 6 && "border-r-0", // Remove right border for last column
+                  )}
+                >
+                  <div className="flex justify-between items-start">
+                    <span
                       className={cn(
-                        "min-h-[100px] border-b border-r p-2 transition-colors hover:bg-muted/20 cursor-pointer flex flex-col gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
-                        !isCurrentMonth && "bg-muted/10 text-muted-foreground",
-                        isSelectedDay &&
-                          "bg-primary/5 ring-1 ring-inset ring-primary",
-                        dayIdx % 7 === 6 && "border-r-0", // Remove right border for last column
+                        "text-sm font-medium h-7 w-7 flex items-center justify-center rounded-full",
+                        isTodayDate && "bg-primary text-primary-foreground",
+                        !isTodayDate && isSelectedDay && "text-primary",
                       )}
                     >
-                      <div className="flex justify-between items-start">
-                        <span
+                      {label}
+                    </span>
+                    {dayTasks.length > 0 && (
+                      <span className="text-[10px] text-muted-foreground font-medium">
+                        {completedCount}/{dayTasks.length}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex-1 flex flex-col gap-1 mt-1 overflow-y-auto max-h-[100px] scrollbar-hide">
+                    {dayTasks.map((task) => {
+                      const taskBadge = (
+                        <div
                           className={cn(
-                            "text-sm font-medium h-7 w-7 flex items-center justify-center rounded-full",
-                            isTodayDate && "bg-primary text-primary-foreground",
-                            !isTodayDate && isSelectedDay && "text-primary",
+                            "text-[10px] px-1.5 py-0.5 rounded truncate flex items-center gap-1 border",
+                            task.isCompleted
+                              ? "bg-muted text-muted-foreground line-through border-transparent"
+                              : "bg-background border-l-2 shadow-sm",
+                            !task.isCompleted &&
+                            task.priority === "high" &&
+                            "border-l-red-500",
+                            !task.isCompleted &&
+                            task.priority === "medium" &&
+                            "border-l-yellow-500",
+                            !task.isCompleted &&
+                            task.priority === "low" &&
+                            "border-l-blue-500",
+                            !task.isCompleted &&
+                            task.priority === "none" &&
+                            "border-l-gray-300",
                           )}
+                          title={useNativeTooltip ? task.title : undefined}
                         >
-                          {label}
-                        </span>
-                        {dayTasks.length > 0 && (
-                          <span className="text-[10px] text-muted-foreground font-medium">
-                            {completedCount}/{dayTasks.length}
-                          </span>
-                        )}
-                      </div>
+                          {task.isCompleted ? (
+                            <CheckCircle2 className="h-2.5 w-2.5 shrink-0" />
+                          ) : (
+                            <Circle className="h-2.5 w-2.5 shrink-0" />
+                          )}
+                          <span className="truncate">{task.title}</span>
+                        </div>
+                      );
 
-                      <div className="flex-1 flex flex-col gap-1 mt-1 overflow-y-auto max-h-[100px] scrollbar-hide">
-                        {dayTasks.map((task) => {
-                          const taskBadge = (
-                            <div
-                              className={cn(
-                                "text-[10px] px-1.5 py-0.5 rounded truncate flex items-center gap-1 border",
-                                task.isCompleted
-                                  ? "bg-muted text-muted-foreground line-through border-transparent"
-                                  : "bg-background border-l-2 shadow-sm",
-                                !task.isCompleted &&
-                                  task.priority === "high" &&
-                                  "border-l-red-500",
-                                !task.isCompleted &&
-                                  task.priority === "medium" &&
-                                  "border-l-yellow-500",
-                                !task.isCompleted &&
-                                  task.priority === "low" &&
-                                  "border-l-blue-500",
-                                !task.isCompleted &&
-                                  task.priority === "none" &&
-                                  "border-l-gray-300",
-                              )}
-                              title={useNativeTooltip ? task.title : undefined}
-                            >
-                              {task.isCompleted ? (
-                                <CheckCircle2 className="h-2.5 w-2.5 shrink-0" />
-                              ) : (
-                                <Circle className="h-2.5 w-2.5 shrink-0" />
-                              )}
-                              <span className="truncate">{task.title}</span>
-                            </div>
-                          );
+                      if (useNativeTooltip) {
+                        return (
+                          <div key={task.id}>
+                            {taskBadge}
+                          </div>
+                        );
+                      }
 
-                          if (useNativeTooltip) {
-                            return <div key={task.id}>{taskBadge}</div>;
-                          }
-
-                          return (
-                            <Tooltip key={task.id}>
-                              <TooltipTrigger asChild>
-                                {taskBadge}
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>{task.title}</p>
-                                <p className="text-xs text-muted-foreground capitalize">
-                                  {task.priority} Priority •{" "}
-                                  {task.energyLevel || "No Energy"}
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                },
-              );
+                      return (
+                        <Tooltip key={task.id}>
+                          <TooltipTrigger asChild>
+                            {taskBadge}
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{task.title}</p>
+                            <p className="text-xs text-muted-foreground capitalize">
+                              {task.priority} Priority •{" "}
+                              {task.energyLevel || "No Energy"}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    })}
+                  </div>
+                </div>
+                );
+              });
             })()}
           </div>
         </TooltipProvider>
