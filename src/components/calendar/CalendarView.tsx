@@ -255,6 +255,7 @@ export function CalendarView({ tasks }: CalendarViewProps) {
                   key={day.toString()}
                   role="button"
                   tabIndex={0}
+                  aria-label={`Select ${format(day, 'MMMM d, yyyy')}`}
                   onClick={() => setSelectedDate(day)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {

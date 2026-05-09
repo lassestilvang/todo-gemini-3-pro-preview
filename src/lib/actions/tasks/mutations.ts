@@ -117,39 +117,36 @@ async function createTaskImpl(data: typeof tasks.$inferInsert & { labelIds?: num
       position: currentMin - 1024
     };
 
-    // 🛡️ Sentinel: Enforce atomicity for sequential dependent mutations
-    const task = await db.transaction(async (tx) => {
-      const result = await tx.insert(tasks).values(finalTaskData as typeof tasks.$inferInsert).returning();
-      const newTask = Array.isArray(result) ? result[0] : null;
+    // We cannot use db.transaction() on neon-http driver directly, so we run them sequentially.
+    // If true atomicity is required, one should migrate to neon websockets or batch where supported.
+    const result = await db.insert(tasks).values(finalTaskData as typeof tasks.$inferInsert).returning();
+    const task = Array.isArray(result) ? result[0] : null;
 
-      if (!newTask) throw new Error("Failed to create task");
+    if (!task) throw new Error("Failed to create task");
 
-      if (finalLabelIds.length > 0) {
-        const validLabels = await tx
-          .select({ id: labels.id })
-          .from(labels)
-          .where(and(eq(labels.userId, taskData.userId), inArray(labels.id, finalLabelIds)));
+    if (finalLabelIds.length > 0) {
+      const validLabels = await db
+        .select({ id: labels.id })
+        .from(labels)
+        .where(and(eq(labels.userId, taskData.userId), inArray(labels.id, finalLabelIds)));
 
-        const validLabelIds = validLabels.map((l) => l.id);
+      const validLabelIds = validLabels.map((l) => l.id);
 
-        if (validLabelIds.length > 0) {
-          await tx.insert(taskLabels).values(
-            validLabelIds.map((labelId: number) => ({
-              taskId: newTask.id,
-              labelId,
-            }))
-          );
-        }
+      if (validLabelIds.length > 0) {
+        await db.insert(taskLabels).values(
+          validLabelIds.map((labelId: number) => ({
+            taskId: task.id,
+            labelId,
+          }))
+        );
       }
+    }
 
-      await tx.insert(taskLogs).values({
-        userId: taskData.userId,
-        taskId: newTask.id,
-        action: "created",
-        details: "Task created",
-      });
-
-      return newTask;
+    await db.insert(taskLogs).values({
+      userId: taskData.userId,
+      taskId: task.id,
+      action: "created",
+      details: "Task created",
     });
 
     const isSqlite = !!sqliteConnection;
