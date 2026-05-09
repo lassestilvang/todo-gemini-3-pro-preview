@@ -32,23 +32,33 @@ interface GroupedListViewProps {
 export function GroupedListView({
     groupedEntries, groupedVirtualSections, formattedGroupNames, listId, userId, onEdit, dispatch, now, isClient, performanceMode, userPreferences
 }: GroupedListViewProps) {
-    const groupCounts = useMemo(
-        () => groupedVirtualSections.map((section) => section.items.length),
-        [groupedVirtualSections]
-    );
-    const groupedSplit = useMemo(
-        () => groupedEntries.map(([groupName, groupTasks]) => {
+    // ⚡ Bolt Opt: Replaced .map() and .reduce() with for loops to avoid O(N) array allocation
+    const groupCounts = useMemo(() => {
+        const counts = new Array<number>(groupedVirtualSections.length);
+        for (let i = 0; i < groupedVirtualSections.length; i++) {
+            counts[i] = groupedVirtualSections[i].items.length;
+        }
+        return counts;
+    }, [groupedVirtualSections]);
+
+    const { groupedSplit, totalGroupTasks } = useMemo(() => {
+        const split = new Array(groupedEntries.length);
+        let total = 0;
+        for (let i = 0; i < groupedEntries.length; i++) {
+            const entry = groupedEntries[i];
+            const groupName = entry[0];
+            const groupTasks = entry[1];
+            total += groupTasks.length;
             const groupActive: Task[] = [];
             const groupCompleted: Task[] = [];
-            for (const task of groupTasks) (task.isCompleted ? groupCompleted : groupActive).push(task);
-            return { groupName, groupTasks, groupActive, groupCompleted };
-        }),
-        [groupedEntries]
-    );
-    const totalGroupTasks = useMemo(
-        () => groupedEntries.reduce((acc, [_, tasks]) => acc + tasks.length, 0),
-        [groupedEntries]
-    );
+            for (let j = 0; j < groupTasks.length; j++) {
+                const task = groupTasks[j];
+                (task.isCompleted ? groupCompleted : groupActive).push(task);
+            }
+            split[i] = { groupName, groupTasks, groupActive, groupCompleted };
+        }
+        return { groupedSplit: split, totalGroupTasks: total };
+    }, [groupedEntries]);
 
     if (totalGroupTasks > 50) {
         return (
