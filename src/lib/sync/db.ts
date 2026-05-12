@@ -180,12 +180,15 @@ export async function updateActionStatusBatch(
     if (updates.length === 0) return;
     const db = await getDB();
     const tx = db.transaction('queue', 'readwrite');
-    // Perf: batch status updates to reduce per-action IndexedDB writes during sync.
-    for (const { id, status, error } of updates) {
-        const action = await tx.store.get(id);
+    // Perf: parallelize gets and batch status updates to reduce per-action IndexedDB overhead.
+    const actions = await Promise.all(updates.map(u => tx.store.get(u.id)));
+
+    for (let i = 0; i < updates.length; i++) {
+        const action = actions[i];
+        const update = updates[i];
         if (action) {
-            action.status = status;
-            if (error) action.error = error;
+            action.status = update.status;
+            if (update.error) action.error = update.error;
             void void tx.store.put(action);
         }
     }
