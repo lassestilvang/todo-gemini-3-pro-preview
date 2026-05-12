@@ -145,7 +145,7 @@ export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps
         <Popover open={open} onOpenChange={(v) => dispatch({ type: 'SET_OPEN', payload: v })} modal={true}>
             <PopoverTrigger asChild>
                 {trigger ?? (
-                    <Button variant="outline" className="w-full justify-start h-10 px-3">
+                    <Button variant="outline" className="w-full justify-start h-10 px-3" aria-label="Select Icon">
                         <ResolvedIcon icon={value || null} className="mr-2 h-5 w-5" />
                         <span className="truncate opacity-75">{value ? (value.includes(":") ? value.split(":")[1].split("#")[0] : "Custom") : "Select Icon..."}</span>
                     </Button>

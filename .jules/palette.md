@@ -207,3 +207,11 @@
 ## 2024-06-25 - Explicit ARIA Labels on Composite Calendar Day Cells
 **Learning:** In components like `CalendarView.tsx`, day cells are built using `div` elements with `role="button"` and `tabIndex={0}` to allow keyboard interactivity. While screen readers might attempt to read the nested content (like the date number and task counts), this often results in a fragmented or unintelligible readout, failing to provide the full context of what the "button" does.
 **Action:** When creating custom composite interactive elements (like calendar cells, complex list items, or custom toggle buttons) using `role="button"`, always provide an explicit, top-level `aria-label` (e.g., `aria-label={\`Select ${format(day, 'MMMM d, yyyy')}\`}`) to ensure screen reader users understand the element's purpose and state without relying on potentially confusing nested text content.
+
+## 2024-05-20 - Missing aria-label on Sub-components
+**Learning:** Found several sub-components like `TimePicker`'s `PopoverTrigger`, `DatePicker`'s `PopoverTrigger`, and fallback `Button` triggers inside `IconPicker` components missing `aria-label` entirely, assuming the user derives enough context visually. This limits screen readers to a generic 'button' readout without explaining the action tied to expanding a custom picker.
+**Action:** When creating wrapper inputs containing complex sub-menus like a Time Picker or Icon Picker, ensure that not only the input handles the `aria-label` correctly, but also the expanding action triggering the popover communicates its intent with properties like `aria-label="Open time picker"`.
+
+## 2024-05-20 - Missing DialogDescription in Radix UI Modals
+**Learning:** Found instances of custom modals (`SidebarSavedViews.tsx`) where `DialogContent` did not define a `DialogDescription` but Radix UI expects one for accessibility completeness (as per `aria-describedby` requirements).
+**Action:** Always provide a `DialogDescription` within `DialogContent` modals. If visual text is unneeded, append `className="sr-only"` to it to satisfy accessibility requirements without altering the layout.

@@ -228,7 +228,7 @@ export function TimePicker({ time, setTime, placeholder = "Select time", disable
 
     return (
         <Popover open={open && !disabled} onOpenChange={handleOpenChange}>
-            <PopoverTrigger asChild onClick={(e) => e.preventDefault()}>
+            <PopoverTrigger asChild onClick={(e) => e.preventDefault()} aria-label="Open time picker">
                 <div className="relative">
                     <Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                     <Input
