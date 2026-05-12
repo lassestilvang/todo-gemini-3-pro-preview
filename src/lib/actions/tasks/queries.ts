@@ -36,7 +36,7 @@ async function getTasksImpl(
   listId?: number | null,
   filter?: "today" | "upcoming" | "all" | "completed" | "next-7-days",
   labelId?: number,
-  showCompleted: boolean = true
+  showCompleted: boolean = true,
 ) {
   const user = await requireUser(userId);
 
@@ -78,52 +78,64 @@ async function getTasksImpl(
   const weekStartsOnMonday = user.weekStartsOnMonday ?? false;
   const weekStartsOn = weekStartsOnMonday ? 1 : 0;
   const weekStart = startOfWeek(todayStart, { weekStartsOn });
-  const monthStart = startOfDay(new Date(todayStart.getFullYear(), todayStart.getMonth(), 1));
+  const monthStart = startOfDay(
+    new Date(todayStart.getFullYear(), todayStart.getMonth(), 1),
+  );
   const yearStart = startOfDay(new Date(todayStart.getFullYear(), 0, 1));
 
   if (filter === "today") {
     const todayWindow = and(
       or(isNull(tasks.dueDatePrecision), eq(tasks.dueDatePrecision, "day")),
       gte(tasks.dueDate, todayStart),
-      lte(tasks.dueDate, todayEnd)
+      lte(tasks.dueDate, todayEnd),
     );
     const weekWindow = and(
       eq(tasks.dueDatePrecision, "week"),
       gte(tasks.dueDate, weekStart),
-      lte(tasks.dueDate, todayStart)
+      lte(tasks.dueDate, todayStart),
     );
     const monthWindow = and(
       eq(tasks.dueDatePrecision, "month"),
       gte(tasks.dueDate, monthStart),
-      lte(tasks.dueDate, todayStart)
+      lte(tasks.dueDate, todayStart),
     );
     const yearWindow = and(
       eq(tasks.dueDatePrecision, "year"),
       gte(tasks.dueDate, yearStart),
-      lte(tasks.dueDate, todayStart)
+      lte(tasks.dueDate, todayStart),
     );
     conditions.push(or(todayWindow, weekWindow, monthWindow, yearWindow));
   } else if (filter === "upcoming") {
     const upcomingDay = and(
       or(isNull(tasks.dueDatePrecision), eq(tasks.dueDatePrecision, "day")),
-      gte(tasks.dueDate, todayStart)
+      gte(tasks.dueDate, todayStart),
     );
     const upcomingWeek = and(
       eq(tasks.dueDatePrecision, "week"),
-      gte(tasks.dueDate, startOfDay(addWeeks(weekStart, 1)))
+      gte(tasks.dueDate, startOfDay(addWeeks(weekStart, 1))),
     );
     const upcomingMonth = and(
       eq(tasks.dueDatePrecision, "month"),
-      gte(tasks.dueDate, startOfDay(new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1)))
+      gte(
+        tasks.dueDate,
+        startOfDay(
+          new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1),
+        ),
+      ),
     );
     const upcomingYear = and(
       eq(tasks.dueDatePrecision, "year"),
-      gte(tasks.dueDate, startOfDay(new Date(yearStart.getFullYear() + 1, 0, 1)))
+      gte(
+        tasks.dueDate,
+        startOfDay(new Date(yearStart.getFullYear() + 1, 0, 1)),
+      ),
     );
     conditions.push(or(upcomingDay, upcomingWeek, upcomingMonth, upcomingYear));
   } else if (filter === "next-7-days") {
     const nextWeek = addDays(now, 7);
-    conditions.push(and(gte(tasks.dueDate, todayStart), lte(tasks.dueDate, nextWeek)));
+    conditions.push(
+      and(gte(tasks.dueDate, todayStart), lte(tasks.dueDate, nextWeek)),
+    );
   }
 
   // ⚡ Bolt Opt: Start fetching labels in parallel with tasks.
@@ -161,7 +173,11 @@ async function getTasksImpl(
     .from(tasks)
     .leftJoin(lists, eq(tasks.listId, lists.id))
     .where(and(...conditions))
-    .orderBy(asc(tasks.isCompleted), asc(tasks.position), desc(tasks.createdAt));
+    .orderBy(
+      asc(tasks.isCompleted),
+      asc(tasks.position),
+      desc(tasks.createdAt),
+    );
 
   const taskIds = tasksResult.map((t) => t.id);
   if (taskIds.length === 0) {
@@ -203,10 +219,8 @@ async function getTasksImpl(
       .groupBy(taskDependencies.taskId),
   ]);
 
-  const [allLabels, [taskLabelsResult, subtasksResult, blockedCountsResult]] = await Promise.all([
-    labelsPromise,
-    relationsPromise
-  ]);
+  const [allLabels, [taskLabelsResult, subtasksResult, blockedCountsResult]] =
+    await Promise.all([labelsPromise, relationsPromise]);
 
   // ⚡ Bolt Opt: Avoid intermediate array allocation by populating Map directly.
   // Original: blockedCountsResult.map(...) -> new Array -> new Map
@@ -218,17 +232,23 @@ async function getTasksImpl(
   // ⚡ Bolt Opt: Deduplicate label objects to reduce GC pressure.
   // Instead of creating N new label objects for N task-label links, we create M objects (where M is unique labels)
   // and reuse references. For 1000 tasks with 2 labels each, this saves ~1980 object allocations.
-  const labelsMap = new Map<number, { id: number; name: string; color: string; icon: string | null }>();
+  const labelsMap = new Map<
+    number,
+    { id: number; name: string; color: string; icon: string | null }
+  >();
   for (const l of allLabels) {
     labelsMap.set(l.id, {
       id: l.id,
       name: l.name,
       color: l.color || "#000000",
-      icon: l.icon
+      icon: l.icon,
     });
   }
 
-  const labelsByTaskId = new Map<number, { id: number; name: string; color: string; icon: string | null }[]>();
+  const labelsByTaskId = new Map<
+    number,
+    { id: number; name: string; color: string; icon: string | null }[]
+  >();
   for (const labelLink of taskLabelsResult) {
     const label = labelsMap.get(labelLink.labelId);
     if (label) {
@@ -258,7 +278,12 @@ async function getTasksImpl(
   const tasksWithLabelsAndSubtasks = tasksResult.map((task) => {
     const taskLabelsList = labelsByTaskId.get(task.id) ?? [];
     const taskSubtasks = subtasksByParentId.get(task.id) ?? [];
-    const completedSubtaskCount = taskSubtasks.filter((t) => t.isCompleted).length;
+    // ⚡ Bolt Opt: Prevent O(N) intermediate array allocation and GC pressure
+    // by replacing `filter(...).length` with a single-pass `.reduce()`
+    const completedSubtaskCount = taskSubtasks.reduce(
+      (count, t) => (t.isCompleted ? count + 1 : count),
+      0,
+    );
 
     return {
       ...task,
@@ -334,7 +359,12 @@ export async function getTaskImpl(id: number, userId: string) {
       .where(eq(taskDependencies.taskId, id)),
   ]);
 
-  return { ...task, labels: labelsResult, reminders: remindersResult, blockers: blockersResult };
+  return {
+    ...task,
+    labels: labelsResult,
+    reminders: remindersResult,
+    blockers: blockersResult,
+  };
 }
 
 export const getTask = withErrorHandling(getTaskImpl);
@@ -368,18 +398,13 @@ async function searchTasksImpl(userId: string, query: string) {
       dueDatePrecision: tasks.dueDatePrecision,
     })
     .from(tasks)
-    .where(
-      and(
-        eq(tasks.userId, userId),
-        searchCondition
-      )
-    )
+    .where(and(eq(tasks.userId, userId), searchCondition))
     .orderBy(
       useTrigram
         ? desc(
-            sql`greatest(similarity(lower(${tasks.title}), ${normalizedQuery}), similarity(lower(coalesce(${tasks.description}, '')), ${normalizedQuery}))`
+            sql`greatest(similarity(lower(${tasks.title}), ${normalizedQuery}), similarity(lower(coalesce(${tasks.description}, '')), ${normalizedQuery}))`,
           )
-        : desc(tasks.createdAt)
+        : desc(tasks.createdAt),
     )
     .limit(10);
 
