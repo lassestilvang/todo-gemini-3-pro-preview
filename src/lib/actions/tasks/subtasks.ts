@@ -9,6 +9,7 @@ import {
   revalidatePath,
   type ActionResult,
   NotFoundError,
+  ValidationError,
   withErrorHandling,
 } from "../shared";
 import { requireUser } from "@/lib/auth";
@@ -34,6 +35,13 @@ async function createSubtaskImpl(
   estimateMinutes?: number
 ) {
   await requireUser(userId);
+
+  if (!title || title.trim().length === 0) {
+    throw new ValidationError("Subtask title is required");
+  }
+  if (title.length > 255) {
+    throw new ValidationError("Subtask title must be at most 255 characters");
+  }
 
   const parentTask = await db
     .select({ id: tasks.id })
