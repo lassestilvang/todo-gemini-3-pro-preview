@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from "bun:test";
 import { setupTestDb, resetTestDb, createTestUser } from "@/test/setup";
 import { db, lists } from "@/db";
 import { createTask, updateTask } from "@/lib/actions/tasks";
-import { setTodoistProjectMappings, setTodoistLabelMappings, updateTodoistProjectMapping } from "@/lib/actions/todoist";
+import { setTodoistLabelMappings, updateTodoistProjectMapping } from "@/lib/actions/todoist";
 import { runInAuthContext } from "@/test/mocks";
 
 type ListRow = typeof lists.$inferSelect;

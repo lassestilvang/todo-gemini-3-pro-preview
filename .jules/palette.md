@@ -215,3 +215,6 @@
 ## 2024-05-20 - Missing DialogDescription in Radix UI Modals
 **Learning:** Found instances of custom modals (`SidebarSavedViews.tsx`) where `DialogContent` did not define a `DialogDescription` but Radix UI expects one for accessibility completeness (as per `aria-describedby` requirements).
 **Action:** Always provide a `DialogDescription` within `DialogContent` modals. If visual text is unneeded, append `className="sr-only"` to it to satisfy accessibility requirements without altering the layout.
+## 2024-05-19 - Accessible Collapsible Sections
+**Learning:** Collapsible lists and sections (like subtasks or overdue tasks) that rely on `aria-expanded` on toggle buttons often miss the corresponding `aria-controls` attribute, breaking the link for screen reader users between the button and the expandable content.
+**Action:** When inspecting or adding `aria-expanded` toggle functionality, always ensure the target container is assigned an `id` and the toggle button includes an `aria-controls="[id]"` attribute to complete the accessible relationship. Use dynamic IDs (e.g. including `task.id` or `listId`) to avoid collisions when multiple sections are rendered on the same page.
