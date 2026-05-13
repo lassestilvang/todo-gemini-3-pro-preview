@@ -279,11 +279,11 @@ async function getTasksImpl(
     const taskLabelsList = labelsByTaskId.get(task.id) ?? [];
     const taskSubtasks = subtasksByParentId.get(task.id) ?? [];
     // ⚡ Bolt Opt: Prevent O(N) intermediate array allocation and GC pressure
-    // by replacing `filter(...).length` with a single-pass `.reduce()`
-    const completedSubtaskCount = taskSubtasks.reduce(
-      (count, t) => (t.isCompleted ? count + 1 : count),
-      0,
-    );
+    // by replacing `filter(...).length` with a single-pass `for...of` loop.
+    let completedSubtaskCount = 0;
+    for (const t of taskSubtasks) {
+      if (t.isCompleted) completedSubtaskCount++;
+    }
 
     return {
       ...task,
