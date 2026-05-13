@@ -25,7 +25,7 @@ export async function logActivity(params: {
 
   let safeDetails = params.details;
   if (safeDetails && safeDetails.length > 2000) {
-    safeDetails = safeDetails.substring(0, 2000) + "... [TRUNCATED]";
+    safeDetails = safeDetails.slice(0, 1985) + "... [TRUNCATED]";
   }
 
   await db.insert(taskLogs).values({
