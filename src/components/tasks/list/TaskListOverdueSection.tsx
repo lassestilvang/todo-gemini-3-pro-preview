@@ -49,7 +49,7 @@ export const TaskListOverdueSection = React.memo(function TaskListOverdueSection
                 <button
                     type="button"
                     aria-expanded={!overdueCollapsed}
-                    aria-controls={listId ? `overdue-tasks-section-${listId}` : "overdue-tasks-section"}
+                    aria-controls={listId != null ? `overdue-tasks-section-${listId}` : "overdue-tasks-section"}
                     aria-label={`Toggle overdue section, ${overdueTasks.length} tasks`}
                     className="flex items-center gap-2 focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-destructive rounded-md"
                     onClick={(e) => {
