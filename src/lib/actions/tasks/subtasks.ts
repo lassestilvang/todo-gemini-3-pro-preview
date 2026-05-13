@@ -36,11 +36,12 @@ async function createSubtaskImpl(
 ) {
   await requireUser(userId);
 
+  const MAX_TITLE_LENGTH = 255;
   if (!title || title.trim().length === 0) {
     throw new ValidationError("Subtask title is required");
   }
-  if (title.length > 255) {
-    throw new ValidationError("Subtask title must be at most 255 characters");
+  if (title.length > MAX_TITLE_LENGTH) {
+    throw new ValidationError(`Subtask title must be at most ${MAX_TITLE_LENGTH} characters`);
   }
 
   const parentTask = await db
