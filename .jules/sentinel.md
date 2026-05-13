@@ -216,3 +216,13 @@
 **Vulnerability:** In `src/lib/actions/reminders.ts`, the `createReminderImpl` and `deleteReminderImpl` functions performed sequential database mutations (inserting/deleting a reminder, then inserting a task log) outside of a database transaction.
 **Learning:** Performing multiple related mutations sequentially without a transaction creates a risk of partial state updates if one operation fails, compromising data integrity (e.g., creating a reminder without logging it, or logging its deletion without actually removing it).
 **Prevention:** Always enforce atomicity by wrapping sequential dependent database mutations, such as CRUD operations on primary entities combined with secondary logging or tracking entries, in a `db.transaction(async (tx) => { ... })` block.
+
+## $(date +%Y-%m-%d) - Input Length Limits and DoS Prevention
+**Vulnerability:** The internal `logActivity` helper accepted unvalidated string lengths for the `action` and `details` fields before insertion into the database. An attacker (or logic error) could potentially supply massive string payloads, leading to excessive storage consumption or a Denial of Service (DoS) condition if the database struggles with excessively large text fields.
+**Learning:** Even internal helper functions and authenticated endpoints must explicitly validate and constrain input lengths before committing data to the database to prevent resource exhaustion and ensure data integrity.
+**Prevention:** Always enforce input length limits on string payloads before database insertion. Use explicit length validation checks (throwing a `ValidationError`) for critical fields, or silently truncate non-critical strings (like log details) to a reasonable safe limit (e.g., 2000 characters).
+
+## $(date +%Y-%m-%d) - Resilient Security Patterns for Internal Helpers
+**Vulnerability:** While throwing validation errors on oversized inputs is secure, doing so inside a low-priority, generic internal helper like `logActivity` can introduce an unintended Denial of Service against legitimate primary flows (e.g., if a task creation process crashes entirely just because the log description was too long).
+**Learning:** Security controls should not inadvertently break core application logic for non-critical failures. In a logging context, ensuring the application continues to function is often higher priority than rejecting an oversized log entry.
+**Prevention:** For internal, non-critical helper functions (like telemetry or logging), prioritize silent truncation over throwing exceptions when enforcing data size constraints. This ensures protection against storage exhaustion without compromising the resiliency of the primary business flow calling the helper.
