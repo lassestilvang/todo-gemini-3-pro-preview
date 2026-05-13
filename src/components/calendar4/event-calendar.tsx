@@ -55,7 +55,7 @@ export function EventCalendar({
   return (
     <EventCalendarContainer
       direction={direction}
-      className={className}
+      className={className as string}
       height={height}
       borderless={restOptions.borderless}
       borderlessX={restOptions.borderlessX}

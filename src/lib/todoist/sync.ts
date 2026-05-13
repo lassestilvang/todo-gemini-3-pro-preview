@@ -1168,7 +1168,7 @@ async function updateMappedTasks(params: {
           if (lastSyncedAt) {
             const localChangedAfterLastSync =
               localTask.updatedAt > lastSyncedAt;
-            const remoteUpdatedAt = parseTodoistTimestamp(remoteTask.updatedAt);
+            const remoteUpdatedAt = remoteTask.updatedAt instanceof Date ? remoteTask.updatedAt : parseTodoistTimestamp(remoteTask.updatedAt as string | null | undefined);
             const remoteChangedAfterLastSync = remoteUpdatedAt
               ? remoteUpdatedAt > lastSyncedAt
               : false;
@@ -1349,7 +1349,7 @@ async function updateRemoteTasks(params: {
       continue;
     }
 
-    const remoteUpdatedAt = parseTodoistTimestamp(remoteTask.updatedAt);
+    const remoteUpdatedAt = remoteTask.updatedAt instanceof Date ? remoteTask.updatedAt : parseTodoistTimestamp(remoteTask.updatedAt as string | null | undefined);
     const shouldBackfillDue = shouldBackfillTodoistDue(localTask, remoteTask);
     if (
       lastSyncedAt &&
@@ -1395,7 +1395,7 @@ async function updateRemoteTasks(params: {
       }
     }
 
-    const remoteCompletedAt = parseTodoistTimestamp(remoteTask.completedAt);
+    const remoteCompletedAt = remoteTask.completedAt instanceof Date ? remoteTask.completedAt : parseTodoistTimestamp(remoteTask.completedAt as string | null | undefined);
     // ⚡ Bolt Opt: Replaced sequential db.update() with concurrent promises
     taskUpdatePromises.push(
       db
@@ -1614,7 +1614,7 @@ async function detectTaskConflicts(params: {
       continue;
     }
 
-    const remoteUpdatedAt = parseTodoistTimestamp(todoistTask.updatedAt);
+    const remoteUpdatedAt = todoistTask.updatedAt instanceof Date ? todoistTask.updatedAt : parseTodoistTimestamp(todoistTask.updatedAt as string | null | undefined);
     if (!remoteUpdatedAt) {
       continue;
     }

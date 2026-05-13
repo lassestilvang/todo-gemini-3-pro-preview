@@ -1,6 +1,6 @@
 
 import { cn } from '@/lib/utils'
-import { type CalendarOptions, type DayCellData } from '@fullcalendar/react'
+import { type CalendarOptions, type DayCellInfo } from '@fullcalendar/react'
 
 export const xxsTextClass = 'text-[0.6875rem]/[1.090909]'
 
@@ -13,7 +13,7 @@ export const rowTouchResizerClass = `${blockTouchResizerClass} top-1/2 -mt-1`
 export const columnTouchResizerClass = `${blockTouchResizerClass} left-1/2 -ml-1`
 
 export const tallDayCellBottomClass = 'min-h-4'
-export const getShortDayCellBottomClass = (data: DayCellData) => cn(
+export const getShortDayCellBottomClass = (data: DayCellInfo) => cn(
     !data.isNarrow && 'min-h-px'
 )
 
@@ -63,7 +63,7 @@ export function filledRightTriangle(className?: string) {
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 800 2200"
             preserveAspectRatio="none"
-            className={className}
+            className={className as string}
         >
             <polygon points="0,0 66,0 800,1100 66,2200 0,2200" fill="currentColor" />
         </svg>

@@ -89,29 +89,29 @@ export function EventCalendarViews({
         dayCellTopClass={(data) => cn('flex flex-row', data.isNarrow ? 'justify-end min-h-px' : 'justify-center min-h-0.5')}
         dayCellTopInnerClass={(data) => cn('flex flex-row items-center justify-center whitespace-nowrap rounded-full', data.isNarrow ? `m-px h-5 ${xxsTextClass}` : 'm-1.5 h-6 text-sm', data.text === data.dayNumberText ? (data.isNarrow ? 'w-5' : 'w-6') : (data.isNarrow ? 'px-1' : 'px-2'), data.isToday ? ['bg-primary/20 dark:bg-primary/30', data.hasNavLink && 'hover:bg-primary/40 focus-visible:outline-3 outline-ring/50'] : (data.hasNavLink && 'hover:bg-foreground/5'), data.isOther && 'text-muted-foreground', data.monthText && 'font-bold')}
         dayCellInnerClass={(data) => cn(data.inPopover && 'p-2')}
-        dayPopoverFormat={{ day: 'numeric', weekday: 'short' }}
+        popoverFormat={{ day: 'numeric', weekday: 'short' }}
         popoverClass='border rounded-md overflow-hidden shadow-lg m-1 bg-popover text-popover-foreground min-w-60'
         popoverCloseClass="group absolute top-2 end-2 size-8 rounded-full items-center justify-center hover:bg-foreground/5 focus-visible:outline-3 outline-ring/50"
         dayLaneClass={(data) => cn('border', data.isMajor && 'border-foreground/20', data.isDisabled && 'bg-foreground/3')}
         dayLaneInnerClass={(data) => data.isStack ? 'm-1' : (data.isNarrow ? 'mx-px' : 'ms-0.5 me-[2.5%]')}
         slotLaneClass={(data) => cn('border', data.isMinor && 'border-dotted')}
         listDayFormat={{ day: 'numeric' }}
-        listDaySideFormat={{ month: 'short', weekday: 'short', forceCommas: true }}
+        listDayAltFormat={{ month: 'short', weekday: 'short', forceCommas: true }}
         listDayClass='not-last:border-b flex flex-row items-start'
         listDayHeaderClass='m-2 shrink-0 w-1/3 max-w-44 min-h-9 flex flex-row items-center gap-2'
         listDayHeaderInnerClass={(data) => cn(!data.level ? ['h-9 rounded-full flex flex-row items-center text-lg', data.text === data.dayNumberText ? 'w-9 justify-center' : 'px-3', data.isToday ? ['bg-primary/20 dark:bg-primary/30', data.hasNavLink && 'hover:bg-primary/40 focus-visible:outline-3 outline-ring/50'] : (data.hasNavLink && 'hover:bg-foreground/5')] : ['text-xs uppercase', data.hasNavLink && 'hover:underline'])}
-        listDayEventsClass='grow min-w-0 py-2 gap-1'
+        listDayBodyClass='grow min-w-0 py-2 gap-1'
         singleMonthClass='m-4'
-        singleMonthHeaderClass={(data) => cn(data.isSticky && 'border-b bg-background', data.colCount > 1 ? 'pb-2' : 'py-1', 'items-center')}
+        singleMonthHeaderClass={(data) => cn(data.isSticky && 'border-b bg-background', data.hasNavLink ? 'pb-2' : 'py-1', 'items-center')}
         singleMonthHeaderInnerClass={(data) => cn('px-3 py-1 rounded-full text-base font-bold', data.hasNavLink && 'hover:bg-foreground/5')}
         tableHeaderClass={(data) => cn(data.isSticky && 'border-b bg-background')}
-        fillerClass={(data) => cn('opacity-50 border', data.isHeader && 'border-transparent')}
+        fillerClass={(data) => cn('opacity-50 border', data.inTableHeader && 'border-transparent')}
         dayNarrowWidth={100}
         dayHeaderRowClass='border'
         dayRowClass='border'
         navLinkClass="focus-visible:outline-3 outline-ring/50"
         inlineWeekNumberClass={(data) => cn('absolute flex flex-row items-center whitespace-nowrap bg-foreground/10', data.isNarrow ? `top-0.5 start-0 my-px h-4 pe-1 rounded-e-full ${xxsTextClass}` : 'top-1.5 start-1 h-6 px-2 rounded-full text-sm', data.hasNavLink && 'hover:bg-foreground/20 focus-visible:outline-3 outline-ring/50')}
-        nonBusinessClass='bg-foreground/3'
+        nonBusinessHoursClass='bg-foreground/3'
         highlightClass='bg-primary/10'
         nowIndicatorLineClass='-m-px border-1 border-destructive'
         nowIndicatorDotClass="-m-[6px] border-6 border-destructive size-0 rounded-full ring-2 ring-background"
@@ -128,7 +128,7 @@ export function EventCalendarViews({
             allDayDividerClass: 'border-b',
             slotHeaderClass: (data) => cn('w-2 self-end justify-end', 'border', data.isMinor && 'border-dotted'),
             slotHeaderInnerClass: (data) => cn('relative ps-2 pe-3 py-2', data.isNarrow ? `-top-4 ${xxsTextClass}` : '-top-5 text-sm', data.isFirst && 'hidden'),
-            slotHeaderDividerClass: (data) => cn('border-e', (data.isHeader && data.options.dayMinWidth === undefined) && 'border-transparent'),
+            slotHeaderDividerClass: (data) => cn('border-e', (data.inTableHeader && data.options.dayMinWidth === undefined) && 'border-transparent'),
             ...userViews?.timeGrid,
           },
           list: {

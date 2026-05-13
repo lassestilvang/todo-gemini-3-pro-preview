@@ -53,7 +53,7 @@ export function GroupedListView({
             const groupCompleted: Task[] = [];
             for (let j = 0; j < groupTasks.length; j++) {
                 const task = groupTasks[j];
-                (task.isCompleted ? groupCompleted : groupActive).push(task);
+                if (task) (task.isCompleted ? groupCompleted : groupActive).push(task);
             }
             split[i] = { groupName, groupTasks, groupActive, groupCompleted };
         }
@@ -91,7 +91,7 @@ export function GroupedListView({
 
     return (
         <>
-            {groupedSplit.map(({ groupName, groupTasks, groupActive, groupCompleted }) => {
+            {groupedSplit.map(({ groupName, groupTasks, groupActive, groupCompleted }: { groupName: string, groupTasks: Task[], groupActive: Task[], groupCompleted: Task[] }) => {
                 return (
                     <div key={groupName} className="space-y-2">
                         <h3 className="text-sm font-semibold text-muted-foreground bg-background/95 backdrop-blur-md sticky top-0 py-2 z-10 border-b flex items-center justify-between px-2 -mx-2">
