@@ -39,7 +39,7 @@ export function DatePicker({ date, setDate, disabled, fromDate, toDate }: DatePi
                         "w-full justify-start text-left font-normal",
                         !date && "text-muted-foreground"
                     )}
-                    aria-label="Select Date"
+                    aria-label={date ? `Change date, current date is ${mounted ? formatFriendlyDate(date, 'PPP') : format(date, 'PPP')}` : 'Select Date'}
                 >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {date ? (mounted ? formatFriendlyDate(date, "PPP") : format(date, "PPP")) : <span>Pick a date</span>}
