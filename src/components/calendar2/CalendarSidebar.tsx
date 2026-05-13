@@ -46,6 +46,7 @@ export function CalendarSidebar({
             checked={allChecked}
             onCheckedChange={(checked) => onToggleAll(checked === true)}
             className="h-4 w-4"
+            aria-label="Toggle all calendars visibility"
           />
           <span className="text-muted-foreground font-medium text-xs">All</span>
         </label>
@@ -53,6 +54,8 @@ export function CalendarSidebar({
         <div
           role="button"
           tabIndex={0}
+          aria-label="Select Inbox calendar"
+          aria-pressed={selectedListId === null}
           className={cn(
             "flex items-center gap-2.5 text-sm px-2 py-1.5 rounded-md cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
             selectedListId === null ? "bg-accent" : "hover:bg-muted/50"
@@ -71,6 +74,7 @@ export function CalendarSidebar({
             tabIndex={-1}
             onClick={(e) => e.stopPropagation()}
             className="h-4 w-4"
+            aria-label="Toggle Inbox calendar visibility"
           />
           <span className="inline-flex h-2 w-2 rounded-full bg-primary shrink-0" />
           <span className="text-xs truncate">Inbox</span>
@@ -81,6 +85,8 @@ export function CalendarSidebar({
             key={list.id}
             role="button"
             tabIndex={0}
+            aria-label={`Select ${list.name} calendar`}
+            aria-pressed={selectedListId === list.id}
             className={cn(
               "flex items-center gap-2.5 text-sm px-2 py-1.5 rounded-md cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               selectedListId === list.id ? "bg-accent" : "hover:bg-muted/50"
@@ -99,6 +105,7 @@ export function CalendarSidebar({
               tabIndex={-1}
               onClick={(e) => e.stopPropagation()}
               className="h-4 w-4"
+              aria-label={`Toggle ${list.name} calendar visibility`}
             />
             <span
               className={cn(
