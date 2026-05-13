@@ -83,7 +83,7 @@ export const TaskListOverdueSection = React.memo(function TaskListOverdueSection
             </div>
 
             {!overdueCollapsed && (
-                <div id={listId ? `overdue-tasks-section-${listId}` : "overdue-tasks-section"} className="px-4 pb-3 space-y-2">
+                <div id={listId != null ? `overdue-tasks-section-${listId}` : "overdue-tasks-section"} className="px-4 pb-3 space-y-2">
                     {overdueTasks.map((task) => (
                         <TaskItem
                             key={task.id}
