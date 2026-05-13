@@ -216,3 +216,7 @@
 **Vulnerability:** In `src/lib/actions/reminders.ts`, the `createReminderImpl` and `deleteReminderImpl` functions performed sequential database mutations (inserting/deleting a reminder, then inserting a task log) outside of a database transaction.
 **Learning:** Performing multiple related mutations sequentially without a transaction creates a risk of partial state updates if one operation fails, compromising data integrity (e.g., creating a reminder without logging it, or logging its deletion without actually removing it).
 **Prevention:** Always enforce atomicity by wrapping sequential dependent database mutations, such as CRUD operations on primary entities combined with secondary logging or tracking entries, in a `db.transaction(async (tx) => { ... })` block.
+## 2024-05-12 - Template Instantiation List IDOR
+**Vulnerability:** `instantiateTemplateImpl` in `src/lib/actions/templates.ts` accepted an optional `listId` but lacked an explicit ownership verification for that list before proceeding. While the underlying `createTask` prevented a full exploit, lack of validation at the boundary could lead to partial execution or unnecessary resource usage.
+**Learning:** Always validate ownership of all relational IDs (like `listId`) at the boundary of a server action, even if underlying utilities might eventually catch it, to ensure defense-in-depth and fail-fast semantics.
+**Prevention:** Imported and used `getListInternal(listId, userId)` at the beginning of `instantiateTemplateImpl` to verify list ownership before processing the template.
