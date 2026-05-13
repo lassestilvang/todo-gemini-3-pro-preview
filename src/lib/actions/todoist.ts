@@ -125,8 +125,9 @@ export async function createTodoistMappingList(name: string) {
     if (!trimmedName) {
         return { success: false, error: "List name is required." };
     }
-    if (trimmedName.length > 255) {
-        return { success: false, error: "List name must be 255 characters or less." };
+    const MAX_LIST_NAME_LENGTH = 255;
+    if (trimmedName.length > MAX_LIST_NAME_LENGTH) {
+        return { success: false, error: `List name must be ${MAX_LIST_NAME_LENGTH} characters or less.` };
     }
 
     const existingLists = await db
