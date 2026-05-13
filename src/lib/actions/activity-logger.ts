@@ -15,5 +15,14 @@ export async function logActivity(params: {
   details?: string;
 }) {
   await requireUser(params.userId);
-  await db.insert(taskLogs).values(params);
+
+  // Truncate details to prevent excessively large payload insertion
+  const truncatedDetails = params.details && params.details.length > 5000
+    ? params.details.substring(0, 5000)
+    : params.details;
+
+  await db.insert(taskLogs).values({
+    ...params,
+    details: truncatedDetails
+  });
 }
