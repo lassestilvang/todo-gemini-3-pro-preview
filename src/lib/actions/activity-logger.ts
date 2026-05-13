@@ -16,13 +16,21 @@ export async function logActivity(params: {
 }) {
   await requireUser(params.userId);
 
-  // Truncate details to prevent excessively large payload insertion
-  const truncatedDetails = params.details && params.details.length > 5000
-    ? params.details.substring(0, 5000)
-    : params.details;
+  // 🛡️ Sentinel: Enforce input length limits to prevent DoS via excessive storage consumption.
+  // Silently truncate since this is a non-critical helper and shouldn't crash the main application flow.
+  let safeAction = params.action;
+  if (safeAction && safeAction.length > 255) {
+    safeAction = safeAction.substring(0, 255);
+  }
+
+  let safeDetails = params.details;
+  if (safeDetails && safeDetails.length > 2000) {
+    safeDetails = safeDetails.slice(0, 1985) + "... [TRUNCATED]";
+  }
 
   await db.insert(taskLogs).values({
     ...params,
-    details: truncatedDetails
+    action: safeAction,
+    details: safeDetails,
   });
 }
