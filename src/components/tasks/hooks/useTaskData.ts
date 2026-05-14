@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import pLimit from "p-limit";
 import { getLists } from "@/lib/actions/lists";
 import { getLabels } from "@/lib/actions/labels";
 import {
@@ -197,11 +198,19 @@ export function useTaskData({ taskId, isEdit, userId }: UseTaskDataProps) {
         if (!taskId || !userId) return;
         // Perf: create subtasks in parallel to avoid serial roundtrips per item.
         // This reduces AI-import latency from O(n) sequential awaits to ~1 RTT for n subtasks.
-        const results = await Promise.all(
-            aiSubtasks.map(sub =>
-                createSubtask(taskId, userId, sub.title, sub.estimateMinutes)
-            )
-        );
+        // ⚡ Bolt Opt: Bounded concurrency to 3 to prevent backend overload and rate limits
+        const limit = pLimit(3);
+        let results;
+        try {
+            results = await Promise.all(
+                aiSubtasks.map(sub =>
+                    limit(() => createSubtask(taskId, userId, sub.title, sub.estimateMinutes))
+                )
+            );
+        } catch (error) {
+            limit.clearQueue();
+            throw error;
+        }
         if (results.some((result) => !result.success)) {
             console.error("Failed to create one or more subtasks");
             return;
