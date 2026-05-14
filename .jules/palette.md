@@ -208,6 +208,6 @@
 **Learning:** In components like `CalendarView.tsx`, day cells are built using `div` elements with `role="button"` and `tabIndex={0}` to allow keyboard interactivity. While screen readers might attempt to read the nested content (like the date number and task counts), this often results in a fragmented or unintelligible readout, failing to provide the full context of what the "button" does.
 **Action:** When creating custom composite interactive elements (like calendar cells, complex list items, or custom toggle buttons) using `role="button"`, always provide an explicit, top-level `aria-label` (e.g., `aria-label={\`Select ${format(day, 'MMMM d, yyyy')}\`}`) to ensure screen reader users understand the element's purpose and state without relying on potentially confusing nested text content.
 
-## $(date +%Y-%m-%d) - Added aria-label to TaskItem edit button
+## YYYY-MM-DD - Added aria-label to TaskItem edit button
 **Learning:** Even when a button contains visible text (like a task title), if its primary action is not immediately obvious from the text alone (e.g., clicking the title opens an edit dialog), an explicit `aria-label` like `Edit task: {title}` significantly improves screen reader comprehension.
 **Action:** Always evaluate if a button's text fully describes its action. If the action is implicit (like "click title to edit"), provide an explicit `aria-label` describing the result of the interaction.
