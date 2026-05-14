@@ -210,3 +210,17 @@
 ## $(date +%Y-%m-%d) - Empty States Need Actionable Buttons
 **Learning:** Empty states that only contain descriptive text (e.g., "No subtasks added yet. Click 'Add Subtask' to add one.") are a missed opportunity. They require the user to find the primary action elsewhere on the screen, creating friction.
 **Action:** When designing or refactoring an empty state for a list or collection, always include a clear, centered call-to-action button (like "Add First Item") directly within the empty state container to minimize interaction cost and make the interface more intuitive.
+
+## 2024-05-18 - Avoid nested interactivity in composite sidebar items
+**Learning:** Found custom interactive elements (`role="button"`) acting as selectable list items but containing internal checkboxes for a distinct toggle action. This nested structure is invalid ARIA and often makes the internal elements inaccessible to keyboard users.
+**Action:** When designing a composite item like a selectable sidebar row with a visibility toggle, avoid nesting the checkbox inside the button. Instead, use sibling interactive elements for the selection action and the visibility toggle to ensure both are keyboard-accessible and semantically valid.
+## 2024-05-20 - Missing aria-label on Sub-components
+**Learning:** Found several sub-components like `TimePicker`'s `PopoverTrigger`, `DatePicker`'s `PopoverTrigger`, and fallback `Button` triggers inside `IconPicker` components missing `aria-label` entirely, assuming the user derives enough context visually. This limits screen readers to a generic 'button' readout without explaining the action tied to expanding a custom picker.
+**Action:** When creating wrapper inputs containing complex sub-menus like a Time Picker or Icon Picker, ensure that not only the input handles the `aria-label` correctly, but also the expanding action triggering the popover communicates its intent with properties like `aria-label="Open time picker"`.
+
+## 2024-05-20 - Missing DialogDescription in Radix UI Modals
+**Learning:** Found instances of custom modals (`SidebarSavedViews.tsx`) where `DialogContent` did not define a `DialogDescription` but Radix UI expects one for accessibility completeness (as per `aria-describedby` requirements).
+**Action:** Always provide a `DialogDescription` within `DialogContent` modals. If visual text is unneeded, append `className="sr-only"` to it to satisfy accessibility requirements without altering the layout.
+## 2024-05-19 - Accessible Collapsible Sections
+**Learning:** Collapsible lists and sections (like subtasks or overdue tasks) that rely on `aria-expanded` on toggle buttons often miss the corresponding `aria-controls` attribute, breaking the link for screen reader users between the button and the expandable content.
+**Action:** When inspecting or adding `aria-expanded` toggle functionality, always ensure the target container is assigned an `id` and the toggle button includes an `aria-controls="[id]"` attribute to complete the accessible relationship. Use dynamic IDs (e.g. including `task.id` or `listId`) to avoid collisions when multiple sections are rendered on the same page.
