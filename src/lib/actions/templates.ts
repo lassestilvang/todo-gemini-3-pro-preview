@@ -24,6 +24,7 @@ import { rateLimit } from "@/lib/rate-limit";
 
 // Import createTask for template instantiation
 import { createTask } from "./tasks";
+import { getListInternal } from "./lists";
 
 /**
  * Retrieves all templates for a specific user.
@@ -235,6 +236,13 @@ async function instantiateTemplateImpl(
 ) {
   // Validate that the requester is the same as the userId passed in
   await requireUser(userId);
+
+  if (listId !== null) {
+    const list = await getListInternal(listId, userId);
+    if (!list) {
+      throw new NotFoundError("List not found or access denied");
+    }
+  }
 
   const template = await db
     .select()
