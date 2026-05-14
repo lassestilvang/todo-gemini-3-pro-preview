@@ -11,6 +11,7 @@ import {
     syncTodoistNow,
 } from "@/lib/actions/todoist";
 import { requestDataRefresh } from "@/lib/sync/events";
+import pLimit from "p-limit";
 
 export function TodoistMappingForm() {
     type MappingSelection = number | null | "new";
@@ -220,10 +221,17 @@ export function TodoistMappingForm() {
         let createdListCount = 0;
 
         // ⚡ Bolt Opt: Replaced sequential `Promise.all` awaits for projects and labels with a single concurrent resolution
-        const [projectResults, labelResults] = await Promise.all([
-            Promise.all(projects.map((p) => resolveMappingSelection(projectMappings[p.id] ?? null, p.name))),
-            Promise.all(labels.map((l) => resolveMappingSelection(labelMappings[l.id] ?? null, l.name)))
-        ]);
+        const limitMapping = pLimit(5);
+        let projectResults, labelResults;
+        try {
+            [projectResults, labelResults] = await Promise.all([
+                Promise.all(projects.map((p) => limitMapping(() => resolveMappingSelection(projectMappings[p.id] ?? null, p.name)))),
+                Promise.all(labels.map((l) => limitMapping(() => resolveMappingSelection(labelMappings[l.id] ?? null, l.name))))
+            ]);
+        } catch (error) {
+            limitMapping.clearQueue();
+            throw error;
+        }
 
         const projectPayload: { projectId: string; listId: number | null }[] = [];
         for (let i = 0; i < projects.length; i++) {
