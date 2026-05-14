@@ -20,7 +20,7 @@ describe("SubtaskForm", () => {
         onAdd={onAdd}
         onRemove={onRemove}
         onUpdate={onUpdate}
-      />
+      />,
     );
 
     expect(screen.getByText("Add Subtask")).toBeInTheDocument();
@@ -37,10 +37,17 @@ describe("SubtaskForm", () => {
         onAdd={onAdd}
         onRemove={onRemove}
         onUpdate={onUpdate}
-      />
+      />,
     );
 
-    expect(screen.getByText(/No subtasks added yet/)).toBeInTheDocument();
+    expect(screen.getByText(/No subtasks/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Break down this task into smaller/),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Add First Subtask")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("Add First Subtask"));
+    expect(onAdd).toHaveBeenCalledTimes(1);
   });
 
   it("should call onAdd when Add Subtask button is clicked", () => {
@@ -54,7 +61,7 @@ describe("SubtaskForm", () => {
         onAdd={onAdd}
         onRemove={onRemove}
         onUpdate={onUpdate}
-      />
+      />,
     );
 
     fireEvent.click(screen.getByText("Add Subtask"));
@@ -76,7 +83,7 @@ describe("SubtaskForm", () => {
         onAdd={onAdd}
         onRemove={onRemove}
         onUpdate={onUpdate}
-      />
+      />,
     );
 
     // Check subtask labels
@@ -110,14 +117,16 @@ describe("SubtaskForm", () => {
         onAdd={onAdd}
         onRemove={onRemove}
         onUpdate={onUpdate}
-      />
+      />,
     );
 
     // Find delete buttons (there should be 2)
-    const deleteButtons = screen.getAllByRole("button", { name: "Delete subtask" });
-    
+    const deleteButtons = screen.getAllByRole("button", {
+      name: "Delete subtask",
+    });
+
     expect(deleteButtons).toHaveLength(2);
-    
+
     // Click the first delete button
     fireEvent.click(deleteButtons[0]);
     expect(onRemove).toHaveBeenCalledWith("subtask-1");
@@ -137,13 +146,17 @@ describe("SubtaskForm", () => {
         onAdd={onAdd}
         onRemove={onRemove}
         onUpdate={onUpdate}
-      />
+      />,
     );
 
     const titleInput = screen.getByPlaceholderText("Subtask title");
     fireEvent.change(titleInput, { target: { value: "Updated title" } });
 
-    expect(onUpdate).toHaveBeenCalledWith("subtask-1", "title", "Updated title");
+    expect(onUpdate).toHaveBeenCalledWith(
+      "subtask-1",
+      "title",
+      "Updated title",
+    );
   });
 
   it("should call onUpdate when description input changes", () => {
@@ -160,12 +173,16 @@ describe("SubtaskForm", () => {
         onAdd={onAdd}
         onRemove={onRemove}
         onUpdate={onUpdate}
-      />
+      />,
     );
 
     const descInput = screen.getByPlaceholderText("Subtask description");
     fireEvent.change(descInput, { target: { value: "Updated description" } });
 
-    expect(onUpdate).toHaveBeenCalledWith("subtask-1", "description", "Updated description");
+    expect(onUpdate).toHaveBeenCalledWith(
+      "subtask-1",
+      "description",
+      "Updated description",
+    );
   });
 });
