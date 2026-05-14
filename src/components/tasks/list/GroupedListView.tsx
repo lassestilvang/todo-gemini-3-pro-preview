@@ -36,19 +36,27 @@ export function GroupedListView({
         () => groupedVirtualSections.map((section) => section.items.length),
         [groupedVirtualSections]
     );
-    const groupedSplit = useMemo(
-        () => groupedEntries.map(([groupName, groupTasks]) => {
+    const { groupedSplit, totalGroupTasks } = useMemo(() => {
+        const split = [];
+        let total = 0;
+
+        for (let i = 0; i < groupedEntries.length; i++) {
+            const [groupName, groupTasks] = groupedEntries[i];
             const groupActive: Task[] = [];
             const groupCompleted: Task[] = [];
-            for (const task of groupTasks) (task.isCompleted ? groupCompleted : groupActive).push(task);
-            return { groupName, groupTasks, groupActive, groupCompleted };
-        }),
-        [groupedEntries]
-    );
-    const totalGroupTasks = useMemo(
-        () => groupedEntries.reduce((acc, [_, tasks]) => acc + tasks.length, 0),
-        [groupedEntries]
-    );
+
+            total += groupTasks.length;
+
+            for (let j = 0; j < groupTasks.length; j++) {
+                const task = groupTasks[j];
+                (task.isCompleted ? groupCompleted : groupActive).push(task);
+            }
+
+            split.push({ groupName, groupTasks, groupActive, groupCompleted });
+        }
+
+        return { groupedSplit: split, totalGroupTasks: total };
+    }, [groupedEntries]);
 
     if (totalGroupTasks > 50) {
         return (

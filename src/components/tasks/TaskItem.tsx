@@ -173,6 +173,7 @@ export const TaskItem = memo(function TaskItem({
                         onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
                         className="flex items-center justify-center w-5 h-5 -ml-1 rounded hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         aria-expanded={isExpanded}
+                        aria-controls={`subtask-area-${task.id}`}
                         aria-label={isExpanded ? "Collapse subtasks" : "Expand subtasks"}
                     >
                         <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform duration-200", !isExpanded && "-rotate-90")} />
@@ -326,7 +327,7 @@ export const TaskItem = memo(function TaskItem({
             </div>
 
             {hasSubtasks && isExpanded && (
-                <div className="ml-8 mt-1 space-y-1 border-l-2 border-muted pl-4" data-subtask-area="true">
+                <div id={`subtask-area-${task.id}`} className="ml-8 mt-1 space-y-1 border-l-2 border-muted pl-4" data-subtask-area="true">
                     {(task.subtasks || []).map((subtask) => (
                         <SubtaskRow key={subtask.id} subtask={subtask} isCompleted={subtask.isCompleted || false} onToggle={handleSubtaskToggle} />
                     ))}

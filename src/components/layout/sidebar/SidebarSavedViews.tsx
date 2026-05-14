@@ -14,6 +14,7 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
+    DialogDescription,
     DialogTrigger,
 } from "@/components/ui/dialog";
 
@@ -28,6 +29,7 @@ function AddViewHelpDialog() {
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>How to create a Saved View</DialogTitle>
+                    <DialogDescription className="sr-only">Help dialog for creating a saved view</DialogDescription>
                     <div className="pt-4 space-y-4 text-sm text-muted-foreground">
                         <p>
                             Saved Views are custom filter presets that help you quickly access specific sets of tasks.
