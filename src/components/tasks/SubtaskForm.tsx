@@ -47,7 +47,7 @@ export function SubtaskForm({
           </p>
           <Button
             type="button"
-            variant="secondary"
+            variant="default"
             size="sm"
             onClick={onAdd}
             className="gap-1"
