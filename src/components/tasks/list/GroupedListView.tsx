@@ -45,9 +45,7 @@ export function GroupedListView({
         const split = new Array<{ groupName: string; groupTasks: Task[]; groupActive: Task[]; groupCompleted: Task[] }>(groupedEntries.length);
         let total = 0;
         for (let i = 0; i < groupedEntries.length; i++) {
-            const entry = groupedEntries[i];
-            const groupName = entry[0];
-            const groupTasks = entry[1];
+            const [groupName, groupTasks] = groupedEntries[i];
             total += groupTasks.length;
             const groupActive: Task[] = [];
             const groupCompleted: Task[] = [];
