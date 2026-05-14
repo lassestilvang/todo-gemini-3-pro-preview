@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo } from "react";
-import type { DateClickData, DateSelectData, EventDropData, EventResizeDoneData } from "@fullcalendar/react";
+import type { DateClickInfo, DateSelectInfo, EventDropInfo, EventResizeDoneInfo } from "@fullcalendar/react";
 import { CalendarMain } from "@/components/calendar2/CalendarMain";
 import { CalendarSidebar } from "@/components/calendar2/CalendarSidebar";
 import { CalendarPlanningLayout } from "@/components/calendar2/CalendarPlanningLayout";
@@ -179,7 +179,7 @@ export function Calendar2Client({ initialTasks, initialLists }: Calendar2ClientP
   }, []);
 
   // --- Event handlers ---
-  const handleEventDrop = useCallback((info: EventDropData) => {
+  const handleEventDrop = useCallback((info: EventDropInfo) => {
     const taskId = Number(info.event.extendedProps.taskId);
     if (!taskId || !userId) return;
 
@@ -199,7 +199,7 @@ export function Calendar2Client({ initialTasks, initialLists }: Calendar2ClientP
     });
   }, [dispatch, taskMap, userId]);
 
-  const handleEventResize = useCallback((info: EventResizeDoneData) => {
+  const handleEventResize = useCallback((info: EventResizeDoneInfo) => {
     const taskId = Number(info.event.extendedProps.taskId);
     if (!taskId || !userId) return;
 
@@ -223,11 +223,11 @@ export function Calendar2Client({ initialTasks, initialLists }: Calendar2ClientP
     });
   }, [dispatch, taskMap, userId]);
 
-  const handleDateClick = useCallback((info: DateClickData) => {
+  const handleDateClick = useCallback((info: DateClickInfo) => {
     openQuickCreate(info.date);
   }, [openQuickCreate]);
 
-  const handleSelect = useCallback((info: DateSelectData) => {
+  const handleSelect = useCallback((info: DateSelectInfo) => {
     openQuickCreate(info.start);
   }, [openQuickCreate]);
 

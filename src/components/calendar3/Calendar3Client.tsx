@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from "react";
 import type {
-  DateClickData,
-  DateSelectData,
-  EventDropData,
-  EventResizeDoneData,
-  EventReceiveData,
+  DateClickInfo,
+  DateSelectInfo,
+  EventDropInfo,
+  EventResizeDoneInfo,
+  EventReceiveInfo,
 } from "@fullcalendar/react";
 import { Draggable } from "@fullcalendar/react/interaction";
 import { endOfDay, startOfDay } from "date-fns";
@@ -208,7 +208,7 @@ function Calendar3ClientActual({ initialTasks, initialLists }: Calendar3ClientPr
     setQuickCreateOpen(true);
   }, []);
 
-  const handleEventDrop = useCallback((info: EventDropData) => {
+  const handleEventDrop = useCallback((info: EventDropInfo) => {
     const taskId = Number(info.event.extendedProps.taskId);
     if (!taskId || !userId) return;
 
@@ -228,7 +228,7 @@ function Calendar3ClientActual({ initialTasks, initialLists }: Calendar3ClientPr
     });
   }, [dispatch, taskMap, userId]);
 
-  const handleEventResize = useCallback((info: EventResizeDoneData) => {
+  const handleEventResize = useCallback((info: EventResizeDoneInfo) => {
     const taskId = Number(info.event.extendedProps.taskId);
     if (!taskId || !userId) return;
 
@@ -252,7 +252,7 @@ function Calendar3ClientActual({ initialTasks, initialLists }: Calendar3ClientPr
     });
   }, [dispatch, taskMap, userId]);
 
-  const handleEventReceive = useCallback((info: EventReceiveData) => {
+  const handleEventReceive = useCallback((info: EventReceiveInfo) => {
     const taskId = Number(info.event.extendedProps.taskId);
     if (!taskId || !userId) {
       info.event.remove();
@@ -298,11 +298,11 @@ function Calendar3ClientActual({ initialTasks, initialLists }: Calendar3ClientPr
     info.event.remove();
   }, [dispatch, taskMap, userId]);
 
-  const handleDateClick = useCallback((info: DateClickData) => {
+  const handleDateClick = useCallback((info: DateClickInfo) => {
     openQuickCreate(info.date);
   }, [openQuickCreate]);
 
-  const handleSelect = useCallback((info: DateSelectData) => {
+  const handleSelect = useCallback((info: DateSelectInfo) => {
     openQuickCreate(info.start);
   }, [openQuickCreate]);
 

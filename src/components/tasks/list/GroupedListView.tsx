@@ -32,23 +32,31 @@ interface GroupedListViewProps {
 export function GroupedListView({
     groupedEntries, groupedVirtualSections, formattedGroupNames, listId, userId, onEdit, dispatch, now, isClient, performanceMode, userPreferences
 }: GroupedListViewProps) {
-    const groupCounts = useMemo(
-        () => groupedVirtualSections.map((section) => section.items.length),
-        [groupedVirtualSections]
-    );
-    const groupedSplit = useMemo(
-        () => groupedEntries.map(([groupName, groupTasks]) => {
+    // ⚡ Bolt Opt: Replaced .map() and .reduce() with for loops to avoid O(N) array allocation
+    const groupCounts = useMemo(() => {
+        const counts = new Array<number>(groupedVirtualSections.length);
+        for (let i = 0; i < groupedVirtualSections.length; i++) {
+            counts[i] = groupedVirtualSections[i].items.length;
+        }
+        return counts;
+    }, [groupedVirtualSections]);
+
+    const { groupedSplit, totalGroupTasks } = useMemo(() => {
+        const split = new Array<{ groupName: string; groupTasks: Task[]; groupActive: Task[]; groupCompleted: Task[] }>(groupedEntries.length);
+        let total = 0;
+        for (let i = 0; i < groupedEntries.length; i++) {
+            const [groupName, groupTasks] = groupedEntries[i];
+            total += groupTasks.length;
             const groupActive: Task[] = [];
             const groupCompleted: Task[] = [];
-            for (const task of groupTasks) (task.isCompleted ? groupCompleted : groupActive).push(task);
-            return { groupName, groupTasks, groupActive, groupCompleted };
-        }),
-        [groupedEntries]
-    );
-    const totalGroupTasks = useMemo(
-        () => groupedEntries.reduce((acc, [_, tasks]) => acc + tasks.length, 0),
-        [groupedEntries]
-    );
+            for (let j = 0; j < groupTasks.length; j++) {
+                const task = groupTasks[j];
+                if (task) (task.isCompleted ? groupCompleted : groupActive).push(task);
+            }
+            split[i] = { groupName, groupTasks, groupActive, groupCompleted };
+        }
+        return { groupedSplit: split, totalGroupTasks: total };
+    }, [groupedEntries]);
 
     if (totalGroupTasks > 50) {
         return (
@@ -81,7 +89,7 @@ export function GroupedListView({
 
     return (
         <>
-            {groupedSplit.map(({ groupName, groupTasks, groupActive, groupCompleted }) => {
+            {groupedSplit.map(({ groupName, groupTasks, groupActive, groupCompleted }: { groupName: string, groupTasks: Task[], groupActive: Task[], groupCompleted: Task[] }) => {
                 return (
                     <div key={groupName} className="space-y-2">
                         <h3 className="text-sm font-semibold text-muted-foreground bg-background/95 backdrop-blur-md sticky top-0 py-2 z-10 border-b flex items-center justify-between px-2 -mx-2">
