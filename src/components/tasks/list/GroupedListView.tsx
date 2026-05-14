@@ -42,7 +42,7 @@ export function GroupedListView({
     }, [groupedVirtualSections]);
 
     const { groupedSplit, totalGroupTasks } = useMemo(() => {
-        const split = new Array(groupedEntries.length);
+        const split = new Array<{ groupName: string; groupTasks: Task[]; groupActive: Task[]; groupCompleted: Task[] }>(groupedEntries.length);
         let total = 0;
         for (let i = 0; i < groupedEntries.length; i++) {
             const entry = groupedEntries[i];
