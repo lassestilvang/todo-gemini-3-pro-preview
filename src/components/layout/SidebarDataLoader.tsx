@@ -19,7 +19,7 @@ export async function SidebarDataLoader({ user, className, mobile }: { user: Aut
         return (
             <AppSidebar
                 id="app-sidebar-mobile"
-                className={className}
+                className={className as string}
                 lists={lists}
                 labels={labels}
                 user={user}
@@ -28,7 +28,7 @@ export async function SidebarDataLoader({ user, className, mobile }: { user: Aut
     }
 
     return (
-        <SidebarWrapper className={className} lists={lists} labels={labels}>
+        <SidebarWrapper className={className as string} lists={lists} labels={labels}>
             <AppSidebar
                 id="app-sidebar"
                 lists={lists}

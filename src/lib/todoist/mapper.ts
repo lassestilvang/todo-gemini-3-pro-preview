@@ -116,7 +116,7 @@ export function mapTodoistTaskToLocal(
     const { dueDate, dueDatePrecision } = parseTodoistDueDate(task);
     const listId = resolveTodoistTaskListId(task, mappings);
     const completedAt = task.checked
-        ? (parseTodoistTimestamp(task.completedAt) ?? new Date())
+        ? (task.completedAt instanceof Date ? task.completedAt : parseTodoistTimestamp(task.completedAt as string | null | undefined) ?? new Date())
         : null;
 
     return {
@@ -133,7 +133,7 @@ export function mapTodoistTaskToLocal(
         isRecurring: task.due?.isRecurring ?? false,
         recurringRule: task.due?.isRecurring ? task.due.string ?? null : null,
         parentId: null,
-        createdAt: parseTodoistTimestamp(task.addedAt) ?? undefined,
+        createdAt: task.addedAt instanceof Date ? task.addedAt : parseTodoistTimestamp(task.addedAt as string | null | undefined) ?? undefined,
     };
 }
 

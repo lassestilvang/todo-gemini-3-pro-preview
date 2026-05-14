@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, type RefObject } from "react";
-import { Draggable } from "@fullcalendar/react";
+import { Draggable } from "@fullcalendar/react/interaction";
 
 // In v7 Draggable is exported from interaction plugin or core? 
 // Actually in v6 it was @fullcalendar/interaction.
