@@ -45,6 +45,9 @@ describe("SubtaskForm", () => {
       screen.getByText(/Break down this task into smaller/),
     ).toBeInTheDocument();
     expect(screen.getByText("Add First Subtask")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("Add First Subtask"));
+    expect(onAdd).toHaveBeenCalledTimes(1);
   });
 
   it("should call onAdd when Add Subtask button is clicked", () => {
