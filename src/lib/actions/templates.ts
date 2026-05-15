@@ -25,6 +25,7 @@ import { rateLimit } from "@/lib/rate-limit";
 // Import createTask for template instantiation
 import { createTask } from "./tasks";
 import { getListInternal } from "./lists";
+import pLimit from "p-limit";
 
 /**
  * Retrieves all templates for a specific user.
@@ -265,6 +266,8 @@ async function instantiateTemplateImpl(
   let taskCount = 0;
   const MAX_TASKS_PER_TEMPLATE = 100;
 
+  const limitSubtasks = pLimit(5);
+
   // Helper to recursively create tasks
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async function createRecursive(taskData: any, parentId: number | null = null) {
@@ -324,7 +327,14 @@ async function instantiateTemplateImpl(
 
     if (subtasks && Array.isArray(subtasks)) {
       // ⚡ Bolt Opt: Create sibling subtasks in parallel to reduce template instantiation latency.
-      await Promise.all(subtasks.map((sub) => createRecursive(sub, newTask.id)));
+      try {
+        await Promise.all(
+          subtasks.map((sub) => limitSubtasks(() => createRecursive(sub, newTask.id)))
+        );
+      } catch (error) {
+        limitSubtasks.clearQueue();
+        throw error;
+      }
     }
     return newTask;
   }
