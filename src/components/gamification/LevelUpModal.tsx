@@ -66,7 +66,7 @@ export function LevelUpModal({ open, onOpenChange, level }: LevelUpModalProps) {
                         Level Up!
                     </DialogTitle>
                     <DialogDescription className="sr-only">
-                        You&apos;ve reached a new level!
+                        You&apos;ve reached level {level}!
                     </DialogDescription>
                 </DialogHeader>
 
