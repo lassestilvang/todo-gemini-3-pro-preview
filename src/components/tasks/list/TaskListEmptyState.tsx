@@ -1,10 +1,12 @@
 
 import React from "react";
-import { Inbox, Calendar, CheckCircle, Layers, ClipboardList } from "lucide-react";
+import { Inbox, Calendar, CheckCircle, Layers, ClipboardList, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface TaskListEmptyStateProps {
     filterType?: string;
     viewId: string;
+    onAdd?: () => void;
 }
 
 const EMPTY_STATES = {
@@ -40,7 +42,7 @@ const EMPTY_STATES = {
     }
 } as const;
 
-export function TaskListEmptyState({ filterType, viewId }: TaskListEmptyStateProps) {
+export function TaskListEmptyState({ filterType, viewId, onAdd }: TaskListEmptyStateProps) {
     const type = (filterType || viewId) as keyof typeof EMPTY_STATES;
     const config = EMPTY_STATES[type] || EMPTY_STATES.default;
     const Icon = config.icon;
@@ -55,7 +57,13 @@ export function TaskListEmptyState({ filterType, viewId }: TaskListEmptyStatePro
                 <Icon className="h-6 w-6" />
             </div>
             <h2 className="font-semibold text-lg mb-1">{config.title}</h2>
-            <p className="text-sm text-muted-foreground">{config.description}</p>
+            <p className="text-sm text-muted-foreground mb-4">{config.description}</p>
+            {onAdd && (
+                <Button onClick={onAdd} size="sm" variant="outline">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Task
+                </Button>
+            )}
         </div>
     );
 }
