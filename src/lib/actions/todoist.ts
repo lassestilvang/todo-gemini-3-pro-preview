@@ -538,31 +538,6 @@ export async function setTodoistProjectMappings(mappings: { projectId: string; l
         }
     }
 
-    if (mappings.length > 0) {
-        await db.insert(externalEntityMap)
-            .values(
-                mappings.map((mapping) => ({
-                    userId: user.id,
-                    provider: "todoist" as const,
-                    entityType: "list" as const,
-                    localId: mapping.listId,
-                    externalId: mapping.projectId,
-                }))
-            )
-            .onConflictDoUpdate({
-                target: [
-                    externalEntityMap.userId,
-                    externalEntityMap.provider,
-                    externalEntityMap.entityType,
-                    externalEntityMap.externalId,
-                ],
-                set: {
-                    localId: sql`excluded.local_id`,
-                    updatedAt: new Date(),
-                },
-            });
-    }
-
     const scopedWhere = and(
         eq(externalEntityMap.userId, user.id),
         eq(externalEntityMap.provider, "todoist"),
@@ -654,31 +629,6 @@ export async function setTodoistLabelMappings(mappings: { labelId: string; listI
         if (invalidIds.length > 0) {
             return { success: false, error: "One or more lists not found or access denied" };
         }
-    }
-
-    if (mappings.length > 0) {
-        await db.insert(externalEntityMap)
-            .values(
-                mappings.map((mapping) => ({
-                    userId: user.id,
-                    provider: "todoist" as const,
-                    entityType: "list_label" as const,
-                    localId: mapping.listId,
-                    externalId: mapping.labelId,
-                }))
-            )
-            .onConflictDoUpdate({
-                target: [
-                    externalEntityMap.userId,
-                    externalEntityMap.provider,
-                    externalEntityMap.entityType,
-                    externalEntityMap.externalId,
-                ],
-                set: {
-                    localId: sql`excluded.local_id`,
-                    updatedAt: new Date(),
-                },
-            });
     }
 
     const scopedWhere = and(
