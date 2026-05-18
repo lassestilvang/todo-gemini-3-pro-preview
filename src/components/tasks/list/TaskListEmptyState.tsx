@@ -61,7 +61,7 @@ export function TaskListEmptyState({ filterType, viewId, onAdd }: TaskListEmptyS
             <p className={cn("text-sm text-muted-foreground", onAdd && "mb-4")}>{config.description}</p>
             {onAdd && (
                 <Button onClick={onAdd} size="sm" variant="outline">
-                    <Plus className="w-4 h-4 mr-2" />
+                    <Plus className="w-4 h-4" />
                     Add Task
                 </Button>
             )}
