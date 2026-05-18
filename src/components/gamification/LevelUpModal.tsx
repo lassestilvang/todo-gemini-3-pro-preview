@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
@@ -64,6 +65,9 @@ export function LevelUpModal({ open, onOpenChange, level }: LevelUpModalProps) {
                         <Trophy className="h-8 w-8 text-yellow-500" />
                         Level Up!
                     </DialogTitle>
+                    <DialogDescription className="sr-only">
+                        You&apos;ve reached level {level}!
+                    </DialogDescription>
                 </DialogHeader>
 
                 <div className="py-6 space-y-4">

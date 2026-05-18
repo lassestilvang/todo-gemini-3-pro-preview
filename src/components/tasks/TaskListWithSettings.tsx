@@ -247,7 +247,7 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
     }, [settings]);
 
     if (!isInitialized) return <TaskListSkeleton variant={settings.layout} compact />;
-    if ((settings.layout === "list" ? listTasks.length === 0 && periodSections.length === 0 : processedTasks.length === 0)) return <TaskListEmptyState filterType={filterType} viewId={viewId} />;
+    if ((settings.layout === "list" ? listTasks.length === 0 && periodSections.length === 0 : processedTasks.length === 0)) return <TaskListEmptyState filterType={filterType} viewId={viewId} onAdd={() => handleTaskDialogOpenChange(true)} />;
 
     return (
         <div className="space-y-4">

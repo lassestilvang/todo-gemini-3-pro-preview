@@ -104,15 +104,11 @@ export async function searchAll(
     sortOrder?: "asc" | "desc";
     cursor?: number;
     limit?: number;
-  }
+  },
 ): Promise<SearchAllResponse> {
   await requireUser(userId);
 
-  const rateLimitResult = await rateLimit(
-    `search:all:${userId}`,
-    300,
-    3600
-  );
+  const rateLimitResult = await rateLimit(`search:all:${userId}`, 300, 3600);
   if (!rateLimitResult.success) {
     throw new Error("Rate limit exceeded. Please try again later.");
   }
@@ -188,7 +184,7 @@ export async function searchAll(
     case "relevance":
       orderBy = useTrigram
         ? desc(
-            sql`greatest(similarity(lower(${tasks.title}), ${normalizedQuery}), similarity(lower(coalesce(${tasks.description}, '')), ${normalizedQuery}))`
+            sql`greatest(similarity(lower(${tasks.title}), ${normalizedQuery}), similarity(lower(coalesce(${tasks.description}, '')), ${normalizedQuery}))`,
           )
         : desc(tasks.createdAt);
       break;
@@ -197,17 +193,16 @@ export async function searchAll(
         sortOrder === "asc" ? asc(tasks.createdAt) : desc(tasks.createdAt);
       break;
     case "due":
-      orderBy =
-        sortOrder === "asc" ? asc(tasks.dueDate) : desc(tasks.dueDate);
+      orderBy = sortOrder === "asc" ? asc(tasks.dueDate) : desc(tasks.dueDate);
       break;
     case "priority":
       orderBy =
         sortOrder === "asc"
           ? asc(
-              sql`CASE ${tasks.priority} WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END`
+              sql`CASE ${tasks.priority} WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END`,
             )
           : desc(
-              sql`CASE ${tasks.priority} WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END`
+              sql`CASE ${tasks.priority} WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END`,
             );
       break;
     default:
@@ -267,9 +262,9 @@ export async function searchAll(
             eq(lists.userId, userId),
             or(
               sql`lower(${lists.name}) LIKE ${lowerQuery}`,
-              sql`lower(${lists.description}) LIKE ${lowerQuery}`
-            )
-          )
+              sql`lower(${lists.description}) LIKE ${lowerQuery}`,
+            ),
+          ),
         ),
 
       db
@@ -286,9 +281,9 @@ export async function searchAll(
             eq(labels.userId, userId),
             or(
               sql`lower(${labels.name}) LIKE ${lowerQuery}`,
-              sql`lower(${labels.description}) LIKE ${lowerQuery}`
-            )
-          )
+              sql`lower(${labels.description}) LIKE ${lowerQuery}`,
+            ),
+          ),
         ),
     ]);
 
@@ -298,7 +293,11 @@ export async function searchAll(
     : tasksResult;
   const totalTasks = Number(countResult[0]?.count ?? 0);
 
-  const taskIds = paginatedTasks.map((t) => t.id);
+  // ⚡ Bolt Opt: Replaced .map() with pre-allocated array and for loop to avoid intermediate array allocation
+  const taskIds = new Array(paginatedTasks.length);
+  for (let i = 0; i < paginatedTasks.length; i++) {
+    taskIds[i] = paginatedTasks[i].id;
+  }
 
   if (taskIds.length === 0) {
     return {
@@ -378,20 +377,24 @@ export async function searchAll(
     if (subtask.isCompleted) {
       completedSubtaskCountByParentId.set(
         subtask.parentId,
-        (completedSubtaskCountByParentId.get(subtask.parentId) ?? 0) + 1
+        (completedSubtaskCountByParentId.get(subtask.parentId) ?? 0) + 1,
       );
     }
   }
 
-  const hydratedTasks = paginatedTasks.map((task) => ({
-    ...task,
-    labels: labelsByTaskId.get(task.id) ?? [],
-    subtasks: subtasksByParentId.get(task.id) ?? [],
-    subtaskCount: (subtasksByParentId.get(task.id) ?? []).length,
-    completedSubtaskCount:
-      completedSubtaskCountByParentId.get(task.id) ?? 0,
-    blockedByCount: blockedCountMap.get(task.id) || 0,
-  }));
+  // ⚡ Bolt Opt: Replaced chained .map() with pre-allocated array and for loop to avoid intermediate array allocation
+  const hydratedTasks = new Array(paginatedTasks.length);
+  for (let i = 0; i < paginatedTasks.length; i++) {
+    const task = paginatedTasks[i];
+    hydratedTasks[i] = {
+      ...task,
+      labels: labelsByTaskId.get(task.id) ?? [],
+      subtasks: subtasksByParentId.get(task.id) ?? [],
+      subtaskCount: (subtasksByParentId.get(task.id) ?? []).length,
+      completedSubtaskCount: completedSubtaskCountByParentId.get(task.id) ?? 0,
+      blockedByCount: blockedCountMap.get(task.id) || 0,
+    };
+  }
 
   const nextCursor = hasMore
     ? paginatedTasks[paginatedTasks.length - 1].id

@@ -73,6 +73,7 @@ export {
   updateTask,
   deleteTask,
   toggleTaskCompletion,
+  reorderTasks,
   updateStreak,
   getSubtasks,
   createSubtask,

@@ -1,3 +1,32 @@
+## 2024-03-20 - Ensure Visibility of Custom Interactive Elements via Focus Rings
+**Learning:** This application heavily utilizes `role="button"` on non-semantic generic container elements like `div` elements (e.g., in `CalendarView.tsx`, `TaskBoardCard.tsx`, and `CalendarSidebar.tsx`) to implement highly custom interactive components while providing custom logic and styles for active and hover states. When relying solely on hover styles, keyboard users and assistive technology fail to receive adequate visual feedback of focus state, compromising accessibility. Default browser focus outlines are sometimes overridden or unreliable on generic container elements relying on `tabIndex={0}`.
+**Action:** Always append explicit `focus-visible` Tailwind classes (such as `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`) whenever attaching a custom `role="button"` or raw `tabIndex` to elements instead of solely relying on pointer-based hover styles or expecting the browser to provide a consistent default ring.
+
+## 2024-04-11 - Add focus-visible styles to absolutely positioned buttons
+**Learning:** absolutely positioned inline `<button>` elements (such as the "Add task" `+` icons on calendar grids) often have their native browser focus rings clipped, omitted, or otherwise not styled by default in this application.
+**Action:** When building or modifying such absolutely positioned `<button>` icons, I must append `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring` classes to ensure keyboard navigation remains visibly accessible.
+
+## 2024-04-13 - Add focus-visible styles to custom tabIndex Tooltip triggers
+**Learning:** In components like `TaskItem.tsx`, custom inline tooltip triggers are sometimes built using non-interactive elements like `div` by setting `tabIndex={0}`. While this enables focusability for screen readers, these elements often lack default browser focus indicators, rendering them invisible to keyboard users.
+**Action:** When creating or modifying custom `tabIndex={0}` elements (such as `div` or `span` used for Tooltip triggers), explicitly append `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm` to ensure proper visual feedback during keyboard navigation.
+
+## 2024-04-14 - Keyboard accessibility on custom interactive buttons
+**Learning:** Custom interactive elements like absolutely positioned buttons or inline toggle buttons often lose their native focus ring styling due to custom layout rules or overflow clipping, making them invisible to keyboard users navigating via Tab.
+**Action:** Consistently append explicitly defined focus utility classes (such as outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-offset-2) to all custom or absolutely positioned <button> components to guarantee visible focus states across different device contexts.
+## 2024-05-18 - Missing ARIA label and focus styles on clear action button
+**Learning:** Found that secondary "clear" actions on filtering panels (like the "Clear all" button in SearchFiltersPanel) might miss explicit ARIA labels and robust keyboard focus styling (`focus-visible`), reducing accessibility for screen reader and keyboard users.
+**Action:** Always verify that "clear" or "reset" buttons, especially those using secondary or ghost variants, have explicitly descriptive `aria-label` attributes and include standard `focus-visible` ring utility classes.
+## 2024-05-19 - Ensure Focus Rings on Search Result Links
+**Learning:** Found that the interactive `Link` elements used in `SearchResultSections.tsx` (for lists and labels) lacked explicit `focus-visible` utility classes. While they had hover states (`hover:bg-accent`), they were not easily distinguishable when navigating via keyboard (Tab), reducing accessibility.
+**Action:** Always verify that interactive elements, especially custom links and list items rendered as links, have explicit `focus-visible` classes (e.g., `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`) to ensure robust keyboard navigation support alongside standard hover states.
+## 2025-02-18 - Keyboard Accessibility for Subtask Rows
+**Learning:** Custom interactive elements (like subtask rows) that function as buttons must have both `role="button"` and `tabIndex={0}` to be discoverable by keyboard navigation. Additionally, they must implement a keydown handler to trigger their action on 'Enter' or 'Space', and include `focus-visible` utility classes to visually indicate focus state.
+**Action:** Always ensure that custom elements that are actionable via `onClick` also include `role="button"`, `tabIndex={0}`, an `onKeyDown` handler for 'Enter' and 'Space', and visible focus styles (e.g. `focus-visible:ring-2`).
+
+## 2025-05-05 - Ensure Focus Rings on Secondary Clear Action Buttons
+**Learning:** Found that secondary "clear" or "reset" actions across search interfaces and filter panels frequently miss explicit keyboard focus styling (`focus-visible:ring-offset-2`, etc), or have inconsistent custom configurations. This reduces accessibility for screen reader and keyboard users navigating input fields and complex filter menus.
+**Action:** Always verify that "clear" or "reset" buttons attached to inputs or filter toggles have consistently defined explicit focus-visible utility classes (e.g., focus-visible:outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]).
+
 ## 2025-02-12 - Expand Time Tracker Widget Button
 **Learning:** Found a missing `aria-label` and `focus-visible` styles on the button used to expand the compact time tracker widget. Screen reader users would have received insufficient context about the button's action, and keyboard users lacked visual feedback.
 **Action:** Added `aria-label="Expand time tracker"` and `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring` to ensure proper accessibility and keyboard navigation for the widget toggle.
@@ -208,10 +237,10 @@
 **Learning:** In components like `CalendarView.tsx`, day cells are built using `div` elements with `role="button"` and `tabIndex={0}` to allow keyboard interactivity. While screen readers might attempt to read the nested content (like the date number and task counts), this often results in a fragmented or unintelligible readout, failing to provide the full context of what the "button" does.
 **Action:** When creating custom composite interactive elements (like calendar cells, complex list items, or custom toggle buttons) using `role="button"`, always provide an explicit, top-level `aria-label` (e.g., `aria-label={\`Select ${format(day, 'MMMM d, yyyy')}\`}`) to ensure screen reader users understand the element's purpose and state without relying on potentially confusing nested text content.
 
-## YYYY-MM-DD - Added aria-label to TaskItem edit button
+## 2026-05-17 - Added aria-label to TaskItem edit button
 **Learning:** Even when a button contains visible text (like a task title), if its primary action is not immediately obvious from the text alone (e.g., clicking the title opens an edit dialog), an explicit `aria-label` like `Edit task: {title}` significantly improves screen reader comprehension.
 **Action:** Always evaluate if a button's text fully describes its action. If the action is implicit (like "click title to edit"), provide an explicit `aria-label` describing the result of the interaction.
-## $(date +%Y-%m-%d) - Empty States Need Actionable Buttons
+## 2026-05-17 - Empty States Need Actionable Buttons
 **Learning:** Empty states that only contain descriptive text (e.g., "No subtasks added yet. Click 'Add Subtask' to add one.") are a missed opportunity. They require the user to find the primary action elsewhere on the screen, creating friction.
 **Action:** When designing or refactoring an empty state for a list or collection, always include a clear, centered call-to-action button (like "Add First Item") directly within the empty state container to minimize interaction cost and make the interface more intuitive.
 
@@ -228,3 +257,10 @@
 ## 2024-05-19 - Accessible Collapsible Sections
 **Learning:** Collapsible lists and sections (like subtasks or overdue tasks) that rely on `aria-expanded` on toggle buttons often miss the corresponding `aria-controls` attribute, breaking the link for screen reader users between the button and the expandable content.
 **Action:** When inspecting or adding `aria-expanded` toggle functionality, always ensure the target container is assigned an `id` and the toggle button includes an `aria-controls="[id]"` attribute to complete the accessible relationship. Use dynamic IDs (e.g. including `task.id` or `listId`) to avoid collisions when multiple sections are rendered on the same page.
+
+## 2024-05-20 - Missing DialogDescription in Radix UI Modals
+**Learning:** Found instances of custom modals (`LevelUpModal.tsx`) where `DialogContent` did not define a `DialogDescription` but Radix UI expects one for accessibility completeness (as per `aria-describedby` requirements).
+**Action:** Always provide a `DialogDescription` within `DialogContent` modals. If visual text is unneeded, append `className="sr-only"` to it to satisfy accessibility requirements without altering the layout.
+## 2024-05-17 - TaskListEmptyState Call-to-Action
+**Learning:** Found that empty states with only descriptive text ("Add a task to get started.") introduce friction by forcing users to hunt for the relevant action button elsewhere on the screen.
+**Action:** Always include a clear, centered call-to-action button (like "Add Task") directly within the empty state container when appropriate.

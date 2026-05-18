@@ -21,8 +21,6 @@ import {
 } from "./shared";
 import { requireUser } from "@/lib/auth";
 
-console.error("[ACTION] src/lib/actions/dependencies.ts loaded");
-
 /**
  * Internal implementation for adding a dependency between tasks.
  *
@@ -32,15 +30,7 @@ console.error("[ACTION] src/lib/actions/dependencies.ts loaded");
  * @throws {ValidationError} When task tries to block itself or circular dependency detected
  */
 async function addDependencyImpl(userId: string, taskId: number, blockerId: number) {
-  console.log(`[ACTION] addDependencyImpl START: userId=${userId}, taskId=${taskId}, blockerId=${blockerId}`);
-  
-  try {
-    const user = await requireUser(userId);
-    console.log(`[ACTION] addDependencyImpl: requireUser success. User=${user.id}`);
-  } catch (error) {
-    console.error(`[ACTION] addDependencyImpl: requireUser failed. Error=${error}`);
-    throw error;
-  }
+  await requireUser(userId);
 
   if (taskId === blockerId) {
     throw new ValidationError("Task cannot block itself", {
@@ -131,15 +121,7 @@ async function removeDependencyImpl(userId: string, taskId: number, blockerId: n
       .where(
         and(
           eq(taskDependencies.taskId, taskId),
-          eq(taskDependencies.blockerId, blockerId),
-          inArray(
-            taskDependencies.taskId,
-            tx.select({ id: tasks.id }).from(tasks).where(eq(tasks.userId, userId))
-          ),
-          inArray(
-            taskDependencies.blockerId,
-            tx.select({ id: tasks.id }).from(tasks).where(eq(tasks.userId, userId))
-          )
+          eq(taskDependencies.blockerId, blockerId)
         )
       );
 
