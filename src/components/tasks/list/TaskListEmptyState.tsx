@@ -2,6 +2,7 @@
 import React from "react";
 import { Inbox, Calendar, CheckCircle, Layers, ClipboardList, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface TaskListEmptyStateProps {
     filterType?: string;
