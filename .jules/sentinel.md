@@ -224,7 +224,7 @@
 **Vulnerability:** Several internal helpers and integration endpoints (e.g., `createTodoistMappingList`, `createSubtaskImpl`, `logActivity`) accepted string inputs without checking their maximum length. This allowed for excessively large payload insertions into the database, potentially leading to errors or DoS conditions.
 **Learning:** Even if data comes from authenticated users or is processed internally, all string inputs must be length-bounded before database insertion to prevent excessive storage consumption or database layer errors.
 **Prevention:** Apply explicit length validation checks (e.g., `if (input.length > MAX_LENGTH) throw new ValidationError(...)`) or silently truncate long strings (like activity log details) if the excess data is non-critical.
-## 2024-05-17 - Missing Transactions and Lack of Creation Rate Limits
+## 2024-05-17 - Missing Transactions in Mapping Actions
 **Vulnerability:**
 The `setTodoistProjectMappings` and `setTodoistLabelMappings` actions performed sequential database operations (`delete` and `insert...onConflictDoUpdate`) without wrapping them in a transaction.
 **Learning:**
