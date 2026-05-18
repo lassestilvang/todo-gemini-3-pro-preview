@@ -162,7 +162,8 @@ export async function rescheduleOverdueTasks(): Promise<RescheduleSuggestion[]> 
 
         // ⚡ Bolt Opt: Precompute map to replace O(N*M) Array.find() inside loop with O(1) Map lookup
         const taskMap = new Map<number, (typeof overdueTasks)[number]>();
-        for (const task of overdueTasks) {
+        for (let i = 0; i < overdueTasks.length; i++) {
+            const task = overdueTasks[i];
             taskMap.set(task.id, task);
         }
 
