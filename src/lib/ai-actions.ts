@@ -160,8 +160,15 @@ export async function rescheduleOverdueTasks(): Promise<RescheduleSuggestion[]> 
 
         const suggestions = JSON.parse(textResponse);
 
+        // ⚡ Bolt Opt: Precompute map to replace O(N*M) Array.find() inside loop with O(1) Map lookup
+        const taskMap = new Map<number, (typeof overdueTasks)[number]>();
+        for (let i = 0; i < overdueTasks.length; i++) {
+            const task = overdueTasks[i];
+            taskMap.set(task.id, task);
+        }
+
         return suggestions.map((s: RescheduleSuggestion) => {
-            const task = overdueTasks.find(t => t.id === s.taskId);
+            const task = taskMap.get(s.taskId);
             const precision = task?.dueDatePrecision ?? null;
             const suggested = new Date(s.suggestedDate);
             const normalizedDate = precision && precision !== "day"
