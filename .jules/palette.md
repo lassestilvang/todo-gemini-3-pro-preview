@@ -261,3 +261,6 @@
 ## 2024-05-20 - Missing DialogDescription in Radix UI Modals
 **Learning:** Found instances of custom modals (`LevelUpModal.tsx`) where `DialogContent` did not define a `DialogDescription` but Radix UI expects one for accessibility completeness (as per `aria-describedby` requirements).
 **Action:** Always provide a `DialogDescription` within `DialogContent` modals. If visual text is unneeded, append `className="sr-only"` to it to satisfy accessibility requirements without altering the layout.
+## 2024-05-17 - TaskListEmptyState Call-to-Action
+**Learning:** Found that empty states with only descriptive text ("Add a task to get started.") introduce friction by forcing users to hunt for the relevant action button elsewhere on the screen.
+**Action:** Always include a clear, centered call-to-action button (like "Add Task") directly within the empty state container when appropriate.

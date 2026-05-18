@@ -16,7 +16,7 @@ test.describe('Label Filtering', () => {
     const nameInput = page.getByPlaceholder(/label name|name/i);
     await nameInput.fill(labelName);
 
-    const createButton = page.getByRole('button', { name: /create|add|save/i });
+    const createButton = page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true });
     await createButton.click();
 
     await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10000 });
