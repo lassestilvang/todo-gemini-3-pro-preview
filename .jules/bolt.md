@@ -188,3 +188,7 @@ Action: When deleting multiple items from an IndexedDB store, open a single read
 ## 2024-05-16 - Prevent Array Allocation in Search Action
 **Learning:** In critical, highly-invoked paths like search, chained `.map()` calls create intermediate arrays that pressure the V8 garbage collector and slightly decrease latency.
 **Action:** Replace `array.map()` operations with explicitly sized arrays (e.g. `new Array(length)`) and standard `for` loops when deriving values, especially for large datasets.
+
+## 2024-05-18 - Replacing O(N) Array.find() inside loops with O(1) Map lookups
+**Learning:** Found a classic performance anti-pattern in `src/lib/ai-actions.ts` where `Array.find()` was used inside an `Array.map()`, causing an O(N*M) time complexity. Since both arrays could be potentially large in production (e.g. mapping over ai suggestions while searching through overdue tasks), this creates an unnecessary bottleneck.
+**Action:** Always precompute a `Map` keyed by the lookup identifier before the loop starts to change the nested search from O(N) to an O(1) dictionary lookup, thus improving the overall time complexity to O(N + M).
