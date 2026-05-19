@@ -131,7 +131,8 @@ export function Calendar2Client({ initialTasks, initialLists }: Calendar2ClientP
   const unplannedTasks = useMemo(() => {
     return tasks.filter((t) => {
       const listId = t.listId === undefined ? null : t.listId;
-      return listId === selectedListId && !normalizeDate(t.dueDate) && !t.isCompleted;
+      // ⚡ Bolt Opt: Short-circuit by checking isCompleted first and avoid redundant normalizeDate call
+      return listId === selectedListId && !t.isCompleted && !t.dueDate;
     });
   }, [tasks, selectedListId]);
 
