@@ -138,6 +138,7 @@ export function TaskMetadataBar({
               variant="ghost"
               size="sm"
               className={cn(icon && "text-primary")}
+              aria-label={`Set icon${icon ? `, current icon is ${icon}` : ""}`}
             >
               {icon ? (
                 <ResolvedIcon icon={icon} className="mr-2 h-4 w-4" />
