@@ -264,3 +264,6 @@
 ## 2024-05-17 - TaskListEmptyState Call-to-Action
 **Learning:** Found that empty states with only descriptive text ("Add a task to get started.") introduce friction by forcing users to hunt for the relevant action button elsewhere on the screen.
 **Action:** Always include a clear, centered call-to-action button (like "Add Task") directly within the empty state container when appropriate.
+## 2025-05-18 - Missing ARIA Labels on Popover Picker Triggers
+**Learning:** Found that `<Button>` elements acting as `PopoverTrigger`s for complex menus or pickers (like date range, due date, or priority pickers) often rely on dynamic or implicit internal text instead of a clear accessible name. This causes screen readers to announce fragmented internal text (like just reading the date) rather than the action itself (e.g., "Select date range" or "Set priority").
+**Action:** When creating wrapper inputs containing complex sub-menus or pickers using `PopoverTrigger` or similar, always ensure the expanding action button is given an explicit `aria-label` (e.g., `aria-label="Set due date"`) so screen readers provide the proper context for the interaction.
