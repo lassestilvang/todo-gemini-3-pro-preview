@@ -267,3 +267,7 @@
 ## 2025-05-18 - Missing ARIA Labels on Popover Picker Triggers
 **Learning:** Found that `<Button>` elements acting as `PopoverTrigger`s for complex menus or pickers (like date range, due date, or priority pickers) often rely on dynamic or implicit internal text instead of a clear accessible name. This causes screen readers to announce fragmented internal text (like just reading the date) rather than the action itself (e.g., "Select date range" or "Set priority").
 **Action:** When creating wrapper inputs containing complex sub-menus or pickers using `PopoverTrigger` or similar, always ensure the expanding action button is given an explicit `aria-label` (e.g., `aria-label="Set due date"`) so screen readers provide the proper context for the interaction.
+
+## 2024-05-19 - Ensure semantic `<label>` to `<input>` bindings
+**Learning:** While `aria-label` provides accessible names to inputs, using a non-semantic element (like a `div`) as a visual label misses out on native HTML benefits.
+**Action:** Always prefer an explicit `<label>` element with an `htmlFor` attribute that strictly matches the `<input>` element's `id`. This not only provides screen reader context but natively increases the clickable target area for users.
