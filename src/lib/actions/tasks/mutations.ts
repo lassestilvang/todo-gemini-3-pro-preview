@@ -286,40 +286,6 @@ async function updateTaskImpl(
     }
   }
 
-  await db
-    .update(tasks)
-    .set(updatePayload)
-    .where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
-
-  if (labelIds !== undefined) {
-    await db.delete(taskLabels).where(
-      and(
-        eq(taskLabels.taskId, id),
-        inArray(
-          taskLabels.taskId,
-          db.select({ id: tasks.id }).from(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, userId)))
-        )
-      )
-    );
-    if (labelIds.length > 0) {
-      const validLabels = await db
-        .select({ id: labels.id })
-        .from(labels)
-        .where(and(eq(labels.userId, userId), inArray(labels.id, labelIds)));
-
-      const validLabelIds = validLabels.map((l) => l.id);
-
-      if (validLabelIds.length > 0) {
-        await db.insert(taskLabels).values(
-          validLabelIds.map((labelId: number) => ({
-            taskId: id,
-            labelId,
-          }))
-        );
-      }
-    }
-  }
-
   const changes: string[] = [];
   if (taskData.title && taskData.title !== currentTask.title) {
     changes.push(`Title changed from "${currentTask.title}" to "${taskData.title}"`);
@@ -417,14 +383,51 @@ async function updateTaskImpl(
     }
   }
 
-  if (changes.length > 0) {
-    await db.insert(taskLogs).values({
-      userId,
-      taskId: id,
-      action: "updated",
-      details: changes.join("\n"),
-    });
-  }
+  // 🛡️ Sentinel: Enforce atomicity by wrapping sequential updates in a database transaction.
+  await db.transaction(async (tx) => {
+    await tx
+      .update(tasks)
+      .set(updatePayload)
+      .where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
+
+    if (labelIds !== undefined) {
+      await tx.delete(taskLabels).where(
+        and(
+          eq(taskLabels.taskId, id),
+          inArray(
+            taskLabels.taskId,
+            tx.select({ id: tasks.id }).from(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, userId)))
+          )
+        )
+      );
+      if (labelIds.length > 0) {
+        const validLabels = await tx
+          .select({ id: labels.id })
+          .from(labels)
+          .where(and(eq(labels.userId, userId), inArray(labels.id, labelIds)));
+
+        const validLabelIds = validLabels.map((l) => l.id);
+
+        if (validLabelIds.length > 0) {
+          await tx.insert(taskLabels).values(
+            validLabelIds.map((labelId: number) => ({
+              taskId: id,
+              labelId,
+            }))
+          );
+        }
+      }
+    }
+
+    if (changes.length > 0) {
+      await tx.insert(taskLogs).values({
+        userId,
+        taskId: id,
+        action: "updated",
+        details: changes.join("\n"),
+      });
+    }
+  });
 
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
