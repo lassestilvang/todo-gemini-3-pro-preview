@@ -117,36 +117,39 @@ async function createTaskImpl(data: typeof tasks.$inferInsert & { labelIds?: num
       position: currentMin - 1024
     };
 
-    // We cannot use db.transaction() on neon-http driver directly, so we run them sequentially.
-    // If true atomicity is required, one should migrate to neon websockets or batch where supported.
-    const result = await db.insert(tasks).values(finalTaskData as typeof tasks.$inferInsert).returning();
-    const task = Array.isArray(result) ? result[0] : null;
+    // 🛡️ Sentinel: Enforce atomicity by wrapping sequential inserts in a database transaction.
+    const task = await db.transaction(async (tx) => {
+      const result = await tx.insert(tasks).values(finalTaskData as typeof tasks.$inferInsert).returning();
+      const createdTask = Array.isArray(result) ? result[0] : null;
 
-    if (!task) throw new Error("Failed to create task");
+      if (!createdTask) throw new Error("Failed to create task");
 
-    if (finalLabelIds.length > 0) {
-      const validLabels = await db
-        .select({ id: labels.id })
-        .from(labels)
-        .where(and(eq(labels.userId, taskData.userId), inArray(labels.id, finalLabelIds)));
+      if (finalLabelIds.length > 0) {
+        const validLabels = await tx
+          .select({ id: labels.id })
+          .from(labels)
+          .where(and(eq(labels.userId, taskData.userId), inArray(labels.id, finalLabelIds)));
 
-      const validLabelIds = validLabels.map((l) => l.id);
+        const validLabelIds = validLabels.map((l) => l.id);
 
-      if (validLabelIds.length > 0) {
-        await db.insert(taskLabels).values(
-          validLabelIds.map((labelId: number) => ({
-            taskId: task.id,
-            labelId,
-          }))
-        );
+        if (validLabelIds.length > 0) {
+          await tx.insert(taskLabels).values(
+            validLabelIds.map((labelId: number) => ({
+              taskId: createdTask.id,
+              labelId,
+            }))
+          );
+        }
       }
-    }
 
-    await db.insert(taskLogs).values({
-      userId: taskData.userId,
-      taskId: task.id,
-      action: "created",
-      details: "Task created",
+      await tx.insert(taskLogs).values({
+        userId: taskData.userId,
+        taskId: createdTask.id,
+        action: "created",
+        details: "Task created",
+      });
+
+      return createdTask;
     });
 
     const isSqlite = !!sqliteConnection;
@@ -633,18 +636,21 @@ async function reorderTasksImpl(userId: string, items: { id: number; position: n
     sql` `
   );
 
-  await db
-    .update(tasks)
-    .set({
-      position: sql`CASE ${caseWhen} ELSE ${tasks.position} END`,
-    })
-    .where(and(inArray(tasks.id, taskIds), eq(tasks.userId, userId)));
+  // 🛡️ Sentinel: Enforce atomicity by wrapping sequential updates in a database transaction.
+  await db.transaction(async (tx) => {
+    await tx
+      .update(tasks)
+      .set({
+        position: sql`CASE ${caseWhen} ELSE ${tasks.position} END`,
+      })
+      .where(and(inArray(tasks.id, taskIds), eq(tasks.userId, userId)));
 
-  await db.insert(taskLogs).values({
-    userId,
-    taskId: null,
-    action: "reorder",
-    details: `Reordered ${items.length} tasks`,
+    await tx.insert(taskLogs).values({
+      userId,
+      taskId: null,
+      action: "reorder",
+      details: `Reordered ${items.length} tasks`,
+    });
   });
 
   revalidatePath("/");
