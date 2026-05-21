@@ -10,7 +10,7 @@ import {
   lists,
   tasks,
 } from "@/db";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, requireUser } from "@/lib/auth";
 import {
   createGoogleTasksClient,
   getGoogleTasksAccessToken,
@@ -214,10 +214,9 @@ function hasDuplicateNonNullNumbers<T>(items: T[], selector: (item: T) => number
 export async function setGoogleTasksListMappings(
   mappings: { tasklistId: string; listId: number | null }[],
 ) {
-  const user = await getCurrentUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: "Not authenticated" };
+  const user = await requireUser(currentUser.id);
 
   if (mappings.length > 1000) {
     return { success: false, error: "Too many mappings. Limit is 1000." };
@@ -301,10 +300,9 @@ export async function resolveGoogleTasksConflict(
   conflictId: number,
   resolution: "local" | "remote",
 ) {
-  const user = await getCurrentUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: "Not authenticated" };
+  const user = await requireUser(currentUser.id);
 
   if (process.env.NODE_ENV === "test") {
     return { success: true };
