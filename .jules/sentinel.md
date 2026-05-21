@@ -231,3 +231,8 @@ The `setTodoistProjectMappings` and `setTodoistLabelMappings` actions performed 
 Any sequence of data modifications (especially `delete` followed by `insert` that replaces state) MUST be atomic to prevent a partial failure from leaving the database in an inconsistent state or orphaned records.
 **Prevention:**
 Enforce the use of `db.transaction()` for multi-step mutations where intermediate failure is intolerable.
+
+## $(date +%Y-%m-%d) - [Data Integrity] Missing Database Transactions in Task Mutations
+**Vulnerability:** Core functions `createTaskImpl` and `reorderTasksImpl` in `src/lib/actions/tasks/mutations.ts` performed sequential database mutations (inserting tasks and their labels/logs) without wrapping them in an atomic database transaction. An outdated comment incorrectly claimed `neon-http` did not support `db.transaction()`.
+**Learning:** The `drizzle-orm/neon-http` driver fully supports `db.transaction()`. Performing dependent operations sequentially without it creates a significant risk of partial state updates (e.g., creating a task but failing to insert its labels or activity log) if the server crashes or network fails mid-operation.
+**Prevention:** Always verify if an ORM driver supports transactions by testing it or checking the official documentation, rather than relying on legacy comments. Wrap all sequential, dependent database mutations in `await db.transaction(async (tx) => { ... })` and pass the `tx` object to all nested queries.
