@@ -271,3 +271,7 @@
 ## 2024-05-19 - Ensure semantic `<label>` to `<input>` bindings
 **Learning:** While `aria-label` provides accessible names to inputs, using a non-semantic element (like a `div`) as a visual label misses out on native HTML benefits.
 **Action:** Always prefer an explicit `<label>` element with an `htmlFor` attribute that strictly matches the `<input>` element's `id`. This not only provides screen reader context but natively increases the clickable target area for users.
+
+## 2024-05-24 - Accessibility for Switch components without visible explicit labels
+**Learning:** Found that custom `Switch` components implemented via Radix UI often lack explicitly linked `<label htmlFor="id">` elements when placed adjacent to basic informative `<span>` elements or text strings. This causes screen readers to read the switch state (e.g., "checked") without context of what it toggles.
+**Action:** When using toggle inputs or switches adjacent to informative text or span elements, prefer converting the text to an explicit label element with an htmlFor attribute and assigning a matching id to the Switch. Use aria-label only when no visible label is present to maintain screen reader context.
