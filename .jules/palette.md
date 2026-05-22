@@ -274,4 +274,4 @@
 
 ## 2024-05-24 - Accessibility for Switch components without visible explicit labels
 **Learning:** Found that custom `Switch` components implemented via Radix UI often lack explicitly linked `<label htmlFor="id">` elements when placed adjacent to basic informative `<span>` elements or text strings. This causes screen readers to read the switch state (e.g., "checked") without context of what it toggles.
-**Action:** When using isolated toggle inputs or switches that rely on visual proximity rather than explicit semantic linking, ensure `aria-label` is populated via props and propagated down to the `<SwitchPrimitive.Root>` to maintain screen reader context.
+**Action:** When using toggle inputs or switches adjacent to informative text or span elements, prefer converting the text to an explicit label element with an htmlFor attribute and assigning a matching id to the Switch. Use aria-label only when no visible label is present to maintain screen reader context.
