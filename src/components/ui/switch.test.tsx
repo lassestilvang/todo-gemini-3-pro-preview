@@ -9,19 +9,19 @@ describe("Switch", () => {
     });
 
     it("should render correctly", () => {
-        render(<Switch />);
+        render(<Switch aria-label="Test switch" />);
         const switchEl = screen.getByRole("switch");
         expect(switchEl).toBeInTheDocument();
     });
 
     it("should be unchecked by default", () => {
-        render(<Switch />);
+        render(<Switch aria-label="Test switch" />);
         const switchEl = screen.getByRole("switch");
         expect(switchEl).toHaveAttribute("data-state", "unchecked");
     });
 
     it("should be checked when checked prop is true", () => {
-        render(<Switch checked />);
+        render(<Switch checked aria-label="Test switch" />);
         const switchEl = screen.getByRole("switch");
         expect(switchEl).toHaveAttribute("data-state", "checked");
     });
@@ -31,20 +31,20 @@ describe("Switch", () => {
         const handleChange = (value: boolean) => {
             checked = value;
         };
-        render(<Switch onCheckedChange={handleChange} />);
+        render(<Switch onCheckedChange={handleChange} aria-label="Test switch" />);
         const switchEl = screen.getByRole("switch");
         fireEvent.click(switchEl);
         expect(checked).toBe(true);
     });
 
     it("should be disabled when disabled prop is passed", () => {
-        render(<Switch disabled />);
+        render(<Switch disabled aria-label="Test switch" />);
         const switchEl = screen.getByRole("switch");
         expect(switchEl).toBeDisabled();
     });
 
     it("should apply custom className", () => {
-        render(<Switch className="custom-class" />);
+        render(<Switch className="custom-class" aria-label="Test switch" />);
         const switchEl = screen.getByRole("switch");
         expect(switchEl.className).toContain("custom-class");
     });
