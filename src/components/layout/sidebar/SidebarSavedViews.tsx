@@ -18,13 +18,15 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog";
 
-function AddViewHelpDialog() {
+function AddViewHelpDialog({ children }: { children?: React.ReactNode }) {
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7" title="How to add a view" aria-label="How to add a view">
-                    <Plus className="h-4 w-4" />
-                </Button>
+                {children || (
+                    <Button variant="ghost" size="icon" className="h-7 w-7" title="How to add a view" aria-label="How to add a view">
+                        <Plus className="h-4 w-4" />
+                    </Button>
+                )}
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
@@ -134,6 +136,11 @@ export function SidebarSavedViews({ userId }: { userId?: string }) {
                         <p>
                             Create custom filters for your tasks and save them for quick access.
                         </p>
+                        <AddViewHelpDialog>
+                            <Button variant="outline" size="sm" className="w-full">
+                                Learn How to Create Views
+                            </Button>
+                        </AddViewHelpDialog>
                     </div>
                 )}
             </div>

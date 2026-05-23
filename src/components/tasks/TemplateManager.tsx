@@ -145,8 +145,18 @@ export function TemplateManager({ userId }: TemplateManagerProps) {
                                 </div>
                             ))}
                             {templates.length === 0 && (
-                                <div className="text-center py-8 text-muted-foreground text-sm">
-                                    No templates found. Create one to get started.
+                                <div className="flex flex-col items-center justify-center p-8 text-center border-2 border-dashed rounded-lg bg-muted/10">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted/30 mb-3">
+                                        <FileText className="h-5 w-5 text-muted-foreground" />
+                                    </div>
+                                    <h3 className="text-sm font-semibold mb-1">No templates</h3>
+                                    <p className="text-xs text-muted-foreground mb-4 max-w-[200px]">
+                                        Create your first template to save time on recurring tasks.
+                                    </p>
+                                    <Button onClick={handleOpenCreateDialog} size="sm">
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        New Template
+                                    </Button>
                                 </div>
                             )}
                         </div>

@@ -151,9 +151,18 @@ function SidebarListsInner({ lists: ssrLists, userId }: SidebarListsProps) {
     const [isReordering, setIsReordering] = useState(false);
 
     // Derive sorted items directly from store or fallback to props (fixes derived state anti-pattern)
-    const items = useMemo(() => {
+    const { items, itemIds } = useMemo(() => {
         const source = Object.keys(storeLists).length > 0 ? Object.values(storeLists) : ssrLists;
-        return source.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+        const sortedItems = [...source].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+
+        // ⚡ Bolt Opt: Precompute itemIds in a single pass to prevent O(N) array allocation
+        // on every render inside the SortableContext items prop
+        const ids = new Array(sortedItems.length);
+        for (let i = 0; i < sortedItems.length; i++) {
+            ids[i] = sortedItems[i].id;
+        }
+
+        return { items: sortedItems, itemIds: ids };
     }, [storeLists, ssrLists]);
 
     // Initialize store once on mount if empty (without creating derived state loops)
@@ -252,7 +261,7 @@ function SidebarListsInner({ lists: ssrLists, userId }: SidebarListsProps) {
                 modifiers={[restrictToVerticalAxis]}
             >
                 <SortableContext
-                    items={items.map(i => i.id)}
+                    items={itemIds}
                     strategy={verticalListSortingStrategy}
                 >
                     <div className="space-y-1 py-2">
