@@ -379,7 +379,9 @@ async function searchTasksImpl(userId: string, query: string) {
     throw new Error("Rate limit exceeded. Please try again later.");
   }
 
-  const normalizedQuery = query.trim().toLowerCase();
+  // 🛡️ Sentinel: Enforce input length limits to prevent ILIKE/Trigram DoS attacks
+  const safeQuery = query.substring(0, 100);
+  const normalizedQuery = safeQuery.trim().toLowerCase();
   const likeQuery = `%${normalizedQuery}%`;
   const isSqlite = !!sqliteConnection;
   const useTrigram = !isSqlite && normalizedQuery.length >= 3;

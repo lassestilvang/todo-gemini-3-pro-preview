@@ -5,7 +5,22 @@
  */
 "use server";
 
-import { db, tasks, lists, labels, taskLogs, eq, desc, sql, and, asc, gte, lte, or, type SQL } from "./shared";
+import {
+  db,
+  tasks,
+  lists,
+  labels,
+  taskLogs,
+  eq,
+  desc,
+  sql,
+  and,
+  asc,
+  gte,
+  lte,
+  or,
+  type SQL,
+} from "./shared";
 import { getCurrentUser, requireUser } from "@/lib/auth";
 import { UnauthorizedError } from "@/lib/auth-errors";
 
@@ -44,30 +59,36 @@ export async function getActivityLog(
     to?: Date;
     limit?: number;
     offset?: number;
-  }
+  },
 ) {
   await requireUser(userId);
 
   const whereConditions: SQL[] = [eq(taskLogs.userId, userId)];
 
   if (filters?.type && filters.type !== "all") {
-    if (filters.type === "task") whereConditions.push(sql`${taskLogs.taskId} IS NOT NULL`);
-    if (filters.type === "list") whereConditions.push(sql`${taskLogs.listId} IS NOT NULL`);
-    if (filters.type === "label") whereConditions.push(sql`${taskLogs.labelId} IS NOT NULL`);
+    if (filters.type === "task")
+      whereConditions.push(sql`${taskLogs.taskId} IS NOT NULL`);
+    if (filters.type === "list")
+      whereConditions.push(sql`${taskLogs.listId} IS NOT NULL`);
+    if (filters.type === "label")
+      whereConditions.push(sql`${taskLogs.labelId} IS NOT NULL`);
   }
 
-  if (filters?.from) whereConditions.push(gte(taskLogs.createdAt, filters.from));
+  if (filters?.from)
+    whereConditions.push(gte(taskLogs.createdAt, filters.from));
   if (filters?.to) whereConditions.push(lte(taskLogs.createdAt, filters.to));
 
   if (filters?.query) {
-    const searchTerm = `%${filters.query}%`;
+    // 🛡️ Sentinel: Enforce input length limits to prevent ILIKE DoS attacks
+    const safeQuery = filters.query.substring(0, 100);
+    const searchTerm = `%${safeQuery}%`;
     whereConditions.push(
       or(
         sql`${tasks.title} ILIKE ${searchTerm}`,
         sql`${lists.name} ILIKE ${searchTerm}`,
         sql`${labels.name} ILIKE ${searchTerm}`,
-        sql`${taskLogs.details} ILIKE ${searchTerm}`
-      ) as SQL
+        sql`${taskLogs.details} ILIKE ${searchTerm}`,
+      ) as SQL,
     );
   }
 
@@ -96,7 +117,7 @@ export async function getActivityLog(
 }
 /**
  * Retrieves recenet occupancy/completion history for the heatmap.
- * 
+ *
  * @param userId - The ID of the user whose completion history to retrieve
  * @returns Array of completion counts grouped by date
  */
