@@ -81,15 +81,17 @@ async function reorderListsImpl(userId: string, items: { id: number; position: n
     sql` `
   );
 
-  await db
-    .update(lists)
-    .set({ position: sql`CASE ${caseWhen} ELSE ${lists.position} END` })
-    .where(and(inArray(lists.id, listIds), eq(lists.userId, userId)));
+  await db.transaction(async (tx) => {
+    await tx
+      .update(lists)
+      .set({ position: sql`CASE ${caseWhen} ELSE ${lists.position} END` })
+      .where(and(inArray(lists.id, listIds), eq(lists.userId, userId)));
 
-  await logActivity({
-    userId,
-    action: "list_updated",
-    details: `Reordered ${items.length} lists`,
+    await logActivity({
+      userId,
+      action: "list_updated",
+      details: `Reordered ${items.length} lists`,
+    }, tx);
   });
   revalidateTag(`lists-${userId}`, 'max');
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
@@ -179,17 +181,21 @@ async function createListImpl(data: typeof lists.$inferInsert) {
     .replace(/[\s_-]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
-  const result = await db.insert(lists).values({
-    ...data,
-    userId: effectiveUserId,
-    slug,
-  }).returning();
+  const result = await db.transaction(async (tx) => {
+    const res = await tx.insert(lists).values({
+      ...data,
+      userId: effectiveUserId,
+      slug,
+    }).returning();
 
-  await logActivity({
-    userId: effectiveUserId,
-    action: "list_created",
-    listId: result[0].id,
-    details: `Created list: ${result[0].name}`,
+    await logActivity({
+      userId: effectiveUserId,
+      action: "list_created",
+      listId: res[0].id,
+      details: `Created list: ${res[0].name}`,
+    }, tx);
+
+    return res;
   });
 
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
@@ -246,19 +252,21 @@ async function updateListImpl(
   // Get current list state for logging
   const currentList = await getList(id, userId);
 
-  await db
-    .update(lists)
-    .set(data)
-    .where(and(eq(lists.id, id), eq(lists.userId, userId)));
+  await db.transaction(async (tx) => {
+    await tx
+      .update(lists)
+      .set(data)
+      .where(and(eq(lists.id, id), eq(lists.userId, userId)));
 
-  if (currentList) {
-    await logActivity({
-      userId,
-      action: "list_updated",
-      listId: id,
-      details: `Updated list: ${currentList.name}${data.name && data.name !== currentList.name ? ` to ${data.name}` : ""}`,
-    });
-  }
+    if (currentList) {
+      await logActivity({
+        userId,
+        action: "list_updated",
+        listId: id,
+        details: `Updated list: ${currentList.name}${data.name && data.name !== currentList.name ? ` to ${data.name}` : ""}`,
+      }, tx);
+    }
+  });
 
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
@@ -302,15 +310,17 @@ async function deleteListImpl(id: number, userId: string) {
 
   const currentList = await getList(id, userId);
 
-  await db.delete(lists).where(and(eq(lists.id, id), eq(lists.userId, userId)));
+  await db.transaction(async (tx) => {
+    await tx.delete(lists).where(and(eq(lists.id, id), eq(lists.userId, userId)));
 
-  if (currentList) {
-    await logActivity({
-      userId,
-      action: "list_deleted",
-      details: `Deleted list: ${currentList.name}`,
-    });
-  }
+    if (currentList) {
+      await logActivity({
+        userId,
+        action: "list_deleted",
+        details: `Deleted list: ${currentList.name}`,
+      }, tx);
+    }
+  });
 
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");

@@ -13,7 +13,7 @@ export async function logActivity(params: {
   listId?: number;
   labelId?: number;
   details?: string;
-}) {
+}, tx?: any) {
   await requireUser(params.userId);
 
   // 🛡️ Sentinel: Enforce input length limits to prevent DoS via excessive storage consumption.
@@ -28,7 +28,8 @@ export async function logActivity(params: {
     safeDetails = safeDetails.slice(0, 1985) + "... [TRUNCATED]";
   }
 
-  await db.insert(taskLogs).values({
+  const executor = tx ?? db;
+  await executor.insert(taskLogs).values({
     ...params,
     action: safeAction,
     details: safeDetails,
