@@ -52,7 +52,7 @@ async function createTaskImpl(data: typeof tasks.$inferInsert & { labelIds?: num
       const parentTask = await db
         .select({ id: tasks.id })
         .from(tasks)
-        .where(and(eq(tasks.id, taskData.parentId), eq(tasks.userId, taskData.userId)))
+        .where(and(eq(tasks.id, taskData.parentId), eq(tasks.userId, user.id)))
         .limit(1);
 
       if (parentTask.length === 0) {
@@ -65,17 +65,17 @@ async function createTaskImpl(data: typeof tasks.$inferInsert & { labelIds?: num
         throw new Error("Invalid list ID");
       }
 
-      const list = await getListInternal(taskData.listId, taskData.userId);
+      const list = await getListInternal(taskData.listId, user.id);
       if (!list) {
         throw new NotFoundError("List not found or access denied");
       }
     }
 
-    if (!taskData.listId && finalLabelIds.length === 0 && taskData.title && taskData.userId) {
+    if (!taskData.listId && finalLabelIds.length === 0 && taskData.title && user.id) {
       try {
         // Optimized: Pass userId directly to suggestMetadata.
         // It now handles fetching minimal data internally, reducing over-fetching overhead.
-        const suggestions = await suggestMetadata(taskData.title, taskData.userId);
+        const suggestions = await suggestMetadata(taskData.title, user.id);
 
         if (suggestions.listId) {
             taskData.listId = suggestions.listId;
@@ -88,7 +88,7 @@ async function createTaskImpl(data: typeof tasks.$inferInsert & { labelIds?: num
     }
 
     const conditions = [
-      eq(tasks.userId, taskData.userId),
+      eq(tasks.userId, user.id),
       taskData.parentId
         ? eq(tasks.parentId, taskData.parentId)
         : and(
@@ -128,7 +128,7 @@ async function createTaskImpl(data: typeof tasks.$inferInsert & { labelIds?: num
         const validLabels = await tx
           .select({ id: labels.id })
           .from(labels)
-          .where(and(eq(labels.userId, taskData.userId), inArray(labels.id, finalLabelIds)));
+          .where(and(eq(labels.userId, user.id), inArray(labels.id, finalLabelIds)));
 
         const validLabelIds = validLabels.map((l) => l.id);
 
@@ -143,7 +143,7 @@ async function createTaskImpl(data: typeof tasks.$inferInsert & { labelIds?: num
       }
 
       await tx.insert(taskLogs).values({
-        userId: taskData.userId,
+        userId: user.id,
         taskId: createdTask.id,
         action: "created",
         details: "Task created",
@@ -257,7 +257,7 @@ async function updateTaskImpl(
     }
 
     if (taskData.listId) {
-       const toList = await getListInternal(taskData.listId, userId);
+       const toList = await getListInternal(taskData.listId, user.id);
        if (!toList) {
           throw new NotFoundError("List not found or access denied");
        }
@@ -277,7 +277,7 @@ async function updateTaskImpl(
       const parentTask = await db
         .select({ id: tasks.id })
         .from(tasks)
-        .where(and(eq(tasks.id, taskData.parentId), eq(tasks.userId, userId)))
+        .where(and(eq(tasks.id, taskData.parentId), eq(tasks.userId, user.id)))
         .limit(1);
 
       if (parentTask.length === 0) {
@@ -338,8 +338,8 @@ async function updateTaskImpl(
 
   if (taskData.listId !== undefined && taskData.listId !== currentTask.listId) {
     const [fromList, toList] = await Promise.all([
-      currentTask.listId ? getListInternal(currentTask.listId, userId) : Promise.resolve(null),
-      taskData.listId ? getListInternal(taskData.listId, userId) : Promise.resolve(null),
+      currentTask.listId ? getListInternal(currentTask.listId, user.id) : Promise.resolve(null),
+      taskData.listId ? getListInternal(taskData.listId, user.id) : Promise.resolve(null),
     ]);
 
     const fromListName = fromList?.name || "Inbox";
@@ -362,7 +362,7 @@ async function updateTaskImpl(
         const fetchedLabels = await db
           .select({ id: labels.id, name: labels.name })
           .from(labels)
-          .where(and(eq(labels.userId, userId), inArray(labels.id, labelsToFetch)));
+          .where(and(eq(labels.userId, user.id), inArray(labels.id, labelsToFetch)));
 
         for (const label of fetchedLabels) {
           allRelevantLabelsMap.set(label.id, label.name || "Unknown");
@@ -388,7 +388,7 @@ async function updateTaskImpl(
     await tx
       .update(tasks)
       .set(updatePayload)
-      .where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
+      .where(and(eq(tasks.id, id), eq(tasks.userId, user.id)));
 
     if (labelIds !== undefined) {
       await tx.delete(taskLabels).where(
@@ -396,7 +396,7 @@ async function updateTaskImpl(
           eq(taskLabels.taskId, id),
           inArray(
             taskLabels.taskId,
-            tx.select({ id: tasks.id }).from(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, userId)))
+            tx.select({ id: tasks.id }).from(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, user.id)))
           )
         )
       );
@@ -404,7 +404,7 @@ async function updateTaskImpl(
         const validLabels = await tx
           .select({ id: labels.id })
           .from(labels)
-          .where(and(eq(labels.userId, userId), inArray(labels.id, labelIds)));
+          .where(and(eq(labels.userId, user.id), inArray(labels.id, labelIds)));
 
         const validLabelIds = validLabels.map((l) => l.id);
 
@@ -421,7 +421,7 @@ async function updateTaskImpl(
 
     if (changes.length > 0) {
       await tx.insert(taskLogs).values({
-        userId,
+        userId: user.id,
         taskId: id,
         action: "updated",
         details: changes.join("\n"),
@@ -454,7 +454,7 @@ export const updateTask: (
 ) => Promise<ActionResult<void>> = withErrorHandling(updateTaskImpl);
 
 async function deleteTaskImpl(id: number, userId: string) {
-  await requireUser(userId);
+  const user = await requireUser(userId);
 
   if (!isValidId(id)) {
     throw new NotFoundError("Task not found or access denied");
@@ -465,7 +465,7 @@ async function deleteTaskImpl(id: number, userId: string) {
     throw new NotFoundError("Task not found or access denied");
   }
 
-  await db.delete(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
+  await db.delete(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, user.id)));
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
   // ⚡ Bolt Opt: Parallelize syncs to reduce latency
@@ -485,7 +485,7 @@ export const deleteTask: (
 ) => Promise<ActionResult<void>> = withErrorHandling(deleteTaskImpl);
 
 async function toggleTaskCompletionImpl(id: number, userId: string, isCompleted: boolean) {
-  await requireUser(userId);
+  const user = await requireUser(userId);
 
   if (!isValidId(id)) {
     throw new NotFoundError("Task not found or access denied");
@@ -531,7 +531,7 @@ async function toggleTaskCompletionImpl(id: number, userId: string, isCompleted:
 
   await updateTaskImpl(
     id,
-    userId,
+    user.id,
     {
       isCompleted,
       completedAt: isCompleted ? new Date() : null,
@@ -540,7 +540,7 @@ async function toggleTaskCompletionImpl(id: number, userId: string, isCompleted:
   );
 
   const logPromise = db.insert(taskLogs).values({
-    userId,
+    userId: user.id,
     taskId: id,
     action: isCompleted ? "completed" : "uncompleted",
     details: isCompleted ? "Task marked as completed" : "Task marked as uncompleted",
@@ -582,7 +582,7 @@ async function toggleTaskCompletionImpl(id: number, userId: string, isCompleted:
         const logsToInsert = blockedTasks.map((blockedTask) => {
           const isNowUnblocked = !stillBlockedTaskIds.has(blockedTask.id);
           return {
-            userId,
+            userId: user.id,
             taskId: blockedTask.id,
             action: "blocker_completed",
             details: `Blocker "${task.title}" completed.${isNowUnblocked ? " Task is now unblocked!" : ""}`,
@@ -601,7 +601,7 @@ async function toggleTaskCompletionImpl(id: number, userId: string, isCompleted:
   if (task.priority === "medium") bonusXP += 5;
   if (task.priority === "high") bonusXP += 10;
 
-  const gamificationPromise = updateUserProgress(userId, baseXP + bonusXP);
+  const gamificationPromise = updateUserProgress(user.id, baseXP + bonusXP);
 
   const [, , progressResult] = await Promise.all([
     logPromise,
@@ -623,7 +623,7 @@ export const toggleTaskCompletion: (
 ) => Promise<ActionResult<{ newXP: number; newLevel: number; leveledUp: boolean } | undefined>> = withErrorHandling(toggleTaskCompletionImpl);
 
 async function reorderTasksImpl(userId: string, items: { id: number; position: number }[]) {
-  await requireUser(userId);
+  const user = await requireUser(userId);
 
   if (items.length === 0) {
     return;
@@ -646,10 +646,10 @@ async function reorderTasksImpl(userId: string, items: { id: number; position: n
       .set({
         position: sql`CASE ${caseWhen} ELSE ${tasks.position} END`,
       })
-      .where(and(inArray(tasks.id, taskIds), eq(tasks.userId, userId)));
+      .where(and(inArray(tasks.id, taskIds), eq(tasks.userId, user.id)));
 
     await tx.insert(taskLogs).values({
-      userId,
+      userId: user.id,
       taskId: null,
       action: "reorder",
       details: `Reordered ${items.length} tasks`,

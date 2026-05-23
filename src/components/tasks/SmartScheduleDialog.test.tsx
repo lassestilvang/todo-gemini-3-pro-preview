@@ -89,7 +89,7 @@ describe("SmartScheduleDialog", () => {
     });
 
     it("should handle generation error", async () => {
-        mockGenerateSmartSchedule.mockRejectedValue(new Error("API Error"));
+        mockGenerateSmartSchedule.mockImplementationOnce(() => Promise.reject(new Error("API Error")));
 
         render(<SmartScheduleDialog open={true} onOpenChange={mockOnOpenChange} />);
         const user = userEvent.setup();
