@@ -114,7 +114,7 @@ describe("TemplateManager", () => {
       fireEvent.click(screen.getByText("Templates"));
 
       await waitFor(() => {
-        expect(screen.getByText("No templates found. Create one to get started.")).toBeInTheDocument();
+        expect(screen.getByText("Create your first template to save time on recurring tasks.")).toBeInTheDocument();
       }, { timeout: 30000 });
     }, 40000);
   });

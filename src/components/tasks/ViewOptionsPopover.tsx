@@ -126,8 +126,8 @@ export function ViewOptionsPopover({ viewId, userId, settings: propSettings, onS
                     <LayoutSection layout={settings.layout} onUpdate={v => updateSetting("layout", v)} />
 
                     <div className="flex items-center justify-between">
-                        <span className="text-sm">Completed tasks</span>
-                        <Switch checked={settings.showCompleted} onCheckedChange={v => updateSetting("showCompleted", v)} />
+                        <label htmlFor={`show-completed-${viewId}`} className="text-sm cursor-pointer">Completed tasks</label>
+                        <Switch id={`show-completed-${viewId}`} checked={settings.showCompleted} onCheckedChange={v => updateSetting("showCompleted", v)} />
                     </div>
 
                     <Separator />
