@@ -126,8 +126,7 @@ export async function searchAll(
 
   const pageLimit = options?.limit ?? 20;
   // 🛡️ Sentinel: Enforce input length limits to prevent ILIKE/Trigram DoS attacks
-  const safeQuery = query.substring(0, 100);
-  const normalizedQuery = safeQuery.trim().toLowerCase();
+  const normalizedQuery = query.trim().toLowerCase().substring(0, 100);
   const lowerQuery = `%${normalizedQuery}%`;
   const isSqlite = !!sqliteConnection;
   const useTrigram = !isSqlite && normalizedQuery.length >= 3;
