@@ -153,7 +153,7 @@ function SidebarListsInner({ lists: ssrLists, userId }: SidebarListsProps) {
     // Derive sorted items directly from store or fallback to props (fixes derived state anti-pattern)
     const { items, itemIds } = useMemo(() => {
         const source = Object.keys(storeLists).length > 0 ? Object.values(storeLists) : ssrLists;
-        const sortedItems = source.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+        const sortedItems = [...source].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 
         // ⚡ Bolt Opt: Precompute itemIds in a single pass to prevent O(N) array allocation
         // on every render inside the SortableContext items prop
