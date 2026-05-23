@@ -275,3 +275,7 @@
 ## 2024-05-24 - Accessibility for Switch components without visible explicit labels
 **Learning:** Found that custom `Switch` components implemented via Radix UI often lack explicitly linked `<label htmlFor="id">` elements when placed adjacent to basic informative `<span>` elements or text strings. This causes screen readers to read the switch state (e.g., "checked") without context of what it toggles.
 **Action:** When using toggle inputs or switches adjacent to informative text or span elements, prefer converting the text to an explicit label element with an htmlFor attribute and assigning a matching id to the Switch. Use aria-label only when no visible label is present to maintain screen reader context.
+
+## 2024-05-25 - Expanding hit areas for toggles using semantic labels
+**Learning:** Found an instance in `ViewOptionsPopover.tsx` where a `Switch` component was placed alongside a `<span>` element. This meant users had to click precisely on the small switch to toggle the setting.
+**Action:** When placing text next to a toggle or checkbox, always use a semantic `<label>` with an `htmlFor` attribute linking to the input's `id`. This not only provides screen reader context (as previously documented) but also expands the clickable hit area to include the text, significantly improving the interaction experience, especially on touch interfaces or for users with limited dexterity. Adding `cursor-pointer` to the label further clarifies interactivity.
