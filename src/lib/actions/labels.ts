@@ -145,7 +145,7 @@ async function createLabelImpl(data: typeof labels.$inferInsert) {
     throw new ValidationError("User ID is required", { userId: "User ID cannot be empty" });
   }
 
-  await requireUser(data.userId);
+  const user = await requireUser(data.userId);
 
   const limit = await rateLimit(`label:create:${data.userId}`, 100, 3600);
   if (!limit.success) {
@@ -155,7 +155,7 @@ async function createLabelImpl(data: typeof labels.$inferInsert) {
   const result = await db.insert(labels).values(data).returning();
 
   await logActivity({
-    userId: data.userId,
+    userId: user.id,
     action: "label_created",
     labelId: result[0].id,
     details: `Created label: ${result[0].name}`,
@@ -201,7 +201,7 @@ async function updateLabelImpl(
   userId: string,
   data: Partial<Omit<typeof labels.$inferInsert, "userId">>
 ) {
-  await requireUser(userId);
+  const user = await requireUser(userId);
 
   if (data.name !== undefined) {
     if (data.name.trim().length === 0) {
@@ -217,7 +217,7 @@ async function updateLabelImpl(
   await db
     .update(labels)
     .set(data)
-    .where(and(eq(labels.id, id), eq(labels.userId, userId)));
+    .where(and(eq(labels.id, id), eq(labels.userId, user.id)));
 
   if (currentLabel) {
     await logActivity({
@@ -266,15 +266,15 @@ export const updateLabel: (
  * @param userId - The ID of the user who owns the label
  */
 async function deleteLabelImpl(id: number, userId: string) {
-  await requireUser(userId);
+  const user = await requireUser(userId);
 
   const currentLabel = await getLabel(id, userId);
 
-  await db.delete(labels).where(and(eq(labels.id, id), eq(labels.userId, userId)));
+  await db.delete(labels).where(and(eq(labels.id, id), eq(labels.userId, user.id)));
 
   if (currentLabel) {
     await logActivity({
-      userId,
+      userId: user.id,
       action: "label_deleted",
       details: `Deleted label: ${currentLabel.name}`,
     });

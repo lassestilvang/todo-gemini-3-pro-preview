@@ -35,12 +35,12 @@ import pLimit from "p-limit";
  */
 export async function getTemplates(userId: string) {
   // Validate that the requester is the same as the requested userId
-  await requireUser(userId);
+  const user = await requireUser(userId);
 
   return await db
     .select()
     .from(templates)
-    .where(eq(templates.userId, userId))
+    .where(eq(templates.userId, user.id))
     .orderBy(desc(templates.createdAt));
 }
 
@@ -54,7 +54,7 @@ export async function getTemplates(userId: string) {
  */
 async function createTemplateImpl(userId: string, name: string, content: string) {
   // Validate that the requester is the same as the userId passed in
-  await requireUser(userId);
+  const user = await requireUser(userId);
 
   if (!userId) {
     throw new ValidationError("User ID is required", { userId: "User ID cannot be empty" });
@@ -78,7 +78,7 @@ async function createTemplateImpl(userId: string, name: string, content: string)
   }
 
   await db.insert(templates).values({
-    userId,
+    userId: user.id,
     name,
     content,
   });
@@ -109,8 +109,8 @@ export const createTemplate: (
  */
 async function deleteTemplateImpl(id: number, userId: string) {
   // Validate that the requester is the same as the userId passed in
-  await requireUser(userId);
-  await db.delete(templates).where(and(eq(templates.id, id), eq(templates.userId, userId)));
+  const user = await requireUser(userId);
+  await db.delete(templates).where(and(eq(templates.id, id), eq(templates.userId, user.id)));
   revalidatePath("/");
 }
 
@@ -139,7 +139,7 @@ export const deleteTemplate: (
  */
 async function updateTemplateImpl(id: number, userId: string, name: string, content: string) {
   // Validate that the requester is the same as the userId passed in
-  await requireUser(userId);
+  const user = await requireUser(userId);
 
   if (!userId) {
     throw new ValidationError("User ID is required", { userId: "User ID cannot be empty" });
@@ -161,7 +161,7 @@ async function updateTemplateImpl(id: number, userId: string, name: string, cont
   const existing = await db
     .select()
     .from(templates)
-    .where(and(eq(templates.id, id), eq(templates.userId, userId)))
+    .where(and(eq(templates.id, id), eq(templates.userId, user.id)))
     .limit(1);
 
   if (existing.length === 0) {
@@ -179,7 +179,7 @@ async function updateTemplateImpl(id: number, userId: string, name: string, cont
       name,
       content,
     })
-    .where(and(eq(templates.id, id), eq(templates.userId, userId)));
+    .where(and(eq(templates.id, id), eq(templates.userId, user.id)));
 
   revalidatePath("/");
 }
@@ -236,7 +236,7 @@ async function instantiateTemplateImpl(
   listId: number | null = null
 ) {
   // Validate that the requester is the same as the userId passed in
-  await requireUser(userId);
+  const user = await requireUser(userId);
 
   if (listId !== null) {
     const list = await getListInternal(listId, userId);
@@ -248,7 +248,7 @@ async function instantiateTemplateImpl(
   const template = await db
     .select()
     .from(templates)
-    .where(and(eq(templates.id, templateId), eq(templates.userId, userId)))
+    .where(and(eq(templates.id, templateId), eq(templates.userId, user.id)))
     .limit(1);
 
   if (template.length === 0) {
@@ -289,7 +289,7 @@ async function instantiateTemplateImpl(
     // Clean up data for insertion
     const insertData = {
       ...processedData,
-      userId,
+      userId: user.id,
       listId: parentId ? null : listId || processedData.listId, // Only top-level tasks get the listId override
       parentId,
       createdAt: new Date(),

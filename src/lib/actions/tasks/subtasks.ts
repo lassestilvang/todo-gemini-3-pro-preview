@@ -16,12 +16,12 @@ import { requireUser } from "@/lib/auth";
 import { isValidId } from "./helpers";
 
 async function getSubtasksImpl(taskId: number, userId: string) {
-  await requireUser(userId);
+  const user = await requireUser(userId);
 
   const result = await db
     .select()
     .from(tasks)
-    .where(and(eq(tasks.parentId, taskId), eq(tasks.userId, userId)))
+    .where(and(eq(tasks.parentId, taskId), eq(tasks.userId, user.id)))
     .orderBy(tasks.createdAt);
   return result;
 }
@@ -34,7 +34,7 @@ async function createSubtaskImpl(
   title: string,
   estimateMinutes?: number
 ) {
-  await requireUser(userId);
+  const user = await requireUser(userId);
 
   const MAX_TITLE_LENGTH = 255;
   if (!title || title.trim().length === 0) {
@@ -47,7 +47,7 @@ async function createSubtaskImpl(
   const parentTask = await db
     .select({ id: tasks.id })
     .from(tasks)
-    .where(and(eq(tasks.id, parentId), eq(tasks.userId, userId)))
+    .where(and(eq(tasks.id, parentId), eq(tasks.userId, user.id)))
     .limit(1);
 
   if (parentTask.length === 0) {
@@ -58,7 +58,7 @@ async function createSubtaskImpl(
     const result = await tx
       .insert(tasks)
       .values({
-        userId,
+        userId: user.id,
         title,
         parentId,
         listId: null,
@@ -69,7 +69,7 @@ async function createSubtaskImpl(
     const newSubtask = result[0];
 
     await tx.insert(taskLogs).values({
-      userId,
+      userId: user.id,
       taskId: parentId,
       action: "subtask_created",
       details: `Subtask created: ${title}`,
@@ -90,7 +90,7 @@ export const createSubtask: (
 ) => Promise<ActionResult<typeof tasks.$inferSelect>> = withErrorHandling(createSubtaskImpl);
 
 async function updateSubtaskImpl(id: number, userId: string, isCompleted: boolean) {
-  await requireUser(userId);
+  const user = await requireUser(userId);
 
   if (!isValidId(id)) return;
 
@@ -100,7 +100,7 @@ async function updateSubtaskImpl(id: number, userId: string, isCompleted: boolea
       isCompleted,
       completedAt: isCompleted ? new Date() : null,
     })
-    .where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
+    .where(and(eq(tasks.id, id), eq(tasks.userId, user.id)));
   revalidatePath("/", "layout");
 }
 
@@ -111,11 +111,11 @@ export const updateSubtask: (
 ) => Promise<ActionResult<void>> = withErrorHandling(updateSubtaskImpl);
 
 async function deleteSubtaskImpl(id: number, userId: string) {
-  await requireUser(userId);
+  const user = await requireUser(userId);
 
   if (!isValidId(id)) return;
 
-  await db.delete(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
+  await db.delete(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, user.id)));
   revalidatePath("/", "layout");
 }
 
