@@ -147,8 +147,17 @@ export function SidebarLabels({ labels: ssrLabels, userId }: SidebarLabelsProps)
     }, [ssrLabels, setStoreLabels]);
 
     // Derive sorted items from store
-    const items = useMemo(() => {
-        return Object.values(storeLabels).sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+    const { items, itemIds } = useMemo(() => {
+        const sortedItems = Object.values(storeLabels).sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+
+        // ⚡ Bolt Opt: Precompute itemIds in a single pass to prevent O(N) array allocation
+        // on every render inside the SortableContext items prop
+        const ids = new Array(sortedItems.length);
+        for (let i = 0; i < sortedItems.length; i++) {
+            ids[i] = sortedItems[i].id;
+        }
+
+        return { items: sortedItems, itemIds: ids };
     }, [storeLabels]);
 
     const sensors = useSensors(
@@ -227,7 +236,7 @@ export function SidebarLabels({ labels: ssrLabels, userId }: SidebarLabelsProps)
                 modifiers={[restrictToVerticalAxis]}
             >
                 <SortableContext
-                    items={items.map(i => i.id)}
+                    items={itemIds}
                     strategy={verticalListSortingStrategy}
                 >
                     <div className="space-y-1 py-2">
