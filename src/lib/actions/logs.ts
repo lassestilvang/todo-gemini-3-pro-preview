@@ -80,7 +80,7 @@ export async function getActivityLog(
 
   if (filters?.query) {
     // 🛡️ Sentinel: Enforce input length limits to prevent ILIKE DoS attacks
-    const safeQuery = filters.query.substring(0, 100);
+    const safeQuery = filters.query.trim().substring(0, 100);
     const searchTerm = `%${safeQuery}%`;
     whereConditions.push(
       or(
