@@ -133,11 +133,11 @@ export function SidebarSavedViews({ userId }: { userId?: string }) {
                             <Info className="h-3.5 w-3.5" />
                             <span>No saved views</span>
                         </div>
-                        <p className="mb-1">
+                        <p>
                             Create custom filters for your tasks and save them for quick access.
                         </p>
                         <AddViewHelpDialog>
-                            <Button variant="outline" size="sm" className="w-full mt-1 bg-background text-foreground">
+                            <Button variant="outline" size="sm" className="w-full">
                                 Learn How to Create Views
                             </Button>
                         </AddViewHelpDialog>
