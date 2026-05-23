@@ -155,7 +155,7 @@ export function TemplateManager({ userId }: TemplateManagerProps) {
                                     </p>
                                     <Button onClick={handleOpenCreateDialog} size="sm">
                                         <Plus className="h-4 w-4 mr-2" />
-                                        Create Template
+                                        New Template
                                     </Button>
                                 </div>
                             )}
