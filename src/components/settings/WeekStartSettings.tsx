@@ -53,7 +53,7 @@ export function WeekStartSettings({ userId, initialWeekStartsOnMonday }: WeekSta
                 <div className="flex items-center gap-2">
                     <CalendarDays className="h-4 w-4 text-muted-foreground" />
                     <div className="space-y-0.5">
-                        <Label htmlFor="week-start">Week Starts on Monday</Label>
+                        <Label htmlFor="week-start" className="cursor-pointer">Week Starts on Monday</Label>
                         <p className="text-sm text-muted-foreground">
                             {weekStartsOnMonday === null
                                 ? `Currently using system preference (${getEffectiveValue() ? 'Monday' : 'Sunday'})`

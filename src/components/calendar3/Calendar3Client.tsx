@@ -320,7 +320,7 @@ function Calendar3ClientActual({ initialTasks, initialLists }: Calendar3ClientPr
         emptyState="No tasks in this list."
         dragContainerRef={listDragContainerRef}
         headerAction={(
-          <label htmlFor="calendar3-unscheduled" className="flex items-center gap-2 text-xs text-muted-foreground">
+          <label htmlFor="calendar3-unscheduled" className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
             <Switch
               id="calendar3-unscheduled"
               checked={unscheduledOnly}
