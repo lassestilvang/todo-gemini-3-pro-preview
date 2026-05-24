@@ -198,3 +198,6 @@ Action: When deleting multiple items from an IndexedDB store, open a single read
 ## 2025-05-10 - ⚡ Bolt: Prevent Unnecessary Array Allocations in useMemo
 **Learning:** Returning dynamically mapped arrays like `items.map(i => i.id)` directly in a React prop (like `items` for `SortableContext`) allocates a new array on *every render*, defeating memoization of the underlying `items` array and causing deep unneeded re-renders in drag-and-drop contexts.
 **Action:** Always pre-allocate/precompute arrays of derived primitives (like `itemIds`) in the same single-pass loop or `useMemo` block where the parent collection is processed. Then pass the stable memoized primitive array (e.g., `items={itemIds}`) to prevent unnecessary O(N) array allocation overhead during react render cycles.
+## 2024-05-24 - [Avoid Array Object References in SortableContext]
+**Learning:** Passing an array of objects (like `activeTasks`) directly to `@dnd-kit/sortable`'s `<SortableContext>` `items` prop allocates a new array mapping on every render and degrades memoization.
+**Action:** Always map the objects to their unique scalar identifiers (e.g., `id`s) beforehand, ideally precomputing the array with a fast `for` loop inside a `useMemo` hook, and pass this stable scalar array to `<SortableContext items={ids}>`.
