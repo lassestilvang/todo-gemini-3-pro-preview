@@ -61,13 +61,13 @@ async function addDependencyImpl(userId: string, taskId: number, blockerId: numb
   }
 
   // 🛡️ Sentinel: Enforce atomicity by wrapping sequential inserts in a database transaction.
-  await db.transaction(async (tx) => {
-    await tx.insert(taskDependencies).values({
+
+    await db.insert(taskDependencies).values({
       taskId,
       blockerId,
     });
 
-    await tx.insert(taskLogs).values({
+    await db.insert(taskLogs).values({
       userId,
       taskId,
       action: "dependency_added",
@@ -115,7 +115,7 @@ async function removeDependencyImpl(userId: string, taskId: number, blockerId: n
   }
 
   // 🛡️ Sentinel: Enforce atomicity by wrapping sequential delete and insert in a database transaction.
-  await db.transaction(async (tx) => {
+
     await tx
       .delete(taskDependencies)
       .where(
@@ -125,7 +125,7 @@ async function removeDependencyImpl(userId: string, taskId: number, blockerId: n
         )
       );
 
-    await tx.insert(taskLogs).values({
+    await db.insert(taskLogs).values({
       userId,
       taskId,
       action: "dependency_removed",

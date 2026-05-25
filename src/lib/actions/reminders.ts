@@ -74,13 +74,13 @@ async function createReminderImpl(
     throw new NotFoundError("Task not found or access denied");
   }
 
-  await db.transaction(async (tx) => {
-    await tx.insert(reminders).values({
+
+    await db.insert(reminders).values({
       taskId,
       remindAt,
     });
 
-    await tx.insert(taskLogs).values({
+    await db.insert(taskLogs).values({
       userId,
       taskId,
       action: "reminder_added",
@@ -132,8 +132,8 @@ async function deleteReminderImpl(userId: string, id: number) {
     throw new NotFoundError("Reminder not found or access denied");
   }
 
-  await db.transaction(async (tx) => {
-    await tx.insert(taskLogs).values({
+
+    await db.insert(taskLogs).values({
       userId,
       taskId: reminder[0].taskId,
       action: "reminder_removed",
