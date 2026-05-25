@@ -378,7 +378,7 @@ export async function disconnectTodoist() {
 
   // 🛡️ Sentinel: Enforce atomicity by wrapping sequential deletes in a database transaction.
   // This prevents partial state updates and potential data inconsistencies if a subsequent delete fails.
-  await db.transaction(async (tx) => {
+
     await tx
       .delete(externalIntegrations)
       .where(
@@ -624,11 +624,11 @@ export async function setTodoistProjectMappings(
   );
 
   // 🛡️ Sentinel: Wrap delete and insert in a transaction to prevent partial updates
-  await db.transaction(async (tx) => {
+
     if (mappings.length === 0) {
-      await tx.delete(externalEntityMap).where(scopedWhere);
+      await db.delete(externalEntityMap).where(scopedWhere);
     } else {
-      await tx.delete(externalEntityMap).where(
+      await db.delete(externalEntityMap).where(
         and(
           scopedWhere,
           not(
@@ -729,11 +729,11 @@ export async function setTodoistLabelMappings(
   );
 
   // 🛡️ Sentinel: Wrap delete and insert in a transaction to prevent partial updates
-  await db.transaction(async (tx) => {
+
     if (mappings.length === 0) {
-      await tx.delete(externalEntityMap).where(scopedWhere);
+      await db.delete(externalEntityMap).where(scopedWhere);
     } else {
-      await tx.delete(externalEntityMap).where(
+      await db.delete(externalEntityMap).where(
         and(
           scopedWhere,
           not(

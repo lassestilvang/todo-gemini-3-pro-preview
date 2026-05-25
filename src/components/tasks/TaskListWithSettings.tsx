@@ -1,13 +1,7 @@
+
 "use client";
 
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  useCallback,
-  Suspense,
-  useReducer,
-} from "react";
+import React, { useState, useEffect, useMemo, useCallback, Suspense, useReducer } from "react";
 import dynamic from "next/dynamic";
 import { format, isSameDay, isSameYear, addDays } from "date-fns";
 
@@ -30,563 +24,258 @@ import { useTaskListView, PeriodPrecision } from "@/hooks/use-task-list-view";
 // Extracted Components
 import { ListHeader } from "./list/ListHeader";
 import { CompletedTasksSection } from "./list/CompletedTasksSection";
-import {
-  GroupedListView,
-  type GroupedVirtualSection,
-} from "./list/GroupedListView";
+import { GroupedListView, type GroupedVirtualSection } from "./list/GroupedListView";
 
-const TaskDialog = dynamic(
-  () => import("./TaskDialog").then((mod) => mod.TaskDialog),
-  { ssr: false },
-);
-const TaskBoardView = dynamic(
-  () => import("./board/TaskBoardView").then((mod) => mod.TaskBoardView),
-  { ssr: false, loading: () => <TaskListSkeleton variant="board" compact /> },
-);
-const TaskCalendarLayout = dynamic(
-  () =>
-    import("./calendar/TaskCalendarLayout").then(
-      (mod) => mod.TaskCalendarLayout,
-    ),
-  {
-    ssr: false,
-    loading: () => <TaskListSkeleton variant="calendar" compact />,
-  },
-);
+const TaskDialog = dynamic(() => import("./TaskDialog").then(mod => mod.TaskDialog), { ssr: false });
+const TaskBoardView = dynamic(() => import("./board/TaskBoardView").then(mod => mod.TaskBoardView), { ssr: false, loading: () => <TaskListSkeleton variant="board" compact /> });
+const TaskCalendarLayout = dynamic(() => import("./calendar/TaskCalendarLayout").then(mod => mod.TaskCalendarLayout), { ssr: false, loading: () => <TaskListSkeleton variant="calendar" compact /> });
 
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-  DragOverlay,
-  DragStartEvent,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay, DragStartEvent } from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 
 interface TaskListWithSettingsProps {
-  tasks?: Task[];
-  title?: string;
-  listId?: number | null;
-  labelId?: number;
-  defaultDueDate?: Date | string;
-  viewId: string;
-  userId?: string;
-  initialSettings?: ViewSettings;
-  filterType?: "inbox" | "today" | "upcoming" | "all" | "completed";
+    tasks?: Task[];
+    title?: string;
+    listId?: number | null;
+    labelId?: number;
+    defaultDueDate?: Date | string;
+    viewId: string;
+    userId?: string;
+    initialSettings?: ViewSettings;
+    filterType?: "inbox" | "today" | "upcoming" | "all" | "completed";
 }
 
 interface TaskListUIState {
-  editingTask: Task | null;
-  isDialogOpen: boolean;
-  calendarSelectedDate?: Date;
-  activeId: Task["id"] | null;
-  overdueCollapsed: boolean;
-  periodCollapsed: Record<PeriodPrecision, boolean>;
+    editingTask: Task | null;
+    isDialogOpen: boolean;
+    calendarSelectedDate?: Date;
+    activeId: Task["id"] | null;
+    overdueCollapsed: boolean;
+    periodCollapsed: Record<PeriodPrecision, boolean>;
 }
 
 type TaskListUIAction =
-  | { type: "SET_EDITING_TASK"; payload: Task }
-  | { type: "SET_DIALOG_OPEN"; payload: boolean }
-  | { type: "SET_CALENDAR_DATE"; payload: Date }
-  | { type: "SET_ACTIVE_ID"; payload: Task["id"] | null }
-  | { type: "TOGGLE_OVERDUE" }
-  | { type: "TOGGLE_PERIOD"; payload: PeriodPrecision }
-  | { type: "CLEAR_TASK" };
+    | { type: "SET_EDITING_TASK"; payload: Task }
+    | { type: "SET_DIALOG_OPEN"; payload: boolean }
+    | { type: "SET_CALENDAR_DATE"; payload: Date }
+    | { type: "SET_ACTIVE_ID"; payload: Task["id"] | null }
+    | { type: "TOGGLE_OVERDUE" }
+    | { type: "TOGGLE_PERIOD"; payload: PeriodPrecision }
+    | { type: "CLEAR_TASK" };
 
-function uiReducer(
-  state: TaskListUIState,
-  action: TaskListUIAction,
-): TaskListUIState {
-  switch (action.type) {
-    case "SET_EDITING_TASK":
-      return { ...state, editingTask: action.payload, isDialogOpen: true };
-    case "SET_DIALOG_OPEN":
-      return { ...state, isDialogOpen: action.payload };
-    case "SET_CALENDAR_DATE":
-      return {
-        ...state,
-        calendarSelectedDate: action.payload,
-        isDialogOpen: true,
-      };
-    case "SET_ACTIVE_ID":
-      return { ...state, activeId: action.payload };
-    case "TOGGLE_OVERDUE":
-      return { ...state, overdueCollapsed: !state.overdueCollapsed };
-    case "TOGGLE_PERIOD":
-      return {
-        ...state,
-        periodCollapsed: {
-          ...state.periodCollapsed,
-          [action.payload]: !state.periodCollapsed[action.payload],
-        },
-      };
-    case "CLEAR_TASK":
-      return { ...state, editingTask: null };
-  }
+function uiReducer(state: TaskListUIState, action: TaskListUIAction): TaskListUIState {
+    switch (action.type) {
+        case "SET_EDITING_TASK": return { ...state, editingTask: action.payload, isDialogOpen: true };
+        case "SET_DIALOG_OPEN": return { ...state, isDialogOpen: action.payload };
+        case "SET_CALENDAR_DATE": return { ...state, calendarSelectedDate: action.payload, isDialogOpen: true };
+        case "SET_ACTIVE_ID": return { ...state, activeId: action.payload };
+        case "TOGGLE_OVERDUE": return { ...state, overdueCollapsed: !state.overdueCollapsed };
+        case "TOGGLE_PERIOD": return { ...state, periodCollapsed: { ...state.periodCollapsed, [action.payload]: !state.periodCollapsed[action.payload] } };
+        case "CLEAR_TASK": return { ...state, editingTask: null };
+    }
 }
 
-export function TaskListWithSettings({
-  tasks,
-  title,
-  listId,
-  labelId,
-  defaultDueDate,
-  viewId,
-  userId,
-  initialSettings,
-  filterType,
-}: TaskListWithSettingsProps) {
-  const initialUIState: TaskListUIState = {
-    editingTask: null,
-    isDialogOpen: false,
-    calendarSelectedDate: undefined,
-    activeId: null,
-    overdueCollapsed: false,
-    periodCollapsed: { week: false, month: false, year: false },
-  };
-  const [uiState, dispatchUI] = useReducer(uiReducer, initialUIState);
-  const {
-    editingTask,
-    isDialogOpen,
-    calendarSelectedDate,
-    activeId,
-    overdueCollapsed,
-    periodCollapsed,
-  } = uiState;
-  const { weekStartsOnMonday, use24HourClock } = useUser();
-  const { dispatch } = useSyncActions();
-  const {
-    tasks: storeTasksFn,
-    setTasks,
-    initialize,
-    isInitialized,
-  } = useTaskStore();
+export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDueDate, viewId, userId, initialSettings, filterType }: TaskListWithSettingsProps) {
+    const initialUIState: TaskListUIState = {
+        editingTask: null, isDialogOpen: false, calendarSelectedDate: undefined,
+        activeId: null, overdueCollapsed: false, periodCollapsed: { week: false, month: false, year: false }
+    };
+    const [uiState, dispatchUI] = useReducer(uiReducer, initialUIState);
+    const { editingTask, isDialogOpen, calendarSelectedDate, activeId, overdueCollapsed, periodCollapsed } = uiState;
+    const { weekStartsOnMonday, use24HourClock } = useUser();
+    const { dispatch } = useSyncActions();
+    const { tasks: storeTasksFn, setTasks, initialize, isInitialized } = useTaskStore();
 
-  const isClient = useIsClient();
-  const isPerformanceMode = usePerformanceMode();
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const interval = setInterval(() => setNow(new Date()), 60000);
-    return () => clearInterval(interval);
-  }, []);
+    const isClient = useIsClient();
+    const isPerformanceMode = usePerformanceMode();
+    const [now, setNow] = useState(() => new Date());
+    useEffect(() => {
+        const interval = setInterval(() => setNow(new Date()), 60000);
+        return () => clearInterval(interval);
+    }, []);
 
-  const userPreferences = useMemo(
-    () => ({
-      use24HourClock: use24HourClock ?? false,
-      weekStartsOnMonday: weekStartsOnMonday ?? true,
-    }),
-    [use24HourClock, weekStartsOnMonday],
-  );
+    const userPreferences = useMemo(() => ({
+        use24HourClock: use24HourClock ?? false,
+        weekStartsOnMonday: weekStartsOnMonday ?? true
+    }), [use24HourClock, weekStartsOnMonday]);
 
-  const [settings, setSettings] = useState<ViewSettings>(
-    initialSettings ??
-      (viewId === "upcoming"
-        ? { ...defaultViewSettings, groupBy: "dueDate" }
-        : defaultViewSettings),
-  );
+    const [settings, setSettings] = useState<ViewSettings>(initialSettings ?? (viewId === "upcoming" ? { ...defaultViewSettings, groupBy: "dueDate" } : defaultViewSettings));
 
-  useEffect(() => {
-    initialize();
-    if (tasks?.length) setTasks(tasks);
-  }, [tasks, setTasks, initialize]);
+    useEffect(() => { initialize(); if (tasks?.length) setTasks(tasks); }, [tasks, setTasks, initialize]);
 
-  const {
-    processedTasks,
-    listTasks,
-    periodSections,
-    overdueTasks,
-    activeTasks,
-    completedTasks,
-    groupedEntries,
-    derivedTasks,
-  } = useTaskListView({
-    allStoreTasks: Object.values(storeTasksFn),
-    listId,
-    labelId,
-    filterType,
-    tasksFromProps: tasks,
-    weekStartsOnMonday: weekStartsOnMonday ?? undefined,
-    settings,
-  });
-
-  // ⚡ Bolt Opt: Precompute itemIds in a single pass to prevent O(N) array allocation
-  // on every render inside the SortableContext items prop
-  const activeTaskIds = useMemo(() => {
-    const ids = new Array(activeTasks.length);
-    for (let i = 0; i < activeTasks.length; i++) {
-      ids[i] = activeTasks[i].id;
-    }
-    return ids;
-  }, [activeTasks]);
-
-  useEffect(() => {
-    if (initialSettings || !userId) return;
-    getViewSettings(userId, viewId).then((stored) => {
-      if (!stored) return;
-      setSettings((prev) => ({
-        ...prev,
-        ...(stored as Partial<ViewSettings>),
-      }));
+    const { processedTasks, listTasks, periodSections, overdueTasks, activeTasks, completedTasks, groupedEntries, derivedTasks } = useTaskListView({
+        allStoreTasks: Object.values(storeTasksFn), listId, labelId, filterType, tasksFromProps: tasks, weekStartsOnMonday: weekStartsOnMonday ?? undefined, settings
     });
-  }, [viewId, userId, initialSettings]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  );
-  const isDragEnabled =
-    settings.sortBy === "manual" && settings.groupBy === "none" && !!userId;
-  const taskById = useMemo(() => {
-    // ⚡ Bolt Opt: Avoid allocating an O(N) intermediate array before creating the Map
-    // and eliminate iterator overhead using an indexed for-loop.
-    const map = new Map<number, Task>();
-    const len = derivedTasks.length;
-    for (let i = 0; i < len; i++) {
-      const task = derivedTasks[i];
-      map.set(task.id, task);
-    }
-    return map;
-  }, [derivedTasks]);
-  const activeDragTask = useMemo(
-    () => (activeId ? (taskById.get(activeId) ?? null) : null),
-    [activeId, taskById],
-  );
-  const handleEditTask = useCallback(
-    (task: Task) => dispatchUI({ type: "SET_EDITING_TASK", payload: task }),
-    [],
-  );
-  const handleSelectCalendarDate = useCallback(
-    (date: Date) => dispatchUI({ type: "SET_CALENDAR_DATE", payload: date }),
-    [],
-  );
-  const handleToggleOverdue = useCallback(
-    () => dispatchUI({ type: "TOGGLE_OVERDUE" }),
-    [],
-  );
-  const handleTogglePeriod = useCallback(
-    (precision: PeriodPrecision) =>
-      dispatchUI({ type: "TOGGLE_PERIOD", payload: precision }),
-    [],
-  );
-  const handleDragStart = useCallback(
-    (event: DragStartEvent) =>
-      dispatchUI({ type: "SET_ACTIVE_ID", payload: Number(event.active.id) }),
-    [],
-  );
-  const handleDragCancel = useCallback(
-    () => dispatchUI({ type: "SET_ACTIVE_ID", payload: null }),
-    [],
-  );
-  const handleRescheduleOverdue = useCallback(
-    () =>
-      overdueTasks.forEach((task) =>
-        dispatch("updateTask", task.id, userId || "", {
-          dueDate: new Date(),
-          dueDatePrecision: null,
-        }),
-      ),
-    [dispatch, overdueTasks, userId],
-  );
-  const handleTaskDialogOpenChange = useCallback((open: boolean) => {
-    dispatchUI({ type: "SET_DIALOG_OPEN", payload: open });
-    if (!open) {
-      setTimeout(() => dispatchUI({ type: "CLEAR_TASK" }), 300);
-    }
-  }, []);
+    useEffect(() => {
+        if (initialSettings || !userId) return;
+        getViewSettings(userId, viewId).then((stored) => {
+            if (!stored) return;
+            setSettings((prev) => ({ ...prev, ...(stored as Partial<ViewSettings>) }));
+        });
+    }, [viewId, userId, initialSettings]);
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    dispatchUI({ type: "SET_ACTIVE_ID", payload: null });
-    if (over && active.id !== over.id && userId) {
-      const oldIndex = derivedTasks.findIndex((t) => t.id === active.id);
-      const newIndex = derivedTasks.findIndex((t) => t.id === over.id);
-      const newTasks = arrayMove(derivedTasks, oldIndex, newIndex);
-      setTasks(newTasks);
-      dispatch(
-        "reorderTasks",
-        userId,
-        newTasks.map((t, i) => ({ id: t.id, position: i })),
-      ).catch(console.error);
-    }
-  };
-
-  const nowIsoDate = now.toISOString().slice(0, 10);
-  const formattedGroupNames = useMemo(() => {
-    const map = new Map<string, string>();
-    if (settings.groupBy !== "dueDate") return map;
-
-    // ⚡ Bolt Opt: Hoist dates outside loop and use allocation-free checks
-    const today = new Date();
-    const tomorrow = addDays(today, 1);
-
-    for (const [groupName] of groupedEntries) {
-      if (groupName === "No Date") {
-        map.set(groupName, groupName);
-        continue;
-      }
-      if (!groupName.includes(":")) {
-        const d = new Date(groupName);
-        map.set(
-          groupName,
-          isSameDay(d, today)
-            ? "Today"
-            : isSameDay(d, tomorrow)
-              ? "Tomorrow"
-              : format(
-                  d,
-                  isSameYear(d, today) ? "EEEE, MMM do" : "EEEE, MMM do, yyyy",
-                ),
-        );
-        continue;
-      }
-      const [p, iso] = groupName.split(":");
-      const periodFormatByPrecision: Partial<Record<PeriodPrecision, string>> =
-        {
-          month: "LLLL yyyy",
-          year: "yyyy",
-          week: "'Week of' MMM d",
-        };
-      const formatStr =
-        periodFormatByPrecision[p as PeriodPrecision] ?? "MMM d";
-      map.set(groupName, format(new Date(iso), formatStr));
-    }
-    return map;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groupedEntries, settings.groupBy, nowIsoDate]);
-
-  const groupedVirtualSections = useMemo<GroupedVirtualSection[]>(() => {
-    if (settings.groupBy === "none") return [];
-    // ⚡ Bolt Opt: Replaced chained .map().forEach() with simple for...of loops
-    // to eliminate intermediate array allocations and closure overhead.
-    const sections: GroupedVirtualSection[] = [];
-    for (const [groupName, gTasks] of groupedEntries) {
-      const active: Task[] = [];
-      const completed: Task[] = [];
-      for (const t of gTasks) {
-        if (t.isCompleted) completed.push(t);
-        else active.push(t);
-      }
-      const items: ({ type: "task"; task: Task } | { type: "separator" })[] =
-        [];
-      for (const t of active) {
-        items.push({ type: "task", task: t });
-      }
-      if (active.length > 0 && completed.length > 0) {
-        items.push({ type: "separator" });
-      }
-      for (const t of completed) {
-        items.push({ type: "task", task: t });
-      }
-      sections.push({ groupName, totalCount: gTasks.length, items });
-    }
-    return sections;
-  }, [groupedEntries, settings.groupBy]);
-
-  const viewIndicator = useMemo(() => {
-    if (settings.layout !== "list")
-      return `Layout: ${settings.layout.charAt(0).toUpperCase() + settings.layout.slice(1)}`;
-    if (settings.sortBy !== "manual")
-      return `Sort: ${settings.sortBy.split(/(?=[A-Z])/).join(" ")}`;
-    if (settings.groupBy !== "none")
-      return `Group: ${settings.groupBy.split(/(?=[A-Z])/).join(" ")}`;
-    return settings.filterPriority ||
-      settings.filterLabelId !== null ||
-      settings.filterDate !== "all"
-      ? "Filter: Active"
-      : null;
-  }, [settings]);
-
-  if (!isInitialized)
-    return <TaskListSkeleton variant={settings.layout} compact />;
-  if (
-    settings.layout === "list"
-      ? listTasks.length === 0 && periodSections.length === 0
-      : processedTasks.length === 0
-  )
-    return (
-      <TaskListEmptyState
-        filterType={filterType}
-        viewId={viewId}
-        onAdd={() => handleTaskDialogOpenChange(true)}
-      />
+    const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+    const isDragEnabled = settings.sortBy === "manual" && settings.groupBy === "none" && !!userId;
+    const taskById = useMemo(() => {
+        // ⚡ Bolt Opt: Avoid allocating an O(N) intermediate array before creating the Map
+        // and eliminate iterator overhead using an indexed for-loop.
+        const map = new Map<number, Task>();
+        const len = derivedTasks.length;
+        for (let i = 0; i < len; i++) {
+            const task = derivedTasks[i];
+            map.set(task.id, task);
+        }
+        return map;
+    }, [derivedTasks]);
+    const activeDragTask = useMemo(
+        () => (activeId ? taskById.get(activeId) ?? null : null),
+        [activeId, taskById]
     );
+    const handleEditTask = useCallback(
+        (task: Task) => dispatchUI({ type: "SET_EDITING_TASK", payload: task }),
+        []
+    );
+    const handleSelectCalendarDate = useCallback(
+        (date: Date) => dispatchUI({ type: "SET_CALENDAR_DATE", payload: date }),
+        []
+    );
+    const handleToggleOverdue = useCallback(
+        () => dispatchUI({ type: "TOGGLE_OVERDUE" }),
+        []
+    );
+    const handleTogglePeriod = useCallback(
+        (precision: PeriodPrecision) => dispatchUI({ type: "TOGGLE_PERIOD", payload: precision }),
+        []
+    );
+    const handleDragStart = useCallback(
+        (event: DragStartEvent) => dispatchUI({ type: "SET_ACTIVE_ID", payload: Number(event.active.id) }),
+        []
+    );
+    const handleDragCancel = useCallback(
+        () => dispatchUI({ type: "SET_ACTIVE_ID", payload: null }),
+        []
+    );
+    const handleRescheduleOverdue = useCallback(
+        () => overdueTasks.forEach((task) => dispatch("updateTask", task.id, userId || "", { dueDate: new Date(), dueDatePrecision: null })),
+        [dispatch, overdueTasks, userId]
+    );
+    const handleTaskDialogOpenChange = useCallback((open: boolean) => {
+        dispatchUI({ type: "SET_DIALOG_OPEN", payload: open });
+        if (!open) {
+            setTimeout(() => dispatchUI({ type: "CLEAR_TASK" }), 300);
+        }
+    }, []);
 
-  return (
-    <div className="space-y-4">
-      <ListHeader
-        title={title}
-        viewId={viewId}
-        userId={userId}
-        viewIndicator={viewIndicator}
-        settings={settings}
-        onSettingsChange={setSettings}
-      />
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        dispatchUI({ type: "SET_ACTIVE_ID", payload: null });
+        if (over && active.id !== over.id && userId) {
+            const oldIndex = derivedTasks.findIndex(t => t.id === active.id);
+            const newIndex = derivedTasks.findIndex(t => t.id === over.id);
+            const newTasks = arrayMove(derivedTasks, oldIndex, newIndex);
+            setTasks(newTasks);
+            dispatch("reorderTasks", userId, newTasks.map((t, i) => ({ id: t.id, position: i }))).catch(console.error);
+        }
+    };
 
-      {settings.layout === "board" ? (
-        <TaskBoardView
-          tasks={processedTasks}
-          userId={userId || ""}
-          onEdit={handleEditTask}
-        />
-      ) : settings.layout === "calendar" ? (
-        <TaskCalendarLayout
-          tasks={processedTasks}
-          onEdit={handleEditTask}
-          onDateClick={handleSelectCalendarDate}
-        />
-      ) : (
-        <div className="space-y-6">
-          <TaskListOverdueSection
-            overdueTasks={overdueTasks}
-            overdueCollapsed={overdueCollapsed}
-            onToggle={handleToggleOverdue}
-            onEdit={handleEditTask}
-            listId={listId}
-            userId={userId}
-            dispatch={dispatch}
-            onReschedule={handleRescheduleOverdue}
-            now={now}
-            isClient={isClient}
-            performanceMode={isPerformanceMode}
-            userPreferences={userPreferences}
-          />
-          {settings.groupBy === "none" ? (
-            <>
-              {activeTasks.length > 0 && (
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragStart={handleDragStart}
-                  onDragEnd={handleDragEnd}
-                  onDragCancel={handleDragCancel}
-                  modifiers={[restrictToVerticalAxis]}
-                >
-                  <SortableContext
-                    items={activeTaskIds}
-                    strategy={verticalListSortingStrategy}
-                    disabled={!isDragEnabled}
-                  >
-                    <div className="space-y-2">
-                      {activeTasks.map((t) => (
-                        <SortableTaskItem
-                          key={t.id}
-                          task={t}
-                          handleEdit={handleEditTask}
-                          listId={listId}
-                          userId={userId}
-                          isDragEnabled={isDragEnabled}
-                          dispatch={dispatch}
-                          now={now}
-                          isClient={isClient}
-                          performanceMode={isPerformanceMode}
-                          userPreferences={userPreferences}
-                        />
-                      ))}
+    const nowIsoDate = now.toISOString().slice(0, 10);
+    const formattedGroupNames = useMemo(() => {
+        const map = new Map<string, string>();
+        if (settings.groupBy !== "dueDate") return map;
+
+        // ⚡ Bolt Opt: Hoist dates outside loop and use allocation-free checks
+        const today = new Date();
+        const tomorrow = addDays(today, 1);
+
+        for (const [groupName] of groupedEntries) {
+            if (groupName === "No Date") {
+                map.set(groupName, groupName);
+                continue;
+            }
+            if (!groupName.includes(":")) {
+                const d = new Date(groupName);
+                map.set(groupName, isSameDay(d, today) ? "Today" : isSameDay(d, tomorrow) ? "Tomorrow" : format(d, isSameYear(d, today) ? "EEEE, MMM do" : "EEEE, MMM do, yyyy"));
+                continue;
+            }
+            const [p, iso] = groupName.split(":");
+            const periodFormatByPrecision: Partial<Record<PeriodPrecision, string>> = {
+                month: "LLLL yyyy",
+                year: "yyyy",
+                week: "'Week of' MMM d",
+            };
+            const formatStr = periodFormatByPrecision[p as PeriodPrecision] ?? "MMM d";
+            map.set(groupName, format(new Date(iso), formatStr));
+        }
+        return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [groupedEntries, settings.groupBy, nowIsoDate]);
+
+    const groupedVirtualSections = useMemo<GroupedVirtualSection[]>(() => {
+        if (settings.groupBy === "none") return [];
+        // ⚡ Bolt Opt: Replaced chained .map().forEach() with simple for...of loops
+        // to eliminate intermediate array allocations and closure overhead.
+        const sections: GroupedVirtualSection[] = [];
+        for (const [groupName, gTasks] of groupedEntries) {
+            const active: Task[] = [];
+            const completed: Task[] = [];
+            for (const t of gTasks) {
+                if (t.isCompleted) completed.push(t);
+                else active.push(t);
+            }
+            const items: ({ type: "task"; task: Task } | { type: "separator" })[] = [];
+            for (const t of active) {
+                items.push({ type: "task", task: t });
+            }
+            if (active.length > 0 && completed.length > 0) {
+                items.push({ type: "separator" });
+            }
+            for (const t of completed) {
+                items.push({ type: "task", task: t });
+            }
+            sections.push({ groupName, totalCount: gTasks.length, items });
+        }
+        return sections;
+    }, [groupedEntries, settings.groupBy]);
+
+    const viewIndicator = useMemo(() => {
+        if (settings.layout !== "list") return `Layout: ${settings.layout.charAt(0).toUpperCase() + settings.layout.slice(1)}`;
+        if (settings.sortBy !== "manual") return `Sort: ${settings.sortBy.split(/(?=[A-Z])/).join(" ")}`;
+        if (settings.groupBy !== "none") return `Group: ${settings.groupBy.split(/(?=[A-Z])/).join(" ")}`;
+        return (settings.filterPriority || settings.filterLabelId !== null || settings.filterDate !== "all") ? "Filter: Active" : null;
+    }, [settings]);
+
+    if (!isInitialized) return <TaskListSkeleton variant={settings.layout} compact />;
+    if ((settings.layout === "list" ? listTasks.length === 0 && periodSections.length === 0 : processedTasks.length === 0)) return <TaskListEmptyState filterType={filterType} viewId={viewId} onAdd={() => handleTaskDialogOpenChange(true)} />;
+
+    return (
+        <div className="space-y-4">
+            <ListHeader title={title} viewId={viewId} userId={userId} viewIndicator={viewIndicator} settings={settings} onSettingsChange={setSettings} />
+
+            {settings.layout === "board" ? <TaskBoardView tasks={processedTasks} userId={userId || ""} onEdit={handleEditTask} /> :
+                settings.layout === "calendar" ? <TaskCalendarLayout tasks={processedTasks} onEdit={handleEditTask} onDateClick={handleSelectCalendarDate} /> : (
+                    <div className="space-y-6">
+                        <TaskListOverdueSection overdueTasks={overdueTasks} overdueCollapsed={overdueCollapsed} onToggle={handleToggleOverdue} onEdit={handleEditTask} listId={listId} userId={userId} dispatch={dispatch} onReschedule={handleRescheduleOverdue} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} />
+                        {settings.groupBy === "none" ? (
+                            <>
+                                {activeTasks.length > 0 && (
+                                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel} modifiers={[restrictToVerticalAxis]}>
+                                        <SortableContext items={activeTasks} strategy={verticalListSortingStrategy} disabled={!isDragEnabled}>
+                                            <div className="space-y-2">{activeTasks.map(t => <SortableTaskItem key={t.id} task={t} handleEdit={handleEditTask} listId={listId} userId={userId} isDragEnabled={isDragEnabled} dispatch={dispatch} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} />)}</div>
+                                        </SortableContext>
+                                        <DragOverlay>{activeDragTask ? <div className="opacity-90 rotate-2 scale-105 cursor-grabbing"><TaskItem task={activeDragTask} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={handleEditTask} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} /></div> : null}</DragOverlay>
+                                    </DndContext>
+                                )}
+                                <CompletedTasksSection tasks={completedTasks} listId={listId} userId={userId} onEdit={handleEditTask} dispatch={dispatch} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} />
+                            </>
+                        ) : <GroupedListView groupedEntries={groupedEntries} groupedVirtualSections={groupedVirtualSections} formattedGroupNames={formattedGroupNames} listId={listId} userId={userId} onEdit={handleEditTask} dispatch={dispatch} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} />}
+                        {periodSections.length > 0 && <div className="space-y-3 pt-2">{listTasks.length === 0 && <div className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">No tasks specifically for today.</div>}{periodSections.map(s => <TaskListPeriodSection key={s.precision} precision={s.precision} label={s.label} tasks={s.tasks} collapsed={periodCollapsed[s.precision]} onToggle={() => handleTogglePeriod(s.precision)} listId={listId} userId={userId} onEdit={handleEditTask} dispatch={dispatch} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} />)}</div>}
                     </div>
-                  </SortableContext>
-                  <DragOverlay>
-                    {activeDragTask ? (
-                      <div className="opacity-90 rotate-2 scale-105 cursor-grabbing">
-                        <TaskItem
-                          task={activeDragTask}
-                          showListInfo={!listId}
-                          userId={userId}
-                          disableAnimations={true}
-                          dispatch={dispatch}
-                          onEdit={handleEditTask}
-                          now={now}
-                          isClient={isClient}
-                          performanceMode={isPerformanceMode}
-                          userPreferences={userPreferences}
-                        />
-                      </div>
-                    ) : null}
-                  </DragOverlay>
-                </DndContext>
-              )}
-              <CompletedTasksSection
-                tasks={completedTasks}
-                listId={listId}
-                userId={userId}
-                onEdit={handleEditTask}
-                dispatch={dispatch}
-                now={now}
-                isClient={isClient}
-                performanceMode={isPerformanceMode}
-                userPreferences={userPreferences}
-              />
-            </>
-          ) : (
-            <GroupedListView
-              groupedEntries={groupedEntries}
-              groupedVirtualSections={groupedVirtualSections}
-              formattedGroupNames={formattedGroupNames}
-              listId={listId}
-              userId={userId}
-              onEdit={handleEditTask}
-              dispatch={dispatch}
-              now={now}
-              isClient={isClient}
-              performanceMode={isPerformanceMode}
-              userPreferences={userPreferences}
-            />
-          )}
-          {periodSections.length > 0 && (
-            <div className="space-y-3 pt-2">
-              {listTasks.length === 0 && (
-                <div className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">
-                  No tasks specifically for today.
-                </div>
-              )}
-              {periodSections.map((s) => (
-                <TaskListPeriodSection
-                  key={s.precision}
-                  precision={s.precision}
-                  label={s.label}
-                  tasks={s.tasks}
-                  collapsed={periodCollapsed[s.precision]}
-                  onToggle={() => handleTogglePeriod(s.precision)}
-                  listId={listId}
-                  userId={userId}
-                  onEdit={handleEditTask}
-                  dispatch={dispatch}
-                  now={now}
-                  isClient={isClient}
-                  performanceMode={isPerformanceMode}
-                  userPreferences={userPreferences}
-                />
-              ))}
-            </div>
-          )}
+                )}
+            <Suspense fallback={null}>
+                <TaskDialog task={editingTask ? { ...editingTask, icon: editingTask.icon ?? null } : undefined} defaultListId={listId ?? undefined} defaultLabelIds={labelId ? [labelId] : undefined} defaultDueDate={calendarSelectedDate || defaultDueDate} open={isDialogOpen} onOpenChange={handleTaskDialogOpenChange} userId={userId} />
+            </Suspense>
         </div>
-      )}
-      <Suspense fallback={null}>
-        <TaskDialog
-          task={
-            editingTask
-              ? { ...editingTask, icon: editingTask.icon ?? null }
-              : undefined
-          }
-          defaultListId={listId ?? undefined}
-          defaultLabelIds={labelId ? [labelId] : undefined}
-          defaultDueDate={calendarSelectedDate || defaultDueDate}
-          open={isDialogOpen}
-          onOpenChange={handleTaskDialogOpenChange}
-          userId={userId}
-        />
-      </Suspense>
-    </div>
-  );
+    );
 }

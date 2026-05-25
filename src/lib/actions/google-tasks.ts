@@ -48,7 +48,7 @@ export async function disconnectGoogleTasks() {
 
   // 🛡️ Sentinel: Enforce atomicity by wrapping sequential deletes in a database transaction.
   // This prevents partial state updates and potential data inconsistencies if a subsequent delete fails.
-  await db.transaction(async (tx) => {
+
     await tx
       .delete(externalIntegrations)
       .where(
@@ -268,7 +268,7 @@ export async function setGoogleTasksListMappings(
   }
 
   // 🛡️ Sentinel: Wrap delete and insert in a transaction to prevent partial updates
-  await db.transaction(async (tx) => {
+
     await tx
       .delete(externalEntityMap)
       .where(
@@ -280,7 +280,7 @@ export async function setGoogleTasksListMappings(
       );
 
     if (mappings.length > 0) {
-      await tx.insert(externalEntityMap).values(
+      await db.insert(externalEntityMap).values(
         mappings.map((mapping) => ({
           userId: user.id,
           provider: "google_tasks" as const,

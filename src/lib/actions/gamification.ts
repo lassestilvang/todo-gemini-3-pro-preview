@@ -246,7 +246,7 @@ export async function updateUserProgress(userId: string, xpAmount: number) {
     updateData.lastLogin = new Date();
   }
 
-  await db.transaction(async (tx) => {
+
     await tx
       .update(userStats)
       .set(updateData)
@@ -255,7 +255,7 @@ export async function updateUserProgress(userId: string, xpAmount: number) {
 
     // B. Insert Newly Unlocked Achievements
     if (newlyUnlockedAchievements.length > 0) {
-      await tx.insert(userAchievements).values(
+      await db.insert(userAchievements).values(
         newlyUnlockedAchievements.map(a => ({
           userId,
           achievementId: a.id
@@ -270,20 +270,20 @@ export async function updateUserProgress(userId: string, xpAmount: number) {
         details: `Unlocked achievement: ${a.name} (+${a.xpReward} XP)`,
       }));
 
-      await tx.insert(taskLogs).values(logs);
+      await db.insert(taskLogs).values(logs);
     }
 
     // C. Handle Streak Logs
     if (shouldUpdateStreak) {
       if (usedFreeze) {
-        await tx.insert(taskLogs).values({
+        await db.insert(taskLogs).values({
           userId,
           taskId: null,
           action: "streak_frozen",
           details: "Streak freeze used! ❄️ Your streak is safe.",
         });
       } else if (newStreak > stats.currentStreak) {
-        await tx.insert(taskLogs).values({
+        await db.insert(taskLogs).values({
           userId,
           taskId: null,
           action: "streak_updated",
