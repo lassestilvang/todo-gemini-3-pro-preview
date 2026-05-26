@@ -7,7 +7,7 @@ test.describe('Task Creation: NLP', () => {
   });
 
   test('should create a task with due date using natural language', async ({ authenticatedPage: page }) => {
-    const taskInput = page.getByTestId('task-input');
+    const taskInput = page.getByTestId('task-input').first();
     await expect(taskInput).toBeVisible();
 
     const uniqueId = Date.now();
@@ -34,7 +34,7 @@ test.describe('Task Creation: NLP', () => {
   });
 
   test('should create a task with priority', async ({ authenticatedPage: page }) => {
-    const taskInput = page.getByTestId('task-input');
+    const taskInput = page.getByTestId('task-input').first();
     await expect(taskInput).toBeVisible();
 
     const uniqueId = Date.now();
