@@ -282,3 +282,7 @@
 ## 2024-05-25 - Expanding hit areas for toggles using semantic labels
 **Learning:** Found an instance in `ViewOptionsPopover.tsx` where a `Switch` component was placed alongside a `<span>` element. This meant users had to click precisely on the small switch to toggle the setting.
 **Action:** When placing text next to a toggle or checkbox, always use a semantic `<label>` with an `htmlFor` attribute linking to the input's `id`. This not only provides screen reader context (as previously documented) but also expands the clickable hit area to include the text, significantly improving the interaction experience, especially on touch interfaces or for users with limited dexterity. Adding `cursor-pointer` to the label further clarifies interactivity.
+
+## 2024-05-26 - Icon Button Consistency and Accessibility
+**Learning:** When creating utility action bars (like the task creation footer), mixing text buttons with icon-only buttons can create visual inconsistency and poor accessibility. Converting utility actions (like 'Full Details') to icon-only buttons requires explicitly providing `aria-label` and `title` attributes to ensure they remain accessible to screen readers and mouse users.
+**Action:** Always verify that icon-only action buttons have explicit `aria-label`s and `title`s, and maintain visual consistency (e.g., `size="icon"`, `h-8 w-8`) within utility toolbars.
