@@ -69,6 +69,25 @@ describe("Views Security (IDOR)", () => {
     }
   });
 
+  it("should prevent creating a saved view with excessively large settings", async () => {
+    setMockAuthUser(ATTACKER_USER);
+    try {
+      const result = await createSavedView({
+        userId: ATTACKER_ID,
+        name: "My View",
+        settings: "a".repeat(10001), // exceeds 10,000 char limit
+      });
+
+      expect(result.success).toBe(false);
+      if (result.success === false) {
+        expect(result.error.code).toBe("VALIDATION_ERROR");
+        expect(result.error.message).toMatch(/too large/i);
+      }
+    } finally {
+      resetMockAuthUser();
+    }
+  });
+
   it("should prevent deleting another user's saved view", async () => {
     setMockAuthUser(ATTACKER_USER);
     try {
