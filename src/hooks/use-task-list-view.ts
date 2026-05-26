@@ -163,14 +163,17 @@ export function useTaskListView({
             }
         }
 
-        const periodSections = isTodayList ? (["week", "month", "year"] as PeriodPrecision[])
-            .map((precision) => {
+        const periodSections: Array<{ precision: PeriodPrecision; label: string; tasks: Task[] }> = [];
+        if (isTodayList) {
+            const precisions: PeriodPrecision[] = ["week", "month", "year"];
+            const labels = { week: "This Week", month: "This Month", year: "This Year" };
+            for (const precision of precisions) {
                 const tasks = sectionsMap.get(precision);
-                if (!tasks || tasks.length === 0) return null;
-                const labels = { week: "This Week", month: "This Month", year: "This Year" };
-                return { precision, label: labels[precision], tasks };
-            })
-            .filter(Boolean) as Array<{ precision: PeriodPrecision; label: string; tasks: Task[] }> : [];
+                if (tasks && tasks.length > 0) {
+                    periodSections.push({ precision, label: labels[precision], tasks });
+                }
+            }
+        }
 
         return { listTasks, periodSections, overdueTasks: overdue, activeTasks: active, completedTasks: completed };
     }, [processedTasks, filterType, settings.layout, weekStartsOnMonday, settings.showCompleted]);
