@@ -26,9 +26,8 @@ export function ActivityLogEmpty({ searchQuery, typeFilter, onClearFilters }: Ac
             {(searchQuery || typeFilter !== "all") && (
                 <Button
                     variant="ghost"
-                    className="mt-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className="mt-4"
                     onClick={onClearFilters}
-                    aria-label="Clear all filters"
                 >
                     Clear all filters
                 </Button>
