@@ -83,17 +83,23 @@ export function CreateTaskFooter({
 
         <SmartSyntaxPopover onInsert={onInsertSyntax} />
 
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={onFullDetails}
-          className="h-8 w-8 text-muted-foreground hover:text-foreground"
-          title="Full Details"
-          aria-label="Open full task details"
-        >
-          <Maximize2 className="h-4 w-4" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={onFullDetails}
+              className="text-muted-foreground hover:text-foreground"
+              aria-label="Open full task details"
+            >
+              <Maximize2 className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Full Details</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       <div className="flex items-center gap-2">
