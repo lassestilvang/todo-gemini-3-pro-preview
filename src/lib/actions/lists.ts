@@ -232,7 +232,7 @@ async function updateListImpl(
   userId: string,
   data: Partial<Omit<typeof lists.$inferInsert, "userId">>
 ) {
-  await requireUser(userId);
+  const user = await requireUser(userId);
 
   if (data.name !== undefined) {
     if (data.name.trim().length === 0) {
@@ -249,11 +249,11 @@ async function updateListImpl(
   await db
     .update(lists)
     .set(data)
-    .where(and(eq(lists.id, id), eq(lists.userId, userId)));
+    .where(and(eq(lists.id, id), eq(lists.userId, user.id)));
 
   if (currentList) {
     await logActivity({
-      userId,
+      userId: user.id,
       action: "list_updated",
       listId: id,
       details: `Updated list: ${currentList.name}${data.name && data.name !== currentList.name ? ` to ${data.name}` : ""}`,
@@ -298,15 +298,15 @@ export const updateList: (
  * @param userId - The ID of the user who owns the list
  */
 async function deleteListImpl(id: number, userId: string) {
-  await requireUser(userId);
+  const user = await requireUser(userId);
 
   const currentList = await getList(id, userId);
 
-  await db.delete(lists).where(and(eq(lists.id, id), eq(lists.userId, userId)));
+  await db.delete(lists).where(and(eq(lists.id, id), eq(lists.userId, user.id)));
 
   if (currentList) {
     await logActivity({
-      userId,
+      userId: user.id,
       action: "list_deleted",
       details: `Deleted list: ${currentList.name}`,
     });
