@@ -49,7 +49,7 @@ export function TimeSettings({ userId, initialUse24HourClock }: TimeSettingsProp
                 <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <div className="space-y-0.5">
-                        <Label htmlFor="time-format">24-Hour Clock</Label>
+                        <Label htmlFor="time-format" className="cursor-pointer">24-Hour Clock</Label>
                         <p className="text-sm text-muted-foreground">
                             {use24h === null
                                 ? `Currently using system preference (${getEffectiveValue() ? '24h' : '12h'})`

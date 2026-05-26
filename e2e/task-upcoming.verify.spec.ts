@@ -5,7 +5,7 @@ test.describe('Task Upcoming: Verify', () => {
         await page.goto('/today');
         await page.waitForLoadState('load');
 
-        const taskInput = page.getByTestId('task-input');
+        const taskInput = page.getByTestId('task-input').first();
         await expect(taskInput).toBeVisible();
 
         const uniqueId = Date.now();
