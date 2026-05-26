@@ -198,3 +198,6 @@ Action: When deleting multiple items from an IndexedDB store, open a single read
 ## 2025-05-10 - ⚡ Bolt: Prevent Unnecessary Array Allocations in useMemo
 **Learning:** Returning dynamically mapped arrays like `items.map(i => i.id)` directly in a React prop (like `items` for `SortableContext`) allocates a new array on *every render*, defeating memoization of the underlying `items` array and causing deep unneeded re-renders in drag-and-drop contexts.
 **Action:** Always pre-allocate/precompute arrays of derived primitives (like `itemIds`) in the same single-pass loop or `useMemo` block where the parent collection is processed. Then pass the stable memoized primitive array (e.g., `items={itemIds}`) to prevent unnecessary O(N) array allocation overhead during react render cycles.
+## 2026-05-19 - ⚡ Bolt: Prevent intermediate array allocation during Map initialization
+**Learning:** Using the pattern `new Map(array.map(item => [key, val]))` creates an intermediate array of tuples solely for the purpose of initializing the Map. In hot paths like sync functions, this unnecessary memory allocation creates garbage collection overhead.
+**Action:** Always instantiate an empty Map (`new Map()`) and populate it directly using a single-pass `for...of` loop (`map.set(key, val)`) to avoid intermediate array allocations.
