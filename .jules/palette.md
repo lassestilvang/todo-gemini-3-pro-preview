@@ -282,3 +282,7 @@
 ## 2024-05-25 - Expanding hit areas for toggles using semantic labels
 **Learning:** Found an instance in `ViewOptionsPopover.tsx` where a `Switch` component was placed alongside a `<span>` element. This meant users had to click precisely on the small switch to toggle the setting.
 **Action:** When placing text next to a toggle or checkbox, always use a semantic `<label>` with an `htmlFor` attribute linking to the input's `id`. This not only provides screen reader context (as previously documented) but also expands the clickable hit area to include the text, significantly improving the interaction experience, especially on touch interfaces or for users with limited dexterity. Adding `cursor-pointer` to the label further clarifies interactivity.
+
+## 2024-05-25 - Activity Log Empty State Accessibility
+**Learning:** Screen readers won't automatically announce dynamically rendered empty states (like "No activity found") when a user types a search query or applies a filter that yields no results.
+**Action:** Always add `role="status"` and `aria-live="polite"` to the wrapper container of dynamically rendered empty states so screen readers immediately announce the change. For custom or icon-only buttons inside the empty state, ensure they have an explicit `aria-label` and appropriate `focus-visible` classes; standard `Button` components already handle these out of the box.

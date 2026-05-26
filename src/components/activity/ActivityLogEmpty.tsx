@@ -11,7 +11,9 @@ interface ActivityLogEmptyProps {
 
 export function ActivityLogEmpty({ searchQuery, typeFilter, onClearFilters }: ActivityLogEmptyProps) {
     return (
-        <div className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in slide-in-from-bottom-4">
+        <div className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in slide-in-from-bottom-4"
+            role="status"
+            aria-live="polite">
             <div className="h-20 w-20 rounded-full bg-muted/20 flex items-center justify-center mb-4">
                 <History className="h-10 w-10 text-muted-foreground" />
             </div>
