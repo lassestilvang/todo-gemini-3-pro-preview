@@ -285,4 +285,4 @@
 
 ## 2024-05-25 - Activity Log Empty State Accessibility
 **Learning:** Screen readers won't automatically announce dynamically rendered empty states (like "No activity found") when a user types a search query or applies a filter that yields no results.
-**Action:** Always add `role="status"` and `aria-live="polite"` to the wrapper container of dynamically rendered empty states so screen readers immediately announce the change. Also, ensure buttons inside the empty state (like "Clear all filters") have an explicit `aria-label` and `focus-visible` classes for keyboard navigation.
+**Action:** Always add `role="status"` and `aria-live="polite"` to the wrapper container of dynamically rendered empty states so screen readers immediately announce the change. For custom or icon-only buttons inside the empty state, ensure they have an explicit `aria-label` and appropriate `focus-visible` classes; standard `Button` components already handle these out of the box.
