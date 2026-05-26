@@ -4,7 +4,14 @@
  */
 "use server";
 
-import { db, users, eq, revalidatePath, withErrorHandling, type ActionResult } from "./shared";
+import {
+  db,
+  users,
+  eq,
+  revalidatePath,
+  withErrorHandling,
+  type ActionResult,
+} from "./shared";
 import { requireUser } from "@/lib/auth";
 import { updateUserPreferencesSchema } from "@/lib/validation/user";
 
@@ -21,9 +28,9 @@ async function updateUserPreferencesImpl(
     weekStartsOnMonday?: boolean | null;
     calendarUseNativeTooltipsOnDenseDays?: boolean | null;
     calendarDenseTooltipThreshold?: number | null;
-  }
+  },
 ) {
-  await requireUser(userId);
+  const user = await requireUser(userId);
 
   // Validate input data using Zod schema
   const parsedData = updateUserPreferencesSchema.parse(data);
@@ -51,7 +58,7 @@ async function updateUserPreferencesImpl(
 
   // Only update if there are changes to avoid empty update queries
   if (Object.keys(updatePayload).length > 0) {
-    await db.update(users).set(updatePayload).where(eq(users.id, userId));
+    await db.update(users).set(updatePayload).where(eq(users.id, user.id));
 
     revalidatePath("/", "layout");
   }
@@ -64,5 +71,5 @@ export const updateUserPreferences: (
     weekStartsOnMonday?: boolean | null;
     calendarUseNativeTooltipsOnDenseDays?: boolean | null;
     calendarDenseTooltipThreshold?: number | null;
-  }
+  },
 ) => Promise<ActionResult<void>> = withErrorHandling(updateUserPreferencesImpl);
