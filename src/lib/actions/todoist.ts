@@ -1114,15 +1114,23 @@ export async function resolveTodoistConflict(
       normalizedRemoteTask as never,
       mappingState,
     );
-    const labelIdMap = new Map(
-      labelMappings.map((mapping) => [mapping.externalId, mapping.localId]),
-    );
+    // ⚡ Bolt Opt: Avoid allocating an intermediate array for map initialization
+    const labelIdMap = new Map<string, number | null>();
+    for (const mapping of labelMappings) {
+      labelIdMap.set(mapping.externalId, mapping.localId);
+    }
     const resolvedParentId = remoteTask.parentId
       ? (externalTaskToLocal.get(remoteTask.parentId) ?? null)
       : null;
-    const labelIds = resolvedExternalLabelIds
-      .map((labelId) => labelIdMap.get(labelId))
-      .filter((id): id is number => Boolean(id));
+    // ⚡ Bolt Opt: Replaced chained .map().filter() with a single pass for...of loop
+    // to avoid unnecessary intermediate array allocations
+    const labelIds: number[] = [];
+    for (const labelId of resolvedExternalLabelIds) {
+      const id = labelIdMap.get(labelId);
+      if (id !== undefined && id !== null) {
+        labelIds.push(id);
+      }
+    }
 
     await updateTask(conflict.localId, user.id, {
       title: localUpdates.title,

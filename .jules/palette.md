@@ -285,3 +285,7 @@
 ## 2024-05-25 - Extending Hit Areas for Toggles via Labels
 **Learning:** Adding semantic `<label>` elements for `Switch` or `Checkbox` inputs correctly expands the clickable area. However, without a visual cue, users may not realize the text is interactive. I observed instances in the settings and calendar where labels were correctly linked but lacked visual affordance.
 **Action:** When creating a `<label>` that wraps or sits adjacent to a toggle/switch, always append the `cursor-pointer` utility class to the label to explicitly communicate its interactivity.
+
+## 2024-05-25 - Activity Log Empty State Accessibility
+**Learning:** Screen readers won't automatically announce dynamically rendered empty states (like "No activity found") when a user types a search query or applies a filter that yields no results.
+**Action:** Always add `role="status"` and `aria-live="polite"` to the wrapper container of dynamically rendered empty states so screen readers immediately announce the change. For custom or icon-only buttons inside the empty state, ensure they have an explicit `aria-label` and appropriate `focus-visible` classes; standard `Button` components already handle these out of the box.
