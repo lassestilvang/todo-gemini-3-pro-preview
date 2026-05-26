@@ -113,7 +113,7 @@ export function CalendarTooltipSettings({
             </div>
             <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                    <Label htmlFor="calendar-dense-threshold" className="cursor-pointer">Dense day threshold</Label>
+                    <Label htmlFor="calendar-dense-threshold">Dense day threshold</Label>
                     <p className="text-sm text-muted-foreground">
                         Use native tooltips when a day has more than {clampedThreshold} tasks.
                     </p>
