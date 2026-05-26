@@ -46,6 +46,14 @@ async function createSavedViewImpl(data: {
         throw new ValidationError("View name is too long");
     }
 
+    // 🛡️ Sentinel: Enforce input length limits to prevent excessive storage consumption / DoS
+    if (typeof data.settings !== "string") {
+        throw new ValidationError("View settings must be a string");
+    }
+    if (data.settings.length > 10000) {
+        throw new ValidationError("View settings are too large");
+    }
+
     const result = await db.insert(savedViews).values(data).returning();
     revalidatePath("/", "layout");
     return result[0];
