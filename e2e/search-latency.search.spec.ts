@@ -10,7 +10,7 @@ test.describe('Search Latency: Search Results', () => {
     const uniqueId = Date.now();
     const taskTitle = `Search Latency Test ${uniqueId}`;
 
-    const taskInput = page.getByTestId('task-input');
+    const taskInput = page.getByTestId('task-input').first();
     await expect(taskInput).toBeVisible();
     await taskInput.fill(taskTitle);
     await taskInput.press('Enter');
