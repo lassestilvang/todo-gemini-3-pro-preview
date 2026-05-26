@@ -166,7 +166,7 @@ export function useTaskListView({
         const periodSections: Array<{ precision: PeriodPrecision; label: string; tasks: Task[] }> = [];
         if (isTodayList) {
             const precisions: PeriodPrecision[] = ["week", "month", "year"];
-            const labels = { week: "This Week", month: "This Month", year: "This Year" };
+            const labels: Record<PeriodPrecision, string> = { week: "This Week", month: "This Month", year: "This Year" };
             for (const precision of precisions) {
                 const tasks = sectionsMap.get(precision);
                 if (tasks && tasks.length > 0) {
