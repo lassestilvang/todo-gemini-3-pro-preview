@@ -201,3 +201,7 @@ Action: When deleting multiple items from an IndexedDB store, open a single read
 ## 2026-05-19 - ⚡ Bolt: Prevent intermediate array allocation during Map initialization
 **Learning:** Using the pattern `new Map(array.map(item => [key, val]))` creates an intermediate array of tuples solely for the purpose of initializing the Map. In hot paths like sync functions, this unnecessary memory allocation creates garbage collection overhead.
 **Action:** Always instantiate an empty Map (`new Map()`) and populate it directly using a single-pass `for...of` loop (`map.set(key, val)`) to avoid intermediate array allocations.
+
+## $(date +%Y-%m-%d) - Bolt Opt: Single-pass Array Initialization for Context Props
+**Learning:** Returning raw object arrays directly in a React prop (like `items` for `SortableContext`) forces internal iteration within the library and potentially allocates new arrays on every render, degrading memoization and increasing GC pressure.
+**Action:** Always pre-allocate arrays of derived primitives (like `itemIds`) using a single-pass indexed `for` loop within a `useMemo` block (e.g., `const ids = new Array(len); for... ids[i] = items[i].id;`) when passing data to performance-sensitive contexts like `dnd-kit`'s `SortableContext`.

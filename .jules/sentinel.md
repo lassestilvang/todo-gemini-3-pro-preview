@@ -76,3 +76,8 @@ SENTINEL'S JOURNAL - CRITICAL LEARNINGS ONLY:
 **Vulnerability:** A Denial of Service (DoS) vulnerability via memory exhaustion existed because Zod string validation (`BackupSchema`) in the data migration import flow lacked maximum string length bounds for text fields (like `name`, `description`, `content`, `slug`).
 **Learning:** Even if `z.array().max()` limits the number of imported entities, unbounded `z.string()` validation inside those arrays can still be abused by submitting single strings of gigabytes in length. Data parsing boundaries must bound all properties.
 **Prevention:** Always enforce explicit input length boundaries (e.g., `.max(255)`, `.max(100000)`) on string payloads when parsing external data using validation libraries like Zod, mirroring limits enforced downstream or in the database.
+
+## 2026-05-28 - [Defense-in-Depth] Enforce Authorization in Internal Helpers
+**Vulnerability:** Internal helper functions (like `logActivity`) that perform database mutations often accept a `userId` parameter but lack an internal `requireUser(userId)` check, assuming the caller has already validated authorization.
+**Learning:** If these internal helpers are ever accidentally exported from a `"use server"` file or directly exposed to an API route, they become vulnerable to Insecure Direct Object Reference (IDOR), allowing an attacker to mutate data for other users by spoofing the `userId`.
+**Prevention:** Apply a defense-in-depth approach by enforcing `requireUser(userId)` or equivalent authorization checks directly within internal mutation helpers, even if they are currently only called by other authenticated Server Actions. Always update the corresponding test suites to mock the authenticated session context when adding these internal checks.
