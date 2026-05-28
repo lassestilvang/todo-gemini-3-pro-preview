@@ -213,7 +213,7 @@ export function SearchPageClient({
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-sm text-muted-foreground py-4">No tasks found.</p>
+                            <p className="text-sm text-muted-foreground py-4" role="status" aria-live="polite">No tasks found.</p>
                         )}
 
                         {hasMore && <div ref={sentinelRef} className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>}
@@ -221,7 +221,7 @@ export function SearchPageClient({
                     </section>
                 </div>
             ) : (
-                <div className="h-full flex flex-col items-center justify-center text-muted-foreground p-8">
+                <div className="h-full flex flex-col items-center justify-center text-muted-foreground p-8" role="status" aria-live="polite">
                     <Search className="w-12 h-12 mb-4 opacity-20" />
                     <p className="text-lg font-medium">No results found</p>
                     <p className="text-sm">Try adjusting your search or filters</p>
