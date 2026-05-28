@@ -272,7 +272,7 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
                             <>
                                 {activeTasks.length > 0 && (
                                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel} modifiers={[restrictToVerticalAxis]}>
-                                        <SortableContext items={activeTaskIds} strategy={verticalListSortingStrategy} disabled={!isDragEnabled}>
+                                        <SortableContext items={activeTasks} strategy={verticalListSortingStrategy} disabled={!isDragEnabled}>
                                             <div className="space-y-2">{activeTasks.map(t => <SortableTaskItem key={t.id} task={t} handleEdit={handleEditTask} listId={listId} userId={userId} isDragEnabled={isDragEnabled} dispatch={dispatch} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} />)}</div>
                                         </SortableContext>
                                         <DragOverlay>{activeDragTask ? <div className="opacity-90 rotate-2 scale-105 cursor-grabbing"><TaskItem task={activeDragTask} showListInfo={!listId} userId={userId} disableAnimations={true} dispatch={dispatch} onEdit={handleEditTask} now={now} isClient={isClient} performanceMode={isPerformanceMode} userPreferences={userPreferences} /></div> : null}</DragOverlay>
