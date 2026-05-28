@@ -353,7 +353,11 @@ async function updateTaskImpl(
     const newLabelIds = [...labelIds].sort();
 
     if (currentLabelIds.length !== newLabelIds.length || !currentLabelIds.every((val, index) => val === newLabelIds[index])) {
-      const currentLabelNamesMap = new Map(currentTask.labels.map((l) => [l.id, l.name || "Unknown"]));
+      // ⚡ Bolt Opt: Replaced new Map(array.map()) with for...of to avoid O(N) intermediate array allocation
+      const currentLabelNamesMap = new Map<number, string>();
+      for (const l of currentTask.labels) {
+        currentLabelNamesMap.set(l.id, l.name || "Unknown");
+      }
 
       const labelsToFetch = newLabelIds.filter(id => !currentLabelNamesMap.has(id));
 
