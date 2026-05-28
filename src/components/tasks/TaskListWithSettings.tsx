@@ -118,6 +118,17 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
     const isDragEnabled = settings.sortBy === "manual" && settings.groupBy === "none" && !!userId;
+
+    // ⚡ Bolt Opt: Precompute itemIds in a single pass to prevent O(N) array allocation
+    // on every render inside the SortableContext items prop
+    const activeTaskIds = useMemo(() => {
+        const ids = new Array(activeTasks.length);
+        for (let i = 0; i < activeTasks.length; i++) {
+            ids[i] = activeTasks[i].id;
+        }
+        return ids;
+    }, [activeTasks]);
+
     const taskById = useMemo(() => {
         // ⚡ Bolt Opt: Avoid allocating an O(N) intermediate array before creating the Map
         // and eliminate iterator overhead using an indexed for-loop.
