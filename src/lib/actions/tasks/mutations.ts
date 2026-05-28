@@ -356,7 +356,9 @@ async function updateTaskImpl(
       // ⚡ Bolt Opt: Replaced new Map(array.map()) with for...of to avoid O(N) intermediate array allocation
       const currentLabelNamesMap = new Map<number, string>();
       for (const l of currentTask.labels) {
-        currentLabelNamesMap.set(l.id, l.name || "Unknown");
+        if (l.id !== null) {
+          currentLabelNamesMap.set(l.id, l.name || "Unknown");
+        }
       }
 
       const labelsToFetch = newLabelIds.filter(id => !currentLabelNamesMap.has(id));
