@@ -17,6 +17,7 @@ import {
     DialogDescription,
     DialogTrigger,
 } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 function AddViewHelpDialog({ children }: { children?: React.ReactNode }) {
     return (
@@ -116,14 +117,21 @@ export function SidebarSavedViews({ userId }: { userId?: string }) {
                                         <span className="truncate">{view.name}</span>
                                     </Link>
                                 </Button>
-                                <button
-                                    onClick={() => deleteMutation.mutate(view.id)}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100 outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                                    title={`Delete view ${view.name}`}
-                                    aria-label={`Delete view ${view.name}`}
-                                >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                </button>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                            onClick={() => deleteMutation.mutate(view.id)}
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100 outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                            title={`Delete view ${view.name}`}
+                                            aria-label={`Delete view ${view.name}`}
+                                        >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Delete view</p>
+                                    </TooltipContent>
+                                </Tooltip>
                             </div>
                         );
                     })

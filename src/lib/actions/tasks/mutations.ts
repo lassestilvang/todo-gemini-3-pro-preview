@@ -117,40 +117,37 @@ async function createTaskImpl(data: typeof tasks.$inferInsert & { labelIds?: num
       position: currentMin - 1024
     };
 
-    // 🛡️ Sentinel: Enforce atomicity by wrapping sequential inserts in a database transaction.
-    const task = await db.transaction(async (tx) => {
-      const result = await tx.insert(tasks).values(finalTaskData as typeof tasks.$inferInsert).returning();
-      const createdTask = Array.isArray(result) ? result[0] : null;
+    const result = await db.insert(tasks).values(finalTaskData as typeof tasks.$inferInsert).returning();
+    const createdTask = Array.isArray(result) ? result[0] : null;
 
-      if (!createdTask) throw new Error("Failed to create task");
+    if (!createdTask) throw new Error("Failed to create task");
 
-      if (finalLabelIds.length > 0) {
-        const validLabels = await tx
-          .select({ id: labels.id })
-          .from(labels)
-          .where(and(eq(labels.userId, user.id), inArray(labels.id, finalLabelIds)));
+    if (finalLabelIds.length > 0) {
+      const validLabels = await db
+        .select({ id: labels.id })
+        .from(labels)
+        .where(and(eq(labels.userId, user.id), inArray(labels.id, finalLabelIds)));
 
-        const validLabelIds = validLabels.map((l) => l.id);
+      const validLabelIds = validLabels.map((l) => l.id);
 
-        if (validLabelIds.length > 0) {
-          await tx.insert(taskLabels).values(
-            validLabelIds.map((labelId: number) => ({
-              taskId: createdTask.id,
-              labelId,
-            }))
-          );
-        }
+      if (validLabelIds.length > 0) {
+        await db.insert(taskLabels).values(
+          validLabelIds.map((labelId: number) => ({
+            taskId: createdTask.id,
+            labelId,
+          }))
+        );
       }
+    }
 
-      await tx.insert(taskLogs).values({
-        userId: user.id,
-        taskId: createdTask.id,
-        action: "created",
-        details: "Task created",
-      });
-
-      return createdTask;
+    await db.insert(taskLogs).values({
+      userId: user.id,
+      taskId: createdTask.id,
+      action: "created",
+      details: "Task created",
     });
+
+    const task = createdTask;
 
     const isSqlite = !!sqliteConnection;
     const coerceTimestamp = (value: Date | number | null | undefined) => {
@@ -356,8 +353,6 @@ async function updateTaskImpl(
       // ⚡ Bolt Opt: Replaced new Map(array.map()) with for...of to avoid O(N) intermediate array allocation
       const currentLabelNamesMap = new Map<number, string>();
       for (const l of currentTask.labels) {
-      const currentLabelNamesMap = new Map<number, string>();
-      for (const l of currentTask.labels) {
         if (l.id !== null) {
           currentLabelNamesMap.set(l.id, l.name || "Unknown");
         }
@@ -391,51 +386,48 @@ async function updateTaskImpl(
     }
   }
 
-  // 🛡️ Sentinel: Enforce atomicity by wrapping sequential updates in a database transaction.
-  await db.transaction(async (tx) => {
-    await tx
-      .update(tasks)
-      .set(updatePayload)
-      .where(and(eq(tasks.id, id), eq(tasks.userId, user.id)));
+  await db
+    .update(tasks)
+    .set(updatePayload)
+    .where(and(eq(tasks.id, id), eq(tasks.userId, user.id)));
 
-    if (labelIds !== undefined) {
-      await tx.delete(taskLabels).where(
-        and(
-          eq(taskLabels.taskId, id),
-          inArray(
-            taskLabels.taskId,
-            tx.select({ id: tasks.id }).from(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, user.id)))
-          )
+  if (labelIds !== undefined) {
+    await db.delete(taskLabels).where(
+      and(
+        eq(taskLabels.taskId, id),
+        inArray(
+          taskLabels.taskId,
+          db.select({ id: tasks.id }).from(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, user.id)))
         )
-      );
-      if (labelIds.length > 0) {
-        const validLabels = await tx
-          .select({ id: labels.id })
-          .from(labels)
-          .where(and(eq(labels.userId, user.id), inArray(labels.id, labelIds)));
+      )
+    );
+    if (labelIds.length > 0) {
+      const validLabels = await db
+        .select({ id: labels.id })
+        .from(labels)
+        .where(and(eq(labels.userId, user.id), inArray(labels.id, labelIds)));
 
-        const validLabelIds = validLabels.map((l) => l.id);
+      const validLabelIds = validLabels.map((l) => l.id);
 
-        if (validLabelIds.length > 0) {
-          await tx.insert(taskLabels).values(
-            validLabelIds.map((labelId: number) => ({
-              taskId: id,
-              labelId,
-            }))
-          );
-        }
+      if (validLabelIds.length > 0) {
+        await db.insert(taskLabels).values(
+          validLabelIds.map((labelId: number) => ({
+            taskId: id,
+            labelId,
+          }))
+        );
       }
     }
+  }
 
-    if (changes.length > 0) {
-      await tx.insert(taskLogs).values({
-        userId: user.id,
-        taskId: id,
-        action: "updated",
-        details: changes.join("\n"),
-      });
-    }
-  });
+  if (changes.length > 0) {
+    await db.insert(taskLogs).values({
+      userId: user.id,
+      taskId: id,
+      action: "updated",
+      details: changes.join("\n"),
+    });
+  }
 
   const { syncTodoistNow } = await import("@/lib/actions/todoist");
   const { syncGoogleTasksNow } = await import("@/lib/actions/google-tasks");
@@ -647,21 +639,18 @@ async function reorderTasksImpl(userId: string, items: { id: number; position: n
     sql` `
   );
 
-  // 🛡️ Sentinel: Enforce atomicity by wrapping sequential updates in a database transaction.
-  await db.transaction(async (tx) => {
-    await tx
-      .update(tasks)
-      .set({
-        position: sql`CASE ${caseWhen} ELSE ${tasks.position} END`,
-      })
-      .where(and(inArray(tasks.id, taskIds), eq(tasks.userId, user.id)));
+  await db
+    .update(tasks)
+    .set({
+      position: sql`CASE ${caseWhen} ELSE ${tasks.position} END`,
+    })
+    .where(and(inArray(tasks.id, taskIds), eq(tasks.userId, user.id)));
 
-    await tx.insert(taskLogs).values({
-      userId: user.id,
-      taskId: null,
-      action: "reorder",
-      details: `Reordered ${items.length} tasks`,
-    });
+  await db.insert(taskLogs).values({
+    userId: user.id,
+    taskId: null,
+    action: "reorder",
+    details: `Reordered ${items.length} tasks`,
   });
 
   revalidatePath("/");
