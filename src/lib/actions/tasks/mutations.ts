@@ -209,6 +209,11 @@ async function updateTaskImpl(
 ) {
   const user = await requireUser(userId);
 
+  const limit = await rateLimit(`task:update:${userId}`, 200, 3600);
+  if (!limit.success) {
+    throw new Error("Rate limit exceeded. Please try again later.");
+  }
+
   if (!isValidId(id)) {
     throw new NotFoundError("Task not found or access denied");
   }
@@ -356,8 +361,6 @@ async function updateTaskImpl(
       // ⚡ Bolt Opt: Replaced new Map(array.map()) with for...of to avoid O(N) intermediate array allocation
       const currentLabelNamesMap = new Map<number, string>();
       for (const l of currentTask.labels) {
-      const currentLabelNamesMap = new Map<number, string>();
-      for (const l of currentTask.labels) {
         if (l.id !== null) {
           currentLabelNamesMap.set(l.id, l.name || "Unknown");
         }
@@ -463,6 +466,11 @@ export const updateTask: (
 
 async function deleteTaskImpl(id: number, userId: string) {
   const user = await requireUser(userId);
+
+  const limit = await rateLimit(`task:delete:${userId}`, 200, 3600);
+  if (!limit.success) {
+    throw new Error("Rate limit exceeded. Please try again later.");
+  }
 
   if (!isValidId(id)) {
     throw new NotFoundError("Task not found or access denied");
