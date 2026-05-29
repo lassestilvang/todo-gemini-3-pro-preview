@@ -206,6 +206,11 @@ async function updateTaskImpl(
 ) {
   const user = await requireUser(userId);
 
+  const limit = await rateLimit(`task:update:${userId}`, 200, 3600);
+  if (!limit.success) {
+    throw new Error("Rate limit exceeded. Please try again later.");
+  }
+
   if (!isValidId(id)) {
     throw new NotFoundError("Task not found or access denied");
   }
@@ -455,6 +460,11 @@ export const updateTask: (
 
 async function deleteTaskImpl(id: number, userId: string) {
   const user = await requireUser(userId);
+
+  const limit = await rateLimit(`task:delete:${userId}`, 200, 3600);
+  if (!limit.success) {
+    throw new Error("Rate limit exceeded. Please try again later.");
+  }
 
   if (!isValidId(id)) {
     throw new NotFoundError("Task not found or access denied");
