@@ -64,16 +64,23 @@ export function TaskCalendarLayout({ tasks, onDateClick, onEdit }: TaskCalendarL
     // ⚡ Bolt Opt: Manually calculate timestamps without startOfDay (which allocates Dates)
     const now = new Date();
     const todayKey = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    return days.map(day => {
+    const currentMonthValue = currentMonth.getMonth();
+    const currentMonthYear = currentMonth.getFullYear();
+
+    // ⚡ Bolt Opt: Replaced Array.map() with pre-allocated array and for loop to avoid intermediate array allocation
+    const result = new Array(days.length);
+    for (let i = 0; i < days.length; i++) {
+      const day = days[i];
       const key = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
-      return {
+      result[i] = {
         day,
         key,
-        isCurrentMonth: day.getMonth() === currentMonth.getMonth() && day.getFullYear() === currentMonth.getFullYear(),
+        isCurrentMonth: day.getMonth() === currentMonthValue && day.getFullYear() === currentMonthYear,
         isTodayDate: key === todayKey,
         label: day.getDate(),
       };
-    });
+    }
+    return result;
   }, [currentMonth, days]);
 
   return (
