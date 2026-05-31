@@ -101,9 +101,9 @@ function PlanningRitualContent({ open, onOpenChange, type, userId }: PlanningRit
                                     </div>
                                     {prioritySlots.map((slot, index) => (
                                         <div key={slot} className="mb-3">
-                                            <label htmlFor={`priority-${index}`} className="text-sm font-medium mb-1 block cursor-pointer">Priority #{index + 1}</label>
+                                            <label htmlFor={`priority-${type}-${index}`} className="text-sm font-medium mb-1 block cursor-pointer">Priority #{index + 1}</label>
                                             <Textarea
-                                                id={`priority-${index}`}
+                                                id={`priority-${type}-${index}`}
                                                 value={priorities[index]}
                                                 onChange={(e) => {
                                                     const newP = [...priorities];
