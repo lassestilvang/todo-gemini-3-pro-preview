@@ -95,8 +95,9 @@ export function constantTimeEqual(a: string, b: string): boolean {
     const aBuf = Buffer.from(a);
     const bBuf = Buffer.from(b);
     if (aBuf.length !== bBuf.length) {
-      // Prevent timing attacks on length by doing a dummy comparison
-      timingSafeEqual(aBuf, aBuf);
+      // Prevent timing attacks on length by doing a dummy comparison with a different buffer
+      const dummy = Buffer.alloc(aBuf.length);
+      timingSafeEqual(aBuf, dummy);
       return false;
     }
     return timingSafeEqual(aBuf, bBuf);
