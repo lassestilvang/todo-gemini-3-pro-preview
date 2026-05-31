@@ -179,9 +179,9 @@ function PlanningRitualContent({ open, onOpenChange, type, userId }: PlanningRit
                     {step === 2 && (
                         <div className="space-y-4">
                             <div>
-                                <label htmlFor="daily-reflection" className="font-medium mb-2 block cursor-pointer">Daily Reflection</label>
+                                <label htmlFor={`reflection-${type}`} className="font-medium mb-2 block cursor-pointer">Daily Reflection</label>
                                 <Textarea
-                                    id="daily-reflection"
+                                    id={`reflection-${type}`}
                                     value={reflection}
                                     onChange={(e) => setReflection(e.target.value)}
                                     placeholder="What went well today? What could be improved? What did you learn?"
