@@ -101,8 +101,9 @@ function PlanningRitualContent({ open, onOpenChange, type, userId }: PlanningRit
                                     </div>
                                     {prioritySlots.map((slot, index) => (
                                         <div key={slot} className="mb-3">
-                                            <label className="text-sm font-medium mb-1 block">Priority #{index + 1}</label>
+                                            <label htmlFor={`priority-${type}-${index}`} className="text-sm font-medium mb-1 block cursor-pointer">Priority #{index + 1}</label>
                                             <Textarea
+                                                id={`priority-${type}-${index}`}
                                                 value={priorities[index]}
                                                 onChange={(e) => {
                                                     const newP = [...priorities];
@@ -178,8 +179,9 @@ function PlanningRitualContent({ open, onOpenChange, type, userId }: PlanningRit
                     {step === 2 && (
                         <div className="space-y-4">
                             <div>
-                                <h3 className="font-medium mb-2">Daily Reflection</h3>
+                                <label htmlFor={`reflection-${type}`} className="font-medium mb-2 block cursor-pointer">Daily Reflection</label>
                                 <Textarea
+                                    id={`reflection-${type}`}
                                     value={reflection}
                                     onChange={(e) => setReflection(e.target.value)}
                                     placeholder="What went well today? What could be improved? What did you learn?"
