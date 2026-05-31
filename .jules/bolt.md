@@ -205,3 +205,7 @@ Action: When deleting multiple items from an IndexedDB store, open a single read
 ## $(date +%Y-%m-%d) - Bolt Opt: Single-pass Array Initialization for Context Props
 **Learning:** Returning raw object arrays directly in a React prop (like `items` for `SortableContext`) forces internal iteration within the library and potentially allocates new arrays on every render, degrading memoization and increasing GC pressure.
 **Action:** Always pre-allocate arrays of derived primitives (like `itemIds`) using a single-pass indexed `for` loop within a `useMemo` block (e.g., `const ids = new Array(len); for... ids[i] = items[i].id;`) when passing data to performance-sensitive contexts like `dnd-kit`'s `SortableContext`.
+
+## 2026-05-19 - ⚡ Bolt: Optimize Select Options Generation
+**Learning:** Using the spread operator combined with `.map()` (e.g., `[defaultItem, ...items.map(mapper)]`) inside `useMemo` or directly in render to generate dropdown options creates intermediate arrays and forces re-allocations.
+**Action:** When generating select options from a list that includes a default or "all" item, pre-allocate the array to its exact final size (`new Array(items.length + 1)`) and populate it using a standard `for` loop. This avoids intermediate allocations and reduces garbage collection pressure in interactive components.

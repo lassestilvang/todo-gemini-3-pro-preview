@@ -75,6 +75,26 @@ export function SearchFiltersPanel({
     return map;
   }, [allLabels]);
 
+  // ⚡ Bolt Opt: Precompute select options array to prevent O(N) array allocation
+  // on every render when interacting with filters.
+  const listOptions = React.useMemo(() => {
+    const opts = new Array(allLists.length + 1);
+    opts[0] = { label: "All lists", value: "all" };
+    for (let i = 0; i < allLists.length; i++) {
+      opts[i + 1] = { label: allLists[i].name, value: String(allLists[i].id) };
+    }
+    return opts;
+  }, [allLists]);
+
+  const labelOptions = React.useMemo(() => {
+    const opts = new Array(allLabels.length + 1);
+    opts[0] = { label: "All labels", value: "all" };
+    for (let i = 0; i < allLabels.length; i++) {
+      opts[i + 1] = { label: allLabels[i].name, value: String(allLabels[i].id) };
+    }
+    return opts;
+  }, [allLabels]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 flex-wrap">
@@ -172,10 +192,7 @@ export function SearchFiltersPanel({
             onValueChange={(v) =>
               onUpdateFilter("listId", v === "all" ? undefined : Number(v))
             }
-            options={[
-              { label: "All lists", value: "all" },
-              ...allLists.map((l) => ({ label: l.name, value: String(l.id) })),
-            ]}
+            options={listOptions}
           />
           <FilterSelect
             label="Label"
@@ -183,10 +200,7 @@ export function SearchFiltersPanel({
             onValueChange={(v) =>
               onUpdateFilter("labelId", v === "all" ? undefined : Number(v))
             }
-            options={[
-              { label: "All labels", value: "all" },
-              ...allLabels.map((l) => ({ label: l.name, value: String(l.id) })),
-            ]}
+            options={labelOptions}
           />
           <FilterSelect
             label="Priority"
