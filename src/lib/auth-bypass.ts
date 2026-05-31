@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { normalizeIp } from "./ip-utils";
 
 export const AUTH_BYPASS_HEADER = "x-auth-bypass";
@@ -90,19 +91,18 @@ export async function signAuthBypassPayload(
 }
 
 export function constantTimeEqual(a: string, b: string): boolean {
-  const aLen = a.length;
-  const bLen = b.length;
-  const len = Math.max(aLen, bLen);
-  let result = 0;
-
-  for (let i = 0; i < len; i++) {
-    const charA = i < aLen ? a.charCodeAt(i) : 0;
-    const charB = i < bLen ? b.charCodeAt(i) : 0;
-    result |= charA ^ charB;
+  try {
+    const aBuf = Buffer.from(a);
+    const bBuf = Buffer.from(b);
+    if (aBuf.length !== bBuf.length) {
+      // Prevent timing attacks on length by doing a dummy comparison
+      timingSafeEqual(aBuf, aBuf);
+      return false;
+    }
+    return timingSafeEqual(aBuf, bBuf);
+  } catch {
+    return false;
   }
-
-  result |= aLen ^ bLen;
-  return result === 0;
 }
 
 export async function verifyAuthBypassSignature(
