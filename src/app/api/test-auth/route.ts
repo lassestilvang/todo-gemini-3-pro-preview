@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
       message: "Test session created",
     });
   } catch (error) {
-    console.error("Test auth error:", error, (error as Error)?.stack);
+    console.error("Test auth error:", error);
     return NextResponse.json(
       { error: "Failed to create test session" },
       { status: 500 },
