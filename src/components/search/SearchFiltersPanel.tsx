@@ -249,13 +249,14 @@ function FilterSelect({
   onValueChange: (v: string) => void;
   options: Array<{ label: string; value: string }>;
 }) {
+  const selectId = React.useId();
   return (
     <div className="space-y-1.5">
-      <label className="text-xs font-medium text-muted-foreground">
+      <label htmlFor={selectId} className="text-xs font-medium text-muted-foreground cursor-pointer">
         {label}
       </label>
       <Select value={value} onValueChange={onValueChange}>
-        <SelectTrigger size="sm" aria-label={`Filter by ${label}`}>
+        <SelectTrigger id={selectId} size="sm" aria-label={`Filter by ${label}`}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
