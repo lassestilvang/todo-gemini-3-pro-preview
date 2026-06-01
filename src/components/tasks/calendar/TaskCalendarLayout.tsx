@@ -71,7 +71,7 @@ export function TaskCalendarLayout({ tasks, onDateClick, onEdit }: TaskCalendarL
     const result = new Array(days.length);
     for (let i = 0; i < days.length; i++) {
       const day = days[i];
-      const key = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
+      const key = day.getTime();
       result[i] = {
         day,
         key,
