@@ -140,10 +140,16 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
     [listMap, initialLists]
   );
 
-  const availableCalendarIds = useMemo(
-    () => [UNASSIGNED_CALENDAR_ID, ...lists.map((list) => String(list.id))],
-    [lists]
-  );
+  const availableCalendarIds = useMemo(() => {
+    // ⚡ Bolt Opt: Replaced spread with .map() with a pre-allocated array and for-loop
+    // to avoid intermediate array allocation and spread overhead.
+    const result = new Array(lists.length + 1);
+    result[0] = UNASSIGNED_CALENDAR_ID;
+    for (let i = 0; i < lists.length; i++) {
+      result[i + 1] = String(lists[i].id);
+    }
+    return result;
+  }, [lists]);
 
   useEffect(() => {
     setActiveCalendarIds((prev) => {
@@ -172,23 +178,27 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
     return nextMap;
   }, [lists]);
 
-  const calendarFilters = useMemo<CalendarFilterItem[]>(
-    () => [
-      {
-        id: UNASSIGNED_CALENDAR_ID,
-        label: "Unassigned",
-        color: FALLBACK_COLOR,
-        active: activeCalendarIds.has(UNASSIGNED_CALENDAR_ID),
-      },
-      ...lists.map((list) => ({
+  const calendarFilters = useMemo<CalendarFilterItem[]>(() => {
+    // ⚡ Bolt Opt: Replaced spread with .map() with a pre-allocated array and for-loop
+    // to avoid intermediate array allocation and spread overhead.
+    const result = new Array<CalendarFilterItem>(lists.length + 1);
+    result[0] = {
+      id: UNASSIGNED_CALENDAR_ID,
+      label: "Unassigned",
+      color: FALLBACK_COLOR,
+      active: activeCalendarIds.has(UNASSIGNED_CALENDAR_ID),
+    };
+    for (let i = 0; i < lists.length; i++) {
+      const list = lists[i];
+      result[i + 1] = {
         id: String(list.id),
         label: list.name,
         color: list.color ?? FALLBACK_COLOR,
         active: activeCalendarIds.has(String(list.id)),
-      })),
-    ],
-    [activeCalendarIds, lists]
-  );
+      };
+    }
+    return result;
+  }, [lists, activeCalendarIds]);
 
   const events = useMemo<CalendarEvent[]>(() => {
     // ⚡ Bolt Opt: Replaced .filter().flatMap() chain with a single O(N) loop
