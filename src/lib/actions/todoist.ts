@@ -19,6 +19,7 @@ import {
   mapLocalTaskToTodoist,
   mapTodoistTaskToLocal,
 } from "@/lib/todoist/mapper";
+import { rateLimit } from "@/lib/rate-limit";
 import {
   applyListLabelMapping,
   resolveTodoistTaskListId,
@@ -133,6 +134,11 @@ export async function createTodoistMappingList(name: string) {
     return { success: false, error: "Not authenticated" };
   }
 
+  const limit = await rateLimit(`todoist:create_mapping_list:${user.id}`, 20, 3600);
+  if (!limit.success) {
+    return { success: false, error: "Rate limit exceeded. Please try again later." };
+  }
+
   const trimmedName = name.trim();
   if (!trimmedName) {
     return { success: false, error: "List name is required." };
@@ -189,6 +195,11 @@ export async function connectTodoist(token: string) {
     return { success: false, error: "Not authenticated" };
   }
 
+  const limit = await rateLimit(`todoist:connect:${user.id}`, 10, 3600);
+  if (!limit.success) {
+    return { success: false, error: "Rate limit exceeded. Please try again later." };
+  }
+
   if (process.env.NODE_ENV === "test") {
     return { success: true };
   }
@@ -238,6 +249,11 @@ export async function updateTodoistProjectMapping(
   const user = await getCurrentUser();
   if (!user) {
     return { success: false, error: "Not authenticated" };
+  }
+
+  const limit = await rateLimit(`todoist:mappings:${user.id}`, 20, 3600);
+  if (!limit.success) {
+    return { success: false, error: "Rate limit exceeded. Please try again later." };
   }
 
   if (listId !== null) {
@@ -372,6 +388,11 @@ export async function disconnectTodoist() {
     return { success: false, error: "Not authenticated" };
   }
 
+  const limit = await rateLimit(`todoist:disconnect:${user.id}`, 10, 3600);
+  if (!limit.success) {
+    return { success: false, error: "Rate limit exceeded. Please try again later." };
+  }
+
   if (process.env.NODE_ENV === "test") {
     return { success: true };
   }
@@ -423,6 +444,11 @@ export async function rotateTodoistTokens() {
   const user = await getCurrentUser();
   if (!user) {
     return { success: false, error: "Not authenticated" };
+  }
+
+  const limit = await rateLimit(`todoist:rotate_tokens:${user.id}`, 5, 3600);
+  if (!limit.success) {
+    return { success: false, error: "Rate limit exceeded. Please try again later." };
   }
 
   if (process.env.NODE_ENV === "test") {
@@ -491,6 +517,11 @@ export async function syncTodoistNow() {
   const user = await getCurrentUser();
   if (!user) {
     return { success: false, error: "Not authenticated" };
+  }
+
+  const limit = await rateLimit(`todoist:sync:${user.id}`, 20, 60);
+  if (!limit.success) {
+    return { success: false, error: "Rate limit exceeded. Please try again later." };
   }
 
   if (process.env.NODE_ENV === "test") {
@@ -571,6 +602,11 @@ export async function setTodoistProjectMappings(
   const user = await getCurrentUser();
   if (!user) {
     return { success: false, error: "Not authenticated" };
+  }
+
+  const limit = await rateLimit(`todoist:mappings:${user.id}`, 20, 3600);
+  if (!limit.success) {
+    return { success: false, error: "Rate limit exceeded. Please try again later." };
   }
 
   if (mappings.length > 1000) {
@@ -676,6 +712,11 @@ export async function setTodoistLabelMappings(
   const user = await getCurrentUser();
   if (!user) {
     return { success: false, error: "Not authenticated" };
+  }
+
+  const limit = await rateLimit(`todoist:mappings:${user.id}`, 20, 3600);
+  if (!limit.success) {
+    return { success: false, error: "Rate limit exceeded. Please try again later." };
   }
 
   if (mappings.length > 1000) {
@@ -807,6 +848,11 @@ export async function resolveTodoistConflict(
   const user = await getCurrentUser();
   if (!user) {
     return { success: false, error: "Not authenticated" };
+  }
+
+  const limit = await rateLimit(`todoist:conflict:${user.id}`, 50, 3600);
+  if (!limit.success) {
+    return { success: false, error: "Rate limit exceeded. Please try again later." };
   }
 
   if (process.env.NODE_ENV === "test") {
