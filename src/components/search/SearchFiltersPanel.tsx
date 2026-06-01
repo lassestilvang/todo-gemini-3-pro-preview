@@ -1,6 +1,7 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Select,
   SelectContent,
@@ -130,39 +131,54 @@ export function SearchFiltersPanel({
           <Badge variant="secondary" className="gap-1">
             <FolderOpen className="h-3 w-3" />
             {listMap.get(filters.listId) ?? "List"}
-            <button
-              onClick={() => onUpdateFilter("listId", undefined)}
-              className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] rounded-full"
-              aria-label="Remove list filter"
-            >
-              <X className="h-3 w-3" />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => onUpdateFilter("listId", undefined)}
+                  className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] rounded-full"
+                  aria-label="Remove list filter"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Remove list filter</TooltipContent>
+            </Tooltip>
           </Badge>
         )}
         {filters.labelId && (
           <Badge variant="secondary" className="gap-1">
             <Tag className="h-3 w-3" />
             {labelMap.get(filters.labelId) ?? "Label"}
-            <button
-              onClick={() => onUpdateFilter("labelId", undefined)}
-              className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] rounded-full"
-              aria-label="Remove label filter"
-            >
-              <X className="h-3 w-3" />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => onUpdateFilter("labelId", undefined)}
+                  className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] rounded-full"
+                  aria-label="Remove label filter"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Remove label filter</TooltipContent>
+            </Tooltip>
           </Badge>
         )}
         {filters.priority && (
           <Badge variant="secondary" className="gap-1">
             <AlertCircle className="h-3 w-3" />
             {filters.priority}
-            <button
-              onClick={() => onUpdateFilter("priority", undefined)}
-              className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] rounded-full"
-              aria-label="Remove priority filter"
-            >
-              <X className="h-3 w-3" />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => onUpdateFilter("priority", undefined)}
+                  className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] rounded-full"
+                  aria-label="Remove priority filter"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Remove priority filter</TooltipContent>
+            </Tooltip>
           </Badge>
         )}
         {filters.status && filters.status !== "all" && (
@@ -173,13 +189,18 @@ export function SearchFiltersPanel({
               <Circle className="h-3 w-3" />
             )}
             {filters.status}
-            <button
-              onClick={() => onUpdateFilter("status", undefined)}
-              className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] rounded-full"
-              aria-label="Remove status filter"
-            >
-              <X className="h-3 w-3" />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => onUpdateFilter("status", undefined)}
+                  className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] rounded-full"
+                  aria-label="Remove status filter"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Remove status filter</TooltipContent>
+            </Tooltip>
           </Badge>
         )}
       </div>
