@@ -64,14 +64,20 @@ export function CalendarView({ tasks }: CalendarViewProps) {
     const sourceTasks = (tasks && tasks.length > 0) ? tasks : Object.values(storeTasks);
     // Perf: avoid redundant Date allocations. Task.dueDate is already a Date
     // (or null). Reusing it prevents per-task allocations when the calendar re-renders.
-    return sourceTasks.map(t => ({
-      id: t.id,
-      title: t.title,
-      dueDate: t.dueDate ?? null,
-      isCompleted: !!t.isCompleted, // Ensure boolean
-      priority: (t.priority ?? "none") as "none" | "low" | "medium" | "high",
-      energyLevel: t.energyLevel ?? null // Ensure string | null
-    }));
+    // ⚡ Bolt Opt: Replaced Array.map() with pre-allocated array and for loop to avoid intermediate array allocation
+    const result = new Array(sourceTasks.length);
+    for (let i = 0; i < sourceTasks.length; i++) {
+      const t = sourceTasks[i];
+      result[i] = {
+        id: t.id,
+        title: t.title,
+        dueDate: t.dueDate ?? null,
+        isCompleted: !!t.isCompleted, // Ensure boolean
+        priority: (t.priority ?? "none") as "none" | "low" | "medium" | "high",
+        energyLevel: t.energyLevel ?? null // Ensure string | null
+      };
+    }
+    return result;
   }, [tasks, storeTasks]);
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -140,9 +146,12 @@ export function CalendarView({ tasks }: CalendarViewProps) {
     const currentMonthValue = currentMonth.getMonth();
     const currentMonthYear = currentMonth.getFullYear();
 
-    return days.map(day => {
-      const key = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
-      return {
+    // ⚡ Bolt Opt: Replaced Array.map() with pre-allocated array and for loop to avoid intermediate array allocation
+    const result = new Array(days.length);
+    for (let i = 0; i < days.length; i++) {
+      const day = days[i];
+      const key = day.getTime();
+      result[i] = {
         day,
         key,
         isCurrentMonth: day.getMonth() === currentMonthValue && day.getFullYear() === currentMonthYear,
@@ -150,7 +159,8 @@ export function CalendarView({ tasks }: CalendarViewProps) {
         isTodayDate: key === todayKey,
         label: day.getDate(),
       };
-    });
+    }
+    return result;
   }, [currentMonth, days, selectedDate]);
 
   const getTaskSummaryForDayKey = (dateKey: number) => {
