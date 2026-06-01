@@ -19,6 +19,7 @@ import {
   mapGoogleTaskToLocal,
   mapLocalTaskToGoogle,
 } from "@/lib/google-tasks/mapper";
+import { rateLimit } from "@/lib/rate-limit";
 import { syncGoogleTasksForUser } from "@/lib/google-tasks/sync";
 import { updateTask } from "@/lib/actions/tasks";
 
@@ -26,6 +27,11 @@ export async function syncGoogleTasksNow() {
   const user = await getCurrentUser();
   if (!user) {
     return { success: false, error: "Not authenticated" };
+  }
+
+  const limit = await rateLimit(`google_tasks:sync:${user.id}`, 20, 60);
+  if (!limit.success) {
+    return { success: false, error: "Rate limit exceeded. Please try again later." };
   }
 
   if (process.env.NODE_ENV === "test") {
@@ -40,6 +46,11 @@ export async function disconnectGoogleTasks() {
   const user = await getCurrentUser();
   if (!user) {
     return { success: false, error: "Not authenticated" };
+  }
+
+  const limit = await rateLimit(`google_tasks:disconnect:${user.id}`, 10, 3600);
+  if (!limit.success) {
+    return { success: false, error: "Rate limit exceeded. Please try again later." };
   }
 
   if (process.env.NODE_ENV === "test") {
@@ -219,6 +230,11 @@ export async function setGoogleTasksListMappings(
     return { success: false, error: "Not authenticated" };
   }
 
+  const limit = await rateLimit(`google_tasks:mappings:${user.id}`, 20, 3600);
+  if (!limit.success) {
+    return { success: false, error: "Rate limit exceeded. Please try again later." };
+  }
+
   if (mappings.length > 1000) {
     return { success: false, error: "Too many mappings. Limit is 1000." };
   }
@@ -304,6 +320,11 @@ export async function resolveGoogleTasksConflict(
   const user = await getCurrentUser();
   if (!user) {
     return { success: false, error: "Not authenticated" };
+  }
+
+  const limit = await rateLimit(`google_tasks:conflict:${user.id}`, 50, 3600);
+  if (!limit.success) {
+    return { success: false, error: "Rate limit exceeded. Please try again later." };
   }
 
   if (process.env.NODE_ENV === "test") {
