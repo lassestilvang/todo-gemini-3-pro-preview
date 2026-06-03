@@ -14,6 +14,7 @@ import {
 } from "../shared";
 import { requireUser } from "@/lib/auth";
 import { isValidId } from "./helpers";
+import { rateLimit } from "@/lib/rate-limit";
 
 async function getSubtasksImpl(taskId: number, userId: string) {
   const user = await requireUser(userId);
@@ -35,6 +36,11 @@ async function createSubtaskImpl(
   estimateMinutes?: number
 ) {
   const user = await requireUser(userId);
+
+  const limit = await rateLimit(`subtask:create:${userId}`, 100, 3600);
+  if (!limit.success) {
+    throw new ValidationError("Rate limit exceeded. Please try again later.");
+  }
 
   const MAX_TITLE_LENGTH = 255;
   if (!title || title.trim().length === 0) {
@@ -94,6 +100,11 @@ async function updateSubtaskImpl(id: number, userId: string, isCompleted: boolea
 
   if (!isValidId(id)) return;
 
+  const limit = await rateLimit(`subtask:update:${userId}`, 200, 3600);
+  if (!limit.success) {
+    throw new ValidationError("Rate limit exceeded. Please try again later.");
+  }
+
   await db
     .update(tasks)
     .set({
@@ -114,6 +125,11 @@ async function deleteSubtaskImpl(id: number, userId: string) {
   const user = await requireUser(userId);
 
   if (!isValidId(id)) return;
+
+  const limit = await rateLimit(`subtask:delete:${userId}`, 200, 3600);
+  if (!limit.success) {
+    throw new ValidationError("Rate limit exceeded. Please try again later.");
+  }
 
   await db.delete(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, user.id)));
   revalidatePath("/", "layout");

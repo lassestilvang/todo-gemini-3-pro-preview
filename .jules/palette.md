@@ -9,3 +9,6 @@
 ## 2026-06-03 - Always set type="button" on custom action buttons
 **Learning:** Custom UI action buttons (like those used for filter removal or timer modes) can inadvertently cause form submissions or full-page reloads if they lack a `type` attribute, as the default HTML behavior for `<button>` is `type="submit"`.
 **Action:** Always explicitly specify `type="button"` on custom `<button>` elements that act as standalone UI controls, unless they are intentionally designed to submit a form.
+## 2024-06-05 - Avoid using aria-labelledby with un-IDed elements
+**Learning:** Using `aria-labelledby` inside mapping loops while providing the targeted ID to an element, but forgetting to actually define the `id` on that target element breaks screen readers.
+**Action:** Always verify that an `id` actually exists for elements that use `aria-labelledby`, or prefer wrapping `label htmlFor` natively when working with Radix UI to allow Radix UI to manage associations.

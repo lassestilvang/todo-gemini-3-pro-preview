@@ -142,7 +142,9 @@ export function GoogleTasksMappingForm() {
             <div className="space-y-3">
                 {sortedTasklists.map((tasklist) => (
                     <div key={tasklist.id} className="flex flex-col gap-2 md:flex-row md:items-center">
-                        <div className="w-full md:w-56 text-sm text-muted-foreground">{tasklist.title}</div>
+                        <label htmlFor={`tasklist-select-${tasklist.id}`} className="w-full md:w-56 text-sm text-muted-foreground cursor-pointer">
+                            {tasklist.title}
+                        </label>
                         <Select
                             value={listMappings[tasklist.id] ? String(listMappings[tasklist.id]) : "none"}
                             onValueChange={(value) => {
@@ -155,7 +157,7 @@ export function GoogleTasksMappingForm() {
                                 });
                             }}
                         >
-                            <SelectTrigger className="w-full md:w-60" aria-labelledby={`label-${tasklist.id}`}>
+                            <SelectTrigger id={`tasklist-select-${tasklist.id}`} className="w-full md:w-60">
                                 <SelectValue placeholder="Select list" />
                             </SelectTrigger>
                             <SelectContent>
