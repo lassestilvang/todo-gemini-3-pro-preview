@@ -14,6 +14,7 @@ import {
 } from "../shared";
 import { requireUser } from "@/lib/auth";
 import { isValidId } from "./helpers";
+import { rateLimit } from "@/lib/rate-limit";
 
 async function getSubtasksImpl(taskId: number, userId: string) {
   const user = await requireUser(userId);
@@ -35,6 +36,11 @@ async function createSubtaskImpl(
   estimateMinutes?: number
 ) {
   const user = await requireUser(userId);
+
+  const limit = await rateLimit(`subtask:create:${userId}`, 100, 3600);
+  if (!limit.success) {
+    throw new ValidationError("Rate limit exceeded. Please try again later.");
+  }
 
   const MAX_TITLE_LENGTH = 255;
   if (!title || title.trim().length === 0) {
@@ -92,6 +98,11 @@ export const createSubtask: (
 async function updateSubtaskImpl(id: number, userId: string, isCompleted: boolean) {
   const user = await requireUser(userId);
 
+  const limit = await rateLimit(`subtask:update:${userId}`, 200, 3600);
+  if (!limit.success) {
+    throw new ValidationError("Rate limit exceeded. Please try again later.");
+  }
+
   if (!isValidId(id)) return;
 
   await db
@@ -112,6 +123,11 @@ export const updateSubtask: (
 
 async function deleteSubtaskImpl(id: number, userId: string) {
   const user = await requireUser(userId);
+
+  const limit = await rateLimit(`subtask:delete:${userId}`, 200, 3600);
+  if (!limit.success) {
+    throw new ValidationError("Rate limit exceeded. Please try again later.");
+  }
 
   if (!isValidId(id)) return;
 
