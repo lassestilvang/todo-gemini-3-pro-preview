@@ -134,6 +134,7 @@ export function SearchFiltersPanel({
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
+                  type="button"
                   onClick={() => onUpdateFilter("listId", undefined)}
                   className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] rounded-full"
                   aria-label="Remove list filter"
@@ -152,6 +153,7 @@ export function SearchFiltersPanel({
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
+                  type="button"
                   onClick={() => onUpdateFilter("labelId", undefined)}
                   className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] rounded-full"
                   aria-label="Remove label filter"
@@ -170,6 +172,7 @@ export function SearchFiltersPanel({
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
+                  type="button"
                   onClick={() => onUpdateFilter("priority", undefined)}
                   className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] rounded-full"
                   aria-label="Remove priority filter"
@@ -192,6 +195,7 @@ export function SearchFiltersPanel({
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
+                  type="button"
                   onClick={() => onUpdateFilter("status", undefined)}
                   className="ml-1 hover:text-foreground focus-visible:outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] rounded-full"
                   aria-label="Remove status filter"
