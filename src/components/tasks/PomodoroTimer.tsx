@@ -82,6 +82,7 @@ export function PomodoroTimer() {
                 {(Object.keys(MODES) as TimerMode[]).map((m) => (
                     <button
                         key={m}
+                        type="button"
                         onClick={() => handleModeChange(m)}
                         className={cn(
                             "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",

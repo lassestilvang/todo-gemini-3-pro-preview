@@ -5,3 +5,7 @@
 ## 2024-05-14 - [Added Tooltips to Icon-Only Filter Badges]
 **Learning:** Icon-only buttons (like "X" to remove filters) within complex badge components often lack tooltips, leaving sighted users without context for what the button does until they click it.
 **Action:** Use the Tooltip component (wrapping TooltipTrigger asChild around the button) for all icon-only action buttons to improve visual accessibility, ensuring it does not break flexbox layouts.
+
+## 2026-06-03 - Always set type="button" on custom action buttons
+**Learning:** Custom UI action buttons (like those used for filter removal or timer modes) can inadvertently cause form submissions or full-page reloads if they lack a `type` attribute, as the default HTML behavior for `<button>` is `type="submit"`.
+**Action:** Always explicitly specify `type="button"` on custom `<button>` elements that act as standalone UI controls, unless they are intentionally designed to submit a form.
