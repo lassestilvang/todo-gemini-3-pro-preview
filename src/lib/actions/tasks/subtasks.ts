@@ -124,12 +124,12 @@ export const updateSubtask: (
 async function deleteSubtaskImpl(id: number, userId: string) {
   const user = await requireUser(userId);
 
+  if (!isValidId(id)) return;
+
   const limit = await rateLimit(`subtask:delete:${userId}`, 200, 3600);
   if (!limit.success) {
     throw new ValidationError("Rate limit exceeded. Please try again later.");
   }
-
-  if (!isValidId(id)) return;
 
   await db.delete(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, user.id)));
   revalidatePath("/", "layout");
