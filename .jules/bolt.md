@@ -1,3 +1,6 @@
 ## 2024-05-31 - [Array Allocation in useMemo]
 **Learning:** Precomputing a dynamically mapped array (using `Array.map`) inside a `useMemo` hook does not prevent array re-allocation on every render if the dependency array relies on referential equality and is unstable (e.g. source arrays that might be re-created). The mapping operation allocates intermediate arrays which are collected by the garbage collector, slightly degrading performance.
 **Action:** Replace `Array.map` with a pre-allocated array (`new Array(length)`) and populate it directly using a standard `for` loop inside critical `useMemo` hooks (e.g., `daysWithMeta` in calendar components) to minimize memory allocation and garbage collection overhead.
+## 2024-05-31 - [Array Allocation in useMemo]
+**Learning:** When building an array from an existing collection (e.g., generating select options or filters), using the spread operator with `.map()` (e.g., `[defaultItem, ...items.map(...)]`) creates intermediate arrays and spread overhead.
+**Action:** Replace spread with `.map()` with a pre-allocated array to its exact final size (e.g., `new Array(items.length + 1)`) and populate it directly using a standard `for` loop to minimize memory allocation and garbage collection overhead, especially in frequently re-rendered components.
