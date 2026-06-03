@@ -98,12 +98,12 @@ export const createSubtask: (
 async function updateSubtaskImpl(id: number, userId: string, isCompleted: boolean) {
   const user = await requireUser(userId);
 
+  if (!isValidId(id)) return;
+
   const limit = await rateLimit(`subtask:update:${userId}`, 200, 3600);
   if (!limit.success) {
     throw new ValidationError("Rate limit exceeded. Please try again later.");
   }
-
-  if (!isValidId(id)) return;
 
   await db
     .update(tasks)
