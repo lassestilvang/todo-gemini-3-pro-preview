@@ -310,7 +310,9 @@ export function TodoistMappingForm() {
                 <div className="mt-4 space-y-3">
                     {projects.map((project) => (
                         <div key={project.id} className="flex flex-col gap-2 md:flex-row md:items-center">
-                            <div className="w-full md:w-48 text-sm text-muted-foreground">{project.name}</div>
+                            <label htmlFor={`project-select-${project.id}`} className="w-full md:w-48 text-sm text-muted-foreground cursor-pointer">
+                                {project.name}
+                            </label>
                             <Select
                                 value={toSelectValue(projectMappings[project.id])}
                                 onValueChange={(value) => {
@@ -323,7 +325,7 @@ export function TodoistMappingForm() {
                                     });
                                 }}
                             >
-                                <SelectTrigger className="w-full md:w-60" aria-labelledby={`project-label-${project.id}`}>
+                                <SelectTrigger id={`project-select-${project.id}`} className="w-full md:w-60">
                                     <SelectValue placeholder="Select list" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -349,7 +351,9 @@ export function TodoistMappingForm() {
                 <div className="mt-4 space-y-3">
                     {labels.map((label) => (
                         <div key={label.id} className="flex flex-col gap-2 md:flex-row md:items-center">
-                            <div className="w-full md:w-48 text-sm text-muted-foreground">{label.name}</div>
+                            <label htmlFor={`label-select-${label.id}`} className="w-full md:w-48 text-sm text-muted-foreground cursor-pointer">
+                                {label.name}
+                            </label>
                             <Select
                                 value={toSelectValue(labelMappings[label.id])}
                                 onValueChange={(value) => {
@@ -362,7 +366,7 @@ export function TodoistMappingForm() {
                                     });
                                 }}
                             >
-                                <SelectTrigger className="w-full md:w-60" aria-labelledby={`label-label-${label.id}`}>
+                                <SelectTrigger id={`label-select-${label.id}`} className="w-full md:w-60">
                                     <SelectValue placeholder="Select list" />
                                 </SelectTrigger>
                                 <SelectContent>
