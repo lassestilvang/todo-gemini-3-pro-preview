@@ -229,7 +229,7 @@ export async function deleteTaskSafe(
         error.message.includes("database") ||
         error.message.includes("constraint"))
     ) {
-      console.error("[Database Error]", sanitizeError(error));
+      console.error("[Database Error]", sanitizeError(error.stack ?? error.message));
       return failure({
         code: "DATABASE_ERROR",
         message: "Unable to delete task. Please try again.",
