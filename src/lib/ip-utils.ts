@@ -40,16 +40,11 @@ interface HeaderStore {
  * Priority:
  * 1. x-vercel-ip (Vercel/Edge specific, set by platform)
  * 2. x-vercel-forwarded-for (Vercel specific, trusted)
- * 3. x-real-ip (Nginx/load balancers, usually trusted)
- * 4. x-client-ip (Standard)
- * 5. x-forwarded-for (Standard but spoofable if not careful)
  */
 export function getClientIp(headers: HeaderStore | null | undefined): string | null {
   if (!headers || typeof headers.get !== "function") {
     return null;
   }
-
-  const isProduction = process.env.NODE_ENV === "production";
 
   const vercelIp = headers.get("x-vercel-ip");
   if (vercelIp) {
@@ -59,25 +54,6 @@ export function getClientIp(headers: HeaderStore | null | undefined): string | n
   const vercelForwardedFor = headers.get("x-vercel-forwarded-for");
   if (vercelForwardedFor) {
     return normalizeIp(vercelForwardedFor);
-  }
-
-  if (isProduction) {
-    return null;
-  }
-
-  const realIp = headers.get("x-real-ip");
-  if (realIp) {
-    return normalizeIp(realIp);
-  }
-
-  const clientIp = headers.get("x-client-ip");
-  if (clientIp) {
-    return normalizeIp(clientIp);
-  }
-
-  const forwardedFor = headers.get("x-forwarded-for");
-  if (forwardedFor) {
-    return normalizeIp(forwardedFor);
   }
 
   return null;
