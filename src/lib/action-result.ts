@@ -286,7 +286,7 @@ export function withErrorHandling<T, Args extends unknown[]>(
 
       // 5. Generic error for unexpected exceptions
       // Log the sanitized error for debugging purposes on the server
-      console.error("[ServerError] Unexpected error in Server Action:", sanitizeError(error));
+      console.error("[ServerError] Unexpected error in Server Action:", sanitizeError(error instanceof Error ? error.stack ?? error.message : error));
 
       return failure({
         code: "UNKNOWN_ERROR",
