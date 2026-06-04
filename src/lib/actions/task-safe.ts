@@ -86,7 +86,7 @@ export async function createTaskSafe(
       });
     }
 
-    console.error("[Server Action Error]", sanitizeError(error));
+    console.error("[Server Action Error]", sanitizeError(error instanceof Error ? error.stack ?? error.message : error));
     return failure({
       code: "UNKNOWN_ERROR",
       message: "An unexpected error occurred. Please try again.",
