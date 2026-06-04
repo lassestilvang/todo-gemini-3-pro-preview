@@ -110,18 +110,24 @@ export async function syncTodoistForUser(userId: string): Promise<SyncResult> {
         ),
     ]);
 
-    const projectMappings = entityMappings.filter(
-      (mapping) => mapping.entityType === "list",
-    );
-    const listLabelMappings = entityMappings.filter(
-      (mapping) => mapping.entityType === "list_label",
-    );
-    const labelMappings = entityMappings.filter(
-      (mapping) => mapping.entityType === "label",
-    );
-    const taskMappings = entityMappings.filter(
-      (mapping) => mapping.entityType === "task",
-    );
+    // ⚡ Bolt Opt: Replaced four separate .filter() calls with a single-pass loop
+    // to classify mappings in O(N) instead of O(4N), reducing iteration and array allocation overhead.
+    const projectMappings: typeof entityMappings = [];
+    const listLabelMappings: typeof entityMappings = [];
+    const labelMappings: typeof entityMappings = [];
+    const taskMappings: typeof entityMappings = [];
+
+    for (const mapping of entityMappings) {
+      if (mapping.entityType === "list") {
+        projectMappings.push(mapping);
+      } else if (mapping.entityType === "list_label") {
+        listLabelMappings.push(mapping);
+      } else if (mapping.entityType === "label") {
+        labelMappings.push(mapping);
+      } else if (mapping.entityType === "task") {
+        taskMappings.push(mapping);
+      }
+    }
     const hasProjectMappingRules = projectMappings.length > 0;
     const hasMappedProjects = projectMappings.some(
       (mapping) => mapping.localId !== null,
