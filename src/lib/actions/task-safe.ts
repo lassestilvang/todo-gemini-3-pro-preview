@@ -12,6 +12,7 @@ import {
   ValidationError,
   AuthorizationError,
   NotFoundError,
+  sanitizeError,
 } from "../action-result";
 import { getTask, createTask, updateTask, deleteTask, toggleTaskCompletion } from "./tasks";
 
@@ -78,14 +79,14 @@ export async function createTaskSafe(
         error.message.includes("database") ||
         error.message.includes("constraint"))
     ) {
-      console.error("[Database Error]", error.message);
+      console.error("[Database Error]", sanitizeError(error));
       return failure({
         code: "DATABASE_ERROR",
         message: "Unable to create task. Please try again.",
       });
     }
 
-    console.error("[Server Action Error]", error);
+    console.error("[Server Action Error]", sanitizeError(error));
     return failure({
       code: "UNKNOWN_ERROR",
       message: "An unexpected error occurred. Please try again.",
@@ -165,14 +166,14 @@ export async function updateTaskSafe(
         error.message.includes("database") ||
         error.message.includes("constraint"))
     ) {
-      console.error("[Database Error]", error.message);
+      console.error("[Database Error]", sanitizeError(error));
       return failure({
         code: "DATABASE_ERROR",
         message: "Unable to update task. Please try again.",
       });
     }
 
-    console.error("[Server Action Error]", error);
+    console.error("[Server Action Error]", sanitizeError(error));
     return failure({
       code: "UNKNOWN_ERROR",
       message: "An unexpected error occurred. Please try again.",
@@ -228,14 +229,14 @@ export async function deleteTaskSafe(
         error.message.includes("database") ||
         error.message.includes("constraint"))
     ) {
-      console.error("[Database Error]", error.message);
+      console.error("[Database Error]", sanitizeError(error));
       return failure({
         code: "DATABASE_ERROR",
         message: "Unable to delete task. Please try again.",
       });
     }
 
-    console.error("[Server Action Error]", error);
+    console.error("[Server Action Error]", sanitizeError(error));
     return failure({
       code: "UNKNOWN_ERROR",
       message: "An unexpected error occurred. Please try again.",
@@ -296,14 +297,14 @@ export async function toggleTaskCompletionSafe(
         error.message.includes("database") ||
         error.message.includes("constraint"))
     ) {
-      console.error("[Database Error]", error.message);
+      console.error("[Database Error]", sanitizeError(error));
       return failure({
         code: "DATABASE_ERROR",
         message: "Unable to update task completion. Please try again.",
       });
     }
 
-    console.error("[Server Action Error]", error);
+    console.error("[Server Action Error]", sanitizeError(error));
     return failure({
       code: "UNKNOWN_ERROR",
       message: "An unexpected error occurred. Please try again.",
