@@ -4,3 +4,6 @@
 ## 2024-05-31 - [Array Allocation in useMemo]
 **Learning:** When building an array from an existing collection (e.g., generating select options or filters), using the spread operator with `.map()` (e.g., `[defaultItem, ...items.map(...)]`) creates intermediate arrays and spread overhead.
 **Action:** Replace spread with `.map()` with a pre-allocated array to its exact final size (e.g., `new Array(items.length + 1)`) and populate it directly using a standard `for` loop to minimize memory allocation and garbage collection overhead, especially in frequently re-rendered components.
+## 2024-06-03 - [Array Classification Performance]
+**Learning:** When extracting multiple distinct subsets from the same source array (e.g., mapping Todoist sync entity mappings into `projectMappings`, `listLabelMappings`, `labelMappings`, and `taskMappings`), using consecutive `.filter()` calls iterates the array multiple times (O(k*N)).
+**Action:** Replace multiple `.filter()` calls on the same array with a single-pass `for...of` loop with `if/else` checks to classify elements. This reduces iterations to O(N) and minimizes intermediate array allocation overhead.
