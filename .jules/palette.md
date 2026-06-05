@@ -12,3 +12,6 @@
 ## 2024-06-05 - Avoid using aria-labelledby with un-IDed elements
 **Learning:** Using `aria-labelledby` inside mapping loops while providing the targeted ID to an element, but forgetting to actually define the `id` on that target element breaks screen readers.
 **Action:** Always verify that an `id` actually exists for elements that use `aria-labelledby`, or prefer wrapping `label htmlFor` natively when working with Radix UI to allow Radix UI to manage associations.
+## 2024-06-04 - Wrap TemplateManager Action Buttons in Tooltip
+**Learning:** Tooltips should wrap icon-only action buttons to improve UX and accessibility, ensuring users understand their purpose immediately.
+**Action:** Always wrap icon-only `<Button>` elements with `<Tooltip>`, `<TooltipTrigger asChild>`, and `<TooltipContent>` to display their descriptive intent.

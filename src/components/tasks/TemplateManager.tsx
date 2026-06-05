@@ -13,6 +13,7 @@ import {
 import { getTemplates, deleteTemplate, instantiateTemplate } from "@/lib/actions";
 import { Plus, Trash2, FileText, Play, Pencil } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { TemplateFormDialog } from "./TemplateFormDialog";
 
@@ -135,12 +136,24 @@ export function TemplateManager({ userId }: TemplateManagerProps) {
                                             <Play className="h-3 w-3 mr-1" />
                                             Use
                                         </Button>
-                                        <Button size="icon" variant="ghost" onClick={() => handleOpenEditDialog(template)} data-testid={`edit-template-${template.id}`} aria-label="Edit template">
-                                            <Pencil className="h-4 w-4" />
-                                        </Button>
-                                        <Button size="icon" variant="ghost" onClick={() => handleDelete(template.id)} data-testid={`delete-template-${template.id}`} aria-label="Delete template">
-                                            <Trash2 className="h-4 w-4 text-destructive" />
-                                        </Button>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button size="icon" variant="ghost" onClick={() => handleOpenEditDialog(template)} data-testid={`edit-template-${template.id}`} aria-label="Edit template">
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>Edit template</TooltipContent>
+                                            </Tooltip>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button size="icon" variant="ghost" onClick={() => handleDelete(template.id)} data-testid={`delete-template-${template.id}`} aria-label="Delete template">
+                                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>Delete template</TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
                                     </div>
                                 </div>
                             ))}
