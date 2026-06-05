@@ -46,10 +46,17 @@ function PlanningRitualContent({ open, onOpenChange, type, userId }: PlanningRit
     const todayTasks = todayTasksQuery.data ?? EMPTY_TASKS;
 
     // PERF: Cache completed tasks to avoid repeated filtering in render.
-    const completedTasks = useMemo(
-        () => todayTasks.filter(t => t.isCompleted),
-        [todayTasks]
-    );
+    const completedTasks = useMemo(() => {
+        // ⚡ Bolt Opt: Replaced Array.filter with a standard for loop to reduce O(N) intermediate array allocation and callback overhead.
+        const result: TaskType[] = [];
+        for (let i = 0; i < todayTasks.length; i++) {
+            const t = todayTasks[i];
+            if (t.isCompleted) {
+                result.push(t);
+            }
+        }
+        return result;
+    }, [todayTasks]);
     const completedCount = completedTasks.length;
     const totalCount = todayTasks.length;
 

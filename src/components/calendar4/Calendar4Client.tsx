@@ -72,7 +72,18 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
 
     const { visibleListIds, selectedListId, quickCreateOpen, quickCreateDate, editingTask } = uiState;
 
-    const unplannedTasks = useMemo(() => tasks.filter(t => !t.isCompleted && !t.dueDate && (selectedListId === null || t.listId === selectedListId)), [tasks, selectedListId]);
+    // ⚡ Bolt Opt: Replaced Array.filter with a standard for loop to reduce O(N) intermediate array allocation and callback overhead.
+    const unplannedTasks = useMemo(() => {
+        const result: Task[] = [];
+        for (let i = 0; i < tasks.length; i++) {
+            const t = tasks[i];
+            // Short-circuit: check isCompleted first
+            if (!t.isCompleted && !t.dueDate && (selectedListId === null || t.listId === selectedListId)) {
+                result.push(t);
+            }
+        }
+        return result;
+    }, [tasks, selectedListId]);
     // ⚡ Bolt Opt: Consolidated 2 separate O(N) filters into a single O(N) pass.
     // Both share the same dependency array `[tasks]` and identical date conditions.
     const { todayTasks, todayDoneTasks } = useMemo(() => {

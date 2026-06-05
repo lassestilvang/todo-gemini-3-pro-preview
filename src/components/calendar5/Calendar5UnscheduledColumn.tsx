@@ -12,13 +12,18 @@ interface UnscheduledColumnProps {
 
 export function Calendar5UnscheduledColumn({ tasks, onEditTask, selectedListId }: UnscheduledColumnProps) {
     const unscheduledTasks = useMemo(() => {
-        return tasks.filter((t) => {
-            if (t.isCompleted || t.dueDate) return false;
+        // ⚡ Bolt Opt: Replaced Array.filter with a standard for loop to reduce O(N) intermediate array allocation and callback overhead.
+        const result: Task[] = [];
+        for (let i = 0; i < tasks.length; i++) {
+            const t = tasks[i];
+            if (t.isCompleted || t.dueDate) continue;
             if (selectedListId !== undefined && selectedListId !== null) {
-                return t.listId === selectedListId;
+                if (t.listId === selectedListId) result.push(t);
+            } else {
+                result.push(t);
             }
-            return true;
-        });
+        }
+        return result;
     }, [tasks, selectedListId]);
 
     return (
