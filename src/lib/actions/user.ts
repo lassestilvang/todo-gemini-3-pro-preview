@@ -14,6 +14,7 @@ import {
 } from "./shared";
 import { requireUser } from "@/lib/auth";
 import { updateUserPreferencesSchema } from "@/lib/validation/user";
+import { rateLimit } from "@/lib/rate-limit";
 
 /**
  * Updates user preferences.
@@ -31,6 +32,12 @@ async function updateUserPreferencesImpl(
   },
 ) {
   const user = await requireUser(userId);
+
+  // 🛡️ Sentinel: Enforce rate limiting on mutative endpoints to prevent DoS attacks.
+  const limit = await rateLimit(`user:update_preferences:${user.id}`, 200, 3600);
+  if (!limit.success) {
+    throw new Error("Rate limit exceeded. Please try again later.");
+  }
 
   // Validate input data using Zod schema
   const parsedData = updateUserPreferencesSchema.parse(data);
