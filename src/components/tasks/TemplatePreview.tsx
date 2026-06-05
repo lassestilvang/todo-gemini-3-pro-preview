@@ -71,7 +71,14 @@ export function TemplatePreview({ formData }: TemplatePreviewProps) {
   const energyEmoji = getEnergyEmoji();
   const contextEmoji = getContextEmoji();
   // ⚡ Bolt Opt: Avoid redundant O(N) array allocation by computing `validSubtasks` once
-  const validSubtasks = formData.subtasks.filter((s) => s.title.trim());
+  // ⚡ Bolt Opt: Replaced Array.filter with a standard for loop to reduce O(N) intermediate array allocation and callback overhead.
+  const validSubtasks: typeof formData.subtasks = [];
+  for (let i = 0; i < formData.subtasks.length; i++) {
+    const s = formData.subtasks[i];
+    if (s.title.trim()) {
+      validSubtasks.push(s);
+    }
+  }
   const hasSubtasks = validSubtasks.length > 0;
 
   // Check if there's anything to preview

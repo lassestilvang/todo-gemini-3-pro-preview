@@ -160,9 +160,17 @@ export function SearchDialog({ userId }: { userId?: string }) {
         matches("Toggle Zen Mode")
     ), [matches]);
 
-    const filteredThemes = React.useMemo(() => (
-        AVAILABLE_THEMES.filter(theme => matches(`${THEME_METADATA[theme].label} Theme`))
-    ), [matches]);
+    const filteredThemes = React.useMemo(() => {
+        // ⚡ Bolt Opt: Replaced Array.filter with a standard for loop to reduce O(N) intermediate array allocation and callback overhead.
+        const result: typeof AVAILABLE_THEMES[number][] = [];
+        for (let i = 0; i < AVAILABLE_THEMES.length; i++) {
+            const theme = AVAILABLE_THEMES[i];
+            if (matches(`${THEME_METADATA[theme].label} Theme`)) {
+                result.push(theme);
+            }
+        }
+        return result;
+    }, [matches]);
 
     return (
         <>

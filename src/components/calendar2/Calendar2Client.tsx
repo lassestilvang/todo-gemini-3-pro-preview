@@ -129,11 +129,17 @@ export function Calendar2Client({ initialTasks, initialLists }: Calendar2ClientP
 
   // --- Task selectors ---
   const unplannedTasks = useMemo(() => {
-    return tasks.filter((t) => {
+    // ⚡ Bolt Opt: Replaced Array.filter with a standard for loop to reduce O(N) intermediate array allocation and callback overhead.
+    const result: Task[] = [];
+    for (let i = 0; i < tasks.length; i++) {
+      const t = tasks[i];
       const listId = t.listId === undefined ? null : t.listId;
       // ⚡ Bolt Opt: Short-circuit by checking isCompleted first and avoid redundant normalizeDate call
-      return listId === selectedListId && !t.isCompleted && !t.dueDate;
-    });
+      if (listId === selectedListId && !t.isCompleted && !t.dueDate) {
+        result.push(t);
+      }
+    }
+    return result;
   }, [tasks, selectedListId]);
 
   const { todayTasks, todayDoneTasks } = useMemo(() => {
