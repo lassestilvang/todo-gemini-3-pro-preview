@@ -13,7 +13,7 @@ import {
 import { getTemplates, deleteTemplate, instantiateTemplate } from "@/lib/actions";
 import { Plus, Trash2, FileText, Play, Pencil } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { TemplateFormDialog } from "./TemplateFormDialog";
 
