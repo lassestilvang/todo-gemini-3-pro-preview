@@ -15,3 +15,6 @@
 ## 2024-06-04 - Wrap TemplateManager Action Buttons in Tooltip
 **Learning:** Tooltips should wrap icon-only action buttons to improve UX and accessibility, ensuring users understand their purpose immediately.
 **Action:** Always wrap icon-only `<Button>` elements with `<Tooltip>`, `<TooltipTrigger asChild>`, and `<TooltipContent>` to display their descriptive intent.
+## 2024-06-06 - Always set aria-label on form inputs lacking explicit labels
+**Learning:** Some custom UI elements (like textareas for subtasks) lack explicit `<label htmlFor="...">` associations or visually hidden labels. This leaves screen reader users without context when the field receives focus.
+**Action:** When a `<label>` cannot be explicitly linked via `htmlFor`, or if the field lacks one entirely, always add an `aria-label` attribute directly to the `<Input>` or `<Textarea>` element to ensure full accessibility.
