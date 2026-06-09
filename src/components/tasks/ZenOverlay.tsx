@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { X, Timer, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { PomodoroTimer } from "./PomodoroTimer";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { usePerformanceMode } from "@/components/providers/PerformanceContext";
 import { useIsClient } from "@/hooks/use-is-client";
@@ -32,26 +33,38 @@ export function ZenOverlay({ children }: { children: React.ReactNode }) {
 
                         {/* Header Controls */}
                         <div className="absolute top-6 right-6 flex items-center gap-2 z-50">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setTimerOpen(!timerOpen)}
-                                className={cn("rounded-full transition-colors", timerOpen && "bg-muted")}
-                                title="Toggle Pomodoro Timer"
-                                aria-label="Toggle Pomodoro Timer"
-                            >
-                                <Timer className="h-5 w-5" />
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={toggleZenMode}
-                                className="rounded-full"
-                                title="Exit Zen Mode (Esc)"
-                                aria-label="Exit Zen Mode"
-                            >
-                                <X className="h-5 w-5" />
-                            </Button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setTimerOpen(!timerOpen)}
+                                        className={cn("rounded-full transition-colors", timerOpen && "bg-muted")}
+                                        aria-label="Toggle Pomodoro Timer"
+                                    >
+                                        <Timer className="h-5 w-5" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Toggle Pomodoro Timer</p>
+                                </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={toggleZenMode}
+                                        className="rounded-full"
+                                        aria-label="Exit Zen Mode"
+                                    >
+                                        <X className="h-5 w-5" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Exit Zen Mode (Esc)</p>
+                                </TooltipContent>
+                            </Tooltip>
                         </div>
 
                         <div className="absolute top-6 left-6 hidden md:block">
@@ -86,9 +99,16 @@ export function ZenOverlay({ children }: { children: React.ReactNode }) {
                                                 <Timer className="h-4 w-4 text-indigo-500" />
                                                 Pomodoro
                                             </h3>
-                                            <Button variant="ghost" size="icon" onClick={() => setTimerOpen(false)} className="h-8 w-8 rounded-full" aria-label="Close timer panel" title="Close timer panel">
-                                                <ChevronRight className="h-4 w-4" />
-                                            </Button>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button variant="ghost" size="icon" onClick={() => setTimerOpen(false)} className="h-8 w-8 rounded-full" aria-label="Close timer panel">
+                                                        <ChevronRight className="h-4 w-4" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Close timer panel</p>
+                                                </TooltipContent>
+                                            </Tooltip>
                                         </div>
                                         <div className="flex-1 overflow-y-auto">
                                             <PomodoroTimer />
@@ -128,26 +148,38 @@ export function ZenOverlay({ children }: { children: React.ReactNode }) {
                 <div className="fixed inset-0 z-50 bg-background flex items-center justify-center p-4 md:p-12 overflow-hidden">
                     {/* Header Controls */}
                     <div className="absolute top-6 right-6 flex items-center gap-2 z-50">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setTimerOpen(!timerOpen)}
-                            className={cn("rounded-full", timerOpen && "bg-muted")}
-                            title="Toggle Pomodoro Timer"
-                            aria-label="Toggle Pomodoro Timer"
-                        >
-                            <Timer className="h-5 w-5" />
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={toggleZenMode}
-                            className="rounded-full"
-                            title="Exit Zen Mode (Esc)"
-                            aria-label="Exit Zen Mode"
-                        >
-                            <X className="h-5 w-5" />
-                        </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setTimerOpen(!timerOpen)}
+                                    className={cn("rounded-full", timerOpen && "bg-muted")}
+                                    aria-label="Toggle Pomodoro Timer"
+                                >
+                                    <Timer className="h-5 w-5" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Toggle Pomodoro Timer</p>
+                            </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={toggleZenMode}
+                                    className="rounded-full"
+                                    aria-label="Exit Zen Mode"
+                                >
+                                    <X className="h-5 w-5" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Exit Zen Mode (Esc)</p>
+                            </TooltipContent>
+                        </Tooltip>
                     </div>
 
                     <div className="flex w-full max-w-6xl h-full gap-6 relative z-10">
@@ -169,9 +201,16 @@ export function ZenOverlay({ children }: { children: React.ReactNode }) {
                                         <Timer className="h-4 w-4 text-indigo-500" />
                                         Pomodoro
                                     </h3>
-                                    <Button variant="ghost" size="icon" onClick={() => setTimerOpen(false)} className="h-8 w-8 rounded-full" aria-label="Close timer panel" title="Close timer panel">
-                                        <ChevronRight className="h-4 w-4" />
-                                    </Button>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button variant="ghost" size="icon" onClick={() => setTimerOpen(false)} className="h-8 w-8 rounded-full" aria-label="Close timer panel">
+                                                <ChevronRight className="h-4 w-4" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Close timer panel</p>
+                                        </TooltipContent>
+                                    </Tooltip>
                                 </div>
                                 <div className="flex-1 overflow-y-auto">
                                     <PomodoroTimer />
