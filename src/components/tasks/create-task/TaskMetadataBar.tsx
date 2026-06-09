@@ -6,6 +6,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { IconPicker } from "@/components/ui/icon-picker";
 import { ResolvedIcon } from "@/components/ui/resolved-icon";
@@ -150,18 +155,25 @@ export function TaskMetadataBar({
           }
         />
         {icon && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-            onClick={() =>
-              dispatchState({ type: "SET_ICON", payload: undefined })
-            }
-            title="Remove icon"
-            aria-label="Remove icon"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                onClick={() =>
+                  dispatchState({ type: "SET_ICON", payload: undefined })
+                }
+                aria-label="Remove icon"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Remove icon</p>
+            </TooltipContent>
+          </Tooltip>
         )}
       </div>
     </div>
