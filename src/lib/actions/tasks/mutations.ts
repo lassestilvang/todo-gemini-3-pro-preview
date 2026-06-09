@@ -639,6 +639,11 @@ async function reorderTasksImpl(userId: string, items: { id: number; position: n
     return;
   }
 
+  const limit = await rateLimit(`task:reorder:${userId}`, 100, 3600);
+  if (!limit.success) {
+    throw new ValidationError("Rate limit exceeded. Please try again later.");
+  }
+
   if (items.length > 1000) {
     throw new ValidationError("Too many tasks to reorder at once. Limit is 1000.");
   }

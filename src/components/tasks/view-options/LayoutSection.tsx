@@ -22,6 +22,7 @@ export function LayoutSection({ layout, onUpdate }: LayoutSectionProps) {
             <div className="flex gap-2" role="radiogroup" aria-label="Layout view">
                 {options.map(({ id, label, icon: Icon }) => (
                     <button
+                        type="button"
                         key={id}
                         onClick={() => onUpdate(id as ViewSettings["layout"])}
                         role="radio"
