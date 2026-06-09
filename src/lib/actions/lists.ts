@@ -64,6 +64,11 @@ export async function getLists(userId: string) {
 async function reorderListsImpl(userId: string, items: { id: number; position: number }[]) {
   await requireUser(userId);
 
+  const limit = await rateLimit(`list:reorder:${userId}`, 100, 3600);
+  if (!limit.success) {
+    throw new ValidationError("Rate limit exceeded. Please try again later.");
+  }
+
   if (items.length === 0) {
     return;
   }
