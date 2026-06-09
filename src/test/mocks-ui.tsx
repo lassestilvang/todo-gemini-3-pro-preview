@@ -30,7 +30,7 @@ export const DialogMocks = {
 
         // Some components rely on the child's onClick propagating up
         // Radix's real DialogTrigger intercepts it.
-        const childNode = React.isValidElement(children) ? children : null;
+        const childNode = React.isValidElement<{ onClick?: (e: any) => void }>(children) ? children : null;
 
         return (
             <div
@@ -38,7 +38,7 @@ export const DialogMocks = {
                 role="button"
                 tabIndex={0}
                 onClick={(e) => {
-                    if (childNode?.props.onClick) {
+                    if (childNode?.props?.onClick) {
                         childNode.props.onClick(e);
                     }
                     if (onClick) onClick(e);
@@ -47,7 +47,7 @@ export const DialogMocks = {
                 onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        if (childNode?.props.onClick) {
+                        if (childNode?.props?.onClick) {
                             childNode.props.onClick(e);
                         }
                         if (onClick) onClick(e);
