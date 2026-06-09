@@ -15,6 +15,7 @@ import {
     ValidationError,
 } from "./shared";
 import { requireUser } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
 
 /**
  * Retrieves all saved views for a specific user.
@@ -38,6 +39,11 @@ async function createSavedViewImpl(data: {
     icon?: string;
 }) {
     await requireUser(data.userId);
+
+    const limit = await rateLimit(`view:create:${data.userId}`, 100, 3600);
+    if (!limit.success) {
+        throw new ValidationError("Rate limit exceeded. Please try again later.");
+    }
 
     if (!data.name || data.name.trim().length === 0) {
         throw new ValidationError("View name is required");
@@ -68,6 +74,11 @@ export const createSavedView: (
  */
 async function deleteSavedViewImpl(id: number, userId: string) {
     await requireUser(userId);
+
+    const limit = await rateLimit(`view:delete:${userId}`, 100, 3600);
+    if (!limit.success) {
+        throw new ValidationError("Rate limit exceeded. Please try again later.");
+    }
 
     await db.delete(savedViews).where(and(eq(savedViews.id, id), eq(savedViews.userId, userId)));
     revalidatePath("/", "layout");

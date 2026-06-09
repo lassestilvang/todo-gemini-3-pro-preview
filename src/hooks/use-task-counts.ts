@@ -44,9 +44,12 @@ export function useTaskCounts(enabled: boolean = true): TaskCounts {
         const tomorrowStart = addDays(new Date(todayStart), 1).getTime();
         const nowTime = now.getTime();
 
-        Object.values(tasks).forEach(task => {
+        // ⚡ Bolt Opt: Replaced Object.values(tasks).forEach with a for...in loop
+        // to prevent O(N) array allocation and closure overhead on every evaluation.
+        for (const taskId in tasks) {
+            const task = tasks[taskId];
             // Only count incomplete tasks
-            if (task.isCompleted) return;
+            if (task.isCompleted) continue;
 
             counts.total++;
 
@@ -62,9 +65,11 @@ export function useTaskCounts(enabled: boolean = true): TaskCounts {
 
             // Label Counts
             if (task.labels && Array.isArray(task.labels)) {
-                task.labels.forEach(label => {
-                    counts.labelCounts[label.id] = (counts.labelCounts[label.id] || 0) + 1;
-                });
+                const len = task.labels.length;
+                for (let i = 0; i < len; i++) {
+                    const labelId = task.labels[i].id;
+                    counts.labelCounts[labelId] = (counts.labelCounts[labelId] || 0) + 1;
+                }
             }
 
             // Date Checks
@@ -87,7 +92,7 @@ export function useTaskCounts(enabled: boolean = true): TaskCounts {
                     }
                 }
             }
-        });
+        }
 
         return counts;
     }, [tasks, enabled]);
