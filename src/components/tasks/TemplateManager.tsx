@@ -136,7 +136,7 @@ export function TemplateManager({ userId }: TemplateManagerProps) {
                                             <Play className="h-3 w-3 mr-1" />
                                             Use
                                         </Button>
-                                        <TooltipProvider>
+
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <Button size="icon" variant="ghost" onClick={() => handleOpenEditDialog(template)} data-testid={`edit-template-${template.id}`} aria-label="Edit template">
@@ -153,7 +153,7 @@ export function TemplateManager({ userId }: TemplateManagerProps) {
                                                 </TooltipTrigger>
                                                 <TooltipContent>Delete template</TooltipContent>
                                             </Tooltip>
-                                        </TooltipProvider>
+
                                     </div>
                                 </div>
                             ))}
