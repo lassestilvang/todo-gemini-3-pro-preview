@@ -104,7 +104,6 @@ export function SubtaskForm({
                 <Textarea
                   id={`subtask-description-${subtask.id}`}
                   value={subtask.description}
-                  aria-label="Subtask description"
                   onChange={(e) =>
                     onUpdate(subtask.id, "description", e.target.value)
                   }
