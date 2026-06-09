@@ -28,6 +28,7 @@ export function FilterSection({
     return (
         <div>
             <button
+                type="button"
                 onClick={onToggle}
                 aria-expanded={expanded}
                 aria-controls="filter-options"
