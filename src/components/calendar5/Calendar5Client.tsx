@@ -236,16 +236,35 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
       return null;
     }
 
-    return taskMap[editingTaskId] ?? tasks.find((task) => task.id === editingTaskId) ?? null;
+    // ⚡ Bolt Opt: Replaced tasks.find() fallback with a direct loop lookup.
+    // Reduces callback overhead and intermediate iterator allocation in useMemo.
+    const cached = taskMap[editingTaskId];
+    if (cached) return cached;
+
+    for (let i = 0; i < tasks.length; i++) {
+        if (tasks[i].id === editingTaskId) return tasks[i];
+    }
+    return null;
   }, [editingTaskId, taskMap, tasks]);
 
   const defaultCreateListId = useMemo(() => {
-    const activeListIds = Array.from(activeCalendarIds).filter((id) => id !== UNASSIGNED_CALENDAR_ID);
-    if (activeListIds.length !== 1) {
+    // ⚡ Bolt Opt: Replaced Array.from().filter() with a standard for...of loop
+    // This avoids O(N) intermediate array allocation and GC overhead
+    let activeId: string | null = null;
+    let count = 0;
+    for (const id of activeCalendarIds) {
+      if (id !== UNASSIGNED_CALENDAR_ID) {
+        activeId = id;
+        count++;
+        if (count > 1) break; // Optimization: we only care if length is exactly 1
+      }
+    }
+
+    if (count !== 1 || activeId === null) {
       return undefined;
     }
 
-    const parsed = Number(activeListIds[0]);
+    const parsed = Number(activeId);
     return Number.isNaN(parsed) ? undefined : parsed;
   }, [activeCalendarIds]);
 

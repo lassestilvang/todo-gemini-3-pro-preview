@@ -7,3 +7,6 @@
 ## 2024-06-03 - [Array Classification Performance]
 **Learning:** When extracting multiple distinct subsets from the same source array (e.g., mapping Todoist sync entity mappings into `projectMappings`, `listLabelMappings`, `labelMappings`, and `taskMappings`), using consecutive `.filter()` calls iterates the array multiple times (O(k*N)).
 **Action:** Replace multiple `.filter()` calls on the same array with a single-pass `for...of` loop with `if/else` checks to classify elements. This reduces iterations to O(N) and minimizes intermediate array allocation overhead.
+## 2024-06-08 - [Array Iteration in useMemo]
+**Learning:** Re-evaluating array transformations like `Array.from().filter()` and `Array.find()` inside `useMemo` hooks allocates intermediate arrays and iterators, causing unnecessary garbage collection pressure when executed on every render cycle.
+**Action:** Replace `Array.from().filter()` and `Array.find()` with direct standard `for...of` or `for` loops inside frequently executing `useMemo` hooks (such as calendar rendering filters) to perform transformations with zero intermediate memory allocation.
