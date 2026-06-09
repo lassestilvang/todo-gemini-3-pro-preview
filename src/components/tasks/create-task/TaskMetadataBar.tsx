@@ -160,8 +160,8 @@ export function TaskMetadataBar({
               <Button
                 type="button"
                 variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                size="icon-sm"
+                className="text-muted-foreground hover:text-foreground"
                 onClick={() =>
                   dispatchState({ type: "SET_ICON", payload: undefined })
                 }
