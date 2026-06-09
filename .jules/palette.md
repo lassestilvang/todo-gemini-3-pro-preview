@@ -15,3 +15,7 @@
 ## 2024-06-04 - Wrap TemplateManager Action Buttons in Tooltip
 **Learning:** Tooltips should wrap icon-only action buttons to improve UX and accessibility, ensuring users understand their purpose immediately.
 **Action:** Always wrap icon-only `<Button>` elements with `<Tooltip>`, `<TooltipTrigger asChild>`, and `<TooltipContent>` to display their descriptive intent.
+
+## 2024-06-05 - Safe ARIA Label Overrides
+**Learning:** When creating wrapper components (like `CalendarDayButton` overriding `react-day-picker`'s `DayButton`), relying solely on `{...props}` to pass down `aria-label` can inadvertently drop the label if the wrapping component definition explicitly needs an `aria-label`. However, blindly adding an `aria-label` will overwrite any dynamic label passed from parent context.
+**Action:** Always explicitly define `aria-label={props['aria-label'] || 'Fallback Context'}` to ensure custom components receive a sensible default screen reader announcement without clobbering dynamic overrides.
