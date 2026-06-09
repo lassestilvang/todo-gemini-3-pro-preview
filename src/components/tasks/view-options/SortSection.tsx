@@ -19,6 +19,7 @@ export function SortSection({
     return (
         <div>
             <button
+                type="button"
                 onClick={onToggle}
                 aria-expanded={expanded}
                 aria-controls="sort-options"
