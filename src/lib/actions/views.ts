@@ -42,7 +42,7 @@ async function createSavedViewImpl(data: {
 
     const limit = await rateLimit(`view:create:${data.userId}`, 100, 3600);
     if (!limit.success) {
-        throw new Error("Rate limit exceeded. Please try again later.");
+        throw new ValidationError("Rate limit exceeded. Please try again later.");
     }
 
     if (!data.name || data.name.trim().length === 0) {
