@@ -25,22 +25,33 @@ export const DialogMocks = {
             </DialogContext.Provider>
         );
     },
-    DialogTrigger: ({ children, asChild, onClick }: { children: React.ReactNode; asChild?: boolean; onClick?: () => void }) => {
+    DialogTrigger: ({ children, asChild, onClick }: { children: React.ReactNode; asChild?: boolean; onClick?: (e?: any) => void }) => {
         const { setOpen } = React.useContext(DialogContext);
+
+        // Some components rely on the child's onClick propagating up
+        // Radix's real DialogTrigger intercepts it.
+        const childNode = React.isValidElement(children) ? children : null;
+
         return (
             <div
                 data-testid="dialog-trigger"
                 role="button"
                 tabIndex={0}
-                onClick={() => {
-                    if (onClick) onClick();
-                    setOpen(true);
+                onClick={(e) => {
+                    if (childNode?.props.onClick) {
+                        childNode.props.onClick(e);
+                    }
+                    if (onClick) onClick(e);
+                    if (!e.defaultPrevented) setOpen(true);
                 }}
                 onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        if (onClick) onClick();
-                        setOpen(true);
+                        if (childNode?.props.onClick) {
+                            childNode.props.onClick(e);
+                        }
+                        if (onClick) onClick(e);
+                        if (!e.defaultPrevented) setOpen(true);
                     }
                 }}
             >
