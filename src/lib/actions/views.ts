@@ -77,7 +77,7 @@ async function deleteSavedViewImpl(id: number, userId: string) {
 
     const limit = await rateLimit(`view:delete:${userId}`, 100, 3600);
     if (!limit.success) {
-        throw new Error("Rate limit exceeded. Please try again later.");
+        throw new ValidationError("Rate limit exceeded. Please try again later.");
     }
 
     await db.delete(savedViews).where(and(eq(savedViews.id, id), eq(savedViews.userId, userId)));
