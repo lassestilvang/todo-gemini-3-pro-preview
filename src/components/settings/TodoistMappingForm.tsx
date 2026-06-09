@@ -220,13 +220,25 @@ export function TodoistMappingForm() {
         dispatchUI({ type: "SAVE_START" });
         let createdListCount = 0;
 
-        // ⚡ Bolt Opt: Replaced sequential `Promise.all` awaits for projects and labels with a single concurrent resolution
+        // ⚡ Bolt Opt: Pre-allocated arrays and indexed loops avoid intermediate array allocations during mapping resolution
         const limitMapping = pLimit(5);
         let projectResults, labelResults;
         try {
+            const projectPromises = new Array(projects.length);
+            for (let i = 0; i < projects.length; i++) {
+                const p = projects[i];
+                projectPromises[i] = limitMapping(() => resolveMappingSelection(projectMappings[p.id] ?? null, p.name));
+            }
+
+            const labelPromises = new Array(labels.length);
+            for (let i = 0; i < labels.length; i++) {
+                const l = labels[i];
+                labelPromises[i] = limitMapping(() => resolveMappingSelection(labelMappings[l.id] ?? null, l.name));
+            }
+
             [projectResults, labelResults] = await Promise.all([
-                Promise.all(projects.map((p) => limitMapping(() => resolveMappingSelection(projectMappings[p.id] ?? null, p.name)))),
-                Promise.all(labels.map((l) => limitMapping(() => resolveMappingSelection(labelMappings[l.id] ?? null, l.name))))
+                Promise.all(projectPromises),
+                Promise.all(labelPromises)
             ]);
         } catch (error) {
             limitMapping.clearQueue();

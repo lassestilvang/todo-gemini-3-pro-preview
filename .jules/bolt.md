@@ -7,3 +7,7 @@
 ## 2024-06-03 - [Array Classification Performance]
 **Learning:** When extracting multiple distinct subsets from the same source array (e.g., mapping Todoist sync entity mappings into `projectMappings`, `listLabelMappings`, `labelMappings`, and `taskMappings`), using consecutive `.filter()` calls iterates the array multiple times (O(k*N)).
 **Action:** Replace multiple `.filter()` calls on the same array with a single-pass `for...of` loop with `if/else` checks to classify elements. This reduces iterations to O(N) and minimizes intermediate array allocation overhead.
+
+## 2024-06-06 - [Promise.all Concurrency]
+**Learning:** Sequential `Promise.all` awaits on mapped arrays that use limits like `pLimit` iterate over the array inline and allocate intermediate Promises in sequence, causing O(N) operations inside async boundaries.
+**Action:** Replace `Promise.all(array.map(...))` with pre-allocated arrays and indexed loops before passing to `Promise.all` when using concurrency limiters to ensure memory is allocated effectively.
