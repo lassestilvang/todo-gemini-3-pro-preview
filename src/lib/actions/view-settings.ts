@@ -16,6 +16,7 @@ import {
   ValidationError,
 } from "./shared";
 import { requireUser } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
 
 /**
  * View settings configuration type.
@@ -59,6 +60,11 @@ export async function getViewSettings(userId: string, viewId: string) {
  */
 async function saveViewSettingsImpl(userId: string, viewId: string, settings: ViewSettingsConfig) {
   await requireUser(userId);
+
+  const limit = await rateLimit(`view-settings:save:${userId}`, 100, 3600);
+  if (!limit.success) {
+    throw new ValidationError("Rate limit exceeded. Please try again later.");
+  }
 
   if (!userId) {
     throw new ValidationError("User ID is required", { userId: "User ID cannot be empty" });
@@ -109,6 +115,12 @@ export const saveViewSettings: (
  */
 async function resetViewSettingsImpl(userId: string, viewId: string) {
   await requireUser(userId);
+
+  const limit = await rateLimit(`view-settings:reset:${userId}`, 100, 3600);
+  if (!limit.success) {
+    throw new ValidationError("Rate limit exceeded. Please try again later.");
+  }
+
   await db
     .delete(viewSettings)
     .where(and(eq(viewSettings.userId, userId), eq(viewSettings.viewId, viewId)));
