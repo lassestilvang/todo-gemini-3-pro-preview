@@ -130,8 +130,8 @@ export function QuickCapture({ userId }: { userId: string }) {
                                         <X className="h-4 w-4" />
                                     </Button>
                                 </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Close Quick Capture</p>
+                                <TooltipContent side="left" sideOffset={4}>
+                                    Close Quick Capture
                                 </TooltipContent>
                             </Tooltip>
                         </div>
