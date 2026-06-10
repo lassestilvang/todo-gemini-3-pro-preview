@@ -960,16 +960,16 @@ export async function resolveTodoistConflict(
     // ⚡ Bolt Opt: Replaced chained .filter().map() inside new Map() with single pass for...of loops
     // This avoids creating intermediate arrays, reducing memory allocations and GC overhead
     const localTaskToExternal = new Map<number, string>();
-    for (const mapping of taskMappings) {
-      if (mapping.localId !== null) {
-        localTaskToExternal.set(mapping.localId, mapping.externalId);
+    for (const { localId, externalId } of taskMappings) {
+      if (localId !== null) {
+        localTaskToExternal.set(localId, externalId);
       }
     }
 
     const localLabelToExternal = new Map<number, string>();
-    for (const mapping of labelMappings) {
-      if (mapping.localId !== null) {
-        localLabelToExternal.set(mapping.localId, mapping.externalId);
+    for (const { localId, externalId } of labelMappings) {
+      if (localId !== null) {
+        localLabelToExternal.set(localId, externalId);
       }
     }
     const localTaskLabelRows = await db
