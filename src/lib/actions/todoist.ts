@@ -1120,9 +1120,9 @@ export async function resolveTodoistConflict(
     // ⚡ Bolt Opt: Replaced chained .filter().map() inside new Map() with single pass for...of loops
     // This avoids creating intermediate arrays, reducing memory allocations and GC overhead
     const externalTaskToLocal = new Map<string, number>();
-    for (const mapping of taskMappings) {
-      if (mapping.localId !== null) {
-        externalTaskToLocal.set(mapping.externalId, mapping.localId);
+    for (const { localId, externalId } of taskMappings) {
+      if (localId !== null) {
+        externalTaskToLocal.set(externalId, localId);
       }
     }
 
