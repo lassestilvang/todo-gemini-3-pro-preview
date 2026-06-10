@@ -1,0 +1,29 @@
+<<<<<<< SEARCH
+  // Use props if provided (SSR), otherwise fallback to store (Client Hydration)
+  const displayTasks = useMemo((): CalendarTask[] => {
+    const sourceTasks = (tasks && tasks.length > 0) ? tasks : Object.values(storeTasks);
+    // Perf: avoid redundant Date allocations. Task.dueDate is already a Date
+    // (or null). Reusing it prevents per-task allocations when the calendar re-renders.
+    // ⚡ Bolt Opt: Replaced Array.map() with pre-allocated array and for loop to avoid intermediate array allocation
+    const result = new Array(sourceTasks.length);
+    for (let i = 0; i < sourceTasks.length; i++) {
+=======
+  // Use props if provided (SSR), otherwise fallback to store (Client Hydration)
+  const displayTasks = useMemo((): CalendarTask[] => {
+    let sourceTasks = tasks;
+    if (!sourceTasks || sourceTasks.length === 0) {
+        // ⚡ Bolt Opt: Replaced Object.values with a for...in loop.
+        sourceTasks = [];
+        for (const key in storeTasks) {
+            if (Object.prototype.hasOwnProperty.call(storeTasks, key)) {
+                sourceTasks.push(storeTasks[key]);
+            }
+        }
+    }
+
+    // Perf: avoid redundant Date allocations. Task.dueDate is already a Date
+    // (or null). Reusing it prevents per-task allocations when the calendar re-renders.
+    // ⚡ Bolt Opt: Replaced Array.map() with pre-allocated array and for loop to avoid intermediate array allocation
+    const result = new Array(sourceTasks.length);
+    for (let i = 0; i < sourceTasks.length; i++) {
+>>>>>>> REPLACE
