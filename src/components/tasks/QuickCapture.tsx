@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { Plus, Zap, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { m, AnimatePresence } from "framer-motion";
 import { createTask } from "@/lib/actions";
 import { toast } from "sonner";
@@ -73,9 +74,16 @@ export function QuickCapture({ userId }: { userId: string }) {
                                     <Zap className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                                     Quick Capture
                                 </h3>
-                                <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={() => setIsOpen(false)} aria-label="Close Quick Capture" title="Close Quick Capture">
-                                    <X className="h-4 w-4" />
-                                </Button>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={() => setIsOpen(false)} aria-label="Close Quick Capture">
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="left" sideOffset={4}>
+                                        Close Quick Capture
+                                    </TooltipContent>
+                                </Tooltip>
                             </div>
                             <form onSubmit={handleSubmit} className="space-y-3">
                                 <Input
@@ -116,9 +124,16 @@ export function QuickCapture({ userId }: { userId: string }) {
                                 <Zap className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                                 Quick Capture
                             </h3>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={() => setIsOpen(false)} aria-label="Close Quick Capture" title="Close Quick Capture">
-                                <X className="h-4 w-4" />
-                            </Button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={() => setIsOpen(false)} aria-label="Close Quick Capture">
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="left" sideOffset={4}>
+                                    Close Quick Capture
+                                </TooltipContent>
+                            </Tooltip>
                         </div>
                         <form onSubmit={handleSubmit} className="space-y-3">
                             <Input
