@@ -957,16 +957,21 @@ export async function resolveTodoistConflict(
         listId: mapping.localId,
       })),
     };
-    const localTaskToExternal = new Map(
-      taskMappings
-        .filter((mapping) => mapping.localId !== null)
-        .map((mapping) => [mapping.localId as number, mapping.externalId]),
-    );
-    const localLabelToExternal = new Map(
-      labelMappings
-        .filter((mapping) => mapping.localId !== null)
-        .map((mapping) => [mapping.localId as number, mapping.externalId]),
-    );
+    // ⚡ Bolt Opt: Replaced chained .filter().map() inside new Map() with single pass for...of loops
+    // This avoids creating intermediate arrays, reducing memory allocations and GC overhead
+    const localTaskToExternal = new Map<number, string>();
+    for (const { localId, externalId } of taskMappings) {
+      if (localId !== null) {
+        localTaskToExternal.set(localId, externalId);
+      }
+    }
+
+    const localLabelToExternal = new Map<number, string>();
+    for (const { localId, externalId } of labelMappings) {
+      if (localId !== null) {
+        localLabelToExternal.set(localId, externalId);
+      }
+    }
     const localTaskLabelRows = await db
       .select({ labelId: taskLabels.labelId })
       .from(taskLabels)
@@ -1112,11 +1117,14 @@ export async function resolveTodoistConflict(
         listId: mapping.localId,
       })),
     };
-    const externalTaskToLocal = new Map(
-      taskMappings
-        .filter((mapping) => mapping.localId !== null)
-        .map((mapping) => [mapping.externalId, mapping.localId as number]),
-    );
+    // ⚡ Bolt Opt: Replaced chained .filter().map() inside new Map() with single pass for...of loops
+    // This avoids creating intermediate arrays, reducing memory allocations and GC overhead
+    const externalTaskToLocal = new Map<string, number>();
+    for (const { localId, externalId } of taskMappings) {
+      if (localId !== null) {
+        externalTaskToLocal.set(externalId, localId);
+      }
+    }
 
     const remoteTask = await client
       .getTasks({ ids: [conflict.externalId] })
