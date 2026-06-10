@@ -61,7 +61,7 @@ export async function getViewSettings(userId: string, viewId: string) {
 async function saveViewSettingsImpl(userId: string, viewId: string, settings: ViewSettingsConfig) {
   await requireUser(userId);
 
-  const limit = await rateLimit(`view-settings:save:${userId}`, 100, 3600);
+  const limit = await rateLimit(`view-settings:save:${userId}`, 100, 60);
   if (!limit.success) {
     throw new ValidationError("Rate limit exceeded. Please try again later.");
   }
