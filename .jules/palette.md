@@ -22,3 +22,7 @@
 ## 2024-06-06 - Always set aria-label on form inputs lacking explicit labels
 **Learning:** Some custom UI elements (like textareas for subtasks) lack explicit `<label htmlFor="...">` associations or visually hidden labels. This leaves screen reader users without context when the field receives focus.
 **Action:** When a `<label>` cannot be explicitly linked via `htmlFor`, or if the field lacks one entirely, always add an `aria-label` attribute directly to the `<Input>` or `<Textarea>` element to ensure full accessibility.
+
+## 2024-06-11 - Always Add type="button" to Component Buttons
+**Learning:** Action buttons in generic components (like Shadcn UI `<Button>`) will default to `type="submit"` if not explicitly specified. This can cause unintended form submissions or page reloads if the component is eventually embedded within a form.
+**Action:** Always explicitly set `type="button"` on all custom action buttons that are not intended to submit a form.
