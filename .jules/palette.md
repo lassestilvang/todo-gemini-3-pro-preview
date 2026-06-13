@@ -22,3 +22,7 @@
 ## 2024-06-06 - Always set aria-label on form inputs lacking explicit labels
 **Learning:** Some custom UI elements (like textareas for subtasks) lack explicit `<label htmlFor="...">` associations or visually hidden labels. This leaves screen reader users without context when the field receives focus.
 **Action:** When a `<label>` cannot be explicitly linked via `htmlFor`, or if the field lacks one entirely, always add an `aria-label` attribute directly to the `<Input>` or `<Textarea>` element to ensure full accessibility.
+
+## 2024-06-13 - [Use Custom Tooltips over Native title for Icon-only buttons]
+**Learning:** Using the native HTML `title` attribute for tooltips on icon-only action buttons results in an inconsistent visual experience, delayed appearance, and potential accessibility issues for keyboard users.
+**Action:** Replace native `title` attributes on icon-only buttons with the application's design system `<Tooltip>` component (wrapping `<TooltipTrigger asChild>`) to ensure immediate, visually consistent, and accessible feedback while maintaining the `aria-label` attribute on the button itself.
