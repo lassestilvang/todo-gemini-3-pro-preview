@@ -245,9 +245,16 @@ function SidebarListsInner({ lists: ssrLists, userId }: SidebarListsProps) {
                     </Tooltip>
                     <ManageListDialog
                         trigger={
-                            <Button variant="ghost" size="icon" className="h-7 w-7" title="Add List" aria-label="Add List" data-testid="add-list-button">
-                                <Plus className="h-4 w-4" />
-                            </Button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Add List" data-testid="add-list-button">
+                                        <Plus className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Add List</p>
+                                </TooltipContent>
+                            </Tooltip>
                         }
                         userId={userId}
                     />
