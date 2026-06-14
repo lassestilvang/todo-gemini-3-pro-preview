@@ -305,7 +305,7 @@ export const updateList: (
 async function deleteListImpl(id: number, userId: string) {
   const user = await requireUser(userId);
 
-  const limit = await rateLimit(`list:delete:${userId}`, 100, 3600);
+  const limit = await rateLimit(`list:delete:${userId}`, 50, 3600);
   if (!limit.success) {
     throw new ValidationError("Rate limit exceeded. Please try again later.");
   }
