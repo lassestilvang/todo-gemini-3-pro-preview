@@ -25,3 +25,7 @@
 **Vulnerability:** The `saveViewSettings` and `resetViewSettings` Server Actions were exposed without rate limiting, allowing potential DoS attacks or excessive database load via rapid successive requests.
 **Learning:** Even low-impact preference endpoints require consistent rate limiting because the computational cost (auth, DB write) still taxes the infrastructure. Overlooking "minor" endpoints creates asymmetric DoS vectors.
 **Prevention:** Always implement the codebase's standard rate limiting (e.g., `rateLimit(\`action:${userId}\`)`) on EVERY mutative Server Action, regardless of the perceived sensitivity of the data being modified.
+## 2024-06-25 - Unprotected List Deletion Action (Rate Limiting)
+**Vulnerability:** The `deleteList` Server Action (`deleteListImpl`) lacked rate limiting.
+**Learning:** Even destructive operations that are presumed to be low frequency (like deleting a user-created list) require consistent rate limiting to protect against programmatic abuse or DoS vectors, similar to other mutative endpoints.
+**Prevention:** Apply the `rateLimit` utility to all destructive Server Actions to maintain a consistent defense-in-depth posture across the application API.
