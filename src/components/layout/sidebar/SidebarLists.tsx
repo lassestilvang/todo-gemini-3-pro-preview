@@ -243,14 +243,21 @@ function SidebarListsInner({ lists: ssrLists, userId }: SidebarListsProps) {
                             <p>{isReordering ? "Done reordering" : "Reorder lists"}</p>
                         </TooltipContent>
                     </Tooltip>
-                    <ManageListDialog
-                        trigger={
-                            <Button variant="ghost" size="icon" className="h-7 w-7" title="Add List" aria-label="Add List" data-testid="add-list-button">
-                                <Plus className="h-4 w-4" />
-                            </Button>
-                        }
-                        userId={userId}
-                    />
+                    <Tooltip>
+                        <ManageListDialog
+                            trigger={
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Add List" data-testid="add-list-button">
+                                        <Plus className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                            }
+                            userId={userId}
+                        />
+                        <TooltipContent>
+                            <p>Add List</p>
+                        </TooltipContent>
+                    </Tooltip>
                 </div>
             </div>
 
