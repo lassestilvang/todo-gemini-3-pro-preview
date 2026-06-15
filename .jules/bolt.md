@@ -18,3 +18,7 @@
 ## 2026-06-09 - Optimize Object Mapping in useMemo
 **Learning:** Using `Object.values().forEach()` inside frequently evaluated `useMemo` hooks (like computing task counts from a global store) creates expensive O(N) intermediate array allocations and closure overheads that trigger aggressive garbage collection and degrade performance.
 **Action:** Replaced `Object.values().forEach()` with a raw `for...in` loop directly on the object dictionary, and swapped nested `forEach` array iterations with standard indexed `for` loops to completely eliminate memory allocation and closure execution costs.
+
+## 2026-06-15 - Optimize Object Empty Checks and Values Access
+**Learning:** Using `Object.keys(obj).length === 0` to check if an object is empty allocates an entire array of keys just to read its length, which is inefficient. Furthermore, calling `Object.values(obj)` multiple times within the same expression (e.g. `Object.values(obj).length > 0 ? Object.values(obj) : fallback`) duplicates the O(N) array allocation.
+**Action:** Replace `Object.keys(obj).length === 0` with a `for...in` loop that breaks immediately to achieve an O(1) allocation-free emptiness check. Extract `Object.values(obj)` to a local variable and check its length to prevent double allocation.

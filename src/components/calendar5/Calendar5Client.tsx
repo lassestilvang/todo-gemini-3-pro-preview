@@ -119,26 +119,41 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
   }, [activeCalendarIds]);
 
   useEffect(() => {
-    if (Object.keys(taskMap).length === 0 && initialTasks.length > 0) {
+    // ⚡ Bolt Opt: Replaced Object.keys().length with for...in loop for O(1) empty check
+    // This prevents allocating an array of keys on every render cycle.
+    let isTaskMapEmpty = true;
+    for (const _k in taskMap) {
+      isTaskMapEmpty = false;
+      break;
+    }
+    if (isTaskMapEmpty && initialTasks.length > 0) {
       setTasks(initialTasks);
     }
   }, [initialTasks, setTasks, taskMap]);
 
   useEffect(() => {
-    if (Object.keys(listMap).length === 0 && initialLists.length > 0) {
+    // ⚡ Bolt Opt: Replaced Object.keys().length with for...in loop for O(1) empty check
+    let isListMapEmpty = true;
+    for (const _k in listMap) {
+      isListMapEmpty = false;
+      break;
+    }
+    if (isListMapEmpty && initialLists.length > 0) {
       setLists(initialLists);
     }
   }, [initialLists, listMap, setLists]);
 
-  const tasks = useMemo(
-    () => (Object.values(taskMap).length > 0 ? (Object.values(taskMap) as Task[]) : initialTasks),
-    [taskMap, initialTasks]
-  );
+  const tasks = useMemo(() => {
+    // ⚡ Bolt Opt: Call Object.values() once and check its length, rather than calling it twice.
+    const storeTasks = Object.values(taskMap) as Task[];
+    return storeTasks.length > 0 ? storeTasks : initialTasks;
+  }, [taskMap, initialTasks]);
 
-  const lists = useMemo(
-    () => (Object.values(listMap).length > 0 ? Object.values(listMap) : initialLists),
-    [listMap, initialLists]
-  );
+  const lists = useMemo(() => {
+    // ⚡ Bolt Opt: Call Object.values() once and check its length, rather than calling it twice.
+    const storeLists = Object.values(listMap);
+    return storeLists.length > 0 ? storeLists : initialLists;
+  }, [listMap, initialLists]);
 
   const availableCalendarIds = useMemo(() => {
     // ⚡ Bolt Opt: Replaced spread with .map() with a pre-allocated array and for-loop
