@@ -4,7 +4,7 @@
 import React, { useState, memo, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams as useNextSearchParams } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { cn, isObjectEmpty, isObjectNotEmpty } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Plus, GripVertical, ArrowUpDown } from "lucide-react";
 import { ManageListDialog } from "@/components/tasks/ManageListDialog";
@@ -152,7 +152,8 @@ function SidebarListsInner({ lists: ssrLists, userId }: SidebarListsProps) {
 
     // Derive sorted items directly from store or fallback to props (fixes derived state anti-pattern)
     const { items, itemIds } = useMemo(() => {
-        const source = Object.keys(storeLists).length > 0 ? Object.values(storeLists) : ssrLists;
+        // ⚡ Bolt Opt: Replaced Object.keys(storeLists).length > 0 with O(1) allocation-free check
+        const source = isObjectNotEmpty(storeLists) ? Object.values(storeLists) : ssrLists;
         const sortedItems = [...source].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 
         // ⚡ Bolt Opt: Precompute itemIds in a single pass to prevent O(N) array allocation
@@ -168,7 +169,8 @@ function SidebarListsInner({ lists: ssrLists, userId }: SidebarListsProps) {
     // Initialize store once on mount if empty (without creating derived state loops)
     const initializedRef = React.useRef(false);
     React.useEffect(() => {
-        if (!initializedRef.current && ssrLists.length > 0 && Object.keys(storeLists).length === 0) {
+        // ⚡ Bolt Opt: Replaced Object.keys(storeLists).length === 0 with O(1) allocation-free check
+        if (!initializedRef.current && ssrLists.length > 0 && isObjectEmpty(storeLists)) {
             setStoreLists(ssrLists);
             initializedRef.current = true;
         }
