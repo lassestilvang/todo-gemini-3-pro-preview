@@ -218,14 +218,21 @@ export function SidebarLabels({ labels: ssrLabels, userId }: SidebarLabelsProps)
                             <p>{isReordering ? "Done reordering" : "Reorder labels"}</p>
                         </TooltipContent>
                     </Tooltip>
-                    <ManageLabelDialog
-                        trigger={
-                            <Button variant="ghost" size="icon" className="h-7 w-7" title="Add Label" aria-label="Add Label" data-testid="add-label-button">
-                                <Plus className="h-4 w-4" />
-                            </Button>
-                        }
-                        userId={userId}
-                    />
+                    <Tooltip>
+                        <ManageLabelDialog
+                            trigger={
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Add Label" data-testid="add-label-button">
+                                        <Plus className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                            }
+                            userId={userId}
+                        />
+                        <TooltipContent>
+                            <p>Add Label</p>
+                        </TooltipContent>
+                    </Tooltip>
                 </div>
             </div>
 
