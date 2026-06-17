@@ -9,6 +9,7 @@ import type { Task } from "@/lib/types";
 import { useTaskStore } from "@/lib/store/task-store";
 import { useListStore } from "@/lib/store/list-store";
 import { useSync } from "@/components/providers/sync-provider";
+import { isObjectEmpty } from "@/lib/utils";
 import { useUser } from "@/components/providers/UserProvider";
 import { TaskDialog } from "@/components/tasks/TaskDialog";
 import { Calendar5UnscheduledColumn } from "./Calendar5UnscheduledColumn";
@@ -119,24 +120,24 @@ export function Calendar5Client({ initialTasks, initialLists }: Calendar5ClientP
   }, [activeCalendarIds]);
 
   useEffect(() => {
-    if (Object.keys(taskMap).length === 0 && initialTasks.length > 0) {
+    if (isObjectEmpty(taskMap) && initialTasks.length > 0) {
       setTasks(initialTasks);
     }
   }, [initialTasks, setTasks, taskMap]);
 
   useEffect(() => {
-    if (Object.keys(listMap).length === 0 && initialLists.length > 0) {
+    if (isObjectEmpty(listMap) && initialLists.length > 0) {
       setLists(initialLists);
     }
   }, [initialLists, listMap, setLists]);
 
   const tasks = useMemo(
-    () => (Object.values(taskMap).length > 0 ? (Object.values(taskMap) as Task[]) : initialTasks),
+    () => (!isObjectEmpty(taskMap) ? (Object.values(taskMap) as Task[]) : initialTasks),
     [taskMap, initialTasks]
   );
 
   const lists = useMemo(
-    () => (Object.values(listMap).length > 0 ? Object.values(listMap) : initialLists),
+    () => (!isObjectEmpty(listMap) ? Object.values(listMap) : initialLists),
     [listMap, initialLists]
   );
 

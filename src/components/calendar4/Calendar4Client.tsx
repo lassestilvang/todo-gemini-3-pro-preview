@@ -8,6 +8,7 @@ import { TaskDialog } from "@/components/tasks/TaskDialog";
 import { useTaskStore } from "@/lib/store/task-store";
 import { useListStore } from "@/lib/store/list-store";
 import { useSync } from "@/components/providers/sync-provider";
+import { isObjectEmpty } from "@/lib/utils";
 import { useUser } from "@/components/providers/UserProvider";
 import { addMinutes, isSameDay } from "date-fns";
 import type { Task } from "@/lib/types";
@@ -30,15 +31,15 @@ export function Calendar4Client({ initialTasks, initialLists }: Calendar4ClientP
     const { userId } = useUser();
 
     useEffect(() => {
-        if (Object.keys(taskMap).length === 0 && initialTasks.length > 0) setTasks(initialTasks);
+        if (isObjectEmpty(taskMap) && initialTasks.length > 0) setTasks(initialTasks);
     }, [initialTasks, setTasks, taskMap]);
 
     useEffect(() => {
-        if (Object.keys(listMap).length === 0 && initialLists.length > 0) setLists(initialLists);
+        if (isObjectEmpty(listMap) && initialLists.length > 0) setLists(initialLists);
     }, [initialLists, listMap, setLists]);
 
-    const tasks = useMemo(() => Object.values(taskMap).length > 0 ? Object.values(taskMap) as Task[] : initialTasks, [taskMap, initialTasks]);
-    const lists = useMemo(() => Object.values(listMap).length > 0 ? Object.values(listMap) : initialLists, [listMap, initialLists]);
+    const tasks = useMemo(() => !isObjectEmpty(taskMap) ? Object.values(taskMap) as Task[] : initialTasks, [taskMap, initialTasks]);
+    const lists = useMemo(() => !isObjectEmpty(listMap) ? Object.values(listMap) : initialLists, [listMap, initialLists]);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [uiState, dispatchUI] = useReducer((state: any, action: any) => {
