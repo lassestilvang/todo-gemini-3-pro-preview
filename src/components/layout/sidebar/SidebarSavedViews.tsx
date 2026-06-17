@@ -22,13 +22,22 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 function AddViewHelpDialog({ children }: { children?: React.ReactNode }) {
     return (
         <Dialog>
-            <DialogTrigger asChild>
-                {children || (
-                    <Button variant="ghost" size="icon" className="h-7 w-7" title="How to add a view" aria-label="How to add a view">
-                        <Plus className="h-4 w-4" />
-                    </Button>
-                )}
-            </DialogTrigger>
+            {children ? (
+                <DialogTrigger asChild>{children}</DialogTrigger>
+            ) : (
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <DialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="How to add a view">
+                                <Plus className="h-4 w-4" />
+                            </Button>
+                        </DialogTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>How to add a view</p>
+                    </TooltipContent>
+                </Tooltip>
+            )}
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>How to create a Saved View</DialogTitle>
