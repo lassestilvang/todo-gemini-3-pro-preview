@@ -17,6 +17,7 @@ import { CalendarQuickCreateDialog } from "@/components/calendar2/CalendarQuickC
 import { useTaskStore } from "@/lib/store/task-store";
 import { useListStore } from "@/lib/store/list-store";
 import { useSync } from "@/components/providers/sync-provider";
+import { isObjectEmpty } from "@/lib/utils";
 import { useUser } from "@/components/providers/UserProvider";
 import { useIsClient } from "@/hooks/use-is-client";
 import { usePerformanceMode } from "@/components/providers/PerformanceContext";
@@ -68,13 +69,13 @@ function Calendar3ClientActual({ initialTasks, initialLists }: Calendar3ClientPr
   }, [listMap, initialLists]);
 
   useEffect(() => {
-    if (Object.keys(taskMap).length === 0 && initialTasks.length > 0) {
+    if (isObjectEmpty(taskMap) && initialTasks.length > 0) {
       setTasks(initialTasks);
     }
   }, [initialTasks, setTasks, taskMap]);
 
   useEffect(() => {
-    if (Object.keys(listMap).length === 0 && initialLists.length > 0) {
+    if (isObjectEmpty(listMap) && initialLists.length > 0) {
       setLists(initialLists);
     }
   }, [initialLists, listMap, setLists]);

@@ -12,6 +12,7 @@ import { TaskDialog } from "@/components/tasks/TaskDialog";
 import { useTaskStore } from "@/lib/store/task-store";
 import { useListStore } from "@/lib/store/list-store";
 import { useSync } from "@/components/providers/sync-provider";
+import { isObjectEmpty } from "@/lib/utils";
 import { useUser } from "@/components/providers/UserProvider";
 import { startOfDay, isSameDay } from "date-fns";
 import type { Task } from "@/lib/types";
@@ -98,13 +99,13 @@ export function Calendar2Client({ initialTasks, initialLists }: Calendar2ClientP
   const { visibleListIds, selectedListId, quickCreateOpen, quickCreateDate, editingTask } = uiState;
 
   useEffect(() => {
-    if (Object.keys(taskMap).length === 0 && initialTasks.length > 0) {
+    if (isObjectEmpty(taskMap) && initialTasks.length > 0) {
       setTasks(initialTasks);
     }
   }, [initialTasks, setTasks, taskMap]);
 
   useEffect(() => {
-    if (Object.keys(listMap).length === 0 && initialLists.length > 0) {
+    if (isObjectEmpty(listMap) && initialLists.length > 0) {
       setLists(initialLists);
     }
   }, [initialLists, listMap, setLists]);
