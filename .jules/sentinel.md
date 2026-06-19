@@ -29,3 +29,8 @@
 **Vulnerability:** The `deleteList` Server Action (`deleteListImpl`) lacked rate limiting.
 **Learning:** Even destructive operations that are presumed to be low frequency (like deleting a user-created list) require consistent rate limiting to protect against programmatic abuse or DoS vectors, similar to other mutative endpoints.
 **Prevention:** Apply the `rateLimit` utility to all destructive Server Actions to maintain a consistent defense-in-depth posture across the application API.
+
+## 2024-05-18 - Missing Rate Limiting on State Mutation Endpoint
+**Vulnerability:** The `toggleTaskCompletionImpl` server action, unlike other task mutations (`createTask`, `updateTask`, `deleteTask`), did not have rate limiting applied.
+**Learning:** Security controls like rate limiting must be consistently applied across all state-mutating endpoints, even seemingly innocuous ones like toggling a boolean. An attacker could rapidly toggle task completion states to trigger numerous downstream side effects (gamification XP recalculations, unblocking dependencies, sync dispatch events, logging), potentially causing DoS.
+**Prevention:** When adding new mutative endpoints or refactoring existing ones, ensure the `rateLimit` utility (or similar controls) is applied uniformly to prevent abuse of downstream side-effects.
