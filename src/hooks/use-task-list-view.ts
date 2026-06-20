@@ -179,7 +179,13 @@ export function useTaskListView({
     }, [processedTasks, filterType, settings.layout, weekStartsOnMonday, settings.showCompleted]);
 
     const nonOverdueTasks = useMemo(() => {
-        return [...activeTasks, ...(settings.showCompleted ? completedTasks : [])];
+        // ⚡ Bolt Opt: Avoid array allocation and reference changes when not showing completed tasks
+        // by returning the activeTasks reference directly.
+        if (!settings.showCompleted || completedTasks.length === 0) {
+            return activeTasks;
+        }
+
+        return activeTasks.concat(completedTasks);
     }, [activeTasks, completedTasks, settings.showCompleted]);
 
     const groupedEntries = useMemo(() => {
