@@ -29,3 +29,8 @@
 **Vulnerability:** The `deleteList` Server Action (`deleteListImpl`) lacked rate limiting.
 **Learning:** Even destructive operations that are presumed to be low frequency (like deleting a user-created list) require consistent rate limiting to protect against programmatic abuse or DoS vectors, similar to other mutative endpoints.
 **Prevention:** Apply the `rateLimit` utility to all destructive Server Actions to maintain a consistent defense-in-depth posture across the application API.
+
+## 2025-02-23 - Missing Rate Limits on Custom Icon Mutations
+**Vulnerability:** The server actions `createCustomIconImpl` and `deleteCustomIconImpl` lacked rate limiting constraints.
+**Learning:** While creation actions (like `createTask`) were rate-limited, other resource mutations (like custom icons) were missed, leaving the system vulnerable to potential DoS attacks via unbounded script execution or brute-force deletion.
+**Prevention:** Ensure that the `rateLimit` utility (e.g., `await rateLimit(\`resource:action:${userId}\`, count, window)`) is applied consistently across *all* mutative Server Actions, not just primary entities like tasks or lists.
