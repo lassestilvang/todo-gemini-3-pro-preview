@@ -29,3 +29,7 @@
 **Vulnerability:** The `deleteList` Server Action (`deleteListImpl`) lacked rate limiting.
 **Learning:** Even destructive operations that are presumed to be low frequency (like deleting a user-created list) require consistent rate limiting to protect against programmatic abuse or DoS vectors, similar to other mutative endpoints.
 **Prevention:** Apply the `rateLimit` utility to all destructive Server Actions to maintain a consistent defense-in-depth posture across the application API.
+## 2026-06-22 - Rate Limiting Missing on Template Update and Delete Endpoints
+**Vulnerability:** The Server Actions for updating (`updateTemplateImpl`) and deleting (`deleteTemplateImpl`) templates were exposed without rate limiting.
+**Learning:** Destructive operations and general mutations must be consistently rate-limited, even if they aren't the primary actions an application supports. Overlooking these creates asymmetric DoS vectors.
+**Prevention:** Apply the codebase's standard `rateLimit` utility on EVERY mutative Server Action.
