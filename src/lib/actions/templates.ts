@@ -110,6 +110,12 @@ export const createTemplate: (
 async function deleteTemplateImpl(id: number, userId: string) {
   // Validate that the requester is the same as the userId passed in
   const user = await requireUser(userId);
+
+  const limit = await rateLimit(`template:delete:${userId}`, 50, 3600);
+  if (!limit.success) {
+    throw new ValidationError("Rate limit exceeded. Please try again later.");
+  }
+
   await db.delete(templates).where(and(eq(templates.id, id), eq(templates.userId, user.id)));
   revalidatePath("/");
 }
@@ -155,6 +161,11 @@ async function updateTemplateImpl(id: number, userId: string, name: string, cont
   }
   if (content.length > 100000) {
     throw new ValidationError("Template content is too large", { content: "Content must be 100,000 characters or less" });
+  }
+
+  const limit = await rateLimit(`template:update:${userId}`, 50, 3600);
+  if (!limit.success) {
+    throw new ValidationError("Rate limit exceeded. Please try again later.");
   }
 
   // First verify the template exists and belongs to the user

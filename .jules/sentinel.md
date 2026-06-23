@@ -34,3 +34,7 @@
 **Vulnerability:** The server actions `createCustomIconImpl` and `deleteCustomIconImpl` lacked rate limiting constraints.
 **Learning:** While creation actions (like `createTask`) were rate-limited, other resource mutations (like custom icons) were missed, leaving the system vulnerable to potential DoS attacks via unbounded script execution or brute-force deletion.
 **Prevention:** Ensure that the `rateLimit` utility (e.g., `await rateLimit(\`resource:action:${userId}\`, count, window)`) is applied consistently across *all* mutative Server Actions, not just primary entities like tasks or lists.
+## 2026-06-22 - Rate Limiting Missing on Template Update and Delete Endpoints
+**Vulnerability:** The Server Actions for updating (`updateTemplateImpl`) and deleting (`deleteTemplateImpl`) templates were exposed without rate limiting.
+**Learning:** Destructive operations and general mutations must be consistently rate-limited, even if they aren't the primary actions an application supports. Overlooking these creates asymmetric DoS vectors.
+**Prevention:** Apply the codebase's standard `rateLimit` utility on EVERY mutative Server Action.
