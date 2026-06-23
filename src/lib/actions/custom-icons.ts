@@ -9,6 +9,7 @@ import {
     withErrorHandling,
     ValidationError,
 } from "./shared";
+import { rateLimit } from "@/lib/rate-limit";
 import { requireUser } from "@/lib/auth";
 import { logActivity } from "./activity-logger";
 import { cache } from "react";
@@ -70,6 +71,11 @@ async function createCustomIconImpl(data: typeof customIcons.$inferInsert) {
 
     await requireUser(data.userId);
 
+    const limit = await rateLimit(`custom-icon:create:${data.userId}`, 50, 3600);
+    if (!limit.success) {
+        throw new ValidationError("Rate limit exceeded. Please try again later.");
+    }
+
     if (!data.name || data.name.trim().length === 0) {
         throw new ValidationError("Icon name is required", { name: "Name cannot be empty" });
     }
@@ -110,6 +116,11 @@ export const createCustomIcon: (
  */
 async function deleteCustomIconImpl(id: number, userId: string) {
     await requireUser(userId);
+
+    const limit = await rateLimit(`custom-icon:delete:${userId}`, 50, 3600);
+    if (!limit.success) {
+        throw new ValidationError("Rate limit exceeded. Please try again later.");
+    }
 
     const currentIcon = await db
         .select()
