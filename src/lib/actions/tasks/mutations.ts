@@ -497,6 +497,11 @@ export const deleteTask: (
 async function toggleTaskCompletionImpl(id: number, userId: string, isCompleted: boolean) {
   const user = await requireUser(userId);
 
+  const limit = await rateLimit(`task:toggle:${userId}`, 200, 3600);
+  if (!limit.success) {
+    throw new Error("Rate limit exceeded. Please try again later.");
+  }
+
   if (!isValidId(id)) {
     throw new NotFoundError("Task not found or access denied");
   }
