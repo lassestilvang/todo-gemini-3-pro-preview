@@ -22,3 +22,6 @@
 ## 2025-06-17 - Optimize Object Emptiness Check in useMemo
 **Learning:** Relying on `Object.keys(obj).length === 0` to check for object emptiness inside frequently rendered hooks (like `useMemo` or `useEffect`) needlessly allocates an intermediate O(N) array on every evaluation. `Object.values(obj).length > 0` suffers the same issue.
 **Action:** Replace these checks with a fast, allocation-free `for...in` loop that breaks immediately after the first key (e.g., extracted as an `isObjectEmpty(obj)` utility) to reduce memory allocations and garbage collection overhead during renders.
+## 2025-06-25 - [React Reference Preservation in useMemo]
+**Learning:** When conditionally appending items to an array inside a `useMemo` block (e.g., `[...activeTasks, ...(showCompleted ? completedTasks : [])]`), unconditionally returning a newly allocated array or combination (even if the second array is empty) breaks referential equality for the primary array. This can cause unnecessary downstream re-renders.
+**Action:** Use an early return to pass back the original array reference (`if (!showCompleted || completedTasks.length === 0) return activeTasks;`) when no items need to be appended. For the combination, `array.concat()` or a spread operator is sufficient as long as the default state preserves the reference.

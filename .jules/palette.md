@@ -26,3 +26,6 @@
 ## 2024-06-13 - [Use Custom Tooltips over Native title for Icon-only buttons]
 **Learning:** Using the native HTML `title` attribute for tooltips on icon-only action buttons results in an inconsistent visual experience, delayed appearance, and potential accessibility issues for keyboard users.
 **Action:** Replace native `title` attributes on icon-only buttons with the application's design system `<Tooltip>` component (wrapping `<TooltipTrigger asChild>`) to ensure immediate, visually consistent, and accessible feedback while maintaining the `aria-label` attribute on the button itself.
+## 2024-05-14 - Explicit `type="button"` for custom buttons
+**Learning:** Found multiple instances where custom UI buttons (specifically in the `icon-picker` tabs) were missing the explicit `type="button"` attribute. In HTML, the default type for `<button>` is `"submit"`. If these components are ever reused or nested inside a `<form>` element, clicking them will inadvertently submit the form and cause a disruptive page reload.
+**Action:** Always explicitly set `type="button"` on custom action buttons that are not intended to submit forms.
