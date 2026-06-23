@@ -181,8 +181,11 @@ export function useTaskListView({
     const nonOverdueTasks = useMemo(() => {
         // ⚡ Bolt Opt: Avoid array allocation and reference changes when not showing completed tasks
         // by returning the activeTasks reference directly.
-        if (!settings.showCompleted || completedTasks.length === 0) {
+if (!settings.showCompleted || completedTasks.length === 0) {
             return activeTasks;
+        }
+        if (activeTasks.length === 0) {
+            return completedTasks;
         }
 
         return activeTasks.concat(completedTasks);
