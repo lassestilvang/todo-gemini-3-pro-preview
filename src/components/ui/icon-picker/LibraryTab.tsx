@@ -40,6 +40,7 @@ export function IconPickerLibraryTab({
               {recentIcons.map((r: string) => (
                 <button
                   key={r}
+                  type="button"
                   onClick={() => handleSelectIcon(r)}
                   aria-label={'Select recently used icon ' + r}
                   className="shrink-0 flex items-center justify-center w-8 h-8 rounded-md border border-transparent hover:bg-accent/50 hover:border-border transition-all snap-start bg-secondary/30"
@@ -71,6 +72,7 @@ export function IconPickerLibraryTab({
                 {customIcons.map((c: any) => (
                   <div key={c.id} className="relative group">
                     <button
+                      type="button"
                       onClick={() => handleSelectIcon(c.value)}
                       aria-label={`Select custom icon ${c.name}`}
                       className="flex items-center justify-center w-full aspect-square rounded-md hover:bg-accent/50 transition-colors"
@@ -89,6 +91,7 @@ export function IconPickerLibraryTab({
                     </button>
                     {userId && c.id && (
                       <button
+                        type="button"
                         onClick={async (e) => {
                           e.stopPropagation();
                           if (confirm("Delete this icon?")) {

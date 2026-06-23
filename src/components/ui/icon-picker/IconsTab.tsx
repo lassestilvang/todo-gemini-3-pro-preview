@@ -22,6 +22,7 @@ export function IconPickerIconsTab({ state, dispatch, filteredStandardIcons, han
                     {COMMON_COLORS.map(c => (
                         <button
                             key={c}
+                            type="button"
                             onClick={() => dispatch({ type: 'SET_SELECTED_COLOR', payload: selectedColor === c ? null : c })}
                             className={cn(
                                 "w-5 h-5 rounded-full border border-transparent transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none",
@@ -34,6 +35,7 @@ export function IconPickerIconsTab({ state, dispatch, filteredStandardIcons, han
                         />
                     ))}
                     <button
+                        type="button"
                         onClick={() => dispatch({ type: 'SET_SELECTED_COLOR', payload: null })}
                         className={cn(
                             "w-5 h-5 rounded-full border border-muted bg-transparent flex items-center justify-center text-[10px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none",
@@ -52,6 +54,7 @@ export function IconPickerIconsTab({ state, dispatch, filteredStandardIcons, han
                         {filteredStandardIcons.map((item) => (
                             <button
                                 key={item.name}
+                                type="button"
                                 onClick={() => handleSelectIcon(item.name)}
                                 className="flex items-center justify-center w-full aspect-square rounded-md hover:bg-accent hover:text-accent-foreground transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none"
                                 title={item.name}
