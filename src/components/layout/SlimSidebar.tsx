@@ -83,6 +83,7 @@ export function SlimSidebar({
           <Tooltip>
             <TooltipTrigger asChild>
               <button
+                type="button"
                 onClick={onExpand}
                 className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                 aria-label="Expand sidebar"
@@ -192,6 +193,7 @@ export function SlimSidebar({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
+                    type="button"
                     onClick={onExpand}
                     aria-label={`Show ${lists.length - 5} more lists`}
                     className="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors text-[10px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
@@ -258,6 +260,7 @@ export function SlimSidebar({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
+                    type="button"
                     onClick={onExpand}
                     aria-label={`Show ${labels.length - 5} more labels`}
                     className="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors text-[10px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
@@ -279,6 +282,7 @@ export function SlimSidebar({
         <Tooltip>
           <TooltipTrigger asChild>
             <button
+              type="button"
               onClick={onHide}
               className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
               aria-label="Hide sidebar"

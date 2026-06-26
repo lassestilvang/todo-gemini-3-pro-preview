@@ -29,3 +29,7 @@
 ## 2024-05-14 - Explicit `type="button"` for custom buttons
 **Learning:** Found multiple instances where custom UI buttons (specifically in the `icon-picker` tabs) were missing the explicit `type="button"` attribute. In HTML, the default type for `<button>` is `"submit"`. If these components are ever reused or nested inside a `<form>` element, clicking them will inadvertently submit the form and cause a disruptive page reload.
 **Action:** Always explicitly set `type="button"` on custom action buttons that are not intended to submit forms.
+
+## 2024-06-07 - Always set type="button" on sidebar toggle buttons
+**Learning:** Custom toggle buttons inside layout components (like `SlimSidebar`) used to expand or hide sidebars often lack the `type="button"` attribute. Since the default HTML behavior is `type="submit"`, this can cause unintended form submissions if the component is nested near a form context.
+**Action:** Always explicitly specify `type="button"` on all custom UI action buttons, including layout toggles and expansible triggers, to ensure safe and predictable interactions.
