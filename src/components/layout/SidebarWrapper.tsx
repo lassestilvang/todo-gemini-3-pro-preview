@@ -133,6 +133,7 @@ export function SidebarWrapper({ children, className, lists, labels }: SidebarWr
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <button
+                                type="button"
                                 onClick={() => setMode("slim")}
                                 className="flex items-center justify-center h-6 w-6 rounded-md text-foreground/70 hover:text-foreground hover:bg-accent transition-colors"
                                 aria-label="Slim sidebar"
@@ -145,6 +146,7 @@ export function SidebarWrapper({ children, className, lists, labels }: SidebarWr
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <button
+                                type="button"
                                 onClick={() => setMode("hidden")}
                                 className="flex items-center justify-center h-6 w-6 rounded-md text-foreground/70 hover:text-foreground hover:bg-accent transition-colors"
                                 aria-label="Hide sidebar"
@@ -198,6 +200,7 @@ export function SidebarWrapper({ children, className, lists, labels }: SidebarWr
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <button
+                            type="button"
                             onClick={() => setMode("normal")}
                             className="fixed top-3 left-3 z-40 flex items-center justify-center h-8 w-8 rounded-lg bg-card backdrop-blur-sm border border-border text-foreground/70 hover:text-foreground hover:bg-accent shadow-sm transition-all duration-200 hover:shadow-md hover:scale-105 hidden md:flex"
                             aria-label="Show sidebar"
