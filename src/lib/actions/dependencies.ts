@@ -20,6 +20,7 @@ import {
   NotFoundError,
 } from "./shared";
 import { requireUser } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
 
 /**
  * Internal implementation for adding a dependency between tasks.
@@ -31,6 +32,11 @@ import { requireUser } from "@/lib/auth";
  */
 async function addDependencyImpl(userId: string, taskId: number, blockerId: number) {
   await requireUser(userId);
+
+  const limit = await rateLimit(`dependency:add:${userId}`, 100, 3600);
+  if (!limit.success) {
+    throw new Error("Rate limit exceeded. Please try again later.");
+  }
 
   if (taskId === blockerId) {
     throw new ValidationError("Task cannot block itself", {
@@ -103,6 +109,11 @@ export const addDependency: (
  */
 async function removeDependencyImpl(userId: string, taskId: number, blockerId: number) {
   await requireUser(userId);
+
+  const limit = await rateLimit(`dependency:remove:${userId}`, 100, 3600);
+  if (!limit.success) {
+    throw new Error("Rate limit exceeded. Please try again later.");
+  }
 
   // Validate ownership of both tasks to prevent IDOR
   const tasksCheck = await db
