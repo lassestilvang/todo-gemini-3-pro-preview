@@ -42,3 +42,7 @@
 **Vulnerability:** The Server Actions for updating (`updateTemplateImpl`) and deleting (`deleteTemplateImpl`) templates were exposed without rate limiting.
 **Learning:** Destructive operations and general mutations must be consistently rate-limited, even if they aren't the primary actions an application supports. Overlooking these creates asymmetric DoS vectors.
 **Prevention:** Apply the codebase's standard `rateLimit` utility on EVERY mutative Server Action.
+## 2026-06-27 - Rate Limiting Missing on Dependency Endpoints
+**Vulnerability:** The Server Actions for managing task dependencies (`addDependencyImpl` and `removeDependencyImpl`) lacked rate limiting.
+**Learning:** Just like creating tasks or custom icons, adding and removing task dependencies are mutating server actions that can be abused via rapid, successive programmatic requests leading to Denial of Service (DoS) or excessive database load.
+**Prevention:** Apply the codebase's standard `rateLimit` utility on EVERY mutative Server Action, regardless of the perceived sensitivity of the data being modified.
