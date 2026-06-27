@@ -8,6 +8,7 @@ import { Trophy, Star, Flame, Snowflake } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import confetti from "canvas-confetti";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 export function XPBar({ userId }: { userId?: string }) {
@@ -70,8 +71,9 @@ export function XPBar({ userId }: { userId?: string }) {
     const xpNeeded = nextLevelXP - currentLevelBaseXP;
 
     return (
-        <div className="px-4 py-2" id="xp-bar" data-testid="xp-bar">
-            <div className="flex items-center justify-between mb-1">
+        <TooltipProvider>
+            <div className="px-4 py-2" id="xp-bar" data-testid="xp-bar">
+                <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-1.5">
                     <div className="bg-yellow-100 text-yellow-700 p-1 rounded-md">
                         <Trophy className="h-3 w-3" />
@@ -86,26 +88,37 @@ export function XPBar({ userId }: { userId?: string }) {
 
             {/* Streak & Freezes */}
             <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5 group cursor-help" title="Daily Streak">
-                    <div className={cn(
-                        "p-1 rounded-md transition-all duration-300",
-                        stats.currentStreak > 0 ? "bg-orange-100 text-orange-700 animate-pulse" : "bg-muted text-muted-foreground"
-                    )}>
-                        <Flame className={cn("h-3 w-3", stats.currentStreak > 5 && "animate-bounce")} />
-                    </div>
-                    <span className="text-[10px] font-bold">
-                        {stats.currentStreak} Day Streak
-                    </span>
-                </div>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <div className="flex items-center gap-1.5 group cursor-help">
+                            <div className={cn(
+                                "p-1 rounded-md transition-all duration-300",
+                                stats.currentStreak > 0 ? "bg-orange-100 text-orange-700 animate-pulse" : "bg-muted text-muted-foreground"
+                            )}>
+                                <Flame className={cn("h-3 w-3", stats.currentStreak > 5 && "animate-bounce")} />
+                            </div>
+                            <span className="text-[10px] font-bold">
+                                {stats.currentStreak} Day Streak
+                            </span>
+                        </div>
+                    </TooltipTrigger>
+                    <TooltipContent>Daily Streak</TooltipContent>
+                </Tooltip>
                 {stats.streakFreezes > 0 && (
-                    <div className="flex items-center gap-1 text-[10px] text-blue-500" title="Streak Freezes Remaining">
-                        <Snowflake className="h-3 w-3" />
-                        <span>{stats.streakFreezes}</span>
-                    </div>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div className="flex items-center gap-1 text-[10px] text-blue-500 cursor-help">
+                                <Snowflake className="h-3 w-3" />
+                                <span>{stats.streakFreezes}</span>
+                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent>Streak Freezes Remaining</TooltipContent>
+                    </Tooltip>
                 )}
             </div>
 
-            <Progress value={progress} className="h-1.5 bg-secondary" indicatorClassName="bg-gradient-to-r from-yellow-400 to-orange-500" data-testid="xp-progress" aria-label="XP Progress" />
-        </div>
+                <Progress value={progress} className="h-1.5 bg-secondary" indicatorClassName="bg-gradient-to-r from-yellow-400 to-orange-500" data-testid="xp-progress" aria-label="XP Progress" />
+            </div>
+        </TooltipProvider>
     );
 }
