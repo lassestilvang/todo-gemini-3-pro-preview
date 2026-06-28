@@ -33,3 +33,6 @@
 ## 2024-06-07 - Always set type="button" on sidebar toggle buttons
 **Learning:** Custom toggle buttons inside layout components (like `SlimSidebar`) used to expand or hide sidebars often lack the `type="button"` attribute. Since the default HTML behavior is `type="submit"`, this can cause unintended form submissions if the component is nested near a form context.
 **Action:** Always explicitly specify `type="button"` on all custom UI action buttons, including layout toggles and expansible triggers, to ensure safe and predictable interactions.
+## 2024-06-28 - Provide aria-labels for icon-only action buttons
+**Learning:** Icon-only buttons used for distinct actions (like Play, Pause, Reset in the Pomodoro Timer) lack context for screen reader users when aria-labels are missing.
+**Action:** Always provide an explicit `aria-label` on icon-only `<Button>` components, even when they are wrapped in a `<Tooltip>`, to ensure immediate and descriptive accessibility.
