@@ -42,3 +42,7 @@
 **Vulnerability:** The Server Actions for updating (`updateTemplateImpl`) and deleting (`deleteTemplateImpl`) templates were exposed without rate limiting.
 **Learning:** Destructive operations and general mutations must be consistently rate-limited, even if they aren't the primary actions an application supports. Overlooking these creates asymmetric DoS vectors.
 **Prevention:** Apply the codebase's standard `rateLimit` utility on EVERY mutative Server Action.
+## 2025-06-29 - Missing Rate Limiting on Label and List Update Actions
+**Vulnerability:** The Server Actions for updating lists (`updateListImpl`) and updating labels (`updateLabelImpl`) lacked rate limiting.
+**Learning:** While creation actions are often the primary focus for rate limiting, endpoints that perform generic update operations are also vectors for DoS attacks or database exhaustion if left unprotected.
+**Prevention:** Apply the `rateLimit` utility consistently across all mutative Server Actions, not just primary creation entities like tasks or lists.
