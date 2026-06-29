@@ -208,6 +208,11 @@ async function updateLabelImpl(
 ) {
   const user = await requireUser(userId);
 
+  const limit = await rateLimit(`label:update:${userId}`, 50, 3600);
+  if (!limit.success) {
+    throw new ValidationError("Rate limit exceeded. Please try again later.");
+  }
+
   if (data.name !== undefined) {
     if (data.name.trim().length === 0) {
       throw new ValidationError("Label name cannot be empty", { name: "Name cannot be empty" });
