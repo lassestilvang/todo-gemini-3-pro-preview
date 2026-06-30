@@ -25,3 +25,7 @@
 ## 2025-06-25 - [React Reference Preservation in useMemo]
 **Learning:** When conditionally appending items to an array inside a `useMemo` block (e.g., `[...activeTasks, ...(showCompleted ? completedTasks : [])]`), unconditionally returning a newly allocated array or combination (even if the second array is empty) breaks referential equality for the primary array. This can cause unnecessary downstream re-renders.
 **Action:** Use an early return to pass back the original array reference (`if (!showCompleted || completedTasks.length === 0) return activeTasks;`) when no items need to be appended. For the combination, `array.concat()` or a spread operator is sufficient as long as the default state preserves the reference.
+
+## 2026-06-30 - [dnd-kit Global State Re-renders]
+**Learning:** When using `@dnd-kit`, tracking drag state globally (e.g., setting `activeTask` or `activeId` on drag start in a parent component like `TaskBoardView`) forces re-renders of all child elements (columns, cards, or list items) on every drag interaction. In large lists or boards, this O(N) re-render cost significantly degrades drag performance and responsiveness.
+**Action:** Always wrap repeating draggable items (like `TaskBoardCard`) and structural containers (like `TaskBoardColumn`) with `React.memo()`. This ensures that only the actively dragged item, its source column, and the target hover dropzone re-render when global drag state updates, preventing expensive O(N) re-render cascades.
