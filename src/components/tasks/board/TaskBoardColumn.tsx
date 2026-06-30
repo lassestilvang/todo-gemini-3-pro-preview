@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
 import { Task } from "@/lib/types";
@@ -21,7 +22,9 @@ const colorMap: Record<string, string> = {
   gray: "bg-gray-400",
 };
 
-export function TaskBoardColumn({ column, tasks, onEdit }: TaskBoardColumnProps) {
+// ⚡ Bolt Opt: Memoized TaskBoardColumn to avoid re-rendering all columns and their cards
+// when dragging changes the global activeDragTask state in TaskBoardView.
+export const TaskBoardColumn = memo(function TaskBoardColumn({ column, tasks, onEdit }: TaskBoardColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `column:${column.id}`,
     data: { columnId: column.id },
@@ -61,4 +64,4 @@ export function TaskBoardColumn({ column, tasks, onEdit }: TaskBoardColumnProps)
       </div>
     </div>
   );
-}
+});
