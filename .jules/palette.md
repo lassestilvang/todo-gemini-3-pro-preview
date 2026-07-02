@@ -33,3 +33,7 @@
 ## 2024-06-07 - Always set type="button" on sidebar toggle buttons
 **Learning:** Custom toggle buttons inside layout components (like `SlimSidebar`) used to expand or hide sidebars often lack the `type="button"` attribute. Since the default HTML behavior is `type="submit"`, this can cause unintended form submissions if the component is nested near a form context.
 **Action:** Always explicitly specify `type="button"` on all custom UI action buttons, including layout toggles and expansible triggers, to ensure safe and predictable interactions.
+
+## 2024-07-02 - [Tooltips and Type for FocusMode Buttons]
+**Learning:** Found several icon-only action buttons in the `FocusMode` overlay (minimize, reset, start/pause, complete) that lacked proper Tooltip wrappers and explicitly defined `type="button"` attributes. This degrades accessibility for screen reader and keyboard users and leaves the buttons susceptible to unintentional form submissions if the component tree evolves.
+**Action:** Always wrap custom icon-only action buttons inside complex overlays like `FocusMode` with the standard `<Tooltip>` component and ensure they have `type="button"` specified to provide necessary context and interaction safety.
