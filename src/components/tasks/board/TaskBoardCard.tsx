@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
 import { Task } from "@/lib/types";
@@ -19,7 +20,8 @@ const priorityColors: Record<string, string> = {
   none: "border-l-gray-300",
 };
 
-export function TaskBoardCard({ task, onEdit }: TaskBoardCardProps) {
+// ⚡ Bolt: Wrapped in React.memo to prevent O(N) re-renders of all cards when global drag state changes in parent
+export const TaskBoardCard = React.memo(function TaskBoardCard({ task, onEdit }: TaskBoardCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
       id: task.id,
@@ -135,4 +137,4 @@ export function TaskBoardCard({ task, onEdit }: TaskBoardCardProps) {
       )}
     </div>
   );
-}
+});
