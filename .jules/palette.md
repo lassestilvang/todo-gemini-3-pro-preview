@@ -33,3 +33,6 @@
 ## 2024-06-07 - Always set type="button" on sidebar toggle buttons
 **Learning:** Custom toggle buttons inside layout components (like `SlimSidebar`) used to expand or hide sidebars often lack the `type="button"` attribute. Since the default HTML behavior is `type="submit"`, this can cause unintended form submissions if the component is nested near a form context.
 **Action:** Always explicitly specify `type="button"` on all custom UI action buttons, including layout toggles and expansible triggers, to ensure safe and predictable interactions.
+## 2024-07-09 - Accessible Tooltips for Non-interactive UI elements
+**Learning:** Native `title` attributes on `div` or `span` elements provide delayed feedback and are completely inaccessible to keyboard-only users who cannot hover.
+**Action:** Replace native `title` attributes with custom accessible `<Tooltip>` components, ensuring the trigger element is focusable (e.g. using `tabIndex={0}`) if it isn't inherently interactive.

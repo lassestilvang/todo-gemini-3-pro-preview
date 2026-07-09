@@ -8,6 +8,7 @@ import { Trophy, Star, Flame, Snowflake } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import confetti from "canvas-confetti";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 export function XPBar({ userId }: { userId?: string }) {
@@ -86,22 +87,37 @@ export function XPBar({ userId }: { userId?: string }) {
 
             {/* Streak & Freezes */}
             <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5 group cursor-help" title="Daily Streak">
-                    <div className={cn(
-                        "p-1 rounded-md transition-all duration-300",
-                        stats.currentStreak > 0 ? "bg-orange-100 text-orange-700 animate-pulse" : "bg-muted text-muted-foreground"
-                    )}>
-                        <Flame className={cn("h-3 w-3", stats.currentStreak > 5 && "animate-bounce")} />
-                    </div>
-                    <span className="text-[10px] font-bold">
-                        {stats.currentStreak} Day Streak
-                    </span>
-                </div>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <div tabIndex={0} className="flex items-center gap-1.5 group cursor-help focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm">
+                            <div className={cn(
+                                "p-1 rounded-md transition-all duration-300",
+                                stats.currentStreak > 0 ? "bg-orange-100 text-orange-700 animate-pulse" : "bg-muted text-muted-foreground"
+                            )}>
+                                <Flame className={cn("h-3 w-3", stats.currentStreak > 5 && "animate-bounce")} />
+                            </div>
+                            <span className="text-[10px] font-bold">
+                                {stats.currentStreak} Day Streak
+                            </span>
+                        </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Daily Streak</p>
+                    </TooltipContent>
+                </Tooltip>
+
                 {stats.streakFreezes > 0 && (
-                    <div className="flex items-center gap-1 text-[10px] text-blue-500" title="Streak Freezes Remaining">
-                        <Snowflake className="h-3 w-3" />
-                        <span>{stats.streakFreezes}</span>
-                    </div>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div tabIndex={0} className="flex items-center gap-1 text-[10px] text-blue-500 cursor-help focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm">
+                                <Snowflake className="h-3 w-3" />
+                                <span>{stats.streakFreezes}</span>
+                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Streak Freezes Remaining</p>
+                        </TooltipContent>
+                    </Tooltip>
                 )}
             </div>
 
