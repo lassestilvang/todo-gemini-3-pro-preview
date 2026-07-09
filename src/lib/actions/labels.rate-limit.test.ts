@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { createTestUser } from "@/test/setup";
 import { setMockAuthUser, resetMockAuthUser } from "@/test/mocks";
-import { createLabel } from "./labels";
+import { createLabel, updateLabel, deleteLabel } from "./labels";
 import { db, labels, eq } from "./shared";
 
 describe("Labels Rate Limits", () => {
@@ -59,5 +59,42 @@ describe("Labels Rate Limits", () => {
     // Expect rate limit to be hit
     expect(rateLimitHit).toBe(true);
     expect(successCount).toBe(100);
+  });
+
+  it("should enforce rate limits on label update", async () => {
+    // Attempt to update a label 210 times rapidly (limit 100).
+    // Note: The limit is 100 per 3600s
+    let rateLimitHit = false;
+
+    for (let i = 0; i < 110; i++) {
+      const result = await updateLabel(1, USER_ID, {
+        name: `Label Updated ${i}`,
+      });
+
+      if (!result.success && result.error.message.includes("Rate limit")) {
+        rateLimitHit = true;
+        break;
+      }
+    }
+
+    // Expect rate limit to be hit regardless of update success
+    expect(rateLimitHit).toBe(true);
+  });
+
+  it("should enforce rate limits on label deletion", async () => {
+    // Attempt to delete a label 60 times rapidly (limit 50).
+    let rateLimitHit = false;
+
+    for (let i = 0; i < 60; i++) {
+      const result = await deleteLabel(1, USER_ID);
+
+      if (!result.success && result.error.message.includes("Rate limit")) {
+        rateLimitHit = true;
+        break;
+      }
+    }
+
+    // Expect rate limit to be hit regardless of deletion success
+    expect(rateLimitHit).toBe(true);
   });
 });
