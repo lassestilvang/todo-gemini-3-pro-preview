@@ -239,7 +239,7 @@ async function updateListImpl(
 ) {
   const user = await requireUser(userId);
 
-  const limit = await rateLimit(`list:update:${userId}`, 50, 3600);
+  const limit = await rateLimit(`list:update:${userId}`, 100, 3600);
   if (!limit.success) {
     throw new ValidationError("Rate limit exceeded. Please try again later.");
   }
