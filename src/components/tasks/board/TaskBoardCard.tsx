@@ -1,5 +1,6 @@
 "use client";
 
+import React, { memo } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
 import { Task } from "@/lib/types";
@@ -19,7 +20,9 @@ const priorityColors: Record<string, string> = {
   none: "border-l-gray-300",
 };
 
-export function TaskBoardCard({ task, onEdit }: TaskBoardCardProps) {
+// ⚡ Bolt Opt: Wrapped TaskBoardCard in React.memo() to prevent O(N) re-render cascades
+// when the parent TaskBoardView updates the active drag state during dragging.
+export const TaskBoardCard = memo(function TaskBoardCard({ task, onEdit }: TaskBoardCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
       id: task.id,
@@ -135,4 +138,4 @@ export function TaskBoardCard({ task, onEdit }: TaskBoardCardProps) {
       )}
     </div>
   );
-}
+});
