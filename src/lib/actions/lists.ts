@@ -239,11 +239,6 @@ async function updateListImpl(
 ) {
   const user = await requireUser(userId);
 
-  const limit = await rateLimit(`list:update:${userId}`, 100, 3600);
-  if (!limit.success) {
-    throw new ValidationError("Rate limit exceeded. Please try again later.");
-  }
-
   if (data.name !== undefined) {
     if (data.name.trim().length === 0) {
       throw new ValidationError("List name cannot be empty", { name: "Name cannot be empty" });
