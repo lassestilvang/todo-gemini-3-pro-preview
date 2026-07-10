@@ -42,3 +42,12 @@
 **Vulnerability:** The Server Actions for updating (`updateTemplateImpl`) and deleting (`deleteTemplateImpl`) templates were exposed without rate limiting.
 **Learning:** Destructive operations and general mutations must be consistently rate-limited, even if they aren't the primary actions an application supports. Overlooking these creates asymmetric DoS vectors.
 **Prevention:** Apply the codebase's standard `rateLimit` utility on EVERY mutative Server Action.
+
+## 2026-07-04 - [Defense-in-Depth] Enforce Authorization in Internal Helpers
+**Vulnerability:** Internal helper functions (like `logActivity`) that perform database mutations often accept a `userId` parameter but lack an internal `requireUser(userId)` check, assuming the caller has already validated authorization.
+**Learning:** If these internal helpers are ever accidentally exported from a `"use server"` file or directly exposed to an API route, they become vulnerable to Insecure Direct Object Reference (IDOR), allowing an attacker to mutate data for other users by spoofing the `userId`.
+**Prevention:** Apply a defense-in-depth approach by enforcing `requireUser(userId)` or equivalent authorization checks directly within internal mutation helpers, even if they are currently only called by other authenticated Server Actions. Always update the corresponding test suites to mock the authenticated session context when adding these internal checks.
+## 2026-07-06 - [Rate Limiting Missing on Label Update and Delete Endpoints]
+**Vulnerability:** The Server Actions for updating (`updateLabelImpl`) and deleting (`deleteLabelImpl`) labels, and updating (`updateListImpl`) lists were exposed without rate limiting.
+**Learning:** Destructive operations and general mutations must be consistently rate-limited, even if they aren't the primary actions an application supports. Overlooking these creates asymmetric DoS vectors.
+**Prevention:** Apply the codebase's standard rateLimit utility on EVERY mutative Server Action.
