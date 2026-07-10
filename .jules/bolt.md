@@ -25,6 +25,9 @@
 ## 2025-06-25 - [React Reference Preservation in useMemo]
 **Learning:** When conditionally appending items to an array inside a `useMemo` block (e.g., `[...activeTasks, ...(showCompleted ? completedTasks : [])]`), unconditionally returning a newly allocated array or combination (even if the second array is empty) breaks referential equality for the primary array. This can cause unnecessary downstream re-renders.
 **Action:** Use an early return to pass back the original array reference (`if (!showCompleted || completedTasks.length === 0) return activeTasks;`) when no items need to be appended. For the combination, `array.concat()` or a spread operator is sufficient as long as the default state preserves the reference.
+## 2024-07-07 - [Avoid Object Allocation in Boolean Validation]
+**Learning:** Using `Array.prototype.filter()` purely to validate elements against a Set (e.g. `const invalidIds = listIds.filter(id => !validListIds.has(id)); if (invalidIds.length > 0) ...`) forces Node/V8 to allocate a temporary O(N) array in memory, iterate all elements, and trigger garbage collection just to perform a boolean check.
+**Action:** Replace validation `.filter()` chains with an early-breaking `for` loop (`let hasInvalid = false; for (const id of listIds) { if (!validListIds.has(id)) { hasInvalid = true; break; } }`) to achieve O(1) memory allocation and avoid full iteration if an invalid element is found early.
 ## 2024-07-02 - [React.memo & dnd-kit Rendering]
 **Learning:** When tracking global drag state (e.g., setting an active drag item in a parent component) using libraries like `@dnd-kit`, all child elements will re-render by default on every drag state change, causing expensive O(N) re-render cascades in large lists or boards.
 **Action:** Always wrap repeating draggable items (like cards) and their structural containers (like columns) with `React.memo()` to prevent unnecessary re-renders during drag operations.

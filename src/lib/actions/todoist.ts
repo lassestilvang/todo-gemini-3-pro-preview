@@ -643,9 +643,17 @@ export async function setTodoistProjectMappings(
     for (const l of validLists) {
       validListIds.add(l.id);
     }
-    const invalidIds = listIds.filter((id) => !validListIds.has(id));
 
-    if (invalidIds.length > 0) {
+    // ⚡ Bolt Opt: Replaced `.filter()` with an allocation-free loop for validation
+    let hasInvalid = false;
+    for (const id of listIds) {
+      if (!validListIds.has(id)) {
+        hasInvalid = true;
+        break;
+      }
+    }
+
+    if (hasInvalid) {
       return {
         success: false,
         error: "One or more lists not found or access denied",
@@ -753,9 +761,17 @@ export async function setTodoistLabelMappings(
     for (const l of validLists) {
       validListIds.add(l.id);
     }
-    const invalidIds = listIds.filter((id) => !validListIds.has(id));
 
-    if (invalidIds.length > 0) {
+    // ⚡ Bolt Opt: Replaced `.filter()` with an allocation-free loop for validation
+    let hasInvalid = false;
+    for (const id of listIds) {
+      if (!validListIds.has(id)) {
+        hasInvalid = true;
+        break;
+      }
+    }
+
+    if (hasInvalid) {
       return {
         success: false,
         error: "One or more lists not found or access denied",
