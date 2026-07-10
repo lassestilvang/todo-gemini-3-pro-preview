@@ -88,7 +88,7 @@ describe("Labels Rate Limits", () => {
     for (let i = 0; i < 60; i++) {
       const result = await deleteLabel(1, USER_ID);
 
-      if (!result.success && result.error.message.includes("Rate limit")) {
+      if (!result.success && result.error && typeof result.error === 'object' && result.error.message && result.error.message.includes("Rate limit")) {
         rateLimitHit = true;
         break;
       }
