@@ -89,7 +89,10 @@ export function XPBar({ userId }: { userId?: string }) {
             <div className="flex items-center justify-between mb-2">
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <div tabIndex={0} className="flex items-center gap-1.5 group cursor-help focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm">
+                        <button
+                            type="button"
+                            className="flex items-center gap-1.5 group cursor-help focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background rounded-md"
+                        >
                             <div className={cn(
                                 "p-1 rounded-md transition-all duration-300",
                                 stats.currentStreak > 0 ? "bg-orange-100 text-orange-700 animate-pulse" : "bg-muted text-muted-foreground"
@@ -99,17 +102,16 @@ export function XPBar({ userId }: { userId?: string }) {
                             <span className="text-[10px] font-bold">
                                 {stats.currentStreak} Day Streak
                             </span>
-                        </div>
+                        </button>
                     </TooltipTrigger>
                     <TooltipContent>
                         <p>Daily Streak</p>
                     </TooltipContent>
                 </Tooltip>
-
                 {stats.streakFreezes > 0 && (
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <div tabIndex={0} className="flex items-center gap-1 text-[10px] text-blue-500 cursor-help focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm">
+                            <div className="flex items-center gap-1 text-[10px] text-blue-500 cursor-help">
                                 <Snowflake className="h-3 w-3" />
                                 <span>{stats.streakFreezes}</span>
                             </div>
