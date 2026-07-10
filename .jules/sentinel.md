@@ -46,6 +46,10 @@
 **Vulnerability:** The Server Actions for updating (`updateTemplateImpl`) and deleting (`deleteTemplateImpl`) templates were exposed without rate limiting.
 **Learning:** Destructive operations and general mutations must be consistently rate-limited, even if they aren't the primary actions an application supports. Overlooking these creates asymmetric DoS vectors.
 **Prevention:** Apply the codebase's standard `rateLimit` utility on EVERY mutative Server Action.
+## 2024-07-08 - Rate Limiting Missing on Label and List Update/Delete Endpoints
+**Vulnerability:** The Server Actions `updateLabelImpl`, `deleteLabelImpl`, and `updateListImpl` were exposed without rate limiting.
+**Learning:** While creation actions (like `createLabelImpl` and `createListImpl`) were correctly protected, the corresponding update and delete operations were missed. This leaves the system vulnerable to potential DoS attacks and resource exhaustion via rapid successive requests to these mutative endpoints.
+**Prevention:** Ensure the `rateLimit` utility (e.g., `await rateLimit(\`resource:action:${userId}\`, count, window)`) is consistently applied across *all* mutative Server Actions, not just for creation, to maintain a robust defense-in-depth posture.
 
 ## 2026-07-04 - [Defense-in-Depth] Enforce Authorization in Internal Helpers
 **Vulnerability:** Internal helper functions (like `logActivity`) that perform database mutations often accept a `userId` parameter but lack an internal `requireUser(userId)` check, assuming the caller has already validated authorization.
