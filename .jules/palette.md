@@ -40,3 +40,11 @@
 ## 2024-07-08 - Use Tooltips instead of native title for status indicators
 **Learning:** Using native HTML `title` attributes on status indicators (like Daily Streak or Streak Freezes) results in inconsistent, delayed visual feedback, and poor accessibility for keyboard users compared to custom tooltips.
 **Action:** Replace native `title` attributes on non-interactive informational elements with the application's `<Tooltip>` component to ensure immediate, consistent, and accessible feedback.
+
+## 2024-07-10 - Provide tooltips for custom icon-only action buttons in full-screen overlays
+**Learning:** Icon-only action buttons (like those used for timers or full-screen focus modes) lack context when presented without tooltips. The `aria-label` helps screen reader users, but sighted users need immediate visual feedback to understand the button's action, especially in distraction-free interfaces where standard UI context is hidden.
+**Action:** Always wrap custom icon-only \`<Button>\` components (like Reset, Pause/Play, Minimize) with the application's \`<Tooltip>\` component (using \`<TooltipTrigger asChild>\`) to ensure immediate, accessible feedback for all users.
+
+## 2024-07-10 - Provide tooltips for custom icon-only action buttons in full-screen overlays
+**Learning:** Icon-only action buttons (like those used for timers or full-screen focus modes) lack context when presented without tooltips. The `aria-label` helps screen reader users, but sighted users need immediate visual feedback to understand the button's action, especially in distraction-free interfaces where standard UI context is hidden.
+**Action:** Always wrap custom icon-only `<Button>` components (like Reset, Pause/Play, Minimize) with the application's `<Tooltip>` component (using `<TooltipTrigger asChild>`) to ensure immediate, accessible feedback for all users.
