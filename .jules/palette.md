@@ -33,3 +33,10 @@
 ## 2024-06-07 - Always set type="button" on sidebar toggle buttons
 **Learning:** Custom toggle buttons inside layout components (like `SlimSidebar`) used to expand or hide sidebars often lack the `type="button"` attribute. Since the default HTML behavior is `type="submit"`, this can cause unintended form submissions if the component is nested near a form context.
 **Action:** Always explicitly specify `type="button"` on all custom UI action buttons, including layout toggles and expansible triggers, to ensure safe and predictable interactions.
+## 2024-07-09 - Accessible Descriptions for Non-interactive UI elements
+**Learning:** Native title attributes on div or span elements provide delayed feedback and are completely inaccessible to keyboard-only users who cannot hover. However, adding tabIndex={0} to non-interactive elements to trigger tooltips creates confusing tab stops for keyboard users.
+**Action:** Use visually hidden text (e.g., using a .sr-only class) to provide accessible descriptions for screen readers, and avoid adding tabIndex={0} or tooltips to non-interactive elements.
+
+## 2024-07-08 - Use Tooltips instead of native title for status indicators
+**Learning:** Using native HTML `title` attributes on status indicators (like Daily Streak or Streak Freezes) results in inconsistent, delayed visual feedback, and poor accessibility for keyboard users compared to custom tooltips.
+**Action:** Replace native `title` attributes on non-interactive informational elements with the application's `<Tooltip>` component to ensure immediate, consistent, and accessible feedback.
