@@ -17,9 +17,11 @@ import {
   type ActionResult,
   withErrorHandling,
   NotFoundError,
+  ValidationError,
 } from "./shared";
 import { requireUser } from "@/lib/auth";
 import { createReminderSchema } from "@/lib/validation/reminders";
+import { rateLimit } from "@/lib/rate-limit";
 
 /**
  * Retrieves all reminders for a specific task.
@@ -60,6 +62,11 @@ async function createReminderImpl(
   remindAt: Date,
 ) {
   await requireUser(userId);
+
+  const limit = await rateLimit(`reminder:create:${userId}`, 100, 3600);
+  if (!limit.success) {
+    throw new ValidationError("Rate limit exceeded. Please try again later.");
+  }
 
   createReminderSchema.parse({ userId, taskId, remindAt });
 
@@ -115,6 +122,11 @@ export const createReminder: (
  */
 async function deleteReminderImpl(userId: string, id: number) {
   await requireUser(userId);
+
+  const limit = await rateLimit(`reminder:delete:${userId}`, 100, 3600);
+  if (!limit.success) {
+    throw new ValidationError("Rate limit exceeded. Please try again later.");
+  }
 
   // Get reminder to log it before deleting and verify ownership
   const reminder = await db
