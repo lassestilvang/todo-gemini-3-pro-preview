@@ -91,6 +91,7 @@ export function XPBar({ userId }: { userId?: string }) {
                     <TooltipTrigger asChild>
                         <button
                             type="button"
+                            aria-label="Daily Streak"
                             className="flex items-center gap-1.5 group cursor-help focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background rounded-md"
                         >
                             <div className={cn(
