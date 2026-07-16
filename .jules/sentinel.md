@@ -59,3 +59,8 @@
 **Vulnerability:** The Server Actions for updating (`updateLabelImpl`) and deleting (`deleteLabelImpl`) labels, and updating (`updateListImpl`) lists were exposed without rate limiting.
 **Learning:** Destructive operations and general mutations must be consistently rate-limited, even if they aren't the primary actions an application supports. Overlooking these creates asymmetric DoS vectors.
 **Prevention:** Apply the codebase's standard rateLimit utility on EVERY mutative Server Action.
+
+## 2026-07-06 - Rate Limiting Missing on Dependencies and Reminders Endpoints
+**Vulnerability:** The Server Actions for dependencies (`addDependencyImpl`, `removeDependencyImpl`) and reminders (`createReminderImpl`, `deleteReminderImpl`) and activity logger (`logActivity`) lacked rate limiting.
+**Learning:** Like update and delete operations, relational mutative actions between entities (like linking a reminder or a dependency to a task) need protection just like the parent entities. Missing them allows potential DoS attacks on the database.
+**Prevention:** Ensure the `rateLimit` utility is consistently applied across *all* mutative Server Actions to maintain robust defense-in-depth.
