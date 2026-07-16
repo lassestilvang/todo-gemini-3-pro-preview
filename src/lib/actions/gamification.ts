@@ -26,6 +26,7 @@ import {
 } from "./shared";
 import { requireUser } from "@/lib/auth";
 import { unstable_cache } from "next/cache";
+import { rateLimit } from "@/lib/rate-limit";
 
 type UnstableCache = <T extends (...args: unknown[]) => Promise<unknown>>(
   fn: T,
@@ -69,8 +70,14 @@ export async function getUserStats(userId: string) {
  */
 export async function addXP(userId: string, amount: number) {
   await requireUser(userId);
+
+  const limit = await rateLimit(`gamification:addXP:${userId}`, 200, 3600);
+  if (!limit.success) {
+    throw new Error("Rate limit exceeded. Please try again later.");
+  }
+
   if (amount <= 0) return;
-  return await updateUserProgress(userId, amount);
+  return await updateUserProgressInternal(userId, amount);
 }
 
 /**
@@ -99,6 +106,19 @@ export const getAchievements = cache(
 export async function updateUserProgress(userId: string, xpAmount: number) {
   await requireUser(userId);
 
+  const limit = await rateLimit(`gamification:updateProgress:${userId}`, 200, 3600);
+  if (!limit.success) {
+    throw new Error("Rate limit exceeded. Please try again later.");
+  }
+
+  return await updateUserProgressInternal(userId, xpAmount);
+}
+
+/**
+ * Internal function to handle progress updates.
+ * Caller should ensure authorization and rate-limiting.
+ */
+async function updateUserProgressInternal(userId: string, xpAmount: number) {
   // 1. Fetch all dependencies in parallel for maximum performance
   const now = new Date();
   const todayStart = startOfDay(now);
@@ -314,8 +334,14 @@ export async function checkAchievements(
   userId: string,
 ) {
   await requireUser(userId);
+
+  const limit = await rateLimit(`gamification:checkAchievements:${userId}`, 100, 3600);
+  if (!limit.success) {
+    throw new Error("Rate limit exceeded. Please try again later.");
+  }
+
   // Now simply triggers the iterative logic correctly
-  return await updateUserProgress(userId, 0);
+  return await updateUserProgressInternal(userId, 0);
 }
 
 /**
