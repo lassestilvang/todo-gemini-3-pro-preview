@@ -1,4 +1,4 @@
-import { db, taskLogs, ValidationError } from "./shared";
+import { db, taskLogs } from "./shared";
 import { requireUser } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 
