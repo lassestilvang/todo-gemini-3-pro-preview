@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { Play, Pause, CheckCircle2, RotateCcw, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { updateTask } from "@/lib/actions";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
