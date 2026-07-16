@@ -17,9 +17,9 @@ export async function logActivity(params: {
 }) {
   await requireUser(params.userId);
 
-  const limit = await rateLimit(`activity-log:create:${params.userId}`, 200, 3600);
+  const limit = await rateLimit("activity-log:create:" + params.userId, 200, 3600);
   if (!limit.success) {
-    throw new ValidationError("Rate limit exceeded. Please try again later.");
+    return;
   }
 
   // 🛡️ Sentinel: Enforce input length limits to prevent DoS via excessive storage consumption.
