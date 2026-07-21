@@ -64,3 +64,8 @@
 **Vulnerability:** The Server Actions for dependencies (`addDependencyImpl`, `removeDependencyImpl`) and reminders (`createReminderImpl`, `deleteReminderImpl`) and activity logger (`logActivity`) lacked rate limiting.
 **Learning:** Like update and delete operations, relational mutative actions between entities (like linking a reminder or a dependency to a task) need protection just like the parent entities. Missing them allows potential DoS attacks on the database.
 **Prevention:** Ensure the `rateLimit` utility is consistently applied across *all* mutative Server Actions to maintain robust defense-in-depth.
+
+## 2026-07-07 - Rate Limiting Missing on Gamification and Streaks Endpoints
+**Vulnerability:** The Server Actions for gamification (`addXP`, `updateUserProgress`, `checkAchievements`) and streak updates (`updateStreakImpl`) lacked rate limiting.
+**Learning:** Functions that update gamification metrics (XP, level, streaks) without proper rate limiting can be abused by malicious users to inflate their scores rapidly, or worse, exhaust database connections since these functions run complex transactions and multiple updates. Furthermore, wrapping multiple rate-limited functions (like `addXP` calling `updateUserProgress`) can cause redundant token consumption if the internal function is not decoupled from its user-facing rate-limited wrapper.
+**Prevention:** Apply the `rateLimit` utility consistently across *all* mutative Server Actions, including those modifying gamification data. Additionally, extract core logic into `internal` functions (e.g. `updateUserProgressInternal`) to avoid double-limiting when one server action calls another.

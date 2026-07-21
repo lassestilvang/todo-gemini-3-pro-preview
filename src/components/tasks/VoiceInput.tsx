@@ -127,7 +127,9 @@ declare global {
         start(): void;
         stop(): void;
         abort(): void;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         onresult: (event: any) => void;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         onerror: (event: any) => void;
         onend: () => void;
     }
