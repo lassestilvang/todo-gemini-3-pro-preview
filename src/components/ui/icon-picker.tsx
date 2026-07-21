@@ -14,6 +14,7 @@ import {
     TabsList,
     TabsTrigger,
 } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { Search, Shuffle } from "lucide-react";
 import { AVAILABLE_ICONS } from "@/lib/icons";
 import { ResolvedIcon } from "./resolved-icon";
@@ -159,7 +160,16 @@ export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps
                             <TabsTrigger value="icons" className="text-xs h-7">Icons</TabsTrigger>
                             <TabsTrigger value="upload" className="text-xs h-7">Upload</TabsTrigger>
                         </TabsList>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleShuffle} title="Random Icon" aria-label="Random Icon"><Shuffle className="h-3.5 w-3.5" /></Button>
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleShuffle} aria-label="Random Icon"><Shuffle className="h-3.5 w-3.5" /></Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Random Icon</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
                     </div>
 
                     {activeTab === "icons" && (
