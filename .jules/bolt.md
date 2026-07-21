@@ -28,3 +28,6 @@
 ## 2024-07-02 - [React.memo & dnd-kit Rendering]
 **Learning:** When tracking global drag state (e.g., setting an active drag item in a parent component) using libraries like `@dnd-kit`, all child elements will re-render by default on every drag state change, causing expensive O(N) re-render cascades in large lists or boards.
 **Action:** Always wrap repeating draggable items (like cards) and their structural containers (like columns) with `React.memo()` to prevent unnecessary re-renders during drag operations.
+## 2024-07-18 - [Object.values Allocation in Renders]
+**Learning:** Passing `Object.values(storeObject)` directly into custom hooks or dependency arrays inside a component body creates a new O(N) array on *every single render*. This breaks downstream referential equality checks (like in `useMemo`), causing massive performance degradation—especially when the component contains frequent state updates (like a minute-based `now` timer).
+**Action:** Always memoize `Object.values(storeObject)` with `useMemo(() => Object.values(storeObject), [storeObject])` before passing it to hooks or mapping logic to prevent unnecessary allocations and re-renders.
