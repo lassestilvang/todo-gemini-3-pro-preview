@@ -26,6 +26,7 @@ import {
 } from "./shared";
 import { requireUser } from "@/lib/auth";
 import { unstable_cache } from "next/cache";
+import { rateLimit } from "@/lib/rate-limit";
 
 type UnstableCache = <T extends (...args: unknown[]) => Promise<unknown>>(
   fn: T,
@@ -69,7 +70,9 @@ export async function getUserStats(userId: string) {
  */
 export async function addXP(userId: string, amount: number) {
   await requireUser(userId);
-  if (amount <= 0) return;
+  if (amount <= 0 || amount > 10000) return;
+  const limit = await rateLimit(`gamification:addXP:${userId}`, 100, 3600);
+  if (!limit.success) throw new Error("Rate limit exceeded");
   return await updateUserProgress(userId, amount);
 }
 
@@ -98,6 +101,11 @@ export const getAchievements = cache(
  */
 export async function updateUserProgress(userId: string, xpAmount: number) {
   await requireUser(userId);
+  if (xpAmount < 0 || xpAmount > 10000) {
+    throw new Error("Invalid xpAmount");
+  }
+  const limit = await rateLimit(`gamification:updateUserProgress:${userId}`, 100, 3600);
+  if (!limit.success) throw new Error("Rate limit exceeded");
 
   // 1. Fetch all dependencies in parallel for maximum performance
   const now = new Date();
