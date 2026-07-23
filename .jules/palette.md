@@ -48,3 +48,7 @@
 ## 2024-07-10 - Provide tooltips for custom icon-only action buttons in full-screen overlays
 **Learning:** Icon-only action buttons (like those used for timers or full-screen focus modes) lack context when presented without tooltips. The `aria-label` helps screen reader users, but sighted users need immediate visual feedback to understand the button's action, especially in distraction-free interfaces where standard UI context is hidden.
 **Action:** Always wrap custom icon-only `<Button>` components (like Reset, Pause/Play, Minimize) with the application's `<Tooltip>` component (using `<TooltipTrigger asChild>`) to ensure immediate, accessible feedback for all users.
+
+## 2024-07-26 - Double tooltips and missing button types
+**Learning:** Found multiple instances where buttons used native `title` attributes despite already being wrapped in custom `<Tooltip>` components, causing a disruptive double-tooltip experience. Additionally, several custom action buttons lacked `type="button"`.
+**Action:** Always verify that native `title` attributes are removed when introducing custom tooltips to an element, and explicitly set `type="button"` on all standalone UI action buttons to prevent accidental form submissions.
