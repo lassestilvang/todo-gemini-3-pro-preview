@@ -26,6 +26,7 @@ import {
 } from "./shared";
 import { requireUser } from "@/lib/auth";
 import { unstable_cache } from "next/cache";
+import { rateLimit } from "@/lib/rate-limit";
 
 type UnstableCache = <T extends (...args: unknown[]) => Promise<unknown>>(
   fn: T,
@@ -70,6 +71,18 @@ export async function getUserStats(userId: string) {
 export async function addXP(userId: string, amount: number) {
   await requireUser(userId);
   if (amount <= 0) return;
+
+  // 🛡️ Sentinel: Enforce strict input bounds on mutative numeric inputs.
+  if (amount > 10000) {
+    throw new Error("Invalid XP amount: exceeds maximum allowed");
+  }
+
+  // 🛡️ Sentinel: Enforce rate limiting on mutative endpoints to prevent DoS attacks.
+  const limit = await rateLimit(`gamification:add_xp:${userId}`, 100, 3600);
+  if (!limit.success) {
+    throw new Error("Rate limit exceeded. Please try again later.");
+  }
+
   return await updateUserProgress(userId, amount);
 }
 
@@ -98,6 +111,17 @@ export const getAchievements = cache(
  */
 export async function updateUserProgress(userId: string, xpAmount: number) {
   await requireUser(userId);
+
+  // 🛡️ Sentinel: Enforce strict input bounds on mutative numeric inputs.
+  if (xpAmount < 0 || xpAmount > 10000) {
+    throw new Error("Invalid XP amount: out of bounds");
+  }
+
+  // 🛡️ Sentinel: Enforce rate limiting on mutative endpoints to prevent DoS attacks.
+  const limit = await rateLimit(`gamification:update_progress:${userId}`, 200, 3600);
+  if (!limit.success) {
+    throw new Error("Rate limit exceeded. Please try again later.");
+  }
 
   // 1. Fetch all dependencies in parallel for maximum performance
   const now = new Date();
