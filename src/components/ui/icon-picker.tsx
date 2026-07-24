@@ -20,6 +20,7 @@ import { ResolvedIcon } from "./resolved-icon";
 import { getCustomIcons, createCustomIcon } from "@/lib/actions/custom-icons";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Extracted Parts
 import { RECENT_ICONS_KEY, MAX_RECENTS, readRecentIconsFromStorage } from "./icon-picker/types";
@@ -159,7 +160,14 @@ export function IconPicker({ value, onChange, userId, trigger }: IconPickerProps
                             <TabsTrigger value="icons" className="text-xs h-7">Icons</TabsTrigger>
                             <TabsTrigger value="upload" className="text-xs h-7">Upload</TabsTrigger>
                         </TabsList>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleShuffle} title="Random Icon" aria-label="Random Icon"><Shuffle className="h-3.5 w-3.5" /></Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleShuffle} aria-label="Random Icon"><Shuffle className="h-3.5 w-3.5" /></Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Random Icon</p>
+                            </TooltipContent>
+                        </Tooltip>
                     </div>
 
                     {activeTab === "icons" && (
