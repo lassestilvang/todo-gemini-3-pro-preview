@@ -64,3 +64,8 @@
 **Vulnerability:** The Server Actions for dependencies (`addDependencyImpl`, `removeDependencyImpl`) and reminders (`createReminderImpl`, `deleteReminderImpl`) and activity logger (`logActivity`) lacked rate limiting.
 **Learning:** Like update and delete operations, relational mutative actions between entities (like linking a reminder or a dependency to a task) need protection just like the parent entities. Missing them allows potential DoS attacks on the database.
 **Prevention:** Ensure the `rateLimit` utility is consistently applied across *all* mutative Server Actions to maintain robust defense-in-depth.
+
+## 2026-07-24 - Rate Limiting Bypass and Missing Checks on Time Tracking Endpoints
+**Vulnerability:** The `startTimeEntry` and `createManualTimeEntry` server actions invoked the `rateLimit` utility but ignored the return value, effectively bypassing rate limits. Additionally, mutative actions (`stopTimeEntry`, `updateTimeEntry`, `deleteTimeEntry`, `updateTaskEstimate`) completely lacked rate limit checks.
+**Learning:** Simply calling a rate limiting function is insufficient if the result isn't validated. Also, secondary/auxiliary mutative actions (like stopping a timer or updating estimates) are often overlooked for rate limiting, creating potential DoS and abuse vectors.
+**Prevention:** Always verify the return value of rate limit utilities (e.g., `if (!limit.success)`) and ensure rate limiting is systematically applied across all endpoints that mutate state, including updates and deletions.
