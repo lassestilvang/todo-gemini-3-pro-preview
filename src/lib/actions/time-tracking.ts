@@ -71,7 +71,10 @@ export async function startTimeEntry(
 ): Promise<ActionResult<typeof timeEntries.$inferSelect>> {
     return withErrorHandling(async () => {
         await requireUser(userId);
-        await rateLimit(`${userId}:time-tracking`, 20, 60);
+        const limit = await rateLimit(`${userId}:time-tracking`, 20, 60);
+        if (!limit.success) {
+            throw new ValidationError("Rate limit exceeded");
+        }
 
         // Ensure task belongs to user
         const [task] = await db
@@ -130,6 +133,10 @@ export async function stopTimeEntry(
 ): Promise<ActionResult<typeof timeEntries.$inferSelect>> {
     return withErrorHandling(async () => {
         await requireUser(userId);
+        const limit = await rateLimit(`${userId}:time-tracking`, 20, 60);
+        if (!limit.success) {
+            throw new ValidationError("Rate limit exceeded");
+        }
 
         const [existing] = await db
             .select()
@@ -256,7 +263,10 @@ export async function createManualTimeEntry(
 ): Promise<ActionResult<typeof timeEntries.$inferSelect>> {
     return withErrorHandling(async () => {
         await requireUser(userId);
-        await rateLimit(`${userId}:time-tracking`, 20, 60);
+        const limit = await rateLimit(`${userId}:time-tracking`, 20, 60);
+        if (!limit.success) {
+            throw new ValidationError("Rate limit exceeded");
+        }
 
         // Ensure task belongs to user
         const [task] = await db
@@ -320,6 +330,10 @@ export async function updateTimeEntry(
 ): Promise<ActionResult<typeof timeEntries.$inferSelect>> {
     return withErrorHandling(async () => {
         await requireUser(userId);
+        const limit = await rateLimit(`${userId}:time-tracking`, 20, 60);
+        if (!limit.success) {
+            throw new ValidationError("Rate limit exceeded");
+        }
         const validatedData = updateTimeEntrySchema.parse(data);
 
         const [existing] = await db
@@ -369,6 +383,10 @@ export async function deleteTimeEntry(
 ): Promise<ActionResult<{ deleted: boolean }>> {
     return withErrorHandling(async () => {
         await requireUser(userId);
+        const limit = await rateLimit(`${userId}:time-tracking`, 20, 60);
+        if (!limit.success) {
+            throw new ValidationError("Rate limit exceeded");
+        }
 
         const [existing] = await db
             .select()
@@ -483,6 +501,10 @@ export async function updateTaskEstimate(
 ): Promise<ActionResult<typeof tasks.$inferSelect>> {
     return withErrorHandling(async () => {
         await requireUser(userId);
+        const limit = await rateLimit(`${userId}:time-tracking`, 20, 60);
+        if (!limit.success) {
+            throw new ValidationError("Rate limit exceeded");
+        }
 
         const [task] = await db
             .update(tasks)
