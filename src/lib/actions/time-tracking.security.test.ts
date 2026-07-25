@@ -53,4 +53,24 @@ describe("Security Tests: Time Tracking Actions", () => {
             error: { code: "FORBIDDEN" },
         });
     });
+
+    it("should enforce rate limits on mutative actions", async () => {
+        setMockAuthUser(attackerUser);
+        const [task] = await db.insert(tasks).values({
+            userId: attackerId,
+            title: "Attacker Task",
+            position: 0,
+        }).returning();
+
+        // 20 limit in 60s window
+        for (let i = 0; i < 20; i++) {
+            await startTimeEntry(task.id, attackerId);
+        }
+
+        const result = await startTimeEntry(task.id, attackerId);
+        expect(result.success).toBe(false);
+        if (!result.success) {
+            expect(result.error.message).toContain("Rate limit");
+        }
+    });
 });
