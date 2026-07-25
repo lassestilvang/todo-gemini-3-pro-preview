@@ -64,3 +64,7 @@
 **Vulnerability:** The Server Actions for dependencies (`addDependencyImpl`, `removeDependencyImpl`) and reminders (`createReminderImpl`, `deleteReminderImpl`) and activity logger (`logActivity`) lacked rate limiting.
 **Learning:** Like update and delete operations, relational mutative actions between entities (like linking a reminder or a dependency to a task) need protection just like the parent entities. Missing them allows potential DoS attacks on the database.
 **Prevention:** Ensure the `rateLimit` utility is consistently applied across *all* mutative Server Actions to maintain robust defense-in-depth.
+## 2025-06-11 - Rate Limiting and Input Boundaries on Gamification Mutations
+**Vulnerability:** The gamification Server Actions (`addXP` and `updateUserProgress`) were missing both rate limits and upper/lower bounds on input parameters (`amount` and `xpAmount`), allowing an attacker to theoretically inject massive amounts of XP directly or perform a DoS attack.
+**Learning:** Security controls like rate limiting and input boundaries must be consistently applied across all state-mutating endpoints, not just primary CRUD entities. Unchecked inputs to internal logic can lead to arbitrary application state manipulation.
+**Prevention:** Always implement the codebase's standard rate limiting and enforce strict boundaries (e.g., `amount > maxVal`) on mutative endpoints.
