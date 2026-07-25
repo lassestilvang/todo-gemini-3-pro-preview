@@ -21,6 +21,7 @@ import { ResolvedIcon } from "./resolved-icon";
 import { getCustomIcons, createCustomIcon } from "@/lib/actions/custom-icons";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Extracted Parts
 import { RECENT_ICONS_KEY, MAX_RECENTS, readRecentIconsFromStorage } from "./icon-picker/types";
