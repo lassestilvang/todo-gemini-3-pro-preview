@@ -52,3 +52,7 @@
 ## 2024-07-26 - Double tooltips and missing button types
 **Learning:** Found multiple instances where buttons used native `title` attributes despite already being wrapped in custom `<Tooltip>` components, causing a disruptive double-tooltip experience. Additionally, several custom action buttons lacked `type="button"`.
 **Action:** Always verify that native `title` attributes are removed when introducing custom tooltips to an element, and explicitly set `type="button"` on all standalone UI action buttons to prevent accidental form submissions.
+
+## 2024-07-26 - Add Tooltips to standalone overlay controls and manage aria-live on timers
+**Learning:** Icon-only controls in full-screen distraction-free overlays (like the Minimize button in Focus Mode) lack contextual UI headers. Tooltips provide essential context for sighted users. Additionally, countdown timers (updating every second) need `role="timer"` for semantics, but must use `aria-live="off"` to prevent screen readers from aggressively interrupting the user with every tick. Finally, when using Radix UI `TooltipProvider`, it's safer to wrap the entire portal or page content to avoid context mismatches between tooltips nested at different depths.
+**Action:** Wrap custom icon buttons in standalone modes with `<Tooltip>`. Add `role="timer"` and `aria-live="off"` to rapidly ticking countdown displays.
