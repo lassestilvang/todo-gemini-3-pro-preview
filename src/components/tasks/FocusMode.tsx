@@ -90,23 +90,31 @@ export function FocusMode({ task, userId, onClose }: FocusModeProps) {
     if (typeof document === 'undefined') return null;
 
     return createPortal(
-        <div
-            className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-sm flex flex-col items-center justify-center p-4 animate-in fade-in duration-300"
-        >
-            <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-4 right-4"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onClose();
-                }}
-                aria-label="Minimize Focus Mode"
+        <TooltipProvider>
+            <div
+                className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-sm flex flex-col items-center justify-center p-4 animate-in fade-in duration-300"
             >
-                <Minimize2 className="h-6 w-6" />
-            </Button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute top-4 right-4"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onClose();
+                            }}
+                            aria-label="Minimize Focus Mode"
+                        >
+                            <Minimize2 className="h-6 w-6" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                        <p>Minimize</p>
+                    </TooltipContent>
+                </Tooltip>
 
-            <div className="max-w-2xl w-full text-center space-y-12">
+                <div className="max-w-2xl w-full text-center space-y-12">
                 <div className="space-y-4">
                     <div className={cn(
                         "inline-flex items-center justify-center px-4 py-1.5 rounded-full text-sm font-medium",
@@ -124,13 +132,16 @@ export function FocusMode({ task, userId, onClose }: FocusModeProps) {
                     )}
                 </div>
 
-                <div className="tabular-nums text-8xl md:text-9xl font-bold tracking-tighter font-mono">
+                <div
+                    className="tabular-nums text-8xl md:text-9xl font-bold tracking-tighter font-mono"
+                    role="timer"
+                    aria-live="off"
+                >
                     {formatTime(timeLeft)}
                 </div>
 
                 <div className="flex items-center justify-center gap-6">
-                    <TooltipProvider>
-                        <Tooltip>
+                    <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button
                                     size="lg"
@@ -182,18 +193,18 @@ export function FocusMode({ task, userId, onClose }: FocusModeProps) {
                                     <CheckCircle2 className="h-6 w-6" />
                                 </Button>
                             </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Complete Task</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
+                        <TooltipContent>
+                            <p>Complete Task</p>
+                        </TooltipContent>
+                    </Tooltip>
                 </div>
 
                 <div className="text-sm text-muted-foreground">
                     {isActive ? "Stay focused. You got this!" : "Ready to start?"}
                 </div>
             </div>
-        </div>,
+        </div>
+        </TooltipProvider>,
         document.body
     );
 }
