@@ -936,22 +936,30 @@ export async function resolveTodoistConflict(
           eq(externalEntityMap.provider, "todoist"),
         ),
       );
-    const labelMappings = entityMappings.filter(
-      (mapping) => mapping.entityType === "label",
-    );
-    const taskMappings = entityMappings.filter(
-      (mapping) => mapping.entityType === "task",
-    );
-    const listLabelMappings = entityMappings.filter(
-      (mapping) => mapping.entityType === "list_label",
-    );
+    // ⚡ Bolt Opt: Replaced multiple .filter() calls with a single-pass loop
+    // to classify mappings in O(N) instead of O(4N), reducing iteration and array allocation overhead.
+    const labelMappings: typeof entityMappings = [];
+    const taskMappings: typeof entityMappings = [];
+    const listLabelMappings: typeof entityMappings = [];
+    const projectMappings: typeof entityMappings = [];
+
+    for (const mapping of entityMappings) {
+      if (mapping.entityType === "label") {
+        labelMappings.push(mapping);
+      } else if (mapping.entityType === "task") {
+        taskMappings.push(mapping);
+      } else if (mapping.entityType === "list_label") {
+        listLabelMappings.push(mapping);
+      } else if (mapping.entityType === "list") {
+        projectMappings.push(mapping);
+      }
+    }
+
     const mappingState = {
-      projects: entityMappings
-        .filter((mapping) => mapping.entityType === "list")
-        .map((mapping) => ({
-          projectId: mapping.externalId,
-          listId: mapping.localId,
-        })),
+      projects: projectMappings.map((mapping) => ({
+        projectId: mapping.externalId,
+        listId: mapping.localId,
+      })),
       labels: listLabelMappings.map((mapping) => ({
         labelId: mapping.externalId,
         listId: mapping.localId,
@@ -1096,22 +1104,30 @@ export async function resolveTodoistConflict(
           eq(externalEntityMap.provider, "todoist"),
         ),
       );
-    const labelMappings = entityMappings.filter(
-      (mapping) => mapping.entityType === "label",
-    );
-    const taskMappings = entityMappings.filter(
-      (mapping) => mapping.entityType === "task",
-    );
-    const listLabelMappings = entityMappings.filter(
-      (mapping) => mapping.entityType === "list_label",
-    );
+    // ⚡ Bolt Opt: Replaced multiple .filter() calls with a single-pass loop
+    // to classify mappings in O(N) instead of O(4N), reducing iteration and array allocation overhead.
+    const labelMappings: typeof entityMappings = [];
+    const taskMappings: typeof entityMappings = [];
+    const listLabelMappings: typeof entityMappings = [];
+    const projectMappings: typeof entityMappings = [];
+
+    for (const mapping of entityMappings) {
+      if (mapping.entityType === "label") {
+        labelMappings.push(mapping);
+      } else if (mapping.entityType === "task") {
+        taskMappings.push(mapping);
+      } else if (mapping.entityType === "list_label") {
+        listLabelMappings.push(mapping);
+      } else if (mapping.entityType === "list") {
+        projectMappings.push(mapping);
+      }
+    }
+
     const mappingState = {
-      projects: entityMappings
-        .filter((mapping) => mapping.entityType === "list")
-        .map((mapping) => ({
-          projectId: mapping.externalId,
-          listId: mapping.localId,
-        })),
+      projects: projectMappings.map((mapping) => ({
+        projectId: mapping.externalId,
+        listId: mapping.localId,
+      })),
       labels: listLabelMappings.map((mapping) => ({
         labelId: mapping.externalId,
         listId: mapping.localId,
