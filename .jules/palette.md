@@ -52,3 +52,6 @@
 ## 2024-07-26 - Double tooltips and missing button types
 **Learning:** Found multiple instances where buttons used native `title` attributes despite already being wrapped in custom `<Tooltip>` components, causing a disruptive double-tooltip experience. Additionally, several custom action buttons lacked `type="button"`.
 **Action:** Always verify that native `title` attributes are removed when introducing custom tooltips to an element, and explicitly set `type="button"` on all standalone UI action buttons to prevent accidental form submissions.
+## 2024-08-01 - Replace native title attributes with custom Tooltip components in IconPicker
+**Learning:** Native `title` attributes on interactive elements like color and icon selection buttons in custom Pickers provide slow, inconsistent visual feedback that harms the user experience compared to custom accessible tooltips provided by the design system.
+**Action:** Replace native `title` attributes on icon and color selection buttons with the application's `<Tooltip>` component to ensure immediate, visually consistent, and accessible feedback while maintaining standard accessibility tags.
