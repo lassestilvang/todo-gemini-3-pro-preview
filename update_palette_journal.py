@@ -1,4 +1,6 @@
-## 2024-05-30 - Added Explicit Label Associations to Custom Inputs
+import re
+
+content = """## 2024-05-30 - Added Explicit Label Associations to Custom Inputs
 **Learning:** For custom inputs (like Radix UI Select triggers or standard textareas), using a semantic <label> without an htmlFor attribute fails to associate the label with the input. This prevents screen readers from announcing the label when the input receives focus and prevents the browser from transferring focus when the label is clicked.
 **Action:** When building or modifying custom form controls, always generate a unique ID (e.g., using React.useId()) and pass it to the input/trigger, then link the <label> using htmlFor. Adding a cursor-pointer class to the label provides immediate visual feedback that it is interactive.
 
@@ -52,3 +54,6 @@
 ## 2024-07-27 - Remove native title from buttons wrapped in Tooltips
 **Learning:** Applying a native HTML `title` attribute directly on a `<button>` that is wrapped inside a custom `<Tooltip>` and `<TooltipTrigger asChild>` causes redundant tooltips to display simultaneously.
 **Action:** Always remove native `title` attributes when migrating elements to use custom accessible `<Tooltip>` components to avoid a disruptive visual overlap.
+"""
+with open('.jules/palette.md', 'w') as f:
+    f.write(content)
