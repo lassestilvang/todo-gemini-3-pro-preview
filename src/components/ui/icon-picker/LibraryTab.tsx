@@ -1,6 +1,7 @@
 import React from "react";
 import { TabsContent } from "@/components/ui/tabs";
 import { Loader2, X } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ResolvedIcon } from "../resolved-icon";
 import Image from "next/image";
 import dynamic from "next/dynamic";
@@ -71,24 +72,28 @@ export function IconPickerLibraryTab({
                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {customIcons.map((c: any) => (
                   <div key={c.id} className="relative group">
-                    <button
-                      type="button"
-                      onClick={() => handleSelectIcon(c.value)}
-                      aria-label={`Select custom icon ${c.name}`}
-                      className="flex items-center justify-center w-full aspect-square rounded-md hover:bg-accent/50 transition-colors"
-                      title={c.name}
-                    >
-                      <div className="w-5 h-5 rounded overflow-hidden">
-                        <Image
-                          src={c.value}
-                          alt={c.name}
-                          width={20}
-                          height={20}
-                          className="w-full h-full object-cover"
-                          unoptimized
-                        />
-                      </div>
-                    </button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectIcon(c.value)}
+                          aria-label={`Select custom icon ${c.name}`}
+                          className="flex items-center justify-center w-full aspect-square rounded-md hover:bg-accent/50 transition-colors"
+                        >
+                          <div className="w-5 h-5 rounded overflow-hidden">
+                            <Image
+                              src={c.value}
+                              alt={c.name}
+                              width={20}
+                              height={20}
+                              className="w-full h-full object-cover"
+                              unoptimized
+                            />
+                          </div>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>{c.name}</TooltipContent>
+                    </Tooltip>
                     {userId && c.id && (
                       <button
                         type="button"
