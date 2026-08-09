@@ -73,3 +73,8 @@
 **Vulnerability:** The gamification Server Actions (`addXP` and `updateUserProgress`) were missing both rate limits and upper/lower bounds on input parameters (`amount` and `xpAmount`), allowing an attacker to theoretically inject massive amounts of XP directly or perform a DoS attack.
 **Learning:** Security controls like rate limiting and input boundaries must be consistently applied across all state-mutating endpoints, not just primary CRUD entities. Unchecked inputs to internal logic can lead to arbitrary application state manipulation.
 **Prevention:** Always implement the codebase's standard rate limiting and enforce strict boundaries (e.g., `amount > maxVal`) on mutative endpoints.
+
+## 2026-08-09 - [Defense-in-Depth] Enforce Authorization in Internal Helpers
+**Vulnerability:** Internal helper functions (like `logActivity`) that perform database mutations often accept a `userId` parameter but lack an internal `requireUser(userId)` check, assuming the caller has already validated authorization.
+**Learning:** If these internal helpers are ever accidentally exported from a `"use server"` file or directly exposed to an API route, they become vulnerable to Insecure Direct Object Reference (IDOR), allowing an attacker to mutate data for other users by spoofing the `userId`.
+**Prevention:** Apply a defense-in-depth approach by enforcing `requireUser(userId)` or equivalent authorization checks directly within internal mutation helpers, even if they are currently only called by other authenticated Server Actions. Always update the corresponding test suites to mock the authenticated session context when adding these internal checks.
