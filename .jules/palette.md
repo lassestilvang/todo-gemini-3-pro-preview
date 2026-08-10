@@ -49,6 +49,9 @@
 **Learning:** Found multiple instances where buttons used native `title` attributes despite already being wrapped in custom `<Tooltip>` components, causing a disruptive double-tooltip experience. Additionally, several custom action buttons lacked `type="button"`.
 **Action:** Always verify that native `title` attributes are removed when introducing custom tooltips to an element, and explicitly set `type="button"` on all standalone UI action buttons to prevent accidental form submissions.
 
+## 2024-07-28 - Avoid Implicit Button Submissions in Sidebars
+**Learning:** Found that the toggle buttons in `SidebarWrapper` (slim mode, hidden mode, normal mode toggles) were missing the explicit `type="button"` attribute. If these layout elements were to be inadvertently nested near or inside form structures during future development, they could accidentally trigger form submissions due to HTML's default button behavior.
+**Action:** Always specify `type="button"` on standalone action buttons, especially toggle and layout controls, to prevent accidental form submissions that cause disruptive page reloads.
 ## 2024-07-26 - [Use Tooltips instead of native title for interactive Icon Picker Buttons]
 **Learning:** The Icon Picker component used native HTML `title` attributes on highly interactive elements (like color swatches, icon buttons, and the clear button). Native title attributes are slow to appear, visually inconsistent, and often inaccessible to keyboard users, leading to a degraded UX when users are trying to quickly browse or select icons.
 **Action:** Replace native `title` attributes on interactive icon picker buttons with the custom accessible `<Tooltip>` component (wrapping `<TooltipTrigger asChild>`), and ensure a parent `<TooltipProvider>` wraps the list of items to ensure immediate, consistent, and keyboard-accessible tooltips.
