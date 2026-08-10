@@ -3,9 +3,11 @@ import React from "react";
 import { TabsContent } from "@/components/ui/tabs";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ResolvedIcon } from "../resolved-icon";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { COMMON_COLORS, IconPickerState, IconPickerAction } from "./types";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface IconPickerIconsTabProps {
     state: IconPickerState;
@@ -18,25 +20,70 @@ export function IconPickerIconsTab({ state, dispatch, filteredStandardIcons, han
     const { selectedColor } = state;
     return (
         <TabsContent value="icons" className="m-0 border-none min-h-[300px]">
-            <TooltipProvider>
-                <div className="p-4 space-y-4">
-                    <div className="flex flex-wrap gap-2 pb-2 border-b">
-                        {COMMON_COLORS.map(c => (
-                            <Tooltip key={c}>
+            <div className="p-4 space-y-4">
+                <div className="flex flex-wrap gap-2 pb-2 border-b">
+                    {COMMON_COLORS.map(c => (
+                        <Tooltip key={c}>
+                            <TooltipTrigger asChild>
+                                <button
+                                    type="button"
+                                    onClick={() => dispatch({ type: 'SET_SELECTED_COLOR', payload: selectedColor === c ? null : c })}
+                                    className={cn(
+                                        "w-5 h-5 rounded-full border border-transparent transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none",
+                                        selectedColor === c && "ring-2 ring-primary ring-offset-2 scale-110"
+                                    )}
+                                    style={{ backgroundColor: c }}
+                                    aria-label={`Select ${c} color`}
+                                    aria-pressed={selectedColor === c ? "true" : "false"}
+                                />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>{c}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    ))}
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <button
+                                type="button"
+                                onClick={() => dispatch({ type: 'SET_SELECTED_COLOR', payload: null })}
+                                className={cn(
+                                    "w-5 h-5 rounded-full border border-muted bg-transparent flex items-center justify-center text-[10px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none",
+                                    !selectedColor && "ring-2 ring-primary ring-offset-2"
+                                )}
+                                aria-label="Clear color selection"
+                                aria-pressed={!selectedColor ? "true" : "false"}
+                            >
+                                <X className="h-3 w-3" />
+                            </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>None</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </div>
+
+                <div className="h-[250px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
+                    <div className="grid grid-cols-7 gap-1 pr-1">
+                        {filteredStandardIcons.map((item) => (
+                            <Tooltip key={item.name}>
                                 <TooltipTrigger asChild>
                                     <button
                                         type="button"
-                                        onClick={() => dispatch({ type: 'SET_SELECTED_COLOR', payload: selectedColor === c ? null : c })}
-                                        className={cn(
-                                            "w-5 h-5 rounded-full border border-transparent transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none",
-                                            selectedColor === c && "ring-2 ring-primary ring-offset-2 scale-110"
-                                        )}
-                                        style={{ backgroundColor: c }}
-                                        aria-label={`Select ${c} color`}
-                                        aria-pressed={selectedColor === c ? "true" : "false"}
-                                    />
+                                        onClick={() => handleSelectIcon(item.name)}
+                                        className="flex items-center justify-center w-full aspect-square rounded-md hover:bg-accent hover:text-accent-foreground transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none"
+                                        aria-label={`Select ${item.name} icon`}
+                                    >
+                                        <ResolvedIcon
+                                            icon={item.name}
+                                            className="h-5 w-5"
+                                            color={selectedColor}
+                                        />
+                                    </button>
                                 </TooltipTrigger>
-                                <TooltipContent>{c}</TooltipContent>
+                                <TooltipContent>
+                                    <p>{item.name}</p>
+                                </TooltipContent>
                             </Tooltip>
                         ))}
                         <Tooltip>
