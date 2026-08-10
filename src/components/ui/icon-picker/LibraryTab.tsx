@@ -4,9 +4,10 @@ import { Loader2, X } from "lucide-react";
 import { ResolvedIcon } from "../resolved-icon";
 import Image from "next/image";
 import dynamic from "next/dynamic";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { deleteCustomIcon } from "@/lib/actions/custom-icons";
 import { IconPickerState } from "./types";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false });
 
@@ -93,24 +94,31 @@ export function IconPickerLibraryTab({
                         </button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        {c.name}
+                        <p>{c.name}</p>
                       </TooltipContent>
                     </Tooltip>
                     {userId && c.id && (
-                      <button
-                        type="button"
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          if (confirm("Delete this icon?")) {
-                            await deleteCustomIcon(c.id!, userId);
-                            loadCustomIcons();
-                          }
-                        }}
-                        aria-label={`Delete custom icon ${c.name}`}
-                        className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 focus:opacity-100 focus-visible:opacity-100 transition-opacity z-20"
-                      >
-                        <X className="h-2 w-2" />
-                      </button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (confirm("Delete this icon?")) {
+                                await deleteCustomIcon(c.id!, userId);
+                                loadCustomIcons();
+                              }
+                            }}
+                            aria-label={`Delete custom icon ${c.name}`}
+                            className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 focus:opacity-100 focus-visible:opacity-100 transition-opacity z-20"
+                          >
+                            <X className="h-2 w-2" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Delete icon</p>
+                        </TooltipContent>
+                      </Tooltip>
                     )}
                   </div>
                 ))}
