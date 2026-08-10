@@ -1,6 +1,7 @@
 import React from "react";
 import { TabsContent } from "@/components/ui/tabs";
 import { Loader2, X } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ResolvedIcon } from "../resolved-icon";
 import Image from "next/image";
 import dynamic from "next/dynamic";
