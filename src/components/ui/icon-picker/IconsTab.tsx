@@ -5,7 +5,9 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ResolvedIcon } from "../resolved-icon";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { COMMON_COLORS, IconPickerState, IconPickerAction } from "./types";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface IconPickerIconsTabProps {
     state: IconPickerState;
@@ -35,7 +37,9 @@ export function IconPickerIconsTab({ state, dispatch, filteredStandardIcons, han
                                     aria-pressed={selectedColor === c ? "true" : "false"}
                                 />
                             </TooltipTrigger>
-                            <TooltipContent>{c}</TooltipContent>
+                            <TooltipContent>
+                                <p>{c}</p>
+                            </TooltipContent>
                         </Tooltip>
                     ))}
                     <Tooltip>
@@ -53,7 +57,9 @@ export function IconPickerIconsTab({ state, dispatch, filteredStandardIcons, han
                                 <X className="h-3 w-3" />
                             </button>
                         </TooltipTrigger>
-                        <TooltipContent>None</TooltipContent>
+                        <TooltipContent>
+                            <p>None</p>
+                        </TooltipContent>
                     </Tooltip>
                 </div>
 
@@ -75,7 +81,9 @@ export function IconPickerIconsTab({ state, dispatch, filteredStandardIcons, han
                                         />
                                     </button>
                                 </TooltipTrigger>
-                                <TooltipContent>{item.name}</TooltipContent>
+                                <TooltipContent>
+                                    <p>{item.name}</p>
+                                </TooltipContent>
                             </Tooltip>
                         ))}
                     </div>

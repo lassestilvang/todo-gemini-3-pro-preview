@@ -1,4 +1,6 @@
-## 2024-05-30 - Added Explicit Label Associations to Custom Inputs
+import re
+
+content = """## 2024-05-30 - Added Explicit Label Associations to Custom Inputs
 **Learning:** For custom inputs (like Radix UI Select triggers or standard textareas), using a semantic <label> without an htmlFor attribute fails to associate the label with the input. This prevents screen readers from announcing the label when the input receives focus and prevents the browser from transferring focus when the label is clicked.
 **Action:** When building or modifying custom form controls, always generate a unique ID (e.g., using React.useId()) and pass it to the input/trigger, then link the <label> using htmlFor. Adding a cursor-pointer class to the label provides immediate visual feedback that it is interactive.
 
@@ -49,18 +51,9 @@
 **Learning:** Found multiple instances where buttons used native `title` attributes despite already being wrapped in custom `<Tooltip>` components, causing a disruptive double-tooltip experience. Additionally, several custom action buttons lacked `type="button"`.
 **Action:** Always verify that native `title` attributes are removed when introducing custom tooltips to an element, and explicitly set `type="button"` on all standalone UI action buttons to prevent accidental form submissions.
 
-## 2024-08-08 - Tooltips for Dynamic Icon-Picker Grids
-**Learning:** Using native HTML `title` attributes on dynamically generated grid elements (like standard or custom icons, and color pickers) creates an inconsistent experience where tooltips appear slowly or not at all for keyboard users, and duplicate the native OS tooltip behavior unnecessarily.
-**Action:** Always replace native `title` attributes with the application's design system `<Tooltip>` component on gridded, interactive selection elements to ensure fast, consistent, and accessible feedback for all users while retaining their `aria-label` functionality.
-## 2024-08-04 - [Use Custom Tooltips over Native title for Icon Picker Buttons]
-**Learning:** Using the native HTML `title` attribute for tooltips on icon-only action buttons (like those inside the icon picker tabs) results in an inconsistent visual experience, delayed appearance, and potential accessibility issues for keyboard users.
-**Action:** Replace native `title` attributes on icon-only buttons with the application's design system `<Tooltip>` component (wrapping `<TooltipTrigger asChild>`) to ensure immediate, visually consistent, and accessible feedback while maintaining the `aria-label` attribute on the button itself.
-## 2024-07-27 - Remove native title from buttons when wrapping in Tooltips
-**Learning:** Adding a Radix UI `<Tooltip>` component to a button but forgetting to remove its native HTML `title` attribute results in a double-tooltip effect where the browser's default tooltip overlaps the custom styled one.
-**Action:** Always verify that native `title` attributes are completely removed from the DOM node when replacing them with custom accessible `<Tooltip>` components.
 ## 2024-07-27 - Remove native title from buttons wrapped in Tooltips
 **Learning:** Applying a native HTML `title` attribute directly on a `<button>` that is wrapped inside a custom `<Tooltip>` and `<TooltipTrigger asChild>` causes redundant tooltips to display simultaneously.
 **Action:** Always remove native `title` attributes when migrating elements to use custom accessible `<Tooltip>` components to avoid a disruptive visual overlap.
-## 2024-08-01 - Replace native title attributes with custom Tooltip components in IconPicker
-**Learning:** Native `title` attributes on interactive elements like color and icon selection buttons in custom Pickers provide slow, inconsistent visual feedback that harms the user experience compared to custom accessible tooltips provided by the design system.
-**Action:** Replace native `title` attributes on icon and color selection buttons with the application's `<Tooltip>` component to ensure immediate, visually consistent, and accessible feedback while maintaining standard accessibility tags.
+"""
+with open('.jules/palette.md', 'w') as f:
+    f.write(content)
