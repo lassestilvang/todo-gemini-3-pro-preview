@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { ResolvedIcon } from "../resolved-icon";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { COMMON_COLORS, IconPickerState, IconPickerAction } from "./types";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 interface IconPickerIconsTabProps {
     state: IconPickerState;
@@ -36,7 +37,7 @@ export function IconPickerIconsTab({ state, dispatch, filteredStandardIcons, han
                                 />
                             </TooltipTrigger>
                             <TooltipContent>
-                                {c}
+                                <p>{c}</p>
                             </TooltipContent>
                         </Tooltip>
                     ))}
@@ -56,7 +57,7 @@ export function IconPickerIconsTab({ state, dispatch, filteredStandardIcons, han
                             </button>
                         </TooltipTrigger>
                         <TooltipContent>
-                            None
+                            <p>None</p>
                         </TooltipContent>
                     </Tooltip>
                 </div>
@@ -80,7 +81,7 @@ export function IconPickerIconsTab({ state, dispatch, filteredStandardIcons, han
                                     </button>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                    {item.name}
+                                    <p>{item.name}</p>
                                 </TooltipContent>
                             </Tooltip>
                         ))}
