@@ -5,7 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { ResolvedIcon } from "../resolved-icon";
 import Image from "next/image";
 import dynamic from "next/dynamic";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { deleteCustomIcon } from "@/lib/actions/custom-icons";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { IconPickerState } from "./types";
@@ -34,6 +34,7 @@ export function IconPickerLibraryTab({
       value="library"
       className="m-0 border-none h-[400px] flex flex-col overflow-hidden"
     >
+      <TooltipProvider>
       <div className="flex-none bg-popover z-10 border-b">
         {recentIcons.length > 0 && (
           <div className="p-2 pb-0">
@@ -74,8 +75,8 @@ export function IconPickerLibraryTab({
               <div className="grid grid-cols-8 gap-1">
                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {customIcons.map((c: any) => (
-                  <div key={c.id} className="relative group">
-                    <Tooltip>
+                  <Tooltip key={c.id}>
+                    <div className="relative group">
                       <TooltipTrigger asChild>
                         <button
                           type="button"
@@ -95,34 +96,25 @@ export function IconPickerLibraryTab({
                           </div>
                         </button>
                       </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{c.name}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    {userId && c.id && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              if (confirm("Delete this icon?")) {
-                                await deleteCustomIcon(c.id!, userId);
-                                loadCustomIcons();
-                              }
-                            }}
-                            aria-label={`Delete custom icon ${c.name}`}
-                            className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 focus:opacity-100 focus-visible:opacity-100 transition-opacity z-20"
-                          >
-                            <X className="h-2 w-2" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Delete icon</p>
-                        </TooltipContent>
-                      </Tooltip>
+                      <TooltipContent>{c.name}</TooltipContent>
+                      {userId && c.id && (
+                      <button
+                        type="button"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (confirm("Delete this icon?")) {
+                            await deleteCustomIcon(c.id!, userId);
+                            loadCustomIcons();
+                          }
+                        }}
+                        aria-label={`Delete custom icon ${c.name}`}
+                        className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 focus:opacity-100 focus-visible:opacity-100 transition-opacity z-20"
+                      >
+                        <X className="h-2 w-2" />
+                      </button>
                     )}
-                  </div>
+                    </div>
+                  </Tooltip>
                 ))}
               </div>
             </div>
@@ -144,6 +136,7 @@ export function IconPickerLibraryTab({
           previewConfig={{ showPreview: false }}
         />
       </div>
+      </TooltipProvider>
     </TabsContent>
   );
 }
