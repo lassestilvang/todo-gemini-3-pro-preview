@@ -49,6 +49,9 @@
 **Learning:** Found multiple instances where buttons used native `title` attributes despite already being wrapped in custom `<Tooltip>` components, causing a disruptive double-tooltip experience. Additionally, several custom action buttons lacked `type="button"`.
 **Action:** Always verify that native `title` attributes are removed when introducing custom tooltips to an element, and explicitly set `type="button"` on all standalone UI action buttons to prevent accidental form submissions.
 
+## 2024-07-27 - Remove native title from buttons when wrapping in Tooltips
+**Learning:** Adding a Radix UI `<Tooltip>` component to a button but forgetting to remove its native HTML `title` attribute results in a double-tooltip effect where the browser's default tooltip overlaps the custom styled one.
+**Action:** Always verify that native `title` attributes are completely removed from the DOM node when replacing them with custom accessible `<Tooltip>` components.
 ## 2024-07-27 - Remove native title from buttons wrapped in Tooltips
 **Learning:** Applying a native HTML `title` attribute directly on a `<button>` that is wrapped inside a custom `<Tooltip>` and `<TooltipTrigger asChild>` causes redundant tooltips to display simultaneously.
 **Action:** Always remove native `title` attributes when migrating elements to use custom accessible `<Tooltip>` components to avoid a disruptive visual overlap.
