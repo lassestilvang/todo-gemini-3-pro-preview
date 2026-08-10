@@ -4,6 +4,7 @@ import { TabsContent } from "@/components/ui/tabs";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ResolvedIcon } from "../resolved-icon";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { COMMON_COLORS, IconPickerState, IconPickerAction } from "./types";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 

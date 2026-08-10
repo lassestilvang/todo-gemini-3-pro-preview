@@ -4,6 +4,7 @@ import { Loader2, X } from "lucide-react";
 import { ResolvedIcon } from "../resolved-icon";
 import Image from "next/image";
 import dynamic from "next/dynamic";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { deleteCustomIcon } from "@/lib/actions/custom-icons";
 import { IconPickerState } from "./types";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
