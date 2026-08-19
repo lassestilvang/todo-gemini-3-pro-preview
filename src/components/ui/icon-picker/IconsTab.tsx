@@ -85,50 +85,9 @@ export function IconPickerIconsTab({ state, dispatch, filteredStandardIcons, han
                                 </TooltipContent>
                             </Tooltip>
                         ))}
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <button
-                                        type="button"
-                                        onClick={() => dispatch({ type: 'SET_SELECTED_COLOR', payload: null })}
-                                        className={cn(
-                                        "w-5 h-5 rounded-full border border-muted bg-transparent flex items-center justify-center text-[10px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none",
-                                        !selectedColor && "ring-2 ring-primary ring-offset-2"
-                                    )}
-                                    aria-label="Clear color selection"
-                                    aria-pressed={!selectedColor ? "true" : "false"}
-                                >
-                                    <X className="h-3 w-3" />
-                                </button>
-                            </TooltipTrigger>
-                            <TooltipContent>None</TooltipContent>
-                        </Tooltip>
-                    </div>
-
-                    <div className="h-[250px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
-                        <div className="grid grid-cols-7 gap-1 pr-1">
-                            {filteredStandardIcons.map((item) => (
-                                <Tooltip key={item.name}>
-                                    <TooltipTrigger asChild>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleSelectIcon(item.name)}
-                                            className="flex items-center justify-center w-full aspect-square rounded-md hover:bg-accent hover:text-accent-foreground transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none"
-                                            aria-label={`Select ${item.name} icon`}
-                                        >
-                                            <ResolvedIcon
-                                                icon={item.name}
-                                                className="h-5 w-5"
-                                                color={selectedColor}
-                                            />
-                                        </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>{item.name}</TooltipContent>
-                                </Tooltip>
-                            ))}
-                        </div>
                     </div>
                 </div>
-            </div>
+</div>
             </TooltipProvider>
         </TabsContent>
     );
