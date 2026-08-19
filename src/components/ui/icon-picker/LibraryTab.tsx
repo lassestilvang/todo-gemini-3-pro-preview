@@ -1,15 +1,12 @@
 import React from "react";
 import { TabsContent } from "@/components/ui/tabs";
 import { Loader2, X } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ResolvedIcon } from "../resolved-icon";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { deleteCustomIcon } from "@/lib/actions/custom-icons";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { IconPickerState } from "./types";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false });
 
