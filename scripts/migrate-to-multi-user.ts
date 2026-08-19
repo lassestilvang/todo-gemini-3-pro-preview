@@ -316,12 +316,13 @@ async function migrateUserAchievements(userId: string): Promise<void> {
         }
         
         // Insert with userId (new composite PK includes userId)
-        for (const achievement of oldAchievements) {
-            await db.insert(schema.userAchievements).values({
+        if (oldAchievements.length > 0) {
+            const achievementsToInsert = oldAchievements.map((achievement) => ({
                 userId,
                 achievementId: achievement.achievement_id,
                 unlockedAt: new Date(achievement.unlocked_at),
-            }).onConflictDoNothing();
+            }));
+            await db.insert(schema.userAchievements).values(achievementsToInsert).onConflictDoNothing();
         }
         
         // Delete old records without userId
@@ -378,8 +379,8 @@ async function migrateViewSettings(userId: string): Promise<void> {
         }
         
         // Insert with userId (new composite PK includes userId)
-        for (const setting of oldSettings) {
-            await db.insert(schema.viewSettings).values({
+        if (oldSettings.length > 0) {
+            const settingsToInsert = oldSettings.map((setting) => ({
                 userId,
                 viewId: setting.view_id,
                 layout: setting.layout,
@@ -391,7 +392,8 @@ async function migrateViewSettings(userId: string): Promise<void> {
                 filterPriority: setting.filter_priority,
                 filterLabelId: setting.filter_label_id,
                 updatedAt: setting.updated_at ? new Date(setting.updated_at) : new Date(),
-            }).onConflictDoNothing();
+            }));
+            await db.insert(schema.viewSettings).values(settingsToInsert).onConflictDoNothing();
         }
         
         // Delete old records without userId

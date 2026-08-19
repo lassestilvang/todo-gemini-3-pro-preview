@@ -31,3 +31,7 @@
 ## 2024-07-18 - [Object.values Allocation in Renders]
 **Learning:** Passing `Object.values(storeObject)` directly into custom hooks or dependency arrays inside a component body creates a new O(N) array on *every single render*. This breaks downstream referential equality checks (like in `useMemo`), causing massive performance degradation—especially when the component contains frequent state updates (like a minute-based `now` timer).
 **Action:** Always memoize `Object.values(storeObject)` with `useMemo(() => Object.values(storeObject), [storeObject])` before passing it to hooks or mapping logic to prevent unnecessary allocations and re-renders.
+
+## 2026-08-10 - Batching Database Inserts in Migration Scripts
+**Learning:** Sequential inserts inside `for...of` loops execute individual query roundtrips, causing an N+1 query problem that severely degrades performance during data migrations. Passing an array of objects to Drizzle's `.values(array)` batches all inserts into a single SQL statement.
+**Action:** Replace sequential insert loops with bulk array insertions (`db.insert(...).values(records)`), checking `records.length > 0` before executing.
