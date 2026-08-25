@@ -78,3 +78,7 @@
 **Vulnerability:** Internal helper functions (like `logActivity`) that perform database mutations often accept a `userId` parameter but lack an internal `requireUser(userId)` check, assuming the caller has already validated authorization.
 **Learning:** If these internal helpers are ever accidentally exported from a `"use server"` file or directly exposed to an API route, they become vulnerable to Insecure Direct Object Reference (IDOR), allowing an attacker to mutate data for other users by spoofing the `userId`.
 **Prevention:** Apply a defense-in-depth approach by enforcing `requireUser(userId)` or equivalent authorization checks directly within internal mutation helpers, even if they are currently only called by other authenticated Server Actions. Always update the corresponding test suites to mock the authenticated session context when adding these internal checks.
+## 2026-08-25 - Rate Limiting Missing on Streak Update Endpoint
+**Vulnerability:** The Server Action `updateStreakImpl` was exposed without rate limiting.
+**Learning:** Like other mutative actions, secondary gamification updates like streaks are often overlooked for rate limits, creating potential DoS vectors.
+**Prevention:** Apply the codebase's standard `rateLimit` utility on EVERY mutative Server Action consistently.
