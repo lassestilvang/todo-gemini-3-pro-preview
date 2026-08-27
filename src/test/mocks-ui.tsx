@@ -124,10 +124,10 @@ export const PopoverMocks = {
 
 // --- Tooltip Mock ---
 export const TooltipMocks = {
-    Tooltip: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
     TooltipTrigger: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => asChild ? children : <button>{children}</button>,
     TooltipContent: ({ children }: { children: React.ReactNode }) => <div data-testid="tooltip-content">{children}</div>,
-    TooltipProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    TooltipProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 };
 
 // --- IconPicker Mock ---
