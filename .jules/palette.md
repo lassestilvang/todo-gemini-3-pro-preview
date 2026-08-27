@@ -70,3 +70,6 @@
 ## 2024-08-01 - Replace native title attributes with custom Tooltip components in IconPicker
 **Learning:** Native `title` attributes on interactive elements like color and icon selection buttons in custom Pickers provide slow, inconsistent visual feedback that harms the user experience compared to custom accessible tooltips provided by the design system.
 **Action:** Replace native `title` attributes on icon and color selection buttons with the application's `<Tooltip>` component to ensure immediate, visually consistent, and accessible feedback while maintaining standard accessibility tags.
+## 2024-08-09 - Accessible Tooltips for Analytics Heatmap Grids
+**Learning:** Native `title` attributes on dynamically generated grid elements like productivity heatmaps provide inconsistent, delayed visual feedback, and are completely inaccessible to keyboard-only users who navigate via `Tab`.
+**Action:** Replace native `title` attributes with the application's accessible `<Tooltip>` component on heatmaps or similar dense data visualization grids. Ensure each cell is focusable with `tabIndex={0}` and uses a single parent `<TooltipProvider>` to optimize rendering.

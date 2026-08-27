@@ -3,11 +3,9 @@ import React from "react";
 import { TabsContent } from "@/components/ui/tabs";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ResolvedIcon } from "../resolved-icon";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { COMMON_COLORS, IconPickerState, IconPickerAction } from "./types";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface IconPickerIconsTabProps {
     state: IconPickerState;
@@ -20,6 +18,7 @@ export function IconPickerIconsTab({ state, dispatch, filteredStandardIcons, han
     const { selectedColor } = state;
     return (
         <TabsContent value="icons" className="m-0 border-none min-h-[300px]">
+            <TooltipProvider>
             <div className="p-4 space-y-4">
                 <div className="flex flex-wrap gap-2 pb-2 border-b">
                     {COMMON_COLORS.map(c => (
@@ -129,6 +128,7 @@ export function IconPickerIconsTab({ state, dispatch, filteredStandardIcons, han
                         </div>
                     </div>
                 </div>
+            </div>
             </TooltipProvider>
         </TabsContent>
     );
