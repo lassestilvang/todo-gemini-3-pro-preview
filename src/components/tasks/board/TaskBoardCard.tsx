@@ -7,6 +7,7 @@ import { Task } from "@/lib/types";
 import { Calendar, Flag, Clock, CheckCircle2, Circle } from "lucide-react";
 import { formatFriendlyDate } from "@/lib/time-utils";
 import { formatDuePeriod, type DuePrecision } from "@/lib/due-utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface TaskBoardCardProps {
   task: Task;
@@ -87,16 +88,32 @@ export const TaskBoardCard = memo(function TaskBoardCard({ task, onEdit }: TaskB
 
       <div className="flex items-center gap-2 mt-2 flex-wrap">
         {task.dueDate && (
-          <span
-            className="flex items-center gap-1 text-xs text-muted-foreground"
-            title={dueAriaLabel}
-            aria-label={dueAriaLabel}
-          >
-            <Calendar className="h-3 w-3" />
-            {periodLabel
-              ? periodLabel
-              : formatFriendlyDate(dueDateValue!)}
-          </span>
+          dueAriaLabel ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span
+                  className="flex items-center gap-1 text-xs text-muted-foreground"
+                  aria-label={dueAriaLabel}
+                  tabIndex={0}
+                >
+                  <Calendar className="h-3 w-3" />
+                  {periodLabel
+                    ? periodLabel
+                    : formatFriendlyDate(dueDateValue!)}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>{dueAriaLabel}</TooltipContent>
+            </Tooltip>
+          ) : (
+            <span
+              className="flex items-center gap-1 text-xs text-muted-foreground"
+            >
+              <Calendar className="h-3 w-3" />
+              {periodLabel
+                ? periodLabel
+                : formatFriendlyDate(dueDateValue!)}
+            </span>
+          )
         )}
         {task.priority && task.priority !== "none" && (
           <span className="flex items-center gap-1 text-xs text-muted-foreground capitalize">
