@@ -8,12 +8,19 @@ import {
   calculateStreakUpdate,
   type ActionResult,
   withErrorHandling,
+  ValidationError,
 } from "../shared";
 import { requireUser } from "@/lib/auth";
 import { getUserStats } from "../gamification";
+import { rateLimit } from "@/lib/rate-limit";
 
 async function updateStreakImpl(userId: string) {
   await requireUser(userId);
+
+  const limit = await rateLimit(`task:streak:${userId}`, 100, 3600);
+  if (!limit.success) {
+    throw new ValidationError("Rate limit exceeded. Please try again later.");
+  }
 
   const stats = await getUserStats(userId);
   const { newStreak, shouldUpdate, usedFreeze } = calculateStreakUpdate(
