@@ -425,9 +425,8 @@ async function pullRemoteTasks(params: {
     externalUpdatedAt: Date | null;
   }[] = [];
 
-  const limit = pLimit(10);
   const taskUpdatePromises: Promise<unknown>[] = [];
-  const conflictPromises: Promise<unknown>[] = [];
+  const conflictsToInsert: (typeof externalSyncConflicts.$inferInsert)[] = [];
 
   // ⚡ Bolt Opt: Batch database deletions to prevent N+1 queries.
   const localTasksToDelete: number[] = [];
@@ -460,16 +459,17 @@ async function pullRemoteTasks(params: {
           conflictKeys,
         )
       ) {
-        conflictPromises.push(
-          createConflict({
-            userId,
-            localTask,
-            task,
-            tasklistId,
-            listId,
-            conflictKeys,
-          }),
-        );
+        const conflict = buildConflictRecord({
+          userId,
+          localTask,
+          task,
+          tasklistId,
+          listId,
+          conflictKeys,
+        });
+        if (conflict) {
+          conflictsToInsert.push(conflict);
+        }
         continue;
       }
 
@@ -540,8 +540,8 @@ async function pullRemoteTasks(params: {
     });
   }
 
-  if (conflictPromises.length > 0) {
-    await Promise.all(conflictPromises);
+  if (conflictsToInsert.length > 0) {
+    await db.insert(externalSyncConflicts).values(conflictsToInsert);
   }
 
   if (taskUpdatePromises.length > 0) {
@@ -615,6 +615,7 @@ async function pushLocalTasks(params: {
   // ⚡ Bolt Opt: Replaced Unbounded Promise.all with bounded p-limit(10) concurrency
   // This maintains concurrent processing while bounding the number of in-flight requests to prevent rate limit issues
   const limit = pLimit(10);
+  const conflictsToInsert: (typeof externalSyncConflicts.$inferInsert)[] = [];
 
   const syncPromises = localTasks.map((localTask) =>
     limit(async () => {
@@ -659,7 +660,7 @@ async function pushLocalTasks(params: {
             conflictKeys,
           )
         ) {
-          await createConflict({
+          const conflict = buildConflictRecord({
             userId,
             localTask,
             task: remoteEntry.task,
@@ -667,6 +668,9 @@ async function pushLocalTasks(params: {
             listId: localTask.listId,
             conflictKeys,
           });
+          if (conflict) {
+            conflictsToInsert.push(conflict);
+          }
           return;
         }
 
@@ -740,6 +744,10 @@ async function pushLocalTasks(params: {
     limit.clearQueue();
     throw e;
   }
+
+  if (conflictsToInsert.length > 0) {
+    await db.insert(externalSyncConflicts).values(conflictsToInsert);
+  }
 }
 
 async function getExistingConflictKeys(userId: string) {
@@ -795,19 +803,19 @@ function tasksMatch(
   );
 }
 
-async function createConflict(params: {
+function buildConflictRecord(params: {
   userId: string;
   localTask: typeof tasks.$inferSelect;
   task: GoogleTask;
   tasklistId: string;
   listId: number;
   conflictKeys: Set<string>;
-}) {
+}): typeof externalSyncConflicts.$inferInsert | null {
   const { userId, localTask, task, tasklistId, listId, conflictKeys } = params;
   const key = `${localTask.id}:${task.id}`;
-  if (conflictKeys.has(key)) return;
+  if (conflictKeys.has(key)) return null;
   conflictKeys.add(key);
-  await db.insert(externalSyncConflicts).values({
+  return {
     userId,
     provider: "google_tasks" as const,
     entityType: "task" as const,
@@ -830,7 +838,7 @@ async function createConflict(params: {
       listId,
       tasklistId,
     }),
-  });
+  };
 }
 
 function slugify(value: string) {
