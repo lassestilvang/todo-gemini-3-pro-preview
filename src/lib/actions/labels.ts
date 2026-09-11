@@ -278,7 +278,7 @@ export const updateLabel: (
 async function deleteLabelImpl(id: number, userId: string) {
   const user = await requireUser(userId);
 
-  const limit = await rateLimit(`label:delete:${userId}`, 100, 3600);
+  const limit = await rateLimit(`label:delete:${userId}`, 50, 3600);
   if (!limit.success) {
     throw new ValidationError("Rate limit exceeded. Please try again later.");
   }

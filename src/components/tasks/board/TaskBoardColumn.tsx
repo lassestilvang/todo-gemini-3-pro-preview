@@ -1,6 +1,5 @@
 "use client";
 
-import React, { memo } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
 import { Task } from "@/lib/types";
@@ -22,9 +21,7 @@ const colorMap: Record<string, string> = {
   gray: "bg-gray-400",
 };
 
-// ⚡ Bolt Opt: Wrapped TaskBoardColumn in React.memo() to prevent O(N) re-render cascades
-// when the parent TaskBoardView updates the active drag state during dragging.
-export const TaskBoardColumn = memo(function TaskBoardColumn({ column, tasks, onEdit }: TaskBoardColumnProps) {
+export function TaskBoardColumn({ column, tasks, onEdit }: TaskBoardColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `column:${column.id}`,
     data: { columnId: column.id },
@@ -64,4 +61,4 @@ export const TaskBoardColumn = memo(function TaskBoardColumn({ column, tasks, on
       </div>
     </div>
   );
-});
+}
