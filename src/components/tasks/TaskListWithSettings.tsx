@@ -104,8 +104,12 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
 
     useEffect(() => { initialize(); if (tasks?.length) setTasks(tasks); }, [tasks, setTasks, initialize]);
 
+    // ⚡ Bolt Opt: Memoize Object.values(storeTasksFn) to prevent O(N) array allocation
+    // and subsequent expensive hook re-evaluations on every component render (e.g., when `now` updates).
+    const allStoreTasks = useMemo(() => Object.values(storeTasksFn), [storeTasksFn]);
+
     const { processedTasks, listTasks, periodSections, overdueTasks, activeTasks, completedTasks, groupedEntries, derivedTasks } = useTaskListView({
-        allStoreTasks: Object.values(storeTasksFn), listId, labelId, filterType, tasksFromProps: tasks, weekStartsOnMonday: weekStartsOnMonday ?? undefined, settings
+        allStoreTasks, listId, labelId, filterType, tasksFromProps: tasks, weekStartsOnMonday: weekStartsOnMonday ?? undefined, settings
     });
 
     useEffect(() => {
@@ -205,12 +209,14 @@ export function TaskListWithSettings({ tasks, title, listId, labelId, defaultDue
                 map.set(groupName, groupName);
                 continue;
             }
-            if (!groupName.includes(":")) {
+            const colonIndex = groupName.indexOf(":");
+            if (colonIndex === -1) {
                 const d = new Date(groupName);
                 map.set(groupName, isSameDay(d, today) ? "Today" : isSameDay(d, tomorrow) ? "Tomorrow" : format(d, isSameYear(d, today) ? "EEEE, MMM do" : "EEEE, MMM do, yyyy"));
                 continue;
             }
-            const [p, iso] = groupName.split(":");
+            const p = groupName.slice(0, colonIndex);
+            const iso = groupName.slice(colonIndex + 1);
             const periodFormatByPrecision: Partial<Record<PeriodPrecision, string>> = {
                 month: "LLLL yyyy",
                 year: "yyyy",

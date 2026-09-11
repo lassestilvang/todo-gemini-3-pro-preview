@@ -43,3 +43,39 @@
 **Learning:** Destructive operations and general mutations must be consistently rate-limited, even if they aren't the primary actions an application supports. Overlooking these creates asymmetric DoS vectors.
 **Prevention:** Apply the codebase's standard `rateLimit` utility on EVERY mutative Server Action.
 ## 2026-07-09 - Rate Limiting Missing on Label Update and Delete Endpoints\n**Vulnerability:** The Server Actions for updating (`updateLabelImpl`) and deleting (`deleteLabelImpl`) labels were exposed without rate limiting.\n**Learning:** Destructive operations and general mutations must be consistently rate-limited, even if they aren't the primary actions an application supports. Overlooking these creates asymmetric DoS vectors.\n**Prevention:** Apply the codebase's standard `rateLimit` utility on EVERY mutative Server Action.
+## 2024-07-08 - Rate Limiting Missing on Label and List Update/Delete Endpoints
+**Vulnerability:** The Server Actions `updateLabelImpl`, `deleteLabelImpl`, and `updateListImpl` were exposed without rate limiting.
+**Learning:** While creation actions (like `createLabelImpl` and `createListImpl`) were correctly protected, the corresponding update and delete operations were missed. This leaves the system vulnerable to potential DoS attacks and resource exhaustion via rapid successive requests to these mutative endpoints.
+**Prevention:** Ensure the `rateLimit` utility (e.g., `await rateLimit(\`resource:action:${userId}\`, count, window)`) is consistently applied across *all* mutative Server Actions, not just for creation, to maintain a robust defense-in-depth posture.
+
+## 2026-07-04 - [Defense-in-Depth] Enforce Authorization in Internal Helpers
+**Vulnerability:** Internal helper functions (like `logActivity`) that perform database mutations often accept a `userId` parameter but lack an internal `requireUser(userId)` check, assuming the caller has already validated authorization.
+**Learning:** If these internal helpers are ever accidentally exported from a `"use server"` file or directly exposed to an API route, they become vulnerable to Insecure Direct Object Reference (IDOR), allowing an attacker to mutate data for other users by spoofing the `userId`.
+**Prevention:** Apply a defense-in-depth approach by enforcing `requireUser(userId)` or equivalent authorization checks directly within internal mutation helpers, even if they are currently only called by other authenticated Server Actions. Always update the corresponding test suites to mock the authenticated session context when adding these internal checks.
+## 2026-07-06 - [Rate Limiting Missing on Label Update and Delete Endpoints]
+**Vulnerability:** The Server Actions for updating (`updateLabelImpl`) and deleting (`deleteLabelImpl`) labels, and updating (`updateListImpl`) lists were exposed without rate limiting.
+**Learning:** Destructive operations and general mutations must be consistently rate-limited, even if they aren't the primary actions an application supports. Overlooking these creates asymmetric DoS vectors.
+**Prevention:** Apply the codebase's standard rateLimit utility on EVERY mutative Server Action.
+
+## 2026-07-06 - Rate Limiting Missing on Dependencies and Reminders Endpoints
+**Vulnerability:** The Server Actions for dependencies (`addDependencyImpl`, `removeDependencyImpl`) and reminders (`createReminderImpl`, `deleteReminderImpl`) and activity logger (`logActivity`) lacked rate limiting.
+**Learning:** Like update and delete operations, relational mutative actions between entities (like linking a reminder or a dependency to a task) need protection just like the parent entities. Missing them allows potential DoS attacks on the database.
+**Prevention:** Ensure the `rateLimit` utility is consistently applied across *all* mutative Server Actions to maintain robust defense-in-depth.
+
+## 2026-07-24 - Rate Limiting Bypass and Missing Checks on Time Tracking Endpoints
+**Vulnerability:** The `startTimeEntry` and `createManualTimeEntry` server actions invoked the `rateLimit` utility but ignored the return value, effectively bypassing rate limits. Additionally, mutative actions (`stopTimeEntry`, `updateTimeEntry`, `deleteTimeEntry`, `updateTaskEstimate`) completely lacked rate limit checks.
+**Learning:** Simply calling a rate limiting function is insufficient if the result isn't validated. Also, secondary/auxiliary mutative actions (like stopping a timer or updating estimates) are often overlooked for rate limiting, creating potential DoS and abuse vectors.
+**Prevention:** Always verify the return value of rate limit utilities (e.g., `if (!limit.success)`) and ensure rate limiting is systematically applied across all endpoints that mutate state, including updates and deletions.
+## 2025-06-11 - Rate Limiting and Input Boundaries on Gamification Mutations
+**Vulnerability:** The gamification Server Actions (`addXP` and `updateUserProgress`) were missing both rate limits and upper/lower bounds on input parameters (`amount` and `xpAmount`), allowing an attacker to theoretically inject massive amounts of XP directly or perform a DoS attack.
+**Learning:** Security controls like rate limiting and input boundaries must be consistently applied across all state-mutating endpoints, not just primary CRUD entities. Unchecked inputs to internal logic can lead to arbitrary application state manipulation.
+**Prevention:** Always implement the codebase's standard rate limiting and enforce strict boundaries (e.g., `amount > maxVal`) on mutative endpoints.
+
+## 2026-08-09 - [Defense-in-Depth] Enforce Authorization in Internal Helpers
+**Vulnerability:** Internal helper functions (like `logActivity`) that perform database mutations often accept a `userId` parameter but lack an internal `requireUser(userId)` check, assuming the caller has already validated authorization.
+**Learning:** If these internal helpers are ever accidentally exported from a `"use server"` file or directly exposed to an API route, they become vulnerable to Insecure Direct Object Reference (IDOR), allowing an attacker to mutate data for other users by spoofing the `userId`.
+**Prevention:** Apply a defense-in-depth approach by enforcing `requireUser(userId)` or equivalent authorization checks directly within internal mutation helpers, even if they are currently only called by other authenticated Server Actions. Always update the corresponding test suites to mock the authenticated session context when adding these internal checks.
+## 2026-08-25 - Rate Limiting Missing on Streak Update Endpoint
+**Vulnerability:** The Server Action `updateStreakImpl` was exposed without rate limiting.
+**Learning:** Like other mutative actions, secondary gamification updates like streaks are often overlooked for rate limits, creating potential DoS vectors.
+**Prevention:** Apply the codebase's standard `rateLimit` utility on EVERY mutative Server Action consistently.

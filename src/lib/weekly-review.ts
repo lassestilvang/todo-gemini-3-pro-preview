@@ -4,6 +4,7 @@ import { db, tasks } from "@/db";
 import { eq, and, gte, lte } from "drizzle-orm";
 import { startOfWeek, endOfWeek, subWeeks } from "date-fns";
 import { getGeminiClient, GEMINI_MODEL } from "@/lib/gemini";
+import { requireAuth } from "@/lib/auth";
 
 export async function generateWeeklyReport(): Promise<{
     summary: string;
@@ -15,6 +16,7 @@ export async function generateWeeklyReport(): Promise<{
     if (!client) return null;
 
     try {
+        const user = await requireAuth();
         const now = new Date();
         const weekStart = startOfWeek(now);
         const weekEnd = endOfWeek(now);
@@ -24,6 +26,7 @@ export async function generateWeeklyReport(): Promise<{
             .select()
             .from(tasks)
             .where(and(
+                eq(tasks.userId, user.id),
                 eq(tasks.isCompleted, true),
                 gte(tasks.completedAt, weekStart),
                 lte(tasks.completedAt, weekEnd)
@@ -37,6 +40,7 @@ export async function generateWeeklyReport(): Promise<{
             .select()
             .from(tasks)
             .where(and(
+                eq(tasks.userId, user.id),
                 eq(tasks.isCompleted, true),
                 gte(tasks.completedAt, lastWeekStart),
                 lte(tasks.completedAt, lastWeekEnd)

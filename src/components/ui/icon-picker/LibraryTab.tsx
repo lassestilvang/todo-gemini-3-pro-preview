@@ -4,6 +4,7 @@ import { Loader2, X } from "lucide-react";
 import { ResolvedIcon } from "../resolved-icon";
 import Image from "next/image";
 import dynamic from "next/dynamic";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { deleteCustomIcon } from "@/lib/actions/custom-icons";
 import { IconPickerState } from "./types";
 
@@ -30,6 +31,7 @@ export function IconPickerLibraryTab({
       value="library"
       className="m-0 border-none h-[400px] flex flex-col overflow-hidden"
     >
+      <TooltipProvider>
       <div className="flex-none bg-popover z-10 border-b">
         {recentIcons.length > 0 && (
           <div className="p-2 pb-0">
@@ -70,26 +72,29 @@ export function IconPickerLibraryTab({
               <div className="grid grid-cols-8 gap-1">
                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {customIcons.map((c: any) => (
-                  <div key={c.id} className="relative group">
-                    <button
-                      type="button"
-                      onClick={() => handleSelectIcon(c.value)}
-                      aria-label={`Select custom icon ${c.name}`}
-                      className="flex items-center justify-center w-full aspect-square rounded-md hover:bg-accent/50 transition-colors"
-                      title={c.name}
-                    >
-                      <div className="w-5 h-5 rounded overflow-hidden">
-                        <Image
-                          src={c.value}
-                          alt={c.name}
-                          width={20}
-                          height={20}
-                          className="w-full h-full object-cover"
-                          unoptimized
-                        />
-                      </div>
-                    </button>
-                    {userId && c.id && (
+                  <Tooltip key={c.id}>
+                    <div className="relative group">
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectIcon(c.value)}
+                          aria-label={`Select custom icon ${c.name}`}
+                          className="flex items-center justify-center w-full aspect-square rounded-md hover:bg-accent/50 transition-colors"
+                        >
+                          <div className="w-5 h-5 rounded overflow-hidden">
+                            <Image
+                              src={c.value}
+                              alt={c.name}
+                              width={20}
+                              height={20}
+                              className="w-full h-full object-cover"
+                              unoptimized
+                            />
+                          </div>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>{c.name}</TooltipContent>
+                      {userId && c.id && (
                       <button
                         type="button"
                         onClick={async (e) => {
@@ -105,7 +110,8 @@ export function IconPickerLibraryTab({
                         <X className="h-2 w-2" />
                       </button>
                     )}
-                  </div>
+                    </div>
+                  </Tooltip>
                 ))}
               </div>
             </div>
@@ -127,6 +133,7 @@ export function IconPickerLibraryTab({
           previewConfig={{ showPreview: false }}
         />
       </div>
+      </TooltipProvider>
     </TabsContent>
   );
 }

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { Play, Pause, CheckCircle2, RotateCcw, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { updateTask } from "@/lib/actions";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
@@ -128,41 +129,64 @@ export function FocusMode({ task, userId, onClose }: FocusModeProps) {
                 </div>
 
                 <div className="flex items-center justify-center gap-6">
-                    <Button
-                        size="lg"
-                        variant="outline"
-                        className="h-16 w-16 rounded-full border-2"
-                        onClick={resetTimer}
-                        aria-label="Reset Timer"
-                    >
-                        <RotateCcw className="h-6 w-6" />
-                    </Button>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    size="lg"
+                                    variant="outline"
+                                    className="h-16 w-16 rounded-full border-2"
+                                    onClick={resetTimer}
+                                    aria-label="Reset Timer"
+                                >
+                                    <RotateCcw className="h-6 w-6" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Reset Timer</p>
+                            </TooltipContent>
+                        </Tooltip>
 
-                    <Button
-                        size="lg"
-                        className={cn(
-                            "h-24 w-24 rounded-full shadow-lg transition-all hover:scale-105",
-                            isActive ? "bg-red-500 hover:bg-red-600" : "bg-primary hover:bg-primary/90"
-                        )}
-                        onClick={toggleTimer}
-                        aria-label={isActive ? "Pause Timer" : "Start Timer"}
-                    >
-                        {isActive ? (
-                            <Pause className="h-10 w-10" />
-                        ) : (
-                            <Play className="h-10 w-10 ml-1" />
-                        )}
-                    </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    size="lg"
+                                    className={cn(
+                                        "h-24 w-24 rounded-full shadow-lg transition-all hover:scale-105",
+                                        isActive ? "bg-red-500 hover:bg-red-600" : "bg-primary hover:bg-primary/90"
+                                    )}
+                                    onClick={toggleTimer}
+                                    aria-label={isActive ? "Pause Timer" : "Start Timer"}
+                                >
+                                    {isActive ? (
+                                        <Pause className="h-10 w-10" />
+                                    ) : (
+                                        <Play className="h-10 w-10 ml-1" />
+                                    )}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>{isActive ? "Pause Timer" : "Start Timer"}</p>
+                            </TooltipContent>
+                        </Tooltip>
 
-                    <Button
-                        size="lg"
-                        variant="outline"
-                        className="h-16 w-16 rounded-full border-2 hover:bg-green-100 hover:text-green-700 hover:border-green-200 dark:hover:bg-green-900/30 dark:hover:text-green-400 dark:hover:border-green-800"
-                        onClick={handleComplete}
-                        aria-label="Complete Task"
-                    >
-                        <CheckCircle2 className="h-6 w-6" />
-                    </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    size="lg"
+                                    variant="outline"
+                                    className="h-16 w-16 rounded-full border-2 hover:bg-green-100 hover:text-green-700 hover:border-green-200 dark:hover:bg-green-900/30 dark:hover:text-green-400 dark:hover:border-green-800"
+                                    onClick={handleComplete}
+                                    aria-label="Complete Task"
+                                >
+                                    <CheckCircle2 className="h-6 w-6" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Complete Task</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                 </div>
 
                 <div className="text-sm text-muted-foreground">

@@ -25,3 +25,24 @@
 ## 2025-06-25 - [React Reference Preservation in useMemo]
 **Learning:** When conditionally appending items to an array inside a `useMemo` block (e.g., `[...activeTasks, ...(showCompleted ? completedTasks : [])]`), unconditionally returning a newly allocated array or combination (even if the second array is empty) breaks referential equality for the primary array. This can cause unnecessary downstream re-renders.
 **Action:** Use an early return to pass back the original array reference (`if (!showCompleted || completedTasks.length === 0) return activeTasks;`) when no items need to be appended. For the combination, `array.concat()` or a spread operator is sufficient as long as the default state preserves the reference.
+## 2024-07-07 - [Avoid Object Allocation in Boolean Validation]
+**Learning:** Using `Array.prototype.filter()` purely to validate elements against a Set (e.g. `const invalidIds = listIds.filter(id => !validListIds.has(id)); if (invalidIds.length > 0) ...`) forces Node/V8 to allocate a temporary O(N) array in memory, iterate all elements, and trigger garbage collection just to perform a boolean check.
+**Action:** Replace validation `.filter()` chains with an early-breaking `for` loop (`let hasInvalid = false; for (const id of listIds) { if (!validListIds.has(id)) { hasInvalid = true; break; } }`) to achieve O(1) memory allocation and avoid full iteration if an invalid element is found early.
+## 2024-07-02 - [React.memo & dnd-kit Rendering]
+**Learning:** When tracking global drag state (e.g., setting an active drag item in a parent component) using libraries like `@dnd-kit`, all child elements will re-render by default on every drag state change, causing expensive O(N) re-render cascades in large lists or boards.
+**Action:** Always wrap repeating draggable items (like cards) and their structural containers (like columns) with `React.memo()` to prevent unnecessary re-renders during drag operations.
+## 2024-07-18 - [Object.values Allocation in Renders]
+**Learning:** Passing `Object.values(storeObject)` directly into custom hooks or dependency arrays inside a component body creates a new O(N) array on *every single render*. This breaks downstream referential equality checks (like in `useMemo`), causing massive performance degradation—especially when the component contains frequent state updates (like a minute-based `now` timer).
+**Action:** Always memoize `Object.values(storeObject)` with `useMemo(() => Object.values(storeObject), [storeObject])` before passing it to hooks or mapping logic to prevent unnecessary allocations and re-renders.
+
+## 2026-08-10 - Batching Database Inserts in Migration Scripts
+**Learning:** Sequential inserts inside `for...of` loops execute individual query roundtrips, causing an N+1 query problem that severely degrades performance during data migrations. Passing an array of objects to Drizzle's `.values(array)` batches all inserts into a single SQL statement.
+**Action:** Replace sequential insert loops with bulk array insertions (`db.insert(...).values(records)`), checking `records.length > 0` before executing.
+
+## 2026-08-19 - Allocation-Free Group Name String Parsing
+ **Learning:** Using `String.prototype.includes` followed by `String.prototype.split` in render-memoized iteration loops creates redundant temporary string arrays and double string searches. Replacing it with `indexOf(':')` and `slice(0, colonIndex)` / `slice(colonIndex + 1)` eliminates intermediate array allocation and cuts parsing overhead by ~63% (~35.67 µs vs ~96.09 µs per 1000 items).
+ **Action:** When parsing key-value delimiters in hot loops or memoized formatted maps, use `indexOf` and `slice` instead of `includes` and `split`.
+
+## 2026-08-19 - Batched Conflict Inserts in Google Tasks Sync
+ **Learning:** Executing individual `db.insert` statements sequentially inside a loop creates an N+1 query overhead in sync conflict resolution. Collecting records into an array and inserting them with a single `db.insert(table).values(array)` query reduces execution time by ~75% (from 42.98ms down to 10.83ms for 200 conflicts).
+ **Action:** When recording sync conflicts or map entities in integration sync flows, build conflict records synchronously into an array and batch-insert them at the end of the push/pull cycle.

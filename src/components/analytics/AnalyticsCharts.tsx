@@ -95,6 +95,7 @@ const PolarRadiusAxis = dynamic<PolarRadiusAxisProps>(
 );
 import { cn } from "@/lib/utils";
 import React from "react";
+import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface AnalyticsData {
   summary: {
@@ -223,22 +224,30 @@ export const AnalyticsCharts = React.memo(function AnalyticsCharts({
         <h3 className="text-lg font-semibold mb-4">
           Productivity Heatmap (Last 90 Days)
         </h3>
-        <div className="flex flex-wrap gap-1">
-          {data.heatmapData.map((d) => (
-            <div
-              key={d.date}
-              className={cn(
-                "w-3 h-3 rounded-[2px] transition-colors",
-                d.level === 0 && "bg-muted/30",
-                d.level === 1 && "bg-green-200 dark:bg-green-900/40",
-                d.level === 2 && "bg-green-400 dark:bg-green-700/60",
-                d.level === 3 && "bg-green-500 dark:bg-green-500/80",
-                d.level === 4 && "bg-green-700 dark:bg-green-300",
-              )}
-              title={`${d.date}: ${d.count} tasks`}
-            />
-          ))}
-        </div>
+        <TooltipProvider>
+          <div className="flex flex-wrap gap-1">
+            {data.heatmapData.map((d) => (
+              <UITooltip key={d.date}>
+                <TooltipTrigger asChild>
+                  <div
+                    className={cn(
+                      "w-3 h-3 rounded-[2px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+                      d.level === 0 && "bg-muted/30",
+                      d.level === 1 && "bg-green-200 dark:bg-green-900/40",
+                      d.level === 2 && "bg-green-400 dark:bg-green-700/60",
+                      d.level === 3 && "bg-green-500 dark:bg-green-500/80",
+                      d.level === 4 && "bg-green-700 dark:bg-green-300",
+                    )}
+                    tabIndex={0}
+                  />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{`${d.date}: ${d.count} tasks`}</p>
+                </TooltipContent>
+              </UITooltip>
+            ))}
+          </div>
+        </TooltipProvider>
         <div className="flex items-center gap-2 mt-4 text-[10px] text-muted-foreground">
           <span>Less</span>
           <div className="flex gap-1">

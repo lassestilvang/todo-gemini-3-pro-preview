@@ -1,5 +1,6 @@
 import { db, taskLogs } from "./shared";
 import { requireUser } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
 
 /**
  * Log an activity to the task_logs table.
@@ -15,6 +16,11 @@ export async function logActivity(params: {
   details?: string;
 }) {
   await requireUser(params.userId);
+
+  const limit = await rateLimit("activity-log:create:" + params.userId, 200, 3600);
+  if (!limit.success) {
+    return;
+  }
 
   // 🛡️ Sentinel: Enforce input length limits to prevent DoS via excessive storage consumption.
   // Silently truncate since this is a non-critical helper and shouldn't crash the main application flow.
