@@ -15,6 +15,7 @@ import { notFound, redirect } from "next/navigation";
 import { ManageLabelDialog } from "@/components/tasks/ManageLabelDialog";
 import { Button } from "@/components/ui/button";
 import { Settings2 } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { ResolvedIcon } from "@/components/ui/resolved-icon";
 
 interface LabelPageProps {
@@ -80,9 +81,14 @@ export default async function LabelPage({ params }: LabelPageProps) {
                             label={label}
                             userId={user.id}
                             trigger={
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-foreground" aria-label="Edit Label">
-                                    <Settings2 className="h-4 w-4" />
-                                </Button>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-foreground" aria-label="Edit Label">
+                                            <Settings2 className="h-4 w-4" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Edit Label</TooltipContent>
+                                </Tooltip>
                             }
                         />
                     </h1>
