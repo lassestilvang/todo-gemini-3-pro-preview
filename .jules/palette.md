@@ -73,3 +73,7 @@
 ## 2024-08-09 - Accessible Tooltips for Analytics Heatmap Grids
 **Learning:** Native `title` attributes on dynamically generated grid elements like productivity heatmaps provide inconsistent, delayed visual feedback, and are completely inaccessible to keyboard-only users who navigate via `Tab`.
 **Action:** Replace native `title` attributes with the application's accessible `<Tooltip>` component on heatmaps or similar dense data visualization grids. Ensure each cell is focusable with `tabIndex={0}` and uses a single parent `<TooltipProvider>` to optimize rendering.
+
+## 2024-10-27 - [Use Tooltips for Page Header Actions]
+**Learning:** Icon-only action buttons (like Settings/Edit) in main page headers (e.g., List or Label pages) lacked custom tooltips, leading to inconsistent visual feedback and poor accessibility. They relied solely on native `aria-label` which isn't always immediately obvious to sighted mouse users.
+**Action:** Always wrap custom icon-only `<Button>` components in page headers with the application's `<Tooltip>` component (using `<TooltipTrigger asChild>`) to ensure immediate, visually consistent, and accessible feedback for all users.
